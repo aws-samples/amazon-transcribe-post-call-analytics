@@ -1,0 +1,29 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Onsei backend
+Resources:
+  DDB:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://s3.us-east-1.amazonaws.com/citrix-pca-deployment/4c375042892d5aa6c2b4e7d29e767097.template
+  PCA:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://s3.us-east-1.amazonaws.com/citrix-pca-deployment/fd4bb44da343e2affe74faf122d3ff32.template
+      Parameters:
+        TableName:
+          Fn::GetAtt:
+          - DDB
+          - Outputs.TableName
+  Trigger:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://s3.us-east-1.amazonaws.com/citrix-pca-deployment/37026387a245985edab7d77878db3f31.template
+      Parameters:
+        TableName:
+          Fn::GetAtt:
+          - DDB
+          - Outputs.TableName
+  BulkImport:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://s3.us-east-1.amazonaws.com/citrix-pca-deployment/a6a5535e21eada11eb52d1d5c65bd3f6.template

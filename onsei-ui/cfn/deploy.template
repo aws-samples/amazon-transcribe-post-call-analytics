@@ -1,0 +1,103 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Parameters:
+  WitchBucket:
+    Type: String
+    Default: saes-prod-us-east-1
+
+  Bucket:
+    Type: String
+
+  AuthUri:
+    Type: String
+
+  AuthClientId:
+    Type: String
+
+  ApiUri:
+    Type: String
+
+  DeployCountName:
+    Type: AWS::SSM::Parameter::Name
+
+  DeployCountValue:
+    Type: AWS::SSM::Parameter::Value<String>
+
+Resources:
+  Layer:
+    Type: "AWS::Lambda::LayerVersion"
+    Properties:
+      CompatibleRuntimes:
+        - nodejs12.x
+      Content:
+        S3Bucket: !Ref WitchBucket
+        S3Key: witch-0eabcaf.zip
+
+  Role:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: allow-s3-put
+          PolicyDocument:
+            Statement:
+              Effect: Allow
+              Action:
+                - s3:PutObject
+              Resource: !Sub arn:aws:s3:::${Bucket}/*
+        - PolicyName: allow-ssm-param
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                  - ssm:PutParameter
+                Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${DeployCountName}"
+
+  DeployFunction:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      Code: ../src/www
+      Environment:
+        Variables:
+          BUCKET: !Ref Bucket
+          COUNTER: !Ref DeployCountName
+      Handler: witch.staticHandler
+      Layers:
+        - !Ref Layer
+      Role: !GetAtt Role.Arn
+      Runtime: nodejs12.x
+      Timeout: 300
+
+  ConfigureFunction:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      Code: ../src/lambda
+      Handler: config.handler
+      Role: !GetAtt Role.Arn
+      Runtime: nodejs12.x
+
+  Deploy:
+    Type: "AWS::CloudFormation::CustomResource"
+    Properties:
+      ServiceToken: !GetAtt DeployFunction.Arn
+      Counter: !Ref DeployCountValue
+
+  Configure:
+    Type: "AWS::CloudFormation::CustomResource"
+    DependsOn: Deploy
+    Properties:
+      Bucket: !Ref Bucket
+      ServiceToken: !GetAtt ConfigureFunction.Arn
+      AuthUri: !Ref AuthUri
+      AuthClientId: !Ref AuthClientId
+      ApiUri: !Ref ApiUri
+      Region: !Ref AWS::Region

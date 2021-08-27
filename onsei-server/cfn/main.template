@@ -1,0 +1,28 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: Onsei backend
+
+Resources:
+  DDB:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: lib/ddb.template
+
+  PCA:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: lib/pca.template
+      Parameters:
+        TableName: !GetAtt DDB.Outputs.TableName
+
+  Trigger:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: lib/trigger.template
+      Parameters:
+        TableName: !GetAtt DDB.Outputs.TableName
+
+  BulkImport:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: lib/bulk.template

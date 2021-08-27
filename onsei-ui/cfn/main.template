@@ -1,0 +1,103 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: "Add a CloudFront distribution to a static S3 website with basic authentication This template *must* be deployed in us-east-1.\n"
+
+Parameters:
+  AudioBucket:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: InputBucketName
+    Description: S3 bucket containing audio files. Audio object names must be prefixed with nci/
+
+  DataBucket:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: OutputBucketName
+    Description: S3 bucket containing Transcribe output. JSON object names must be prefixed with parseFiles/
+
+  DataPrefix:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: OutputBucketParsedResults
+    Description: Prefix that parsed transcription output is stored under in DataBucket
+
+  DomainName:
+    Type: String
+    Default: ""
+
+  HostedZoneId:
+    Type: String
+    Default: ""
+
+Resources:
+  DeployCount:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Value: "0"
+
+  Web:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: web.template
+      TimeoutInMinutes: 20
+      Parameters:
+        DomainName: !Ref DomainName
+        HostedZoneId: !Ref HostedZoneId
+
+  Cognito:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: cognito.template
+      Parameters:
+        Name: !Ref AWS::StackName
+        WebUri: !GetAtt Web.Outputs.Uri
+
+  Indexer:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: indexer.template
+      Parameters:
+        DataBucket: !Ref DataBucket
+        DataPrefix: !Ref DataPrefix
+
+  Api:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: api.template
+      Parameters:
+        AudioBucket: !Ref AudioBucket
+        DataBucket: !Ref DataBucket
+        TableName: !GetAtt Indexer.Outputs.TableName
+        UserPoolId: !GetAtt Cognito.Outputs.UserPoolId
+
+  Deploy:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: deploy.template
+      Parameters:
+        Bucket: !GetAtt Web.Outputs.Bucket
+        AuthUri: !GetAtt Cognito.Outputs.BaseUri
+        AuthClientId: !GetAtt Cognito.Outputs.UserPoolClientId
+        ApiUri: !GetAtt Api.Outputs.Uri
+        DeployCountName: !Ref DeployCount
+        DeployCountValue: !Ref DeployCount
+
+Outputs:
+  DataBucket:
+    Value: !Ref DataBucket
+
+  AudioBucket:
+    Value: !Ref AudioBucket
+
+  WebBucket:
+    Value: !GetAtt Web.Outputs.Bucket
+
+  AuthUri:
+    Value: !GetAtt Cognito.Outputs.BaseUri
+
+  AuthClientId:
+    Value: !GetAtt Cognito.Outputs.UserPoolClientId
+
+  ApiUri:
+    Value: !GetAtt Api.Outputs.Uri
+
+  WebUri:
+    Value: !GetAtt Web.Outputs.Uri

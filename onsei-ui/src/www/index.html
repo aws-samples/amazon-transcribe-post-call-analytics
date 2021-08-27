@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>Onsei - Post-Call Analytics</title>
+
+        <meta charset="utf-8">
+
+        <link rel="stylesheet" href="style.css" />
+        <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/pikaday/css/pikaday.css">
+    </head>
+
+    <body>
+        <header>
+            <img src="images/logo.png" alt="Logo" />
+            <h1>Onsei - Post-Call Analytics</h1>
+        </header>
+
+        <div class="loading" id="loading">
+            Loading
+        </div>
+
+        <div>
+            <nav>
+                <a href="#"><img class="icon" src="images/summary.png" alt="Summary" /></a>
+                <a href="#search"><img class="icon" src="images/search.png" alt="Search" /></a>
+                <a id="dashboardLink" href="#dashboard" target="_blank"><img class="icon" src="images/dashboard.png" alt="Dashboard" /></a>
+            </nav>
+
+            <main>
+                <div id="summary" class="list">
+                    <section>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th></th>
+                                    <th>Job Name</th>
+                                    <th>Timestamp</th>
+                                    <th>Average Accuracy</th>
+                                    <th>Language Code</th>
+                                    <th>Call Duration</th>
+                                </tr>
+                            </tbody>
+
+                            <tbody id="list_data"></tbody>
+                        </table>
+
+                        <button id="load_more">Load more...</button>
+                    </section>
+                </div>
+
+                <div id="search">
+                    <section>
+                        <h2>Contact Search</h2>
+
+                        <table>
+                            <tr>
+                                <th>Language Code</th>
+                                <td>
+                                    <select id="search_language">
+                                        <option>-</option>
+                                    </select>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Date range</th>
+                                <td>
+                                    <input type="text" id="search_date_from" placeholder="Start" />
+                                    <input type="text" id="search_date_to" placeholder="End" />
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Sentiment</th>
+                                <td>
+                                    <select id="search_sentiment_who">
+                                        <option>-</option>
+                                        <option>Agent</option>
+                                        <option>Caller</option>
+                                    </select>
+
+                                    sentiment
+
+                                    <select id="search_sentiment_what">
+                                        <option>-</option>
+                                        <option>average</option>
+                                        <option>trend</option>
+                                    </select>
+
+                                    is
+
+                                    <select id="search_sentiment_direction">
+                                        <option>-</option>
+                                        <option>positive</option>
+                                        <option>negative</option>
+                                    </select>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Entities</th>
+                                <td>
+                                    <datalist id="search_entities_list">
+                                    </datalist>
+                                    <input type="text" autoComplete="on" list="search_entities_list" id="search_entities" placeholder="Start typing..." />
+                                    <span id="search_selected_entities"></span>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <button id="search_button">Search</button>
+                    </section>
+
+                    <section id="search_results">
+                        <div class="list">
+                            <h2>Search Results</h2>
+
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th></th>
+                                        <th>Job Name</th>
+                                        <th>Timestamp</th>
+                                        <th>Average Accuracy</th>
+                                        <th>Language Code</th>
+                                        <th>Call Duration</th>
+                                    </tr>
+                                </tbody>
+
+                                <tbody id="search_results_data"></tbody>
+                            </table>
+                        </div>
+                    </section>
+                </div>
+
+                <div id="detail">
+                    <nav>
+                        <button id="prev">&larr; Previous entry</button>
+                        <button id="swap">Swap Agent/Caller</button>
+                        <button id="next">Next entry &rarr;</button>
+                    </nav>
+
+                    <section>
+                        <row>
+                            <div>
+                                <h2>Contact Summary</h2>
+
+                                <table>
+                                    <tbody>
+                                        <tr>
+                                            <th>Date / Time</th>
+                                            <td id="detail_parsed"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>Entity Recognizer Name</th>
+                                            <td id="detail_entity_recogniser"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>Language Code</th>
+                                            <td id="detail_language"></td>
+                                        </tr>
+                                    </tbody>
+
+                                    <tbody id="detail_sentiment"></tbody>
+                                </table>
+                            </div>
+
+                            <div>
+                                <h2>Source Information</h2>
+
+                                <table>
+                                    <tbody>
+                                        <tr>
+                                            <th>Type</th>
+                                            <td>Voice Transcription</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Job Name</th>
+                                            <td id="detail_jobName"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>File Format</th>
+                                            <td id="detail_fileFormat"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>Call Duration</td>
+                                            <td id="detail_duration"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>Sample Rate</th>
+                                            <td id="detail_sampleRate"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>Custom Vocabulary</th>
+                                            <td id="detail_vocabulary"></td>
+                                        </tr>
+                                        <tr>
+                                            <th>Word Accuracy</th>
+                                            <td id="detail_averageAccuracy"></td>
+                                        </tr>
+                                    </tbody>
+
+                                    <tbody id="detail_sentiment"></tbody>
+                                </table>
+                            </div>
+
+                            <canvas id="detail_sentimentGraph"></canvas>
+                        </row>
+                    </section>
+
+                    <!--
+                    <canvas id="detail_accuracyGraph"></canvas>
+                    -->
+
+                    <section>
+                        <h2>Entities</h2>
+                        <p id="entities"></p>
+                    </section>
+
+                    <section>
+                        <h2>Recording</h2>
+
+                        <h3 class="loading" id="audio_loading">
+                            Audio loading
+                        </h3>
+                        <audio controls id="audio">
+                            <source id="detail_link">
+                            Your browser does not support audio playback.
+                        </audio>
+
+                        <h2>Transcript</h2>
+                        <div id="detail_data"></div>
+                    </section>
+                </div>
+            </main>
+        </div>
+    </body>
+
+    <script src="https://momentjs.com/downloads/moment.min.js"></script>
+    <script src="https://momentjs.com/downloads/moment-timezone-with-data-10-year-range.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.3/Chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pikaday/pikaday.js"></script>
+
+    <script src="js/config.js"></script>
+    <script src="js/main.js" type="module"></script>
+</html>

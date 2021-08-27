@@ -1,0 +1,19 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: DDB table
+
+Resources:
+  Table:
+    Type: "AWS::DynamoDB::Table"
+    Properties:
+      KeySchema:
+        - AttributeName: PKJobId
+          KeyType: HASH
+      AttributeDefinitions:
+        - AttributeName: PKJobId
+          AttributeType: S
+      BillingMode: PAY_PER_REQUEST
+
+Outputs:
+  TableName:
+    Value: !Ref Table

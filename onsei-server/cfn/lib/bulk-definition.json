@@ -1,0 +1,70 @@
+{
+  "Comment": "Workflow to drip-feed files into the standard PCA workflow to stay within service limts",
+  "StartAt": "CheckPendingFiles",
+  "States": {
+    "CheckPendingFiles": {
+      "Type": "Task",
+      "Comment": "Checks if there's any files left in the bulk-upload bucket",
+      "Resource": "${BulkFilesCountArn}",
+      "Retry": [{
+          "IntervalSeconds": 5,
+          "ErrorEquals": ["Lambda.Unknown"]
+      }],
+      "Next": "FilesLeftToMove?"
+    },
+    "FilesLeftToMove?": {
+      "Type": "Choice",
+      "Comment": "Routes flow depending on whether we have any files left to move",
+      "Choices": [
+        {
+          "Variable": "$.filesToMove",
+          "NumericGreaterThanEquals": 1,
+          "Next": "CheckQueueSize"
+        }
+      ],
+      "Default": "BulkMoveCompleted"
+    },
+    "CheckQueueSize": {
+      "Type": "Task",
+      "Comment": "Checks if there's space in the PCA Transcribe queue",
+      "Resource": "${BulkQueueSpaceArn}",
+      "Retry": [{
+          "IntervalSeconds": 5,
+          "ErrorEquals": ["Lambda.Unknown"]
+      }],
+      "Next": "SpaceInQueue?"
+    },
+    "SpaceInQueue?": {
+      "Type": "Choice",
+      "Comment": "Routes flow depending on whether we have space for any jobs",
+      "Choices": [
+        {
+          "Variable": "$.queueSpace",
+          "NumericGreaterThanEquals": 1,
+          "Next": "MoveFilesToPCABucket"
+        }
+      ],
+      "Default": "PauseBeforeNextCheck"
+    },
+    "MoveFilesToPCABucket": {
+      "Type": "Task",
+      "Comment": "Moves a number of files from the bulk ingest bucket to the PCA source bucket",
+      "Resource": "${BulkMoveFilesArn}",
+      "Retry": [{
+          "IntervalSeconds": 5,
+          "ErrorEquals": ["Lambda.Unknown"]
+      }],
+      "Next": "PauseBeforeNextCheck"
+    },
+    "PauseBeforeNextCheck": {
+      "Type": "Wait",
+      "Comment": "Wait 60 seconds before going round again",
+      "Seconds": 60,
+      "Next": "CheckPendingFiles"
+    },
+    "BulkMoveCompleted": {
+      "Type": "Pass",
+      "End": true
+    }
+  }
+}

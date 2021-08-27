@@ -1,0 +1,80 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: Bulk import state machine
+
+Transform: AWS::Serverless-2016-10-31
+
+Globals:
+  Function:
+    Runtime: python3.8
+    MemorySize: 128
+    Timeout: 15
+
+Resources:
+  BulkFilesCount:
+    Type: "AWS::Serverless::Function"
+    Properties:
+      CodeUri:  ../../src/pca
+      Handler: pca-aws-sf-bulk-files-count.lambda_handler
+      Policies:
+        - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
+        - arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess
+
+  BulkMoveFiles:
+    Type: "AWS::Serverless::Function"
+    Properties:
+      CodeUri:  ../../src/pca
+      Handler: pca-aws-sf-bulk-move-files.lambda_handler
+      Timeout: 300
+      Policies:
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+
+  BulkQueueSpace:
+    Type: "AWS::Serverless::Function"
+    Properties:
+      CodeUri:  ../../src/pca
+      Handler: pca-aws-sf-bulk-queue-space.lambda_handler
+      Timeout: 30
+      Policies:
+        - arn:aws:iam::aws:policy/AmazonTranscribeReadOnlyAccess
+
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+
+  Role:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: states.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/CloudWatchLogsFullAccess
+      Policies:
+        - PolicyName: AllowInvokeFunctions
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource:
+                  - !GetAtt BulkFilesCount.Arn
+                  - !GetAtt BulkQueueSpace.Arn
+                  - !GetAtt BulkMoveFiles.Arn
+
+  StateMachine:
+    Type: "AWS::StepFunctions::StateMachine"
+    Properties:
+      DefinitionS3Location: ./bulk-definition.json
+      DefinitionSubstitutions:
+        BulkFilesCountArn: !GetAtt BulkFilesCount.Arn
+        BulkQueueSpaceArn: !GetAtt BulkQueueSpace.Arn
+        BulkMoveFilesArn: !GetAtt BulkMoveFiles.Arn
+      LoggingConfiguration:
+        Level: ERROR
+        IncludeExecutionData: true
+        Destinations:
+          - CloudWatchLogsLogGroup:
+              LogGroupArn: !GetAtt LogGroup.Arn
+      RoleArn: !GetAtt Role.Arn

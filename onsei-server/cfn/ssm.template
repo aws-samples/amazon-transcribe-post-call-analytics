@@ -1,0 +1,329 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Parameters:
+  BulkUploadBucket:
+    Type: String
+    Default: pca-bulk-upload
+    Description: Bucket where files can be dropped, and a secondary Step Function can be manually enabled to drip feed them into the system
+
+  BulkUploadMaxDripRate:
+    Type: String
+    Default: "25"
+    Description: Maximum number of files that the bulk uploader will move to the PCA source bucket in one pass
+
+  BulkUploadMaxTranscribeJobs:
+    Type: String
+    Default: "50"
+    Description: Number of concurrent Transcribe jobs (executing or queuing) where bulk upload will pause
+
+  ComprehendLanguages:
+    Type: String
+    Default: en | es | fr | de | it | pt | ar | hi | ja | ko | zh | zh-TW
+    Description: Languages supported by Comprehend's standard calls, separated by " | "
+
+  ContentRedactionLanguages:
+    Type: String
+    Default: en-US
+    Description: Languages supported by Transcribe's Content Redaction feature, separated by " | "
+
+  ConversationLocation:
+    Type: String
+    Default: America/New_York
+    Description: Name of the timezone location for the call source - this is the TZ database name from https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+
+  EntityRecognizerEndpoint:
+    Type: String
+    Default: undefined
+    Description: Name of the custom entity recognizer for Amazon Comprehend (not including language suffix, e.g. -en). If one cannot be found then simple entity string matching is attempted instead
+
+  EntityStringMap:
+    Type: String
+    Default: undefined.csv
+    Description: Basename of a CSV file containing item/Entity maps for when we don't have data for Comprehend Custom Entities (not including language suffix, e.g. -en)
+
+  EntityThreshold:
+    Type: String
+    Default: "0.5"
+    Description: Confidence threshold where we accept the custom entity detection result
+
+  InputBucketAudioPlayback:
+    Type: String
+    Default: mp3
+    Description: Folder that holds the audio files to playback in the browser when original audio cannot be used
+
+  InputBucketFailedTranscriptions:
+    Type: String
+    Default: failedAudio
+    Description: Folder that holds the audio files that for some reason failed transcription
+
+  InputBucketName:
+    Type: String
+    Default: pca-source-audio
+    Description: Bucket holding all audio files for the system
+
+  InputBucketRawAudio:
+    Type: String
+    Default: originalAudio
+    Description: Folder that holds the audio files to be ingested into the system
+
+  MaxSpeakers:
+    Type: String
+    Default: "2"
+    Description: Maximum number of speakers that are expected on a call
+
+  MinSentimentNegative:
+    Type: String
+    Default: "0.4"
+    Description: Minimum sentiment level required to declare a phrase as having negative sentiment
+
+  MinSentimentPositive:
+    Type: String
+    Default: "0.4"
+    Description: Minimum sentiment level required to declare a phrase as having positive sentiment
+
+  OutputBucketName:
+    Type: String
+    Default: pca-transcribe-output
+    Description: Bucket where Transcribe output files are delivered
+
+  OutputBucketParsedResults:
+    Type: String
+    Default: parsedFiles
+    Description: Folder within the output S3 bucket where parsed results are written to
+
+  SpeakerNames:
+    Type: String
+    Default: Agent | Caller
+    Description: Default tags used for speaker names, separated by " | "
+
+  SpeakerSeparationType:
+    Type: String
+    Default: speaker
+    Description: Separation mode for speakers, either explicitly Speaker or Channel, or Auto where audio stereo=>Channel and mono=>Speaker
+
+  StepFunctionName:
+    Type: String
+    Default: PostCallAnalyticsWorkflow
+    Description: Name of Step Functions workflow that orchestrates this process
+
+  SupportFilesBucketName:
+    Type: String
+    Default: pca-custom-source-files
+    Description: Bucket that hold supporting files, such as the file-based entity recognition mapping files
+
+  TranscribeAlternateLanguage:
+    Type: String
+    Default: en-US
+    Description: Allows files delivered from a non-standard bucket to be based upon this language
+
+  TranscribeLanguages:
+    Type: String
+    Default: en-US
+    Description: Language to be used for Transcription - multiple entries separated by " | " will trigger Language Detection
+
+  VocabularyName:
+    Type: String
+    Default: undefined
+    Description: Name of the custom vocabulary to use for Transcribe (not including language suffix, e.g. -en-US)
+
+Resources:
+  BulkUploadBucketParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: BulkUploadBucket
+      Type: String
+      Description: Bucket where files can be dropped, and a secondary Step Function can be manually enabled to drip feed them into the system
+      Value: !Ref BulkUploadBucket
+
+  BulkUploadMaxDripRateParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: BulkUploadMaxDripRate
+      Type: String
+      Description: Maximum number of files that the bulk uploader will move to the PCA source bucket in one pass
+      Value: !Ref BulkUploadMaxDripRate
+
+  BulkUploadMaxTranscribeJobsParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: BulkUploadMaxTranscribeJobs
+      Type: String
+      Description: Number of concurrent Transcribe jobs (executing or queuing) where bulk upload will pause
+      Value: !Ref BulkUploadMaxTranscribeJobs
+
+  ComprehendLanguagesParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: ComprehendLanguages
+      Type: String
+      Description: Languages supported by Comprehend's standard calls, separated by " | "
+      Value: !Ref ComprehendLanguages
+
+  ContentRedactionLanguagesParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: ContentRedactionLanguages
+      Type: String
+      Description: Languages supported by Transcribe's Content Redaction feature, separated by " | "
+      Value: !Ref ContentRedactionLanguages
+
+  ConversationLocationParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: ConversationLocation
+      Type: String
+      Description: Name of the timezone location for the call source - this is the TZ database name from https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+      Value: !Ref ConversationLocation
+
+  EntityRecognizerEndpointParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: EntityRecognizerEndpoint
+      Type: String
+      Description: Name of the custom entity recognizer for Amazon Comprehend (not including language suffix, e.g. -en). If one cannot be found then simple entity string matching is attempted instead
+      Value: !Ref EntityRecognizerEndpoint
+
+  EntityStringMapParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: EntityStringMap
+      Type: String
+      Description: Basename of a CSV file containing item/Entity maps for when we don't have data for Comprehend Custom Entities (not including language suffix, e.g. -en)
+      Value: !Ref EntityStringMap
+
+  EntityThresholdParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: EntityThreshold
+      Type: String
+      Description: Confidence threshold where we accept the custom entity detection result
+      Value: !Ref EntityThreshold
+
+  InputBucketAudioPlaybackParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: InputBucketAudioPlayback
+      Type: String
+      Description: Folder that holds the audio to playback in the browser when original audio cannot be used
+      Value: !Ref InputBucketAudioPlayback
+
+  InputBucketFailedTranscriptionsParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: InputBucketFailedTranscriptions
+      Type: String
+      Description: Folder that holds audio files that for some reason failed transcription
+      Value: !Ref InputBucketFailedTranscriptions
+
+  InputBucketNameParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: InputBucketName
+      Type: String
+      Description: Bucket where where audio files are delivered
+      Value: !Ref InputBucketName
+
+  InputBucketRawAudioParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: InputBucketRawAudio
+      Type: String
+      Description: Folder that holds the original call audio to be ingested
+      Value: !Ref InputBucketRawAudio
+
+  MaxSpeakersParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: MaxSpeakers
+      Type: String
+      Description: Maximum number of speakers that are expected on a call
+      Value: !Ref MaxSpeakers
+
+  MinSentimentNegativeParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: MinSentimentNegative
+      Type: String
+      Description: Minimum sentiment level required to declare a phrase as having negative sentiment
+      Value: !Ref MinSentimentNegative
+
+  MinSentimentPositiveParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: MinSentimentPositive
+      Type: String
+      Description: Minimum sentiment level required to declare a phrase as having positive sentiment
+      Value: !Ref MinSentimentPositive
+
+  OutputBucketNameParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: OutputBucketName
+      Type: String
+      Description: Bucket where Transcribe output files are delivered
+      Value: !Ref OutputBucketName
+
+  OutputBucketParsedResultsParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: OutputBucketParsedResults
+      Type: String
+      Description: Folder within the output S3 bucket where parsed results are written to
+      Value: !Ref OutputBucketParsedResults
+
+  SpeakerNamesParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: SpeakerNames
+      Type: String
+      Description: Default tags used for speaker names, separated by " | "
+      Value: !Ref SpeakerNames
+
+  SpeakerSeparationTypeParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: SpeakerSeparationType
+      Type: String
+      Description: Separation mode for speakers, either explicitly Speaker or Channel, or Auto where audio stereo=>Channel and mono=>Speaker
+      Value: !Ref SpeakerSeparationType
+
+  StepFunctionNameParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: StepFunctionName
+      Type: String
+      Description: Name of Step Functions workflow that orchestrates this process
+      Value: !Ref StepFunctionName
+
+  SupportFilesBucketNameParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: SupportFilesBucketName
+      Type: String
+      Description: Bucket that hold supporting files, such as the file-based entity recognition mapping files
+      Value: !Ref SupportFilesBucketName
+
+  TranscribeAlternateLanguageParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: TranscribeAlternateLanguage
+      Type: String
+      Description: Allows files delivered from a non-standard bucket to be based upon this language
+      Value: !Ref TranscribeAlternateLanguage
+
+  TranscribeLanguagesParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: TranscribeLanguages
+      Type: String
+      Description: Language to be used for Transcription - multiple entries separated by " | " will trigger Language Detection
+      Value: !Ref TranscribeLanguages
+
+  VocabularyNameParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: VocabularyName
+      Type: String
+      Description: Name of the custom vocabulary to use for Transcribe (not including language suffix, e.g. -en-US)
+      Value: !Ref VocabularyName
+

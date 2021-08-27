@@ -1,0 +1,201 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: PCA state machine
+
+Transform: AWS::Serverless-2016-10-31
+
+Parameters:
+  TableName:
+    Type: String
+
+  FFMPEGZipName:
+    Type: String
+    Default: ffmpeg.zip
+
+  SupportFilesBucketName:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: SupportFilesBucketName
+
+  StepFunctionName:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: StepFunctionName
+
+Globals:
+  Function:
+    Runtime: python3.8
+    MemorySize: 128
+    Timeout: 15
+
+Resources:
+  FFMPEGLayer:
+    Type: "AWS::Lambda::LayerVersion"
+    Properties:
+      Content:
+        S3Bucket: !Ref SupportFilesBucketName
+        S3Key: !Ref FFMPEGZipName
+
+  TranscribeRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - transcribe.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+        - arn:aws:iam::aws:policy/AmazonTranscribeFullAccess
+        - arn:aws:iam::aws:policy/AWSLambda_ReadOnlyAccess
+        - arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess
+
+  TranscribeLambdaRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+        - arn:aws:iam::aws:policy/AmazonTranscribeFullAccess
+        - arn:aws:iam::aws:policy/AWSLambda_ReadOnlyAccess
+        - arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess
+      Policies:
+        - PolicyName: PassRoleToTranscribe
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - iam:PassRole
+                Resource:
+                  - !GetAtt TranscribeRole.Arn
+
+  SFLanguageDetection:
+    Type: "AWS::Serverless::Function"
+    Properties:
+      CodeUri:  ../../src/pca
+      Handler: pca-aws-sf-language-detection.lambda_handler
+      MemorySize: 192
+      Timeout: 15
+      Layers:
+        - !Ref FFMPEGLayer
+      Environment:
+        Variables:
+          RoleArn: !GetAtt TranscribeRole.Arn
+      Role: !GetAtt TranscribeLambdaRole.Arn
+
+  SFStartTranscribeJob:
+    Type: "AWS::Serverless::Function"
+    Properties:
+      CodeUri:  ../../src/pca
+      Handler: pca-aws-sf-start-transcribe-job.lambda_handler
+      Timeout: 15
+      Layers:
+        - !Ref FFMPEGLayer
+      Environment:
+        Variables:
+          RoleArn: !GetAtt TranscribeRole.Arn
+      Role: !GetAtt TranscribeLambdaRole.Arn
+
+  SFGetDetectedLanguage:
+    Type: "AWS::Serverless::Function"
+    Properties:
+      CodeUri:  ../../src/pca
+      Handler: pca-aws-sf-get-detected-language.lambda_handler
+      Policies:
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+        - arn:aws:iam::aws:policy/AmazonTranscribeFullAccess
+
+  SFProcessTurn:
+    Type: "AWS::Serverless::Function"
+    Properties:
+      CodeUri:  ../../src/pca
+      Handler: pca-aws-sf-process-turn-by-turn.lambda_handler
+      MemorySize: 192
+      Timeout: 600
+      Layers:
+        - !Ref FFMPEGLayer
+      Policies:
+        - arn:aws:iam::aws:policy/AmazonTranscribeReadOnlyAccess
+        - arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+        - arn:aws:iam::aws:policy/ComprehendFullAccess
+
+  SFAwaitNotification:
+    Type: "AWS::Serverless::Function"
+    Properties:
+      CodeUri:  ../../src/pca
+      Handler: pca-aws-sf-wait-for-transcribe-notification.lambda_handler
+      Timeout: 10
+      Environment:
+        Variables:
+          TableName: !Ref TableName
+      Policies:
+        - arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess
+
+  SFTranscribeFailed:
+    Type: "AWS::Serverless::Function"
+    Properties:
+      CodeUri:  ../../src/pca
+      Handler: pca-aws-sf-transcribe-failed.lambda_handler
+      Environment:
+        Variables:
+          RoleArn: !GetAtt TranscribeRole.Arn
+      Policies:
+        - arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+
+  Role:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: states.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/CloudWatchLogsFullAccess
+      Policies:
+        - PolicyName: AllowInvokeFunctions
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource:
+                  - !GetAtt SFProcessTurn.Arn
+                  - !GetAtt SFStartTranscribeJob.Arn
+                  - !GetAtt SFLanguageDetection.Arn
+                  - !GetAtt SFAwaitNotification.Arn
+                  - !GetAtt SFTranscribeFailed.Arn
+                  - !GetAtt SFGetDetectedLanguage.Arn
+
+  StateMachine:
+    Type: "AWS::StepFunctions::StateMachine"
+    Properties:
+      StateMachineName: !Ref StepFunctionName
+      DefinitionS3Location: ./pca-definition.json
+      DefinitionSubstitutions:
+        SFProcessTurnArn: !GetAtt SFProcessTurn.Arn
+        SFStartTranscribeJobArn: !GetAtt SFStartTranscribeJob.Arn
+        SFLanguageDetectionArn: !GetAtt SFLanguageDetection.Arn
+        SFAwaitNotificationArn: !GetAtt SFAwaitNotification.Arn
+        SFTranscribeFailedArn: !GetAtt SFTranscribeFailed.Arn
+        SFGetDetectedLanguageArn: !GetAtt SFGetDetectedLanguage.Arn
+      LoggingConfiguration:
+        Level: ERROR
+        IncludeExecutionData: true
+        Destinations:
+          - CloudWatchLogsLogGroup:
+              LogGroupArn: !GetAtt LogGroup.Arn
+      RoleArn: !GetAtt Role.Arn
