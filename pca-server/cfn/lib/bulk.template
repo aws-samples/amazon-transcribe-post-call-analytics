@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 
-Description: Bulk import state machine
+Description: Amazon Transcribe Post Call Analytics - PCA Server - BulkImport State Machine
 
 Transform: AWS::Serverless-2016-10-31
 

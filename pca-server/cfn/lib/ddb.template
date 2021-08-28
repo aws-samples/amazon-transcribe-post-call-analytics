@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 
-Description: DDB table
+Description: Amazon Transcribe Post Call Analytics - PCA Server - DDBTable
 
 Resources:
   Table:

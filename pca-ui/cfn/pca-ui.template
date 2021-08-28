@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 
-Description: "Add a CloudFront distribution to a static S3 website with basic authentication This template *must* be deployed in us-east-1.\n"
+Description: Amazon Transcribe Post Call Analytics - PCA UI
 
 Parameters:
   AdminUsername:
@@ -56,7 +56,7 @@ Resources:
   Web:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: web.template
+      TemplateURL: lib/web.template
       TimeoutInMinutes: 20
       Parameters:
         DomainName: !Ref DomainName
@@ -65,8 +65,10 @@ Resources:
   Cognito:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: cognito.template
+      TemplateURL: lib/cognito.template
       Parameters:
+        AdminUsername: !Ref AdminUsername
+        AdminEmail: !Ref AdminEmail
         WebUri: !GetAtt Web.Outputs.Uri
         Name: 
           !If
@@ -77,7 +79,7 @@ Resources:
   Indexer:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: indexer.template
+      TemplateURL: lib/indexer.template
       Parameters:
         DataBucket: !Ref DataBucket
         DataPrefix: !Ref DataPrefix
@@ -85,7 +87,7 @@ Resources:
   Api:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: api.template
+      TemplateURL: lib/api.template
       Parameters:
         AudioBucket: !Ref AudioBucket
         DataBucket: !Ref DataBucket
@@ -95,7 +97,7 @@ Resources:
   Deploy:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: deploy.template
+      TemplateURL: lib/deploy.template
       Parameters:
         Bucket: !GetAtt Web.Outputs.Bucket
         AuthUri: !GetAtt Cognito.Outputs.BaseUri

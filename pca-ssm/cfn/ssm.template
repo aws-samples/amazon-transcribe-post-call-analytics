@@ -1,5 +1,7 @@
 AWSTemplateFormatVersion: "2010-09-09"
 
+Description: Amazon Transcribe Post Call Analytics - PCA SSM Parameters
+
 Parameters:
 
   BulkUploadBucketName:

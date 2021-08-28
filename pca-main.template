@@ -1,5 +1,7 @@
 AWSTemplateFormatVersion: "2010-09-09"
 
+Description: Amazon Transcribe Post Call Analytics - PCA (v0.1)
+
 Parameters:
 
   AdminUsername:
@@ -202,7 +204,7 @@ Resources:
   SSM:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: pca-server/cfn/lib/ssm.template
+      TemplateURL: pca-ssm/cfn/ssm.template
       Parameters:
         BulkUploadBucketName:
           !If
@@ -246,53 +248,20 @@ Resources:
         TranscribeLanguages: !Ref TranscribeLanguages
         VocabularyName: !Ref VocabularyName
 
-  FFMPEG:
+
+  PCAServer:
     Type: AWS::CloudFormation::Stack
+    DependsOn: SSM
     Properties:
-      TemplateURL: pca-server/cfn/lib/ffmpeg.template
+      TemplateURL: pca-server/cfn/pca-server.template
       Parameters:
-        SupportFilesBucketName:
-          !If
-          - ShouldCreateBulkUploadBucket
-          - !Ref SupportFilesBucket
-          - !Ref SupportFilesBucketName
         ffmpegDownloadUrl: !Ref ffmpegDownloadUrl
-
-  DDB:
-    Type: AWS::CloudFormation::Stack
-    DependsOn: SSM
-    Properties:
-      TemplateURL: pca-server/cfn/lib/ddb.template
-
-  PCA:
-    Type: AWS::CloudFormation::Stack
-    DependsOn:
-      - SSM
-      - FFMPEG
-    Properties:
-      TemplateURL: pca-server/cfn/lib/pca.template
-      Parameters:
-        TableName: !GetAtt DDB.Outputs.TableName
-
-  Trigger:
-    Type: AWS::CloudFormation::Stack
-    DependsOn: SSM
-    Properties:
-      TemplateURL: pca-server/cfn/lib/trigger.template
-      Parameters:
-        TableName: !GetAtt DDB.Outputs.TableName
-
-  BulkImport:
-    Type: AWS::CloudFormation::Stack
-    DependsOn: SSM
-    Properties:
-      TemplateURL: pca-server/cfn/lib/bulk.template
       
-  UI:
+  PCAUI:
     Type: AWS::CloudFormation::Stack
     DependsOn: SSM
     Properties:
-      TemplateURL: pca-ui/cfn/main.template
+      TemplateURL: pca-ui/cfn/pca-ui.template
       Parameters:
         AdminUsername: !Ref AdminUsername
         AdminEmail: !Ref AdminEmail
@@ -300,22 +269,22 @@ Resources:
         
 Outputs:
   DataBucket:
-    Value: !GetAtt UI.Outputs.DataBucket
+    Value: !GetAtt PCAUI.Outputs.DataBucket
 
   AudioBucket:
-    Value: !GetAtt UI.Outputs.AudioBucket
+    Value: !GetAtt PCAUI.Outputs.AudioBucket
 
   WebBucket:
-    Value: !GetAtt UI.Outputs.WebBucket
+    Value: !GetAtt PCAUI.Outputs.WebBucket
 
   AuthUri:
-    Value: !GetAtt UI.Outputs.AuthUri
+    Value: !GetAtt PCAUI.Outputs.AuthUri
 
   AuthClientId:
-    Value: !GetAtt UI.Outputs.AuthClientId
+    Value: !GetAtt PCAUI.Outputs.AuthClientId
 
   ApiUri:
-    Value: !GetAtt UI.Outputs.ApiUri
+    Value: !GetAtt PCAUI.Outputs.ApiUri
 
   WebUri:
-    Value: !GetAtt UI.Outputs.WebUri
+    Value: !GetAtt PCAUI.Outputs.WebUri

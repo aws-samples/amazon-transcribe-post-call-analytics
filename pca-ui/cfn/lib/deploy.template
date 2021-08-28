@@ -1,5 +1,7 @@
 AWSTemplateFormatVersion: "2010-09-09"
 
+Description: Amazon Transcribe Post Call Analytics - PCA UI - Deploy
+
 Parameters:
   WitchBucket:
     Type: String
@@ -65,7 +67,7 @@ Resources:
   DeployFunction:
     Type: "AWS::Lambda::Function"
     Properties:
-      Code: ../src/www
+      Code: ../../src/www
       Environment:
         Variables:
           BUCKET: !Ref Bucket
@@ -80,7 +82,7 @@ Resources:
   ConfigureFunction:
     Type: "AWS::Lambda::Function"
     Properties:
-      Code: ../src/lambda
+      Code: ../../src/lambda
       Handler: config.handler
       Role: !GetAtt Role.Arn
       Runtime: nodejs12.x

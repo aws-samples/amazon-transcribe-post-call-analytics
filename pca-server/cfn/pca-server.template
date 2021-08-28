@@ -1,8 +1,21 @@
 AWSTemplateFormatVersion: "2010-09-09"
 
-Description: Onsei backend
+Description: Amazon Transcribe Post Call Analytics - PCA Server
+
+Parameters:
+  ffmpegDownloadUrl:
+    Type: String
+    Default: https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz
+    Description: URL for ffmpeg binary distribution tar file download - see https://www.johnvansickle.com/ffmpeg/
 
 Resources:
+  FFMPEG:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: lib/ffmpeg.template
+      Parameters:
+        ffmpegDownloadUrl: !Ref ffmpegDownloadUrl
+
   DDB:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -14,6 +27,7 @@ Resources:
       TemplateURL: lib/pca.template
       Parameters:
         TableName: !GetAtt DDB.Outputs.TableName
+        FFMPEGZipName: !GetAtt FFMPEG.Outputs.FFMPEGZipName
 
   Trigger:
     Type: AWS::CloudFormation::Stack

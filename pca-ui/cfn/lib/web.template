@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 
-Description: "Add a CloudFront distribution to a static S3 website with basic authentication This template *must* be deployed in us-east-1.\n"
+Description: Amazon Transcribe Post Call Analytics - PCA UI - Web
 
 Parameters:
   DomainName:

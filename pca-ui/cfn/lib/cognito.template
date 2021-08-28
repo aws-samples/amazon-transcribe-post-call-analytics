@@ -1,8 +1,15 @@
 AWSTemplateFormatVersion: "2010-09-09"
 
-Description: "Add a CloudFront distribution to a static S3 website with basic authentication This template *must* be deployed in us-east-1.\n"
+Description: Amazon Transcribe Post Call Analytics - PCA UI - Cognito
 
 Parameters:
+
+  AdminUsername:
+    Type: String
+
+  AdminEmail:
+      Type: String
+
   Name:
     Type: String
 
@@ -54,6 +61,31 @@ Resources:
     Properties:
       AdminCreateUserConfig:
         AllowAdminCreateUserOnly: true
+        InviteMessageTemplate:
+          EmailMessage:
+            !Sub >
+              <p>Hello {username},
+              <p>Welcome to the Amazon Transcribe Post Call Analytics (PCA) solution! 
+              <p>Your temporary password is:
+              <p>     {####}
+              <p>
+              <p>When the CloudFormation stack is COMPLETE, use the link below to log in
+              to the PCA web application, set your permanent password, and start
+              building your bot!
+              <p>     ${WebUri}
+              <p>
+              <p>Good luck!
+              <p>AWS Post Call Analytics Solution (www.amazon.com/pca)
+          EmailSubject: Welcome to the Amazon Transcribe Post Call Analytics (PCA) Solution!
+      AliasAttributes:
+        - email
+      AutoVerifiedAttributes:
+        - email
+      Schema:
+        - Required: true
+          Name: email
+          AttributeDataType: String
+          Mutable: true 
       Policies:
         PasswordPolicy:
           MinimumLength: 8
@@ -82,8 +114,25 @@ Resources:
     Properties:
       Domain: !GetAtt LowerCaseName.OutputString
       UserPoolId: !Ref UserPool
+      
+  AdminUser:
+    Type: AWS::Cognito::UserPoolUser
+    Properties:
+      DesiredDeliveryMediums:
+        - EMAIL
+      UserAttributes:
+        - Name: email
+          Value:
+            !Ref AdminEmail
+      Username:
+        !Ref AdminUsername
+      UserPoolId:
+        !Ref UserPool
 
 Outputs:
+  AdminUser:
+    Value: !Ref AdminUser
+
   UserPoolId:
     Value: !Ref UserPool
 
