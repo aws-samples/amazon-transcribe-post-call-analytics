@@ -1,0 +1,321 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Parameters:
+
+  AdminUsername:
+    Type: String
+    Default: "Admin"
+    Description: (Required) Username for admin user
+    
+  AdminEmail:
+      Type: String
+      Description: >-
+        (Required) Email address for the admin user. Will be used for logging in and for setting the admin password. 
+        This email will receive the temporary password for the admin user.
+      AllowedPattern: ".+\\@.+\\..+"
+      ConstraintDescription: Must be valid email address eg. johndoe@example.com
+
+  BulkUploadBucketName:
+    Type: String
+    Default: ""
+    Description: >-
+      (Optional) Existing bucket where files can be dropped, and a secondary Step Function can be 
+      manually enabled to drip feed them into the system. 
+      Leave blank to automatically create new bucket.
+
+  BulkUploadMaxDripRate:
+    Type: String
+    Default: "25"
+    Description: Maximum number of files that the bulk uploader will move to the PCA source bucket in one pass
+
+  BulkUploadMaxTranscribeJobs:
+    Type: String
+    Default: "50"
+    Description: Number of concurrent Transcribe jobs (executing or queuing) where bulk upload will pause
+
+  ComprehendLanguages:
+    Type: String
+    Default: en | es | fr | de | it | pt | ar | hi | ja | ko | zh | zh-TW
+    Description: Languages supported by Comprehend's standard calls, separated by " | "
+
+  ContentRedactionLanguages:
+    Type: String
+    Default: en-US
+    Description: Languages supported by Transcribe's Content Redaction feature, separated by " | "
+
+  ConversationLocation:
+    Type: String
+    Default: America/New_York
+    Description: Name of the timezone location for the call source - this is the TZ database name from https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+
+  EntityRecognizerEndpoint:
+    Type: String
+    Default: undefined
+    Description: Name of the custom entity recognizer for Amazon Comprehend (not including language suffix, e.g. -en). If one cannot be found then simple entity string matching is attempted instead
+
+  EntityStringMap:
+    Type: String
+    Default: undefined.csv
+    Description: Basename of a CSV file containing item/Entity maps for when we don't have data for Comprehend Custom Entities (not including language suffix, e.g. -en)
+
+  EntityThreshold:
+    Type: String
+    Default: "0.5"
+    Description: Confidence threshold where we accept the custom entity detection result
+
+  InputBucketAudioPlayback:
+    Type: String
+    Default: mp3
+    Description: Folder that holds the audio files to playback in the browser when original audio cannot be used
+
+  InputBucketFailedTranscriptions:
+    Type: String
+    Default: failedAudio
+    Description: Folder that holds the audio files that for some reason failed transcription
+
+  InputBucketName:
+    Type: String
+    Default: ""
+    Description: >-
+      (Optional) Existing bucket holding all audio files for the system. 
+      Leave blank to automatically create new bucket.
+
+  InputBucketRawAudio:
+    Type: String
+    Default: originalAudio
+    Description: Prefix/Folder that holds the audio files to be ingested into the system
+
+  MaxSpeakers:
+    Type: String
+    Default: "2"
+    Description: Maximum number of speakers that are expected on a call
+
+  MinSentimentNegative:
+    Type: String
+    Default: "0.4"
+    Description: Minimum sentiment level required to declare a phrase as having negative sentiment
+
+  MinSentimentPositive:
+    Type: String
+    Default: "0.4"
+    Description: Minimum sentiment level required to declare a phrase as having positive sentiment
+
+  OutputBucketName:
+    Type: String
+    Default: ""
+    Description: >-
+      (Optional) Existing bucket where Transcribe output files are delivered. 
+      Leave blank to automatically create new bucket.
+
+  OutputBucketParsedResults:
+    Type: String
+    Default: parsedFiles
+    Description: Folder within the output S3 bucket where parsed results are written to
+
+  SpeakerNames:
+    Type: String
+    Default: Agent | Caller
+    Description: Default tags used for speaker names, separated by " | "
+
+  SpeakerSeparationType:
+    Type: String
+    Default: speaker
+    Description: Separation mode for speakers, either explicitly Speaker or Channel, or Auto where audio stereo=>Channel and mono=>Speaker
+
+  StepFunctionName:
+    Type: String
+    Default: PostCallAnalyticsWorkflow
+    Description: Name of Step Functions workflow that orchestrates this process
+    
+  SupportFilesBucketName:
+    Type: String
+    Default: ''
+    Description: >-
+      (Optional) Existing bucket that hold supporting files, such as the  file-based
+      entity recognition mapping files.  Leave blank to automatically create new bucket.
+
+  TranscribeAlternateLanguage:
+    Type: String
+    Default: en-US
+    Description: Allows files delivered from a non-standard bucket to be based upon this language
+
+  TranscribeLanguages:
+    Type: String
+    Default: en-US
+    Description: Language to be used for Transcription - multiple entries separated by " | " will trigger Language Detection
+
+  VocabularyName:
+    Type: String
+    Default: undefined
+    Description: Name of the custom vocabulary to use for Transcribe (not including language suffix, e.g. -en-US)
+
+  ffmpegDownloadUrl:
+    Type: String
+    Default: https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz
+    Description: URL for ffmpeg binary distribution tar file download - see https://www.johnvansickle.com/ffmpeg/
+
+Metadata:
+    AWS::CloudFormation::Interface:
+        ParameterGroups:
+            - Label:
+                default: Admin User
+              Parameters:
+                  - AdminUsername
+                  - AdminEmail
+            - Label:
+                default: S3 Bucket Names
+              Parameters:
+                  - InputBucketName
+                  - BulkUploadBucketName
+                  - OutputBucketName
+                  - SupportFilesBucketName
+
+
+Conditions:
+  ShouldCreateBulkUploadBucket: !Equals [!Ref BulkUploadBucketName, '']
+  ShouldCreateInputBucket: !Equals [!Ref InputBucketName, '']
+  ShouldCreateOutputBucket: !Equals [!Ref OutputBucketName, '']
+  ShouldCreateSupportFilesBucket: !Equals [!Ref SupportFilesBucketName, '']
+
+Resources:
+  ################################################
+  # S3 buckets
+  # TODO: Bucket Properties, Access logging, etc.
+  ################################################
+
+  BulkUploadBucket:
+    Condition: ShouldCreateBulkUploadBucket
+    Type: 'AWS::S3::Bucket'
+
+  InputBucket:
+    Condition: ShouldCreateInputBucket
+    Type: 'AWS::S3::Bucket'
+
+  OutputBucket:
+    Condition: ShouldCreateOutputBucket
+    Type: 'AWS::S3::Bucket'
+
+  SupportFilesBucket:
+    Condition: ShouldCreateSupportFilesBucket
+    Type: 'AWS::S3::Bucket'
+
+  SSM:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: pca-server/cfn/lib/ssm.template
+      Parameters:
+        BulkUploadBucketName:
+          !If
+          - ShouldCreateBulkUploadBucket
+          - !Ref BulkUploadBucket
+          - !Ref BulkUploadBucketName
+        BulkUploadMaxDripRate: !Ref BulkUploadMaxDripRate
+        BulkUploadMaxTranscribeJobs: !Ref BulkUploadMaxTranscribeJobs
+        ComprehendLanguages: !Ref ComprehendLanguages
+        ContentRedactionLanguages: !Ref ContentRedactionLanguages
+        ConversationLocation: !Ref ConversationLocation
+        EntityRecognizerEndpoint: !Ref EntityRecognizerEndpoint
+        EntityStringMap: !Ref EntityStringMap
+        EntityThreshold: !Ref EntityThreshold
+        InputBucketAudioPlayback: !Ref InputBucketAudioPlayback
+        InputBucketFailedTranscriptions: !Ref InputBucketFailedTranscriptions
+        InputBucketName: 
+          !If
+          - ShouldCreateInputBucket
+          - !Ref InputBucket
+          - !Ref InputBucketName        
+        InputBucketRawAudio: !Ref InputBucketRawAudio
+        MaxSpeakers: !Ref MaxSpeakers
+        MinSentimentNegative: !Ref MinSentimentNegative
+        MinSentimentPositive: !Ref MinSentimentPositive
+        OutputBucketName: 
+          !If
+          - ShouldCreateOutputBucket
+          - !Ref OutputBucket
+          - !Ref OutputBucketName        
+        OutputBucketParsedResults: !Ref OutputBucketParsedResults
+        SpeakerNames: !Ref SpeakerNames
+        SpeakerSeparationType: !Ref SpeakerSeparationType
+        StepFunctionName: !Ref StepFunctionName
+        SupportFilesBucketName: 
+          !If
+          - ShouldCreateSupportFilesBucket
+          - !Ref SupportFilesBucket
+          - !Ref SupportFilesBucketName
+        TranscribeAlternateLanguage: !Ref TranscribeAlternateLanguage
+        TranscribeLanguages: !Ref TranscribeLanguages
+        VocabularyName: !Ref VocabularyName
+
+  FFMPEG:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: pca-server/cfn/lib/ffmpeg.template
+      Parameters:
+        SupportFilesBucketName:
+          !If
+          - ShouldCreateBulkUploadBucket
+          - !Ref SupportFilesBucket
+          - !Ref SupportFilesBucketName
+        ffmpegDownloadUrl: !Ref ffmpegDownloadUrl
+
+  DDB:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: SSM
+    Properties:
+      TemplateURL: pca-server/cfn/lib/ddb.template
+
+  PCA:
+    Type: AWS::CloudFormation::Stack
+    DependsOn:
+      - SSM
+      - FFMPEG
+    Properties:
+      TemplateURL: pca-server/cfn/lib/pca.template
+      Parameters:
+        TableName: !GetAtt DDB.Outputs.TableName
+
+  Trigger:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: SSM
+    Properties:
+      TemplateURL: pca-server/cfn/lib/trigger.template
+      Parameters:
+        TableName: !GetAtt DDB.Outputs.TableName
+
+  BulkImport:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: SSM
+    Properties:
+      TemplateURL: pca-server/cfn/lib/bulk.template
+      
+  UI:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: SSM
+    Properties:
+      TemplateURL: pca-ui/cfn/main.template
+      Parameters:
+        AdminUsername: !Ref AdminUsername
+        AdminEmail: !Ref AdminEmail
+        MainStackName: !Ref AWS::StackName
+        
+Outputs:
+  DataBucket:
+    Value: !GetAtt UI.Outputs.DataBucket
+
+  AudioBucket:
+    Value: !GetAtt UI.Outputs.AudioBucket
+
+  WebBucket:
+    Value: !GetAtt UI.Outputs.WebBucket
+
+  AuthUri:
+    Value: !GetAtt UI.Outputs.AuthUri
+
+  AuthClientId:
+    Value: !GetAtt UI.Outputs.AuthClientId
+
+  ApiUri:
+    Value: !GetAtt UI.Outputs.ApiUri
+
+  WebUri:
+    Value: !GetAtt UI.Outputs.WebUri
