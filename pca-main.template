@@ -288,3 +288,10 @@ Outputs:
 
   WebUri:
     Value: !GetAtt PCAUI.Outputs.WebUri
+
+  InputBucketName:
+    Value: !Ref InputBucketName
+    
+  InputBucketRawAudioPrefix:
+    Value: !Ref InputBucketRawAudio
+    
