@@ -64,18 +64,15 @@ Resources:
         InviteMessageTemplate:
           EmailMessage:
             !Sub >
-              <p>Hello {username},
-              <p>Welcome to the Amazon Transcribe Post Call Analytics (PCA) solution! 
-              <p>Your temporary password is:
-              <p>     {####}
-              <p>
-              <p>When the CloudFormation stack is COMPLETE, use the link below to log in
-              to the PCA web application, set your permanent password, and start
-              building your bot!
-              <p>     ${WebUri}
-              <p>
-              <p>Good luck!
-              <p>AWS Post Call Analytics Solution (www.amazon.com/pca)
+              Hello {username},<br><br>
+              Welcome to the Amazon Transcribe Post Call Analytics (PCA) solution!<br><br>
+              Your temporary password is: {####}<br><br>
+              When the CloudFormation stack is COMPLETE, use the link below to log in
+              to the PCA web application, set your permanent password, 
+              and start analysing your calls!<br><br>
+              ${WebUri}<br><br>
+              Enjoy!<br>
+              AWS Post Call Analytics Solution (www.amazon.com/pca)<br>
           EmailSubject: Welcome to the Amazon Transcribe Post Call Analytics (PCA) Solution!
       AliasAttributes:
         - email

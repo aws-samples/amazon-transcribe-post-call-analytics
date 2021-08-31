@@ -180,26 +180,50 @@ Conditions:
   ShouldCreateSupportFilesBucket: !Equals [!Ref SupportFilesBucketName, '']
 
 Resources:
-  ################################################
+  ########################################################
   # S3 buckets
-  # TODO: Bucket Properties, Access logging, etc.
-  ################################################
+  # TODO: Versioning? Lifecycle Policies? Access Logging?
+  ########################################################
 
   BulkUploadBucket:
     Condition: ShouldCreateBulkUploadBucket
     Type: 'AWS::S3::Bucket'
+    DeletionPolicy: Retain
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
 
   InputBucket:
     Condition: ShouldCreateInputBucket
     Type: 'AWS::S3::Bucket'
+    DeletionPolicy: Retain
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
 
   OutputBucket:
     Condition: ShouldCreateOutputBucket
     Type: 'AWS::S3::Bucket'
+    DeletionPolicy: Retain
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
 
   SupportFilesBucket:
     Condition: ShouldCreateSupportFilesBucket
     Type: 'AWS::S3::Bucket'
+    DeletionPolicy: Retain
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
 
   SSM:
     Type: AWS::CloudFormation::Stack
@@ -268,30 +292,44 @@ Resources:
         MainStackName: !Ref AWS::StackName
         
 Outputs:
-  DataBucket:
-    Value: !GetAtt PCAUI.Outputs.DataBucket
 
-  AudioBucket:
-    Value: !GetAtt PCAUI.Outputs.AudioBucket
-
-  WebBucket:
-    Value: !GetAtt PCAUI.Outputs.WebBucket
-
-  AuthUri:
-    Value: !GetAtt PCAUI.Outputs.AuthUri
-
-  AuthClientId:
-    Value: !GetAtt PCAUI.Outputs.AuthClientId
-
-  ApiUri:
-    Value: !GetAtt PCAUI.Outputs.ApiUri
-
-  WebUri:
-    Value: !GetAtt PCAUI.Outputs.WebUri
+  BulkUploadBucket:
+    Description: S3 Bucket for uploading input audio files for alternate bulk upload workflow
+    Value:
+          !If
+          - ShouldCreateBulkUploadBucket
+          - !Ref BulkUploadBucket
+          - !Ref BulkUploadBucketName
 
   InputBucketName:
-    Value: !Ref InputBucketName
+    Description: S3 Bucket for uploading input audio files
+    Value:
+      !If
+      - ShouldCreateInputBucket
+      - !Ref InputBucket
+      - !Ref InputBucketName  
     
-  InputBucketRawAudioPrefix:
+  InputBucketPrefix:
+    Description: S3 Bucket prefix/folder for uploading input audio files
     Value: !Ref InputBucketRawAudio
+
+  OutPutBucket:
+    Description: S3 Bucket where Transcribe output files are delivered
+    Value:
+      !If
+      - ShouldCreateOutputBucket
+      - !Ref OutputBucket
+      - !Ref OutputBucketName  
     
+  OutPutBucketPrefix:
+    Description: S3 Bucket path where Transcribe output files are delivered
+    Value: !Ref OutputBucketParsedResults
+    
+  WebUri:
+    Description: PCA Web Application link
+    Value: !GetAtt PCAUI.Outputs.WebUri
+    
+  WebAdminUsername:
+    Description: PCA admin user
+    Value: !Ref AdminUsername
+
