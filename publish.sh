@@ -16,7 +16,7 @@
 # export AWS_DEFAULT_REGION=eu-west-1
 ##############################################################################################
 
-USAGE="$0 cfn_bucket cfn_prefix"
+USAGE="$0 cfn_bucket cfn_prefix [public]"
 
 BUCKET=$1
 [ -z "$BUCKET" ] && echo "Cfn bucket name is required parameter. Usage $USAGE" && exit 1
@@ -24,8 +24,15 @@ BUCKET=$1
 PREFIX=$2
 [ -z "$PREFIX" ] && echo "Prefix is required parameter. Usage $USAGE" && exit 1
 
-# Add trailing slash to prefix if needed
-[[ "${PREFIX}" != */ ]] && PREFIX="${PREFIX}/"
+ACL=$3
+if [ "$ACL" == "public" ]; then
+  echo "Published S3 artifacts will be acessible by public (read-only)"
+  PUBLIC=true
+else
+  echo "Published S3 artifacts will NOT be acessible by public."
+  PUBLIC=false
+fi
+  
 
 # get bucket region for owned accounts
 region=$(aws s3api get-bucket-location --bucket $BUCKET --query "LocationConstraint" --output text) || region="us-east-1"
@@ -54,10 +61,20 @@ popd
 
 echo "Packaging Cfn artifacts"
 aws cloudformation package --template-file pca-main.template --output-template-file packaged.template --s3-bucket ${BUCKET} --s3-prefix ${PREFIX} || exit 1
-aws s3 cp packaged.template s3://${BUCKET}/${PREFIX}pca-main.yaml --acl public-read || exit 1
+aws s3 cp packaged.template s3://${BUCKET}/${PREFIX}/pca-main.yaml || exit 1
+
+if $PUBLIC; then
+  echo "Setting public read ACLs on published artifacts"
+  files=$(aws s3api list-objects --bucket ${BUCKET} --prefix ${PREFIX} --query "(Contents)[].[Key]" --output text)
+  for file in $files
+    do
+    aws s3api put-object-acl --acl public-read --bucket ${BUCKET} --key $file
+    done
+fi
+
 
 echo "Validating Cfn artifacts"
-template="https://s3.${region}.amazonaws.com/${BUCKET}/${PREFIX}pca-main.yaml"
+template="https://s3.${region}.amazonaws.com/${BUCKET}/${PREFIX}/pca-main.yaml"
 aws cloudformation validate-template --template-url $template > /dev/null || exit 1
 
 
