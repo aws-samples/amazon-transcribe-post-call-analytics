@@ -16,13 +16,16 @@
 # export AWS_DEFAULT_REGION=eu-west-1
 ##############################################################################################
 
-USAGE="$0 cfn_bucket cfn_prefix [public]"
+USAGE="$0 <cfn_bucket> <cfn_prefix> [public]"
 
 BUCKET=$1
 [ -z "$BUCKET" ] && echo "Cfn bucket name is required parameter. Usage $USAGE" && exit 1
 
 PREFIX=$2
 [ -z "$PREFIX" ] && echo "Prefix is required parameter. Usage $USAGE" && exit 1
+
+# Remove trailing slash from prefix if needed
+[[ "${PREFIX}" == */ ]] && PREFIX="${PREFIX%?}"
 
 ACL=$3
 if [ "$ACL" == "public" ]; then

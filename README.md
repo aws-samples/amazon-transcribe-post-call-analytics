@@ -12,12 +12,13 @@ To deploy to non-default region, set environment variable `AWS_DEFAULT_REGION` t
 E.g. to deploy in Ireland run `export AWS_DEFAULT_REGION=eu-west-1` before running the publish script.  
 **NOTE: Tested only in us-east-1 so far!!**
 
-Run the script with up to 2 parameters:
+Run the script with up to 3 parameters:
 ```
-./publish.sh cfn_bucket cfn_prefix
+./publish.sh <cfn_bucket> <cfn_prefix> [public]
 
-- cfn_bucket: name of S3 bucket to deploy CloudFormation templates and code artifacts. if bucket does not exist it will be created.
-- cfn_prefix: artifacts will be copied to the path specified by this prefix (path/to/artifacts/)
+- <cfn_bucket>: name of S3 bucket to deploy CloudFormation templates and code artifacts. if bucket does not exist it will be created.
+- <cfn_prefix>: artifacts will be copied to the path specified by this prefix (path/to/artifacts/)
+- public: (optional) Adding the argument "public" will set public-read acl on all published artifacts, for sharing with any account.
 ```
 
 It downloads package dependencies, builds code zipfiles, replaces local filseystem references in Cfn templates, and copys templates and zipfiles to the cfn_bucket. 
@@ -28,6 +29,7 @@ Template URL: https://s3.us-east-1.amazonaws.com/pca-artifacts-bucket/pca/artifa
 CF Launch URL: https://us-east-1.console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/create/review?templateURL=https://s3.us-east-1.amazonaws.com/pca-artifacts-bucket/pca/artifacts/pca-main.yaml&stackName=PostCallAnalytics
 CLI Deploy: aws cloudformation deploy --template-file /home/ec2-user/environment/aws-transcribe-post-call-analytics/packaged.template --capabilities CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND --stack-name PostCallAnalytics --parameter-overrides AdminEmail=johndoe@example.com
 ```
+
 
 ### Deploy
 
