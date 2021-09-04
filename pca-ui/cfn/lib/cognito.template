@@ -20,7 +20,7 @@ Resources:
 
   # Custom resource to transform input to lowercase.                                             
 
-  LowerCaseLambdaRole:
+  GetDomainLambdaRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -33,30 +33,32 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
 
-  LowerCaseLambda:
+  GetDomainLambda:
     Type: 'AWS::Lambda::Function'
     Properties:
       Description: Returns the lowercase version of a string
       MemorySize: 256
       Runtime: python3.8
       Handler: index.lambda_handler
-      Role: !GetAtt LowerCaseLambdaRole.Arn
+      Role: !GetAtt GetDomainLambdaRole.Arn
       Timeout: 30
       Code:
         ZipFile: |
           import cfnresponse
+          import time
           def lambda_handler(event, context):                                                    
-              output = event['ResourceProperties'].get('InputString', '').lower()                
+              output = event['ResourceProperties'].get('InputString', '').lower()
+              output = f"{output}-{time.time_ns()}" # make unique
               responseData = {'OutputString': output}                                            
               cfnresponse.send(event, context, cfnresponse.SUCCESS, responseData) 
 
-  LowerCaseName:
-    Type: Custom::Lowercase
+  GetDomain:
+    Type: Custom::GetDomain
     Properties:
-      ServiceToken: !GetAtt LowerCaseLambda.Arn
+      ServiceToken: !GetAtt GetDomainLambda.Arn
       InputString: !Ref Name
 
-  UserPool:
+  PCAUserPool:
     Type: "AWS::Cognito::UserPool"
     Properties:
       AdminCreateUserConfig:
@@ -91,7 +93,7 @@ Resources:
           RequireSymbols: false
           RequireUppercase: false
 
-  UserPoolClient:
+  PCAUserPoolClient:
     Type: "AWS::Cognito::UserPoolClient"
     Properties:
       AllowedOAuthFlows:
@@ -104,13 +106,13 @@ Resources:
       PreventUserExistenceErrors: ENABLED
       SupportedIdentityProviders:
         - COGNITO
-      UserPoolId: !Ref UserPool
+      UserPoolId: !Ref PCAUserPool
 
-  UserPoolDomain:
+  PCAUserPoolDomain:
     Type: "AWS::Cognito::UserPoolDomain"
     Properties:
-      Domain: !GetAtt LowerCaseName.OutputString
-      UserPoolId: !Ref UserPool
+      Domain: !GetAtt GetDomain.OutputString
+      UserPoolId: !Ref PCAUserPool
       
   AdminUser:
     Type: AWS::Cognito::UserPoolUser
@@ -124,17 +126,17 @@ Resources:
       Username:
         !Ref AdminUsername
       UserPoolId:
-        !Ref UserPool
+        !Ref PCAUserPool
 
 Outputs:
   AdminUser:
     Value: !Ref AdminUser
 
   UserPoolId:
-    Value: !Ref UserPool
+    Value: !Ref PCAUserPool
 
   UserPoolClientId:
-    Value: !Ref UserPoolClient
+    Value: !Ref PCAUserPoolClient
 
   BaseUri:
-    Value: !Sub https://${UserPoolDomain}.auth.${AWS::Region}.amazoncognito.com
+    Value: !Sub https://${PCAUserPoolDomain}.auth.${AWS::Region}.amazoncognito.com
