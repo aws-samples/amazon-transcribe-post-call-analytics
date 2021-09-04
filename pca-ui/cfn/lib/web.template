@@ -20,6 +20,12 @@ Conditions:
 Resources:
   WebBucket:
     Type: "AWS::S3::Bucket"
+    DeletionPolicy: Retain
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
 
   CloudFrontOriginAccessIdentity:
     Type: "AWS::CloudFront::CloudFrontOriginAccessIdentity"
@@ -44,7 +50,12 @@ Resources:
 
   LogBucket:
     Type: "AWS::S3::Bucket"
+    DeletionPolicy: Retain
     Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
       AccessControl: LogDeliveryWrite
 
   WebBucketPolicy:
