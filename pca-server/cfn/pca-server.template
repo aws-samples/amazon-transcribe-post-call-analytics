@@ -8,6 +8,17 @@ Parameters:
     Default: https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz
     Description: URL for ffmpeg binary distribution tar file download - see https://www.johnvansickle.com/ffmpeg/
 
+  loadSampleAudioFiles:
+    Type: String
+    Default: false
+    AllowedValues:
+        - true
+        - false
+    Description: Set to true to automatically ingest some sample audio files.
+
+Conditions:
+  ShouldLoadSampleAudioFiles: !Equals [!Ref loadSampleAudioFiles, 'true']
+
 Resources:
   FFMPEG:
     Type: AWS::CloudFormation::Stack
@@ -40,3 +51,12 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: lib/bulk.template
+
+  CopySamples:
+    Condition: ShouldLoadSampleAudioFiles
+    DependsOn:
+      - PCA
+      - Trigger
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: lib/copy-samples.template

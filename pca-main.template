@@ -156,6 +156,14 @@ Parameters:
     Default: https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz
     Description: URL for ffmpeg binary distribution tar file download - see https://www.johnvansickle.com/ffmpeg/
 
+  loadSampleAudioFiles:
+    Type: String
+    Default: false
+    AllowedValues:
+        - true
+        - false
+    Description: Set to true to automatically ingest sample audio files.
+
 Metadata:
     AWS::CloudFormation::Interface:
         ParameterGroups:
@@ -164,6 +172,10 @@ Metadata:
               Parameters:
                   - AdminUsername
                   - AdminEmail
+            - Label:
+                default: Sample Data
+              Parameters:
+                  - loadSampleAudioFiles
             - Label:
                 default: S3 Bucket Names
               Parameters:
@@ -280,6 +292,7 @@ Resources:
       TemplateURL: pca-server/cfn/pca-server.template
       Parameters:
         ffmpegDownloadUrl: !Ref ffmpegDownloadUrl
+        loadSampleAudioFiles: !Ref loadSampleAudioFiles
       
   PCAUI:
     Type: AWS::CloudFormation::Stack
