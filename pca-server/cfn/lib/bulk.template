@@ -4,6 +4,11 @@ Description: Amazon Transcribe Post Call Analytics - PCA Server - BulkImport Sta
 
 Transform: AWS::Serverless-2016-10-31
 
+Parameters:
+  BulkUploadStepFunctionName:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: BulkUploadStepFunctionName
+    
 Globals:
   Function:
     Runtime: python3.8
@@ -66,6 +71,7 @@ Resources:
   StateMachine:
     Type: "AWS::StepFunctions::StateMachine"
     Properties:
+      StateMachineName: !Ref BulkUploadStepFunctionName
       DefinitionS3Location: ./bulk-definition.json
       DefinitionSubstitutions:
         BulkFilesCountArn: !GetAtt BulkFilesCount.Arn

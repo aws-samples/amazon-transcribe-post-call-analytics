@@ -129,6 +129,11 @@ Parameters:
     Default: PostCallAnalyticsWorkflow
     Description: Name of Step Functions workflow that orchestrates this process
     
+  BulkUploadStepFunctionName:
+    Type: String
+    Default: BulkUploadWorkflow
+    Description: Name of Step Functions workflow that orchestrates the bulk import process
+    
   SupportFilesBucketName:
     Type: String
     Default: ''
@@ -275,6 +280,7 @@ Resources:
         SpeakerNames: !Ref SpeakerNames
         SpeakerSeparationType: !Ref SpeakerSeparationType
         StepFunctionName: !Ref StepFunctionName
+        BulkUploadStepFunctionName: !Ref BulkUploadStepFunctionName
         SupportFilesBucketName: 
           !If
           - ShouldCreateSupportFilesBucket

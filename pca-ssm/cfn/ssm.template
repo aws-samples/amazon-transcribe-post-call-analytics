@@ -113,6 +113,11 @@ Parameters:
     Default: PostCallAnalyticsWorkflow
     Description: Name of Step Functions workflow that orchestrates this process
 
+  BulkUploadStepFunctionName:
+    Type: String
+    Default: BulkUploadWorkflow
+    Description: Name of Step Functions workflow that orchestrates the bulk import process
+
   SupportFilesBucketName:
     Type: String
     Description: >-
@@ -304,6 +309,14 @@ Resources:
       Description: Name of Step Functions workflow that orchestrates this process
       Value: !Ref StepFunctionName
 
+  BulkUploadStepFunctionNameParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: BulkUploadStepFunctionName
+      Type: String
+      Description: Name of Step Functions workflow that orchestrates the bulk import process
+      Value: !Ref BulkUploadStepFunctionName
+      
   SupportFilesBucketNameParameter:
     Type: "AWS::SSM::Parameter"
     Properties:
