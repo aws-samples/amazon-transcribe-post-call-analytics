@@ -74,40 +74,41 @@ Resources:
           def handler(event, context):
             responseData={}
             status = cfnresponse.SUCCESS
-            try:
-              os.chdir("/tmp")
-              # download ffmpeg
-              tar_file_name='ffmpeg-release-amd64-static.tar.xz'
-              print(f"downloading ffmpeg from {url} to {tar_file_name}")
-              urllib.request.urlretrieve(url, tar_file_name)
-              # extract desired binary files
-              binaries = ["ffmpeg","ffprobe"]
-              tar = tarfile.open(tar_file_name)
-              bin_dir="bin"
-              for member in tar.getmembers():
-                  basename = os.path.basename(member.name)
-                  if basename in binaries:
-                      member.name = f"{bin_dir}/{basename}"
-                      print(f"extracting {basename} to {member.name}")
-                      tar.extract(member)
-              tar.close()
-              # zip the bin directory
-              with ZipFile(zip_file_name, 'w') as zipObj:
-                 for folderName, subfolders, filenames in os.walk(bin_dir):
-                     for filename in filenames:
-                         #create complete filepath of file in directory
-                         filePath = os.path.join(folderName, filename)
-                         # Add file to zip
-                         print(f"zipping {filePath}")
-                         zipObj.write(filePath)
-              # Upload zipfile to S3
-              print(f"uploading {zip_file_name} to s3 bucket {bucket}")
-              s3_client = boto3.client('s3')
-              response = s3_client.upload_file(zip_file_name, bucket, zip_file_name)
-            except Exception as e:
-                print(e)
-                responseData["Error"] = f"Exception thrown: {e}"
-                status = cfnresponse.FAILED
+            if event['RequestType'] != 'Delete':
+              try:
+                os.chdir("/tmp")
+                # download ffmpeg
+                tar_file_name='ffmpeg-release-amd64-static.tar.xz'
+                print(f"downloading ffmpeg from {url} to {tar_file_name}")
+                urllib.request.urlretrieve(url, tar_file_name)
+                # extract desired binary files
+                binaries = ["ffmpeg","ffprobe"]
+                tar = tarfile.open(tar_file_name)
+                bin_dir="bin"
+                for member in tar.getmembers():
+                    basename = os.path.basename(member.name)
+                    if basename in binaries:
+                        member.name = f"{bin_dir}/{basename}"
+                        print(f"extracting {basename} to {member.name}")
+                        tar.extract(member)
+                tar.close()
+                # zip the bin directory
+                with ZipFile(zip_file_name, 'w') as zipObj:
+                   for folderName, subfolders, filenames in os.walk(bin_dir):
+                       for filename in filenames:
+                           #create complete filepath of file in directory
+                           filePath = os.path.join(folderName, filename)
+                           # Add file to zip
+                           print(f"zipping {filePath}")
+                           zipObj.write(filePath)
+                # Upload zipfile to S3
+                print(f"uploading {zip_file_name} to s3 bucket {bucket}")
+                s3_client = boto3.client('s3')
+                response = s3_client.upload_file(zip_file_name, bucket, zip_file_name)
+              except Exception as e:
+                  print(e)
+                  responseData["Error"] = f"Exception thrown: {e}"
+                  status = cfnresponse.FAILED
             cfnresponse.send(event, context, status, responseData)
 
       
