@@ -51,6 +51,11 @@ Parameters:
     Default: "0.5"
     Description: Confidence threshold where we accept the custom entity detection result
 
+  EntityTypes:
+    Type: String
+    Default: PERSON | LOCATION | ORGANIZATION | COMMERCIAL_ITEM | EVENT | DATE | QUANTITY | TITLE
+    Description: Entity types supported by Comprehend's standard entity detection, separated by " | "
+
   InputBucketAudioPlayback:
     Type: String
     Default: mp3
@@ -212,6 +217,14 @@ Resources:
       Type: String
       Description: Confidence threshold where we accept the custom entity detection result
       Value: !Ref EntityThreshold
+
+  EntityTypesParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: EntityTypes
+      Type: String
+      Description: Entity types supported by Comprehend's standard entity detection, separated by " | "
+      Value: !Ref EntityTypes
 
   InputBucketAudioPlaybackParameter:
     Type: "AWS::SSM::Parameter"

@@ -7,6 +7,7 @@ CONF_CONVO_LOCATION = "ConversationLocation"
 CONF_ENTITYENDPOINT = "EntityRecognizerEndpoint"
 CONF_ENTITY_FILE = "EntityStringMap"
 CONF_ENTITYCONF = "EntityThreshold"
+CONF_ENTITY_TYPES = "EntityTypes"
 CONF_PREFIX_MP3_PLAYBACK = "InputBucketAudioPlayback"
 CONF_S3BUCKET_INPUT = "InputBucketName"
 CONF_PREFIX_RAW_AUDIO = "InputBucketRawAudio"
@@ -88,7 +89,7 @@ def loadConfiguration():
                                                CONF_PREFIX_PARSED_RESULTS, CONF_SPEAKER_NAMES, CONF_SPEAKER_SEPARATION,
                                                COMP_SFN_NAME, CONF_SUPPORT_BUCKET, CONF_TRANSCRIBE_LANG,
                                                CONF_TRANSCRIBE_ALTLANG])
-    fullParamList3 = ssm.get_parameters(Names=[CONF_VOCABNAME, CONF_CONVO_LOCATION])
+    fullParamList3 = ssm.get_parameters(Names=[CONF_VOCABNAME, CONF_CONVO_LOCATION, CONF_ENTITY_TYPES])
 
     # Extract our parameters into our config
     extractParameters(fullParamList1, False)
@@ -112,6 +113,7 @@ def loadConfiguration():
     appConfig[CONF_MINNEGATIVE] = float(appConfig[CONF_MINNEGATIVE])
     appConfig[CONF_MINPOSITIVE] = float(appConfig[CONF_MINPOSITIVE])
     appConfig[CONF_ENTITYCONF] = float(appConfig[CONF_ENTITYCONF])
+    appConfig[CONF_ENTITY_TYPES] = appConfig[CONF_ENTITY_TYPES].split(" | ")
     appConfig[CONF_COMP_LANGS] = appConfig[CONF_COMP_LANGS].split(" | ")
     appConfig[CONF_REDACTION_LANGS] = appConfig[CONF_REDACTION_LANGS].split(" | ")
     appConfig[CONF_TRANSCRIBE_LANG] = appConfig[CONF_TRANSCRIBE_LANG].split(" | ")

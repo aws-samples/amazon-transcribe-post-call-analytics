@@ -65,6 +65,11 @@ Parameters:
     Default: "0.5"
     Description: Confidence threshold where we accept the custom entity detection result
 
+  EntityTypes:
+    Type: String
+    Default: PERSON | LOCATION | ORGANIZATION | COMMERCIAL_ITEM | EVENT | DATE | QUANTITY | TITLE
+    Description: Entity types supported by Comprehend's standard entity detection, separated by " | "
+
   InputBucketAudioPlayback:
     Type: String
     Default: mp3
@@ -260,6 +265,7 @@ Resources:
         EntityRecognizerEndpoint: !Ref EntityRecognizerEndpoint
         EntityStringMap: !Ref EntityStringMap
         EntityThreshold: !Ref EntityThreshold
+        EntityTypes: !Ref EntityTypes
         InputBucketAudioPlayback: !Ref InputBucketAudioPlayback
         InputBucketFailedTranscriptions: !Ref InputBucketFailedTranscriptions
         InputBucketName: 

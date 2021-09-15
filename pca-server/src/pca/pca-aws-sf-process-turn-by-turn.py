@@ -422,11 +422,11 @@ class TranscribeParser:
         Perform entity analysis, but try and avert throttling by trying one more time if this exceptions.
         It is not a replacement for limit increases, but will help limit failures if usage suddenly grows
         """
-        locationEntityResponse = {}
+        entityResponse = {}
         counter = 0
-        while locationEntityResponse == {}:
+        while entityResponse == {}:
             try:
-                locationEntityResponse = client.detect_entities(Text=text, LanguageCode=self.comprehendLanguageCode)
+                entityResponse = client.detect_entities(Text=text, LanguageCode=self.comprehendLanguageCode)
             except Exception as e:
                 if counter < NLP_THROTTLE_RETRIES:
                     counter += 1
@@ -434,7 +434,7 @@ class TranscribeParser:
                 else:
                     raise e
 
-        return locationEntityResponse
+        return entityResponse
 
     def performComprehendNLP(self, segmentList):
         """
@@ -458,11 +458,11 @@ class TranscribeParser:
                 if self.comprehendLanguageCode != "":
                     # Get sentiment and standard entity detection from Comprehend
                     sentimentResponse = self.comprehendSingleSentiment(nextText, client)
-                    locationEntityResponse = self.comprehendSingleEntity(nextText, client)
+                    entityResponse = self.comprehendSingleEntity(nextText, client)
 
-                    # We're only interested in LOCATION standard entities
-                    for detectedEntity in locationEntityResponse["Entities"]:
-                        self.extractEntitiesFromLine(detectedEntity, nextSegment, ["LOCATION"])
+                    # Filter for desired entity types
+                    for detectedEntity in entityResponse["Entities"]:
+                        self.extractEntitiesFromLine(detectedEntity, nextSegment, cf.appConfig[cf.CONF_ENTITY_TYPES])
 
                     # Now do the same for any entities we can find in a custom model.  At the
                     # time of writing, Custom Entity models in Comprehend are ENGLISH ONLY
