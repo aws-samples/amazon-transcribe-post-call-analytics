@@ -3,13 +3,14 @@ import boto3
 import time
 import os
 
-TABLE = os.environ["TableName"]
-
 # Total number of retry attempts to make
 RETRY_LIMIT = 2
 
 
 def lambda_handler(event, context):
+    # Our tracking table name is an environment variable
+    DDB_TRACKING_TABLE = os.environ["TableName"]
+
     # Pick off our event values
     transcribe = boto3.client("transcribe")
     jobName = event["detail"]["TranscriptionJobName"]
@@ -19,7 +20,7 @@ def lambda_handler(event, context):
     # Read tracking entry between Transcribe job and its Step Function
     ddbClient = boto3.client("dynamodb")
     tracking = ddbClient.get_item(Key={'PKJobId': {'S': jobName}},
-                                  TableName=TABLE)
+                                  TableName=DDB_TRACKING_TABLE)
 
     # It's unlikely, but if we didn't get a value due to some race condition
     # meaning that the job finishes before the token was written then wait
@@ -28,13 +29,13 @@ def lambda_handler(event, context):
         # Just sleep for a few seconds and try again
         time.sleep(5)
         tracking = ddbClient.get_item(Key={'PKJobId': {'S': jobName}},
-                                      TableName=TABLE)
+                                      TableName=DDB_TRACKING_TABLE)
 
     # Did we have a result?
     if "Item" in tracking:
         # Delete entry in DDB table - there's no way we'll be processing this again
         ddbClient.delete_item(Key={'PKJobId': {'S': jobName}},
-                              TableName=TABLE)
+                              TableName=DDB_TRACKING_TABLE)
 
         # Extract the Step Functions task and previous event status
         taskToken = tracking["Item"]["taskToken"]['S']
@@ -79,8 +80,9 @@ if __name__ == "__main__":
         'region': 'us-east-1',
         'resources': [],
         'detail': {
-            'TranscriptionJobName': '0a.93.a0.3e.00.00-13.29.09.061-09-16-2019.wav',
+            'TranscriptionJobName': 'example-call.wav',
             'TranscriptionJobStatus': 'COMPLETED'
         }
     }
+    os.environ['TableName'] = 'pcaSFTaskTracker'
     lambda_handler(event, "")

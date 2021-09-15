@@ -37,11 +37,10 @@ def lambda_handler(event, context):
 
 if __name__ == "__main__":
     event = {
-        "bucket": "pca-raw-audio-1234",
-        "key": "nci/NESPRESSOAUD-15.28.44.297-04-29-2020-1.wav",
-        "contentType": "wav",
-        "langCode": "en-US",
-        "jobName": "NESPRESSOAUD-15.28.44.297-04-29-2020-1.wav",
+        "bucket": "ajk-call-analytics-demo",
+        "key": "audio/example-call.wav",
+        "langCode": "",
+        "jobName": "example-call.wav_clip.wav",
         "transcribeStatus": "FAILED"
     }
     lambda_handler(event, "")
