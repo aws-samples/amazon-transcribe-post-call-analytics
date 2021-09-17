@@ -3,16 +3,13 @@ import urllib.parse
 import boto3
 import pcaconfiguration as cf
 
-# Mime audio type mappings
-mimeAudioMapping = {'audio/wav': 'wav', 'audio/mp4': 'mp4', 'audio/x-flac': 'flac', 'audio/flac': 'flac', 'audio/mpeg': 'mp3', 'audio/mp3': 'mp3'}
-
 
 def lambda_handler(event, context):
     # Load our configuration
     cf.loadConfiguration()
     print("S3 Event: " + str(event["Records"][0]))
 
-    # Get the object from the event and validate its content type
+    # Get the object from the event and validate it exists
     s3 = boto3.client("s3")
     bucket = event['Records'][0]['s3']['bucket']['name']
     key = urllib.parse.unquote_plus(event['Records'][0]['s3']['object']['key'], encoding='utf-8')
@@ -23,10 +20,6 @@ def lambda_handler(event, context):
         raise Exception(
             'Error getting object {} from bucket {}. Make sure they exist and your bucket is in the same region as this function.'.format(
                 key, bucket))
-
-    # Extract the parameters, and also validate that the content type is supported
-    mimeFormat = response['ContentType']
-    mediaFormat = "xxx"
 
     # Check a Transcribe job isn't in progress for this file-name
     jobName = cf.generateJobName(key)
@@ -55,7 +48,7 @@ def lambda_handler(event, context):
             'Cannot find configured Step Function \'{}\' in the AWS account in this region - cannot begin workflow.'.format(ourStepFunction))
     sfnArn = sfnArnList[0]['stateMachineArn']
 
-    # Decide what language this should transcribed in.  The logic is:
+    # Decide what language this should be transcribed in.  The logic is:
     # SSM:TranscribeLanguages == {2+ languages} => Transcribe Language Detection [blank lang-code]
     # SSM:InputBucketName == {S3 trigger bucket} => SSM:TranscribeLanguages
     # => SSM:TranscribeAlternateLanguage
@@ -69,7 +62,6 @@ def lambda_handler(event, context):
     # Trigger a new Step Function execution
     parameters = '{\n  \"bucket\": \"' + bucket + '\",\n' +\
                  '  \"key\": \"' + key + '\",\n' +\
-                 '  \"contentType\": \"' + mediaFormat + '\",\n' + \
                  '  \"langCode\": \"' + transcribeLanguage + '\"\n' +\
                  '}'
     sfnClient.start_execution(stateMachineArn = sfnArn, input = parameters)
@@ -89,14 +81,14 @@ if __name__ == "__main__":
                     "s3SchemaVersion": "1.0",
                     "configurationId": "eca58aa9-dd2b-4405-94d5-d5fba7fd0a16",
                     "bucket": {
-                        "name": "pca-custom-source-files",
+                        "name": "ajk-call-analytics-demo",
                         "ownerIdentity": {
                             "principalId": "A39I0T5T4Z0PZJ"
                         },
-                        "arn": "arn:aws:s3:::pca-raw-audio-1234"
+                        "arn": "arn:aws:s3:::ajk-call-analytics-demo"
                     },
                     "object": {
-                        "key": "nci/0a.93.a0.3e.00.00 09.11.32.483 09-10-2019.wav",
+                        "key": "audio/example-call.wav",
                         "size": 963023,
                         "eTag": "8588ee73ae57d72c072f4bc401627724",
                         "sequencer": "005E99B1F567D61004"
@@ -106,6 +98,3 @@ if __name__ == "__main__":
         ]
     }
     lambda_handler(event, "")
-
-    # "name": "pca-raw-audio-1234",
-    # "key": "nci/0a.93.a0.3a.00.00 15.28.03.654 03-13-2020.wav",

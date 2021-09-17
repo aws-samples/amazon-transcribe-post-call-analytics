@@ -5,20 +5,22 @@ import pcaconfiguration as cf
 # Folder within the InputBucket used to hold temporary clip files
 TMP_UPLOAD_PREFIX = "clip/"
 
-ROLE_ARN = os.environ["RoleArn"]
 
 def generateClipFileName(key):
     """
     Generate the correct object name for the 30-second audio clip for Transcribe Language ID, based upon the original
-    S3 file key.  This is used for the local filestore object that ffmpeg creates, so doesn't have the key one
+    S3 file key.  This is used for the local filestore object that ffmpeg creates, so doesn't have the key on.  We
+    also force it to MP3 format, as sometime the conversion fails if the file format is odd (e.g. OGG data in .wav)
     """
-    return os.path.splitext(key.split('/')[-1])[0] + "_clip." + key.split('.')[-1]
+    return os.path.splitext(key.split('/')[-1])[0] + "_clip." + "mp3"
+
 
 def generateClipFileKey(filename):
     """
     Generate the correct S3 key for the 30-second audio clip for Transcribe Language ID
     """
     return TMP_UPLOAD_PREFIX + filename.split('/')[-1]
+
 
 def generateJobName(key):
     """
@@ -51,16 +53,15 @@ def checkExistingJobStatus(jobName, transcribeClient):
     return currentJobStatus
 
 
-def submitTranscribeJob(bucket, key, langCode, mediaFormat):
+def submitTranscribeJob(bucket, key, langCode, role_arn):
     """
     Submits a job to Transcribe based upon the supplied parameters.  If the language code
     is an empty string then we are doing language detection.
     """
-    # Get our boto3 clients
-    lambdaClient = boto3.client('lambda')
+    # Get our boto3 client
     transcribeClient = boto3.client('transcribe')
 
-    # Generate job-nam - delete if it already exists
+    # Generate job-name - delete if it already exists
     jobName = generateJobName(key)
     currentJobStatus = checkExistingJobStatus(jobName, transcribeClient)
     uri = 's3://' + bucket + '/' + key
@@ -97,7 +98,7 @@ def submitTranscribeJob(bucket, key, langCode, mediaFormat):
         if cf.appConfig[cf.CONF_VOCABNAME] != "":
             try:
                 vocabName = cf.appConfig[cf.CONF_VOCABNAME] + '-' + langCode.lower()
-                ourVocab = transcribe.get_vocabulary(VocabularyName = vocabName)
+                ourVocab = transcribeClient.get_vocabulary(VocabularyName = vocabName)
                 if ourVocab["VocabularyState"] == "READY":
                     # Only use it if it is ready for use
                     jobSettings["VocabularyName"] = vocabName
@@ -118,10 +119,10 @@ def submitTranscribeJob(bucket, key, langCode, mediaFormat):
         jobSettings["ShowAlternatives"] = True
         jobSettings["MaxAlternatives"] = 2
 
-    # Job execution settings
+    # Job execution settings - role required is in an environment variable
     executionSettings = {
         "AllowDeferredExecution": True,
-        "DataAccessRoleArn": ROLE_ARN
+        "DataAccessRoleArn": role_arn
     }
 
     # Should have a clear run at doing the job now

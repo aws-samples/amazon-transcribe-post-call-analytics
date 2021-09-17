@@ -2,7 +2,6 @@ import json
 import boto3
 import os
 
-TABLE = os.environ["TableName"]
 
 def lambda_handler(event, context):
     """
@@ -12,6 +11,9 @@ def lambda_handler(event, context):
     job completes.  If no Transcribe job exists then throw an
     exception, but we shouldn't be here if this is the case
     """
+    # Our tracking table name is an environment variable
+    DDB_TRACKING_TABLE = os.environ["TableName"]
+
     # Extract our parameters
     jobName = event["Input"]["jobName"]
     taskToken = event["TaskToken"]
@@ -28,20 +30,21 @@ def lambda_handler(event, context):
                                     'taskToken': {'S': taskToken},
                                     'taskState': {'S': json.dumps(event["Input"])}
                                   },
-                                  TableName=TABLE)
+                                  TableName=DDB_TRACKING_TABLE)
 
     return event
+
 
 # Main entrypoint for testing
 if __name__ == "__main__":
     event = {
         "Input": {
-            "bucket": "pca-raw-audio-1234",
-            "key": "nci/0a.93.a0.3e.00.00 09.13.43.164 09-16-2019.wav",
-            "contentType": "wav",
-            "jobName": "0a.93.a0.3f.00.00-13.32.24.776-09-23-2019.wav",
-            "langCode": "en-US"
+            "bucket": "ajk-call-analytics-demo",
+            "key": "audio/example-call.wav",
+            "langCode": "en-US",
+            "jobName": "example-call.wav.wav"
         },
         "TaskToken": "tesGGDSAG3RWEF"
     }
+    os.environ['TableName'] = 'pcaSFTaskTracker'
     lambda_handler(event, "")

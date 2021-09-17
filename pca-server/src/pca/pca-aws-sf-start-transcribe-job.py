@@ -7,7 +7,6 @@ import os
 # Local temporary folder for file-based operations
 TMP_DIR = "/tmp/"
 
-ROLE_ARN = os.environ["RoleArn"]
 
 def checkExistingJobStatus(jobName, transcribe):
     try:
@@ -18,6 +17,7 @@ def checkExistingJobStatus(jobName, transcribe):
         currentJobStatus = ""
 
     return currentJobStatus
+
 
 def calculateAutoSpeakerSeparation(bucket, key):
     """
@@ -54,7 +54,8 @@ def calculateAutoSpeakerSeparation(bucket, key):
 
     return speakerMode
 
-def submitTranscribeJob(bucket, key, langCode, mediaFormat):
+
+def submitTranscribeJob(bucket, key, langCode):
 
     # Get our clients first
     transcribe = boto3.client('transcribe')
@@ -90,8 +91,6 @@ def submitTranscribeJob(bucket, key, langCode, mediaFormat):
     jobSettings = {
        'ShowSpeakerLabels': not channelIdent,
        'ChannelIdentification': channelIdent,
-       'ShowAlternatives': True,
-       'MaxAlternatives': 2
     }
 
     # Some settings are valid dependent on the mode
@@ -110,10 +109,21 @@ def submitTranscribeJob(bucket, key, langCode, mediaFormat):
             # Doesn't exist - don't use it
             pass
 
-    # Job execution settings - note, Role is the same as for this Lambda, which is Full S3 access
+    # Double check that if we have a defined vocabulary filter that it exists
+    try:
+        vocabFilterName = cf.appConfig[cf.CONF_FILTER_NAME] + '-' + langCode.lower()
+        ourVocabFilter = transcribe.get_vocabulary_filter(VocabularyFilterName = vocabFilterName)
+        jobSettings["VocabularyFilterMethod"] = cf.appConfig[cf.CONF_FILTER_MODE]
+        jobSettings["VocabularyFilterName"] = vocabFilterName
+    except:
+        # Doesn't exist - don't use it
+        pass
+
+    # Job execution settings - the role to use is in an environment variable
+    role_arn = os.environ["RoleArn"]
     executionSettings = {
         "AllowDeferredExecution": True,
-        "DataAccessRoleArn": ROLE_ARN,
+        "DataAccessRoleArn": role_arn
     }
 
     # Only enable content redaction if it's supported
@@ -140,6 +150,7 @@ def submitTranscribeJob(bucket, key, langCode, mediaFormat):
     # Return our job name, as we need to track it
     return jobName
 
+
 def lambda_handler(event, context):
     # Load our configuration data
     cf.loadConfiguration()
@@ -148,11 +159,10 @@ def lambda_handler(event, context):
     # Get the object from the event and show its content type
     bucket = sfData["bucket"]
     key = sfData["key"]
-    contentType = sfData["contentType"]
     langCode = sfData["langCode"]
 
     try:
-        jobName = submitTranscribeJob(event["bucket"], key, langCode, contentType)
+        jobName = submitTranscribeJob(event["bucket"], key, langCode)
         sfData["jobName"] = jobName
         return sfData
     except Exception as e:
@@ -161,14 +171,14 @@ def lambda_handler(event, context):
             'Error submitting Transcribe job for file \'{}\' from bucket \'{}\'.'.format(
                 key, bucket))
 
+
 # Main entrypoint for testing
 if __name__ == "__main__":
+    # Standard test event
     event = {
-        "bucket": "pca-raw-audio-1234",
-        "key": "nci/0a.93.a0.3e.00.00 09.09.16.803 09-17-2019.wav",
-        "contentType": "wav",
-        # "key": "nci/CAaad2c19c9c856e377620efab245e8d70.RE709d062d6466b413be36fdb88ac24ac9.mp3",
-        # "contentType": "mp3",
-        "langCode": "en-US"
+        "bucket": "ajk-call-analytics-demo",
+        "key": "audio/example-call.wav",
+        "langCode": ""
     }
+    os.environ['RoleArn'] = 'arn:aws:iam::710514874879:role/pca-test-server-PCA-CN7BIC2LR8QU-TranscribeRole-1BOZES9KJGLPY'
     lambda_handler(event, "")

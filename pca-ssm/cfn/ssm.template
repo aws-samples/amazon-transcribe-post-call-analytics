@@ -140,6 +140,16 @@ Parameters:
     Default: en-US
     Description: Language to be used for Transcription - multiple entries separated by " | " will trigger Language Detection
 
+  VocabFilterMode:
+    Type: String
+    Default: mask
+    Description: The mode to use for vocabulary filtering - must be one of mask, remove or tag
+
+  VocabFilterName:
+    Type: String
+    Default: undefined
+    Description: Name of the vocabulary filter to use for Transcribe (not including language suffix, e.g. -en)
+
   VocabularyName:
     Type: String
     Default: undefined
@@ -354,6 +364,22 @@ Resources:
       Description: Language to be used for Transcription - multiple entries separated by " | " will trigger Language Detection
       Value: !Ref TranscribeLanguages
 
+  VocabFilterModeParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: VocabFilterMode
+      Type: String
+      Description: he mode to use for vocabulary filtering - must be one of mask, remove or tag
+      Value: !Ref VocabFilterMode
+
+  VocabFilterNameParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: VocabFilterName
+      Type: String
+      Description: Name of the vocabulary filter to use for Transcribe (not including language suffix, e.g. -en)
+      Value: !Ref VocabFilterName
+
   VocabularyNameParameter:
     Type: "AWS::SSM::Parameter"
     Properties:
@@ -361,4 +387,3 @@ Resources:
       Type: String
       Description: Name of the custom vocabulary to use for Transcribe (not including language suffix, e.g. -en-US)
       Value: !Ref VocabularyName
-

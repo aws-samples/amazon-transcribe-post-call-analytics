@@ -42,11 +42,10 @@ def lambda_handler(event, context):
 # Main entrypoint for testing
 if __name__ == "__main__":
     event = {
-      "bucket": "pca-raw-audio-1234",
-      "key": "nci/0a.93.a0.3e.00.00 09.11.32.483 09-10-2019.wav",
-      "contentType": "wav",
+      "bucket": "ajk-call-analytics-demo",
+      "key": "audio/example-call.wav",
       "langCode": "",
-      "jobName": "0a.93.a0.3e.00.00-09.11.32.483-09-10-2019_clip.wav",
+      "jobName": "example-call.wav_clip.wav",
       "transcribeStatus": "COMPLETED"
     }
     lambda_handler(event, "")
