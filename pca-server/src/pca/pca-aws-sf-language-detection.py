@@ -3,6 +3,7 @@ import boto3
 import pcaconfiguration as cf
 import subprocess
 import pcacommon
+import os
 
 # Local temporary folder for file-based operations
 TMP_DIR = "/tmp/"
@@ -24,7 +25,7 @@ def createFileClip(bucket, key):
     # Transform the file via FFMPEG - this will exception if not installed
     try:
         subprocess.call(['ffmpeg', '-nostats', '-loglevel', '0', '-y', '-i', ffmpegInputFilename,
-                         '-ss', '0', '-t', '30', '-acodec', 'copy', ffmpegOutputFilename],
+                         '-ss', '0', '-t', '30', '-acodec', 'mp3', ffmpegOutputFilename],
                         stdin=subprocess.DEVNULL)
     except:
         raise Exception("Unable to create audio clip for language detection via FFMPEG")
@@ -34,6 +35,7 @@ def createFileClip(bucket, key):
     s3Client.upload_file(ffmpegOutputFilename, bucket, uploadKey)
     return uploadKey
 
+
 def lambda_handler(event, context):
     # Load our configuration data
     cf.loadConfiguration()
@@ -42,12 +44,12 @@ def lambda_handler(event, context):
     # Extract our parameters
     bucket = sfData["bucket"]
     key = sfData["key"]
-    contentType = sfData["contentType"]
     langCode = sfData["langCode"]
 
     try:
         clipFileKey = createFileClip(bucket, key)
-        jobName = pcacommon.submitTranscribeJob(bucket, clipFileKey, langCode, contentType)
+        role_arn = os.environ["RoleArn"]
+        jobName = pcacommon.submitTranscribeJob(bucket, clipFileKey, langCode, role_arn)
         sfData["jobName"] = jobName
     except Exception as e:
         print(e)
@@ -56,12 +58,16 @@ def lambda_handler(event, context):
 
     return sfData
 
+
 # Main entrypoint for testing
 if __name__ == "__main__":
     event = {
-        "bucket": "pca-raw-audio-1234",
-        "key": "nci/26394190000000000 11.27.33.000 08-14-2020.wav",
-        "contentType": "wav",
+        "bucket": "ajk-call-analytics-demo",
+        # "key": "audio/citrix-standard.wav",
+        # "key": "audio/real-estate.mp3",
+        "key": "audio/citrix-language-id.ogg",
+        # "key": "audio/example-call.wav",
         "langCode": ""
     }
+    os.environ['RoleArn'] = 'arn:aws:iam::145109938727:role/citrix-pca-server-PCA-EGSNK7FFDBXA-TranscribeRole-18PDTLHVMHHIW'
     lambda_handler(event, "")

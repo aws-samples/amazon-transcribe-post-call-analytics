@@ -237,6 +237,12 @@ class TranscribeParser:
         if "VocabularyName" in self.transcribeJobInfo["Settings"]:
             transcribeJobInfo["VocabularyName"] = self.transcribeJobInfo["Settings"]["VocabularyName"]
 
+        # Vocabulary filter is optional
+        if "VocabularyFilterName" in self.transcribeJobInfo["Settings"]:
+            vocab_filter = self.transcribeJobInfo["Settings"]["VocabularyFilterName"]
+            vocab_method = self.transcribeJobInfo["Settings"]["VocabularyFilterMethod"]
+            transcribeJobInfo["VocabularyFilter"] = vocab_filter + " [" + vocab_method + "]"
+
         return transcribeJobInfo
 
     def createOutputSpeechSegments(self):
@@ -581,12 +587,6 @@ class TranscribeParser:
                             result = word_result[-1]["alternatives"][0]
                             confidence = float(result["redactions"][0]["confidence"])
 
-                        # If we're doing simple entities then track which entities have been seen so far
-                        if self.simpleEntityMap != {}:
-                            checkTerm = result["content"].lower()
-                            if checkTerm in self.simpleEntityMap:
-                                self.matchedSimpleEntities[checkTerm] = self.simpleEntityMap[checkTerm]
-
                         # Write the word, and a leading space if this isn't the start of the segment
                         if (skipLeadingSpace):
                             skipLeadingSpace = False
@@ -653,12 +653,6 @@ class TranscribeParser:
                                 result = word_result[-1]["alternatives"][0]
                                 confidence = float(result["redactions"][0]["confidence"])
 
-                            # If we're doing simple entities then track which entities have been seen so far
-                            if self.simpleEntityMap != {}:
-                                checkTerm = result["content"].lower()
-                                if checkTerm in self.simpleEntityMap:
-                                    self.matchedSimpleEntities[checkTerm] = self.simpleEntityMap[checkTerm]
-
                             # Write the word, and a leading space if this isn't the start of the segment
                             if (skipLeadingSpace):
                                 skipLeadingSpace = False
@@ -692,7 +686,7 @@ class TranscribeParser:
 
         # If we ended up with any matched simple entities then insert
         # them, which we can now do as we now have the sentence order
-        if self.matchedSimpleEntities != {}:
+        if self.simpleEntityMap != {}:
             self.createSimpleEntityEntries(speechSegmentList)
 
         # Now set the overall call duration if we actually had any speech
@@ -709,6 +703,14 @@ class TranscribeParser:
         response that we'd generate if this was via Standard or Custom Comprehend Entities
         """
 
+        # Need to check each of our speech segments for each of our entity blocks
+        for nextTurn in speechSegments:
+            # Now check this turn for each entity
+            turnText = nextTurn.segmentText.lower()
+            for nextEntity in self.simpleEntityMap:
+                if nextEntity in turnText:
+                    self.matchedSimpleEntities[nextEntity] = self.simpleEntityMap[nextEntity]
+
         # Loop through each segment looking for matches in our cut-down entity list
         for entity in self.matchedSimpleEntities:
 
@@ -717,24 +719,30 @@ class TranscribeParser:
             self.updateHeaderEntityCount(entityEntry["Type"], entityEntry["Original"])
 
             # Work through each segment
+            # TODO Need to check we don't highlight characters in the middle of transcribed word
+            # TODO Need to try and handle simple plurals (e.g. type="log" should match "logs")
             for segment in speechSegments:
-                # Stop if the entity chars appear somewhere
-                if entity in segment.segmentText.lower():
-                    # Now find the right spot in the segment (if any) and insert that entry
-                    offsetStart = 0
-                    for wordEntry in segment.segmentConfidence:
-                        nextWord = wordEntry["Text"].lower().strip(" ,?.")
-                        offsetEnd = offsetStart + len(wordEntry["Text"])
-                        if entity == nextWord:
-                            # Got a match - add this one on
-                            newLineEntity = {}
-                            newLineEntity["Score"] = 1.0
-                            newLineEntity["Type"] = entityEntry["Type"]
-                            newLineEntity["Text"] = wordEntry["Text"].strip(" ,?.")
-                            newLineEntity["BeginOffset"] = offsetStart
-                            newLineEntity["EndOffset"] = offsetEnd
-                            segment.segmentCustomEntities.append(newLineEntity)
-                        offsetStart = offsetEnd
+                # Check if the entity text appear somewhere
+                turnText = segment.segmentText.lower()
+                searchFrom = 0
+                index = turnText.find(entity, searchFrom)
+                entityTextLength = len(entity)
+
+                # If found then add the data in the segment, and keep going until we don't find one
+                while index != -1:
+                    # Got a match - add this one on, then look for another
+                    # TODO if entityText is capitalised then use it, otherwise use segment text
+                    nextSearchFrom = index + entityTextLength
+                    newLineEntity = {}
+                    newLineEntity["Score"] = 1.0
+                    newLineEntity["Type"] = entityEntry["Type"]
+                    newLineEntity["Text"] = entityEntry["Original"]  # TODO fix as per the above
+                    newLineEntity["BeginOffset"] = index
+                    newLineEntity["EndOffset"] = nextSearchFrom
+                    segment.segmentCustomEntities.append(newLineEntity)
+
+                    # Now look to see if it's repeated in this segment
+                    index = turnText.find(entity, nextSearchFrom)
 
     def calculateTranscribeConversationTime(self, filename):
         '''
@@ -769,8 +777,9 @@ class TranscribeParser:
         except Exception as e:
             # If everything fails system will use "now" as the datetime in UTC
             print(e)
-            print(f"WARNING: Unable to parse datetime from filename. Defaulting to current time.")
-            self.conversationLocation = "Etc/UTC"
+            print(f"WARNING: Unable to parse datetime from filename. Defaulting to current system time.")
+            if self.conversationLocation == "":
+                self.conversationLocation = "Etc/UTC"
 
     def loadSimpleEntityStringMap(self):
         """
@@ -962,7 +971,6 @@ def fullRefresh(processNotPatch):
             media = urlparse(transcribeJobData["MediaOriginalUri"])
             nextRefreshEvent["bucket"] = media.netloc
             nextRefreshEvent["key"] = media.path.lstrip("/")
-            nextRefreshEvent["contentType"] = transcribeJobData["MediaFormat"]
             nextRefreshEvent["jobName"] = transcribeJobData["TranscriptionJobName"]
             nextRefreshEvent["langCode"] = headerData["LanguageCode"]
             nextRefreshEvent["transcribeStatus"] = "COMPLETED"
@@ -1022,6 +1030,31 @@ def removeClipOutputFiles():
         print(eachEntry["Key"])
         s3Client.delete_object(Bucket=resultsBucket, Key=eachEntry["Key"])
 
+def downloadHistory():
+    sfnArn = "arn:aws:states:us-east-1:143957329893:stateMachine:PostCallAnalyticsWorkflow"
+    sfnClient = boto3.client('stepfunctions')
+
+    # Get a list of failed executions
+    response = sfnClient.list_executions(stateMachineArn=sfnArn, statusFilter="FAILED")
+    failedExecutions = response["executions"]
+    while ("nextToken" in response):
+        response = sfnClient.list_executions(stateMachineArn=sfnArn, statusFilter="FAILED", nextToken=response["nextToken"])
+        failedExecutions += response["executions"]
+    print(len(failedExecutions))
+
+    # Now go through each one and copy the input details
+    for failedExe in failedExecutions:
+        # Get file details
+        runDetails = sfnClient.describe_execution(executionArn=failedExe["executionArn"])
+        inputData = json.loads(runDetails["input"])
+        failedExe['input'] = inputData
+        failedExe['startDate'] = str(failedExe['startDate'])
+        failedExe['stopDate'] = str(failedExe['stopDate'])
+
+    # Save these results to disc
+    with open('failed_exe_history.json', 'w', encoding='utf-8') as f:
+        json.dump(failedExecutions, f, ensure_ascii=False, indent=4)
+
 def moveFailedAudioFiles():
     cf.loadConfiguration()
     audioBucket = cf.appConfig[cf.CONF_S3BUCKET_INPUT]
@@ -1046,7 +1079,6 @@ def moveFailedAudioFiles():
     while ("nextToken" in response):
         response = sfnClient.list_executions(stateMachineArn=sfnArn, statusFilter="FAILED", nextToken=response["nextToken"])
         failedExecutions += response["executions"]
-    print(len(failedExecutions))
 
     # Now go through each one, and if the source audio is still there then move it
     for failedExe in failedExecutions:
@@ -1085,20 +1117,16 @@ if __name__ == "__main__":
         elif sys.argv[1] == "--move-failures":
             # Temporary update - delete me when done
             moveFailedAudioFiles()
+        elif sys.argv[1] == "--get-history":
+            # Temporary update - delete me when done
+            downloadHistory()
     else:
         # Standard test event
         event = {
-            "bucket": "pca-raw-audio-1234",
-            "key": "nci/CAaad2c19c9c856e377620efab245e8d70.RE709d062d6466b413be36fdb88ac24ac9.mp3",
-            "contentType": "mp3",
+            "bucket": "ajk-call-analytics-demo",
+            "key": "audio/example-call.wav",
             "langCode": "en-US",
-            "jobName": "CAaad2c19c9c856e377620efab245e8d70.RE709d062d6466b413be36fdb88ac24ac9.mp3",
+            "jobName": "example-call.wav.wav",
             "transcribeStatus": "COMPLETED"
-            # "bucket": "pca-raw-audio-1234",
-            # "key": "nci/0a.93.a0.3f.00.00 10.06.41.458 09-19-2019.wav",
-            # "contentType": "wav",
-            # "langCode": "en-US",
-            # "jobName": "0a.93.a0.3f.00.00-10.06.41.458-09-19-2019.wav",
-            # "transcribeStatus": "COMPLETED"
         }
         lambda_handler(event, "")

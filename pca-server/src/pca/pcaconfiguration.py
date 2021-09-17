@@ -26,7 +26,8 @@ CONF_TRANSCRIBE_ALTLANG = "TranscribeAlternateLanguage"
 CONF_VOCABNAME = "VocabularyName"
 CONF_FILENAME_DATETIME_REGEX = "FilenameDatetimeRegex"
 CONF_FILENAME_DATETIME_FIELDMAP = "FilenameDatetimeFieldMap"
-
+CONF_FILTER_MODE = "VocabFilterMode"
+CONF_FILTER_NAME = "VocabFilterName"
 
 # Parameter store fieldnames used by bulk import
 BULK_S3_BUCKET = "BulkUploadBucket"
@@ -38,6 +39,9 @@ SPEAKER_MODE_SPEAKER = "speaker"
 SPEAKER_MODE_CHANNEL = "channel"
 SPEAKER_MODE_AUTO = "auto"
 SPEAKER_MODES = [SPEAKER_MODE_SPEAKER, SPEAKER_MODE_CHANNEL, SPEAKER_MODE_AUTO]
+
+# Vocabulary filter modes - gets reset to "" if configured value is not one of the list
+VOCAB_FILTER_MODES = {"remove", "mask", "tag"}
 
 # Configuration data
 appConfig = {}
@@ -94,6 +98,7 @@ def loadConfiguration():
                                                CONF_TRANSCRIBE_ALTLANG])
     fullParamList3 = ssm.get_parameters(Names=[CONF_VOCABNAME, CONF_CONVO_LOCATION, CONF_ENTITY_TYPES,
                                                CONF_FILENAME_DATETIME_REGEX, CONF_FILENAME_DATETIME_FIELDMAP])
+    fullParamList3 = ssm.get_parameters(Names=[CONF_VOCABNAME, CONF_CONVO_LOCATION, CONF_ENTITY_TYPES, CONF_FILTER_MODE, CONF_FILTER_NAME])
 
     # Extract our parameters into our config
     extractParameters(fullParamList1, False)
@@ -107,6 +112,9 @@ def loadConfiguration():
         appConfig[CONF_MINPOSITIVE] = 0.5
     if (appConfig[CONF_ENTITYCONF]) == "":
         appConfig[CONF_ENTITYCONF] = 0.5
+    if appConfig[CONF_FILTER_MODE] not in VOCAB_FILTER_MODES:
+        appConfig[CONF_FILTER_MODE] = ""
+        appConfig[CONF_FILTER_NAME] = ""
 
     # Validate speaker-separation mode
     appConfig[CONF_SPEAKER_SEPARATION] = appConfig[CONF_SPEAKER_SEPARATION].lower()
