@@ -738,18 +738,38 @@ class TranscribeParser:
 
     def calculateTranscribeConversationTime(self, filename):
         '''
-        Tries to work out the conversation time based upon patterns in the filename.  Currently,
-        the POC customer has this format - 0a.93.a0.3e.00.00-09.25.51.067-09-26-2019.wav, but there
-        may be others, and hence this may need to be a plug-in per customer or something later.  If
-        we cannot generate a time then the system later defaults to the current
+        Tries to work out the conversation time based upon patterns in the filename.
+        
+        The filename parsing behavior is defined in two configuration parameters:
+        
+        1. FilenameDatetimeRegex:
+          Regular Expression (regex) used to parse call Date/Time from audio filenames. 
+          Each datetime field (year, month, etc.) must be matched using a separate parenthesized group in the regex. 
+          Example: the regex '(\d{2}).(\d{2}).(\d{2}).(\d{3})-(\d{2})-(\d{2})-(\d{4})' parses
+          the filename: CallAudioFile-09.25.51.067-09-26-2019.wav into a value list: [09, 25, 51, 067, 09, 26, 2019]
+          The next parameter, FilenameDatetimeFieldMap, maps the values to datetime field codes.
+          If the filename doesn't match the regex pattern, the current time is used as the call datetime.
+
+        2. FilenameDatetimeFieldMap:
+          Space separated ordered sequence of time field codes as used by Python's datetime.strptime() function. 
+          Each field code refers to a corresponding value parsed by the regex parameter filenameTimestampRegex. 
+          Example: the mapping '%H %M %S %f %m %d %Y' assembles the regex values [09, 25, 51, 067, 09, 26, 2019]
+          into the full datetime: '2019-09-26 09:25:51.067000'.  
+          If the field map doesn't match the value list parsed by the regex, then the current time is used as the call datetime.
         '''
+        regex = cf.appConfig[cf.CONF_FILENAME_DATETIME_REGEX]
+        fieldmap = cf.appConfig[cf.CONF_FILENAME_DATETIME_FIELDMAP]
+        print(f"INFO: Parsing datetime from filename '{filename}' using regex: '{regex}' and fieldmap: '{fieldmap}'.")
         try:
-            # Filename = 0a.93.a0.3e.00.00-09.25.51.067-09-26-2019.wav
-            match = re.search('\d{2}.\d{2}.\d{2}.\d{3}-\d{2}-\d{2}-\d{4}', filename)
-            self.conversationTime = str(datetime.strptime(match.group(), '%H.%M.%S.%f-%m-%d-%Y'))
+            match = re.search(regex, filename)
+            fieldstring = " ".join(match.groups())
+            self.conversationTime = str(datetime.strptime(fieldstring, fieldmap))
+            print(f"INFO: Assembled datetime: '{self.conversationTime}'")
             self.conversationLocation = cf.appConfig[cf.CONF_CONVO_LOCATION]
-        except:
+        except Exception as e:
             # If everything fails system will use "now" as the datetime in UTC
+            print(e)
+            print(f"WARNING: Unable to parse datetime from filename. Defaulting to current time.")
             self.conversationLocation = "Etc/UTC"
 
     def loadSimpleEntityStringMap(self):

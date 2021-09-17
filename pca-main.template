@@ -173,6 +173,28 @@ Parameters:
         - true
         - false
     Description: Set to true to automatically ingest sample audio files.
+    
+  FilenameDatetimeRegex:
+    Type: String
+    Default: '(\d{2}).(\d{2}).(\d{2}).(\d{3})-(\d{2})-(\d{2})-(\d{4})'
+    Description: >
+      Regular Expression (regex) used to parse call Date/Time from audio filenames. 
+      Each datetime field (year, month, etc.) must be matched using a separate parenthesized group in the regex. 
+      Example: the regex '(\d{2}).(\d{2}).(\d{2}).(\d{3})-(\d{2})-(\d{2})-(\d{4})' parses
+      the filename: CallAudioFile-09.25.51.067-09-26-2019.wav into a value list: [09, 25, 51, 067, 09, 26, 2019]
+      The next parameter, FilenameDatetimeFieldMap, maps the values to datetime field codes.
+      If the filename doesn't match the regex pattern, the current time is used as the call timestamp.
+
+  FilenameDatetimeFieldMap:
+    Type: String
+    Default: '%H %M %S %f %m %d %Y'
+    Description: >
+      Space separated ordered sequence of time field codes as used by Python's datetime.strptime() function. 
+      Each field code refers to a corresponding value parsed by the regex parameter filenameTimestampRegex. 
+      Example: the mapping '%H %M %S %f %m %d %Y' assembles the regex output values [09, 25, 51, 067, 09, 26, 2019]
+      into the full datetime: '2019-09-26 09:25:51.067000'.  
+      If the field map doesn't match the value list parsed by the regex, then the current time is used as the call timestamp.
+    
 
 Metadata:
     AWS::CloudFormation::Interface:
@@ -193,7 +215,11 @@ Metadata:
                   - BulkUploadBucketName
                   - OutputBucketName
                   - SupportFilesBucketName
-
+            - Label:
+                default: Filename metadata parsing
+              Parameters:
+                  - FilenameDatetimeRegex
+                  - FilenameDatetimeFieldMap
 
 Conditions:
   ShouldCreateBulkUploadBucket: !Equals [!Ref BulkUploadBucketName, '']
@@ -295,6 +321,8 @@ Resources:
         TranscribeAlternateLanguage: !Ref TranscribeAlternateLanguage
         TranscribeLanguages: !Ref TranscribeLanguages
         VocabularyName: !Ref VocabularyName
+        FilenameDatetimeRegex: !Ref FilenameDatetimeRegex
+        FilenameDatetimeFieldMap: !Ref FilenameDatetimeFieldMap
 
 
   PCAServer:

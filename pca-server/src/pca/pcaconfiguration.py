@@ -24,6 +24,9 @@ CONF_SUPPORT_BUCKET = "SupportFilesBucketName"
 CONF_TRANSCRIBE_LANG = "TranscribeLanguages"
 CONF_TRANSCRIBE_ALTLANG = "TranscribeAlternateLanguage"
 CONF_VOCABNAME = "VocabularyName"
+CONF_FILENAME_DATETIME_REGEX = "FilenameDatetimeRegex"
+CONF_FILENAME_DATETIME_FIELDMAP = "FilenameDatetimeFieldMap"
+
 
 # Parameter store fieldnames used by bulk import
 BULK_S3_BUCKET = "BulkUploadBucket"
@@ -89,7 +92,8 @@ def loadConfiguration():
                                                CONF_PREFIX_PARSED_RESULTS, CONF_SPEAKER_NAMES, CONF_SPEAKER_SEPARATION,
                                                COMP_SFN_NAME, CONF_SUPPORT_BUCKET, CONF_TRANSCRIBE_LANG,
                                                CONF_TRANSCRIBE_ALTLANG])
-    fullParamList3 = ssm.get_parameters(Names=[CONF_VOCABNAME, CONF_CONVO_LOCATION, CONF_ENTITY_TYPES])
+    fullParamList3 = ssm.get_parameters(Names=[CONF_VOCABNAME, CONF_CONVO_LOCATION, CONF_ENTITY_TYPES,
+                                               CONF_FILENAME_DATETIME_REGEX, CONF_FILENAME_DATETIME_FIELDMAP])
 
     # Extract our parameters into our config
     extractParameters(fullParamList1, False)
