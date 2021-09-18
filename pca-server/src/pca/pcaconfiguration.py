@@ -26,6 +26,8 @@ CONF_TRANSCRIBE_ALTLANG = "TranscribeAlternateLanguage"
 CONF_VOCABNAME = "VocabularyName"
 CONF_FILENAME_DATETIME_REGEX = "FilenameDatetimeRegex"
 CONF_FILENAME_DATETIME_FIELDMAP = "FilenameDatetimeFieldMap"
+CONF_FILENAME_GUID_REGEX = "FilenameGUIDRegex"
+CONF_FILENAME_AGENT_REGEX = "FilenameAgentRegex"
 CONF_FILTER_MODE = "VocabFilterMode"
 CONF_FILTER_NAME = "VocabFilterName"
 
@@ -98,7 +100,8 @@ def loadConfiguration():
                                                CONF_TRANSCRIBE_ALTLANG])
     fullParamList3 = ssm.get_parameters(Names=[CONF_VOCABNAME, CONF_CONVO_LOCATION, CONF_ENTITY_TYPES, 
                                                CONF_FILTER_MODE, CONF_FILTER_NAME, 
-                                               CONF_FILENAME_DATETIME_REGEX, CONF_FILENAME_DATETIME_FIELDMAP])
+                                               CONF_FILENAME_DATETIME_REGEX, CONF_FILENAME_DATETIME_FIELDMAP,
+                                               CONF_FILENAME_GUID_REGEX, CONF_FILENAME_AGENT_REGEX])
 
     # Extract our parameters into our config
     extractParameters(fullParamList1, False)

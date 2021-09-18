@@ -50,6 +50,8 @@ class TranscribeParser:
         self.transcribeJobInfo = ""
         self.conversationLanguageCode = ""
         self.comprehendLanguageCode = ""
+        self.guid = ""
+        self.agent = ""
         self.conversationTime = ""
         self.conversationLocation = ""
         self.speechSegmentList = []
@@ -150,6 +152,8 @@ class TranscribeParser:
         # Basic information.  Note, we expect the input stream processing mechanism
         # to set the conversation time - if it is not set then we have no choice
         # but to default this to the current processing time.
+        resultsHeaderInfo["GUID"] = self.guid
+        resultsHeaderInfo["Agent"] = self.agent
         resultsHeaderInfo["ConversationTime"] = self.conversationTime
         resultsHeaderInfo["ConversationLocation"] = self.conversationLocation
         resultsHeaderInfo["ProcessTime"] = str(datetime.now())
@@ -780,6 +784,44 @@ class TranscribeParser:
             print(f"WARNING: Unable to parse datetime from filename. Defaulting to current system time.")
             if self.conversationLocation == "":
                 self.conversationLocation = "Etc/UTC"
+                
+    def setGUID(self, filename):
+        '''
+        Tries to parse a GUID for the call from the filename using a configurable Regular Expression.
+        The GUID value must be matched using one or more parenthesized groups in the regex. 
+        Example: the regex '_GUID_(.*?)_' parses
+        the filename: AutoRepairs1_GUID_2a602c1a-4ca3-4d37-a933-444d575c0222_AGENT_BobS_DATETIME_07.55.51.067-09-16-2021.wav 
+        to extract the GUID value '2a602c1a-4ca3-4d37-a933-444d575c0222'.        
+        '''
+        regex = cf.appConfig[cf.CONF_FILENAME_GUID_REGEX]
+        print(f"INFO: Parsing GUID from filename '{filename}' using regex: '{regex}'.")
+        try:
+            match = re.search(regex, filename)
+            guid = " ".join(match.groups()) or 'None'
+            print(f"INFO: Parsed GUID: '{guid}'")
+        except:
+            print(f"WARNING: Unable to parse GUID from filename {filename}, using regex: '{regex}'. Defaulting to 'None'.")
+            guid='None'
+        self.guid = guid
+
+    def setAgent(self, filename):
+        '''
+        Tries to parse an Agent name or ID from the filename using a configurable Regular Expression.
+        The AGENT value must be matched using one or more parenthesized groups in the regex. 
+        Example: the regex '_AGENT_(.*?)_' parses
+        the filename: AutoRepairs1_GUID_2a602c1a-4ca3-4d37-a933-444d575c0222_AGENT_BobS_DATETIME_07.55.51.067-09-16-2021.wav 
+        to extract the Agent value 'BobS'.        
+        '''
+        regex = cf.appConfig[cf.CONF_FILENAME_AGENT_REGEX]
+        print(f"INFO: Parsing AGENT from filename '{filename}' using regex: '{regex}'.")
+        try:
+            match = re.search(regex, filename)
+            agent = " ".join(match.groups()) or 'None'
+            print(f"INFO: Parsed AGENT: '{agent}'")
+        except:
+            print(f"WARNING: Unable to parse Agent name/ID from filename {filename}, using regex: '{regex}'. Defaulting to 'None'.")
+            agent='None'
+        self.agent = agent
 
     def loadSimpleEntityStringMap(self):
         """
@@ -878,6 +920,10 @@ class TranscribeParser:
         outputS3Bucket = cf.appConfig[cf.CONF_S3BUCKET_OUTPUT]
         outputS3Key = cf.appConfig[cf.CONF_PREFIX_PARSED_RESULTS]
 
+        # Parse Call GUID and Agent Name/ID from filename if possible
+        self.setGUID(transcribeJob)
+        self.setAgent(transcribeJob)
+        
         # Work out the conversation time and set the language code
         self.calculateTranscribeConversationTime(transcribeJob)
         self.setComprehendLanguageCode(self.transcribeJobInfo["LanguageCode"])

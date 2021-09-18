@@ -194,7 +194,26 @@ Parameters:
       Example: the mapping '%H %M %S %f %m %d %Y' assembles the regex output values [09, 25, 51, 067, 09, 26, 2019]
       into the full datetime: '2019-09-26 09:25:51.067000'.  
       If the field map doesn't match the value list parsed by the regex, then the current time is used as the call timestamp.
-    
+
+  FilenameGUIDRegex:
+    Type: String
+    Default: '_GUID_(.*?)_'
+    Description: >
+      Regular Expression (regex) used to parse call GUID from audio filenames. 
+      The GUID value must be matched using one or more parenthesized groups in the regex. 
+      Example: the regex '_GUID_(.*?)_' parses
+      the filename: AutoRepairs1_GUID=2a602c1a-4ca3-4d37-a933-444d575c0222_AGENT_BobS_DATETIME_07.55.51.067-09-16-2021.wav 
+      to extract the GUID value '2a602c1a-4ca3-4d37-a933-444d575c0222'.
+
+  FilenameAgentRegex:
+    Type: String
+    Default: '_AGENT_(.*?)_'
+    Description: >
+      Regular Expression (regex) used to parse call AGENT from audio filenames. 
+      The AGENT value must be matched using one or more parenthesized groups in the regex. 
+      Example: the regex '_AGENT_(.*?)_' parses
+      the filename: AutoRepairs1_GUID=2a602c1a-4ca3-4d37-a933-444d575c0222_AGENT_BobS_DATETIME_07.55.51.067-09-16-2021.wav 
+      to extract the AGENT value 'BobS'.      
 
 Metadata:
     AWS::CloudFormation::Interface:
@@ -220,6 +239,8 @@ Metadata:
               Parameters:
                   - FilenameDatetimeRegex
                   - FilenameDatetimeFieldMap
+                  - FilenameGUIDRegex
+                  - FilenameAgentRegex
 
 Conditions:
   ShouldCreateBulkUploadBucket: !Equals [!Ref BulkUploadBucketName, '']
@@ -323,7 +344,8 @@ Resources:
         VocabularyName: !Ref VocabularyName
         FilenameDatetimeRegex: !Ref FilenameDatetimeRegex
         FilenameDatetimeFieldMap: !Ref FilenameDatetimeFieldMap
-
+        FilenameGUIDRegex: !Ref FilenameGUIDRegex
+        FilenameAgentRegex: !Ref FilenameAgentRegex
 
   PCAServer:
     Type: AWS::CloudFormation::Stack
