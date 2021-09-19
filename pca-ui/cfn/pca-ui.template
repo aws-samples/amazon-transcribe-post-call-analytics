@@ -17,17 +17,17 @@ Parameters:
       ConstraintDescription: Must be valid email address eg. johndoe@example.com
 
   AudioBucket:
-    Type: AWS::SSM::Parameter::Value<String>
+    Type: String
     Default: InputBucketName
     Description: S3 bucket containing audio files. Audio object names must be prefixed with nci/
 
   DataBucket:
-    Type: AWS::SSM::Parameter::Value<String>
+    Type: String
     Default: OutputBucketName
     Description: S3 bucket containing Transcribe output. JSON object names must be prefixed with parseFiles/
 
   DataPrefix:
-    Type: AWS::SSM::Parameter::Value<String>
+    Type: String
     Default: OutputBucketParsedResults
     Description: Prefix that parsed transcription output is stored under in DataBucket
 

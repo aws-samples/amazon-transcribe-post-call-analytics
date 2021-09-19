@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="9px" height="18px" viewBox="0 0 9 18" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 59.1 (86144) - https://sketch.com -->
+    <title>Group</title>
+    <desc>Created with Sketch.</desc>
+    <g id="Search-UI" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" stroke-linecap="round">
+        <g id="Artboard" transform="translate(-1074.000000, -598.000000)" stroke="#AFAFAF" stroke-width="1.5">
+            <g id="Group" transform="translate(1075.000000, 599.000000)">
+                <polyline id="Path-3" stroke-linejoin="round" transform="translate(3.629413, 14.115997) scale(1, -1) translate(-3.629413, -14.115997) " points="9.09494702e-13 16.2319947 3.75574812 12 7.25882555 16.2319947"></polyline>
+                <line x1="4" y1="14.8648295" x2="4" y2="1.77635684e-15" id="Path-2" transform="translate(4.000000, 7.432415) scale(1, -1) translate(-4.000000, -7.432415) "></line>
+            </g>
+        </g>
+    </g>
+</svg>

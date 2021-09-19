@@ -52,6 +52,9 @@ else
   echo "Using existing bucket: $BUCKET"
 fi
 
+# create build dir if it doesn't exist
+mkdir -p build
+
 echo "Getting package dependencies"
 pushd pca-server/src/trigger
 npm install
@@ -61,10 +64,17 @@ pushd pca-ui/src/lambda
 npm install
 popd
 
+# Build and deploy embedded MediaSearch project
+pushd aws-kendra-transcribe-media-search
+./publish.sh ${BUCKET} ${PREFIX}/mediasearch | tee /tmp/mediasearch.out
+mediasearch_template=$(grep "Finder Template URL:" /tmp/mediasearch.out | awk '{print $4}')
+popd
+curl $mediasearch_template --output build/pca-mediasearch-finder.yaml
+
 
 echo "Packaging Cfn artifacts"
-aws cloudformation package --template-file pca-main.template --output-template-file packaged.template --s3-bucket ${BUCKET} --s3-prefix ${PREFIX} || exit 1
-aws s3 cp packaged.template s3://${BUCKET}/${PREFIX}/pca-main.yaml || exit 1
+aws cloudformation package --template-file pca-main.template --output-template-file build/packaged.template --s3-bucket ${BUCKET} --s3-prefix ${PREFIX} || exit 1
+aws s3 cp build/packaged.template s3://${BUCKET}/${PREFIX}/pca-main.yaml || exit 1
 
 if $PUBLIC; then
   echo "Setting public read ACLs on published artifacts"

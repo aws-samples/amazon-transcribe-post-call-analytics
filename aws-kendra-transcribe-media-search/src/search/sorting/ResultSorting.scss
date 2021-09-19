@@ -1,0 +1,30 @@
+.query-result-sorting-container {
+  float: right;
+
+  .sort-text {
+    float: left;
+  }
+
+  .sorting-attributes-dropdown {
+    padding-left: 6px;
+    float: left;
+  }
+
+  .sorting-order-toggle {
+    padding-left: 6px;
+    float: left;
+  }
+}
+
+.opt-group {
+  max-height: 65px;
+}
+
+.toggle-button {
+  height: 24px;
+
+  .toggle-image {
+    height: 22px;
+    padding-bottom: 8px;
+  }
+}

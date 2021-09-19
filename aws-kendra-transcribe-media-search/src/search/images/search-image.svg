@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="18px" height="18px" viewBox="0 0 18 18" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 59.1 (86144) - https://sketch.com -->
+    <title>Combined Shape</title>
+    <desc>Created with Sketch.</desc>
+    <defs>
+        <path d="M89.3125,44 C93.3510822,44 96.625,47.2739178 96.625,51.3125 C96.625,52.9200313 96.106285,54.4064103 95.2271023,55.6133896 L100,60.3859322 L98.3859322,62 L93.6133896,57.2271023 C92.4064103,58.106285 90.9200313,58.625 89.3125,58.625 C85.2739178,58.625 82,55.3510822 82,51.3125 C82,47.2739178 85.2739178,44 89.3125,44 Z M89.3125,46.25 C86.5165585,46.25 84.25,48.5165585 84.25,51.3125 C84.25,54.1084415 86.5165585,56.375 89.3125,56.375 C92.1084415,56.375 94.375,54.1084415 94.375,51.3125 C94.375,48.5165585 92.1084415,46.25 89.3125,46.25 Z" id="path-1"></path>
+    </defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Artboard" transform="translate(-82.000000, -44.000000)">
+            <mask id="mask-2" fill="white">
+                <use xlink:href="#path-1"></use>
+            </mask>
+            <use id="Combined-Shape" fill="#B0B4BA" xlink:href="#path-1"></use>
+        </g>
+    </g>
+</svg>

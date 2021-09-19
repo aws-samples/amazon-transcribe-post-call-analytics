@@ -30,6 +30,8 @@ CONF_FILENAME_GUID_REGEX = "FilenameGUIDRegex"
 CONF_FILENAME_AGENT_REGEX = "FilenameAgentRegex"
 CONF_FILTER_MODE = "VocabFilterMode"
 CONF_FILTER_NAME = "VocabFilterName"
+CONF_KENDRA_INDEX_ID = "KendraIndexId"
+CONF_WEB_URI = "WebUri"
 
 # Parameter store fieldnames used by bulk import
 BULK_S3_BUCKET = "BulkUploadBucket"
@@ -101,12 +103,16 @@ def loadConfiguration():
     fullParamList3 = ssm.get_parameters(Names=[CONF_VOCABNAME, CONF_CONVO_LOCATION, CONF_ENTITY_TYPES, 
                                                CONF_FILTER_MODE, CONF_FILTER_NAME, 
                                                CONF_FILENAME_DATETIME_REGEX, CONF_FILENAME_DATETIME_FIELDMAP,
-                                               CONF_FILENAME_GUID_REGEX, CONF_FILENAME_AGENT_REGEX])
+                                               CONF_FILENAME_GUID_REGEX, CONF_FILENAME_AGENT_REGEX,
+                                               CONF_KENDRA_INDEX_ID])
+    fullParamList4 = ssm.get_parameters(Names=[CONF_WEB_URI])                                           
+                                               
 
     # Extract our parameters into our config
     extractParameters(fullParamList1, False)
     extractParameters(fullParamList2, False)
     extractParameters(fullParamList3, False)
+    extractParameters(fullParamList4, False)
 
     # If any important empty values to something
     if (appConfig[CONF_MINNEGATIVE]) == "":

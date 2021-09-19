@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="10px" height="8px" viewBox="0 0 10 8" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 59.1 (86144) - https://sketch.com -->
+    <title>Rectangle 3</title>
+    <desc>Created with Sketch.</desc>
+    <defs>
+        <path d="M149.000116,440 L156.999989,440 C157.552273,440 157.999989,440.447715 157.999989,441 C157.999989,441.197106 157.941739,441.389816 157.832558,441.553921 L153.841313,447.552956 C153.535391,448.012771 152.914639,448.137526 152.454823,447.831605 C152.344939,447.758497 152.250614,447.664361 152.177287,447.554624 L148.16866,441.555589 C147.861816,441.096389 147.985326,440.475387 148.444527,440.168543 C148.60898,440.058654 148.802327,440 149.000116,440 Z" id="path-1"></path>
+    </defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="26" transform="translate(-148.000000, -440.000000)">
+            <mask id="mask-2" fill="white">
+                <use xlink:href="#path-1"></use>
+            </mask>
+            <use id="Rectangle-3" fill="#16191F" transform="translate(153.000000, 444.000000) scale(-1, -1) rotate(-180.000000) translate(-153.000000, -444.000000) " xlink:href="#path-1"></use>
+        </g>
+    </g>
+</svg>

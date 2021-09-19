@@ -196,6 +196,14 @@ Parameters:
       the filename: AutoRepairs1_GUID_2a602c1a-4ca3-4d37-a933-444d575c0222_AGENT_BobS_DATETIME_07.55.51.067-09-16-2021.wav 
       to extract the AGENT value 'BobS'.  
       
+  KendraIndexId:
+    Type: String
+    Description: Kendra Index ID, or empty string if call transcription indexing is not enabled 
+    
+  WebUri:
+    Type: String
+    Description: PCA Web Application URI
+      
 Resources:
   BulkUploadBucketParameter:
     Type: "AWS::SSM::Parameter"
@@ -481,3 +489,19 @@ Resources:
         Example: the regex '_AGENT_(.*?)_' parses
         the filename: AutoRepairs1_GUID_2a602c1a-4ca3-4d37-a933-444d575c0222_AGENT_BobS_DATETIME_07.55.51.067-09-16-2021.wav 
         to extract the AGENT value 'BobS'.
+
+  KendraIndexIdParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: KendraIndexId
+      Type: String
+      Value: !Ref KendraIndexId
+      Description: Kendra Index ID, or empty string if call transcription indexing is not enabled
+      
+  WebUriParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: WebUri
+      Type: String
+      Value: !Ref WebUri
+      Description: PCA Web Application URI

@@ -7,6 +7,7 @@ from pathlib import Path
 from datetime import datetime
 from urllib.parse import urlparse
 import pcaconfiguration as cf
+from pcakendrasearch import prepare_transcript, put_kendra_document
 import subprocess
 import copy
 import re
@@ -952,14 +953,25 @@ class TranscribeParser:
 
         # Now create turn-by-turn diarisation, with associated sentiments and entities
         self.speechSegmentList = self.createTurnByTurnSegments(jsonFilepath)
+        
+        # generate JSON results
+        output = self.outputAsJSON()
 
         # Write out the JSON data to our S3 location
         s3Resource = boto3.resource('s3')
         s3Object = s3Resource.Object(outputS3Bucket, outputS3Key + '/' + self.jsonOutputFilename)
         s3Object.put(
-            Body=(bytes(json.dumps(self.outputAsJSON()).encode('UTF-8')))
+            Body=(bytes(json.dumps(output).encode('UTF-8')))
         )
 
+        # Index transcript in Kendra, if transcript search is enabled
+        kendraIndexId = cf.appConfig[cf.CONF_KENDRA_INDEX_ID]
+        analysisUri = f"{cf.appConfig[cf.CONF_WEB_URI]}/#parsedFiles/{self.jsonOutputFilename}"
+        if (kendraIndexId):
+            transcript_with_markers = prepare_transcript(jsonFilepath)
+            conversationAnalytics = output["ConversationAnalytics"]
+            put_kendra_document(kendraIndexId, analysisUri, conversationAnalytics, transcript_with_markers)
+            
         # Return our filename for re-use later
         return self.jsonOutputFilename
 

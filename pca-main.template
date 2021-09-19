@@ -213,7 +213,16 @@ Parameters:
       The AGENT value must be matched using one or more parenthesized groups in the regex. 
       Example: the regex '_AGENT_(.*?)_' parses
       the filename: AutoRepairs1_GUID_2a602c1a-4ca3-4d37-a933-444d575c0222_AGENT_BobS_DATETIME_07.55.51.067-09-16-2021.wav 
-      to extract the AGENT value 'BobS'.      
+      to extract the AGENT value 'BobS'. 
+      
+  EnableTranscriptKendraSearch:
+    Type: String
+    Default: No
+    AllowedValues:
+        - No
+        - Yes, create new Kendra Index (Developer Edition)
+        - Yes, create new Kendra Index (Enterprise Edition)
+    Description: Optionally make call transcripts searchable, using Amazon Kendra.
 
 Metadata:
     AWS::CloudFormation::Interface:
@@ -227,6 +236,10 @@ Metadata:
                 default: Sample Data
               Parameters:
                   - loadSampleAudioFiles
+            - Label:
+                default: Enable Call Transcript Search
+              Parameters:
+                  - EnableTranscriptKendraSearch
             - Label:
                 default: S3 Bucket Names
               Parameters:
@@ -247,6 +260,9 @@ Conditions:
   ShouldCreateInputBucket: !Equals [!Ref InputBucketName, '']
   ShouldCreateOutputBucket: !Equals [!Ref OutputBucketName, '']
   ShouldCreateSupportFilesBucket: !Equals [!Ref SupportFilesBucketName, '']
+  ShouldEnableKendraSearch: !Not [!Equals [!Ref EnableTranscriptKendraSearch, 'No']]
+  ShouldCreateKendraIndexDeveloperEdition: !Equals [!Ref EnableTranscriptKendraSearch, 'Yes, create new Kendra Index (Developer Edition)']
+  ShouldCreateKendraIndexEnterpriseEdition: !Equals [!Ref EnableTranscriptKendraSearch, 'Yes, create new Kendra Index (Enterprise Edition)']
 
 Resources:
   ########################################################
@@ -294,6 +310,140 @@ Resources:
           - ServerSideEncryptionByDefault:
               SSEAlgorithm: AES256
 
+  ########################################################
+  # Kendra Index
+  ########################################################
+  KendraIndexRole:
+    Type: 'AWS::IAM::Role'
+    Condition: ShouldEnableKendraSearch
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: ''
+            Effect: Allow
+            Principal:
+              Service: kendra.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Policies:
+        - PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Resource: '*'
+                Condition:
+                  StringEquals:
+                    'cloudwatch:namespace': 'Kendra'
+                Action:
+                  - 'cloudwatch:PutMetricData'
+              - Effect: Allow
+                Resource: '*'
+                Action: 'logs:DescribeLogGroups'
+              - Effect: Allow
+                Resource: !Sub
+                  - 'arn:aws:logs:${region}:${account}:log-group:/aws/kendra/*'
+                  - region: !Ref 'AWS::Region'
+                    account: !Ref 'AWS::AccountId'
+                Action: 'logs:CreateLogGroup'
+              - Effect: Allow
+                Resource: !Sub
+                  - 'arn:aws:logs:${region}:${account}:log-group:/aws/kendra/*:log-stream:*'
+                  - region: !Ref 'AWS::Region'
+                    account: !Ref 'AWS::AccountId'
+                Action: 
+                  - 'logs:DescribeLogStreams'
+                  - 'logs:CreateLogStream'
+                  - 'logs:PutLogEvents'
+          PolicyName: KendraMediaIndexPolicy
+
+  KendraIndex:
+    Type: 'AWS::Kendra::Index'
+    Condition: ShouldEnableKendraSearch
+    Description: PCA transcript index
+    Properties:
+      Edition:
+          !If
+          - ShouldCreateKendraIndexDeveloperEdition
+          - 'DEVELOPER_EDITION'
+          - 'ENTERPRISE_EDITION'
+      Name: !Join
+        - ''
+        - - !Ref 'AWS::StackName'
+          - '-Index'
+      RoleArn: !GetAtt KendraIndexRole.Arn
+      DocumentMetadataConfigurations:
+        - Name: ANALYSIS_URI
+          Search: 
+            Displayable: true
+          Type: 'STRING_VALUE'
+        - Name: DATETIME
+          Search: 
+            Displayable: true
+            Facetable: true
+          Relevance:
+            Freshness: true
+          Type: 'DATE_VALUE'
+        - Name: GUID
+          Search: 
+            Displayable: true
+            Searchable: true
+          Type: 'STRING_VALUE'
+        - Name: AGENT
+          Search:
+            Displayable: true
+            Facetable: true
+          Type: 'STRING_VALUE'
+        - Name: DURATION
+          Search: 
+            Displayable: true
+            Facetable: true
+          Type: 'LONG_VALUE'
+        - Name: ENTITY_PERSON
+          Search: 
+            Displayable: true
+            Facetable: true
+          Type: 'STRING_LIST_VALUE'        
+        - Name: ENTITY_LOCATION
+          Search: 
+            Displayable: true
+            Facetable: true
+          Type: 'STRING_LIST_VALUE'
+        - Name: ENTITY_ORGANIZATION
+          Search: 
+            Displayable: true
+            Facetable: true
+          Type: 'STRING_LIST_VALUE'
+        - Name: ENTITY_COMMERCIAL_ITEM
+          Search: 
+            Displayable: true
+            Facetable: true
+          Type: 'STRING_LIST_VALUE'
+        - Name: ENTITY_EVENT
+          Search: 
+            Displayable: true
+            Facetable: true
+          Type: 'STRING_LIST_VALUE'
+        - Name: ENTITY_DATE
+          Search:
+            Displayable: true
+            Facetable: true
+          Type: 'STRING_LIST_VALUE'
+        - Name: ENTITY_QUANTITY
+          Search:
+            Displayable: true
+            Facetable: true
+          Type: 'STRING_LIST_VALUE'
+        - Name: ENTITY_TITLE
+          Search:
+            Displayable: true
+            Facetable: true
+          Type: 'STRING_LIST_VALUE'
+
+
+  
+  ########################################################
+  # SSM Stack
+  ########################################################
   SSM:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -346,6 +496,13 @@ Resources:
         FilenameDatetimeFieldMap: !Ref FilenameDatetimeFieldMap
         FilenameGUIDRegex: !Ref FilenameGUIDRegex
         FilenameAgentRegex: !Ref FilenameAgentRegex
+        KendraIndexId:
+          !If
+          - ShouldEnableKendraSearch
+          - !Ref KendraIndex
+          - ''
+        WebUri: !GetAtt PCAUI.Outputs.WebUri
+
 
   PCAServer:
     Type: AWS::CloudFormation::Stack
@@ -358,13 +515,37 @@ Resources:
       
   PCAUI:
     Type: AWS::CloudFormation::Stack
-    DependsOn: SSM
     Properties:
       TemplateURL: pca-ui/cfn/pca-ui.template
       Parameters:
         AdminUsername: !Ref AdminUsername
         AdminEmail: !Ref AdminEmail
         MainStackName: !Ref AWS::StackName
+        AudioBucket:
+          !If
+          - ShouldCreateInputBucket
+          - !Ref InputBucket
+          - !Ref InputBucketName 
+        DataBucket:
+          !If
+          - ShouldCreateOutputBucket
+          - !Ref OutputBucket
+          - !Ref OutputBucketName
+        DataPrefix: !Ref OutputBucketParsedResults
+
+  MediaSearchFinder:
+    Type: AWS::CloudFormation::Stack
+    Condition: ShouldEnableKendraSearch
+    Properties:
+      TemplateURL: build/pca-mediasearch-finder.yaml
+      Parameters:
+        AdminEmail: !Ref AdminEmail
+        KendraIndexId: !Ref KendraIndex
+        MediaBucketNames:
+          !If
+          - ShouldCreateInputBucket
+          - !Ref InputBucket
+          - !Ref InputBucketName
         
 Outputs:
 
@@ -400,9 +581,13 @@ Outputs:
     Description: S3 Bucket path where Transcribe output files are delivered
     Value: !Ref OutputBucketParsedResults
     
-  WebUri:
+  TranscriptionMediaSearchFinderURL:
+    Description: Transcript Search Application link
+    Value: !GetAtt MediaSearchFinder.Outputs.MediaSearchFinderURL
+  
+  WebAppURL:
     Description: PCA Web Application link
-    Value: !GetAtt PCAUI.Outputs.WebUri
+    Value: !GetAtt PCAUI.Outputs.WebUri  
     
   WebAdminUsername:
     Description: PCA admin user

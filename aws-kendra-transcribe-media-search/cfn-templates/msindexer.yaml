@@ -1,0 +1,379 @@
+Description: >
+  MediaSearch Solution - Indexer stack (v0.2.0)
+
+Resources:
+  ##Create the Role needed to create a Kendra Index
+  KendraIndexRole:
+    Type: 'AWS::IAM::Role'
+    Condition: CreateIndex
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: ''
+            Effect: Allow
+            Principal:
+              Service: kendra.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Policies:
+        - PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Resource: '*'
+                Condition:
+                  StringEquals:
+                    'cloudwatch:namespace': 'Kendra'
+                Action:
+                  - 'cloudwatch:PutMetricData'
+              - Effect: Allow
+                Resource: '*'
+                Action: 'logs:DescribeLogGroups'
+              - Effect: Allow
+                Resource: !Sub
+                  - 'arn:aws:logs:${region}:${account}:log-group:/aws/kendra/*'
+                  - region: !Ref 'AWS::Region'
+                    account: !Ref 'AWS::AccountId'
+                Action: 'logs:CreateLogGroup'
+              - Effect: Allow
+                Resource: !Sub
+                  - 'arn:aws:logs:${region}:${account}:log-group:/aws/kendra/*:log-stream:*'
+                  - region: !Ref 'AWS::Region'
+                    account: !Ref 'AWS::AccountId'
+                Action: 
+                  - 'logs:DescribeLogStreams'
+                  - 'logs:CreateLogStream'
+                  - 'logs:PutLogEvents'
+          PolicyName: KendraMediaIndexPolicy
+      
+  ##Create the Kendra Index
+  MediaKendraIndex:
+    Type: 'AWS::Kendra::Index'
+    Condition: CreateIndex
+    Properties:
+      Edition: 'DEVELOPER_EDITION'
+      Name: !Join
+        - ''
+        - - !Ref 'AWS::StackName'
+          - '-Index'
+      RoleArn: !GetAtt KendraIndexRole.Arn
+
+  ##Attach Custom Data Source
+  KendraMediaDS:
+    Type: 'AWS::Kendra::DataSource'
+    Properties: 
+      IndexId: !If [CreateIndex, !GetAtt MediaKendraIndex.Id, !Ref ExistingIndexId]
+      Name: !Join
+        - ''
+        - - !Ref 'AWS::StackName'
+          - '-DS'
+      Type: 'CUSTOM'
+  
+  MediaDynamoTable:
+    Type: 'AWS::DynamoDB::Table'
+    Properties:
+      AttributeDefinitions: 
+        - 
+          AttributeName: "id"
+          AttributeType: "S"
+      KeySchema: 
+        - 
+          AttributeName: "id"
+          KeyType: "HASH"
+      BillingMode: "PAY_PER_REQUEST"
+
+            
+  TranscribeDataAccessRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: transcribe.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 's3:GetObject'
+                  - 's3:ListBucket'
+                Resource: !Sub
+                  - 'arn:aws:s3:::${bucket}*'
+                  - bucket: !Ref MediaBucket
+          PolicyName: TranscribeDataAccessPolicy
+  
+  CrawlerLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Resource: !Sub
+                  - 'arn:aws:kendra:${region}:${account}:index/${index}*'
+                  - region: !Ref 'AWS::Region'
+                    account: !Ref 'AWS::AccountId'
+                    index: !If [CreateIndex, !GetAtt MediaKendraIndex.Id, !Ref ExistingIndexId]
+                Action:
+                  - 'kendra:*'
+              - Effect: Allow
+                Resource: !Sub
+                  - 'arn:aws:s3:::${bucket}*'
+                  - bucket: !Ref MediaBucket
+                Action:
+                  - 's3:GetObject'
+                  - 's3:ListBucket'
+                  - 's3:GetBucketLocation'
+              - Effect: Allow
+                Resource: !GetAtt MediaDynamoTable.Arn
+                Action:
+                  - 'dynamodb:*'
+              - Effect: Allow
+                Resource: '*'
+                Action:
+                  - 'transcribe:*'
+              - Effect: Allow
+                Resource: !GetAtt 'TranscribeDataAccessRole.Arn'
+                Action:
+                  - 'iam:PassRole'
+              - Effect: Allow
+                Resource: !GetAtt 'S3JobCompletionLambdaFunction.Arn'
+                Action:
+                  - 'lambda:InvokeFunction'
+          PolicyName: CrawlerLambdaPolicy
+          
+  S3CrawlLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: crawler.lambda_handler
+      Runtime: python3.8
+      Role: !GetAtt 'CrawlerLambdaRole.Arn'
+      Timeout: 900
+      MemorySize: 1024
+      Code:
+        S3Bucket: '<ARTIFACT_BUCKET_TOKEN>'
+        S3Key: !Join
+          - ''
+          - - '<ARTIFACT_PREFIX_TOKEN>'
+            - '<INDEXER_ZIPFILE>'
+      Environment:
+        Variables:
+          MEDIA_BUCKET: !Ref MediaBucket
+          MEDIA_FOLDER_PREFIX: !Ref MediaFolderPrefix
+          METADATA_FOLDER_PREFIX: !Ref MetadataFolderPrefix
+          MAKE_CATEGORY_FACETABLE: !Ref MakeCategoryFacetable
+          TRANSCRIBEOPTS_FOLDER_PREFIX: !Ref OptionsFolderPrefix
+          MEDIA_FILE_TABLE: !Ref MediaDynamoTable
+          INDEX_ID: !If [CreateIndex, !GetAtt MediaKendraIndex.Id, !Ref ExistingIndexId]
+          DS_ID: !GetAtt KendraMediaDS.Id
+          STACK_NAME: !Ref AWS::StackName
+          TRANSCRIBE_ROLE: !GetAtt 'TranscribeDataAccessRole.Arn'
+          JOBCOMPLETE_FUNCTION: !Ref S3JobCompletionLambdaFunction
+
+  JobCompleteLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Resource: !Sub
+                  - 'arn:aws:kendra:${region}:${account}:index/${index}*'
+                  - region: !Ref 'AWS::Region'
+                    account: !Ref 'AWS::AccountId'
+                    index: !If [CreateIndex, !GetAtt MediaKendraIndex.Id, !Ref ExistingIndexId]
+                Action:
+                  - 'kendra:*'
+              - Effect: Allow
+                Resource: !Sub
+                  - 'arn:aws:s3:::${bucket}*'
+                  - bucket: !Ref MediaBucket
+                Action:
+                  - 's3:GetObject'
+                  - 's3:ListBucket'
+                  - 's3:GetBucketLocation'
+              - Effect: Allow
+                Resource: !GetAtt MediaDynamoTable.Arn
+                Action:
+                  - 'dynamodb:*'
+              - Effect: Allow
+                Resource: '*'
+                Action:
+                  - 'transcribe:*'
+          PolicyName: JobCompleteLambdaPolicy
+
+  S3JobCompletionLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: jobcomplete.lambda_handler
+      Runtime: python3.8
+      Role: !GetAtt 'JobCompleteLambdaRole.Arn'
+      Timeout: 300
+      MemorySize: 1024
+      Code:
+        S3Bucket: '<ARTIFACT_BUCKET_TOKEN>'
+        S3Key: !Join
+          - ''
+          - - '<ARTIFACT_PREFIX_TOKEN>'
+            - '<INDEXER_ZIPFILE>'
+      Environment:
+        Variables:
+          INDEX_ID: !If [CreateIndex, !GetAtt MediaKendraIndex.Id, !Ref ExistingIndexId]
+          DS_ID: !GetAtt KendraMediaDS.Id
+          MEDIA_FILE_TABLE: !Ref MediaDynamoTable
+          STACK_NAME: !Ref AWS::StackName
+
+  TrancriptionJobCompleteEvent:
+    Type: AWS::Events::Rule
+    Properties:
+      EventPattern:
+        source: 
+          - aws.transcribe
+        detail-type:
+          - "Transcribe Job State Change"
+        detail:
+          TranscriptionJobStatus:
+            - "COMPLETED"
+            - "FAILED"
+      State: ENABLED
+      Targets:
+        - 
+          Arn: !GetAtt S3JobCompletionLambdaFunction.Arn
+          Id: !Ref S3JobCompletionLambdaFunction
+          
+  JobCompleteLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt S3JobCompletionLambdaFunction.Arn
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt TrancriptionJobCompleteEvent.Arn
+
+  DSSyncStartSchedule:
+    Type: AWS::Events::Rule
+    Properties:
+      ScheduleExpression: !Join
+        - ''
+        - - 'rate('
+          - !Ref SyncSchedule
+          - ')'
+      State: ENABLED
+      Targets:
+        - 
+          Arn: !GetAtt S3CrawlLambdaFunction.Arn
+          Id: !Ref S3CrawlLambdaFunction
+          
+  SyncScheduleLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt S3CrawlLambdaFunction.Arn
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt DSSyncStartSchedule.Arn
+
+  StartCrawler:
+    Type: Custom::CustomResource
+    DependsOn: 
+      - S3CrawlLambdaFunction
+      - S3JobCompletionLambdaFunction
+      - TrancriptionJobCompleteEvent
+    Properties:
+      ServiceToken: !GetAtt S3CrawlLambdaFunction.Arn
+      TriggerDependencies:
+        - !Ref ExistingIndexId
+        - !Ref MediaBucket
+        - !Ref MediaFolderPrefix
+        - !Ref MetadataFolderPrefix
+        - !Ref OptionsFolderPrefix
+        - '<INDEXER_ZIPFILE>'
+    
+Parameters:
+  MediaBucket:
+    Type: String
+    Default: '<SAMPLES_BUCKET>'
+    Description: 'S3 bucket name containing media files in the region where you are deploying (<REGION>)'
+  MediaFolderPrefix:
+    Type: String
+    Default: '<SAMPLES_PREFIX>'
+    Description: 'Prefix for media folder in the media bucket ( e.g. path/to/files/ )'
+  MetadataFolderPrefix:
+    Type: String
+    Default: '<METADATA_PREFIX>'
+    Description: '(Optional) Metadata files prefix folder location ( e.g. metadata/ ). If a media file is stored at s3://bucket/path/to/files/file2.mp3, and the metadata prefix folder location is metadata/, the metadata file location is s3://bucket/metadata/path/to/files/file2.mp3.metadata.json. By default, there is no metadata file prefix folder, and metadata files are stored in the same folder as the media files. See: See https://github.com/aws-samples/aws-kendra-transcribe-media-search/blob/main/README.md#add-kendra-metadata'
+  OptionsFolderPrefix:
+    Type: String
+    Default: '<OPTIONS_PREFIX>'
+    Description: '(Optional) Transcribe options files prefix folder location ( e.g. transcribeopts/ ). If a media file is stored at s3://bucket/path/to/files/file2.mp3, and the options prefix folder location is transcribeopts/, the metadata file location is s3://bucket/transcribeopts/path/to/files/file2.mp3.transcribeopts.json. By default, there is no options file prefix folder, and Transcribe options files are stored in the same folder as the media files. See https://github.com/aws-samples/aws-kendra-transcribe-media-search/blob/main/README.md#add-transcribe-options'
+  MakeCategoryFacetable:
+    Type: String
+    Default: 'true'
+    AllowedValues: ['true', 'false']
+    Description: 'Set true to make the Kendra index attribute "_category" facetable, displayable and searchable'
+  SyncSchedule:
+    Type: String
+    Default: '24 hours'
+    AllowedValues:
+      - '2 hours'
+      - '6 hours'
+      - '12 hours'
+      - '24 hours'
+      - '48 hours'
+      - '72 hours'
+    Description: 'Frequency to synchronize the S3 bucket with the Kendra index. The default is 24 hours'
+  ExistingIndexId:
+    Default: ''
+    Type: String
+    Description: "Leave this empty to create a new index or provide the index *id* (not name) of the existing Kendra index to be used"
+
+Metadata:
+    AWS::CloudFormation::Interface:
+        ParameterGroups:
+            - Label:
+                default: MediaSearch Indexer parameters
+              Parameters:
+                  - ExistingIndexId
+                  - MediaBucket
+                  - MediaFolderPrefix
+                  - SyncSchedule
+            - Label:
+                default: Kendra Metadata and Transcribe options parameters
+              Parameters:
+                  - MetadataFolderPrefix
+                  - OptionsFolderPrefix
+
+
+    
+Conditions:
+  CreateIndex: !Equals 
+    - !Ref ExistingIndexId
+    - ''
+    
+Outputs:
+  KendraIndexId:
+    Value: !If [CreateIndex, !GetAtt MediaKendraIndex.Id, !Ref ExistingIndexId]
+  MediaBucketUsed:
+    Value: !Ref MediaBucket
