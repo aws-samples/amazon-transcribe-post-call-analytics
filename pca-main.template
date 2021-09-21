@@ -217,11 +217,11 @@ Parameters:
       
   EnableTranscriptKendraSearch:
     Type: String
-    Default: No
+    Default: 'No'
     AllowedValues:
-        - No
-        - Yes, create new Kendra Index (Developer Edition)
-        - Yes, create new Kendra Index (Enterprise Edition)
+        - 'No'
+        - 'Yes, create new Kendra Index (Developer Edition)'
+        - 'Yes, create new Kendra Index (Enterprise Edition)'
     Description: Optionally make call transcripts searchable, using Amazon Kendra.
 
 Metadata:
@@ -500,7 +500,7 @@ Resources:
           !If
           - ShouldEnableKendraSearch
           - !Ref KendraIndex
-          - ''
+          - 'None'
         WebUri: !GetAtt PCAUI.Outputs.WebUri
 
 
