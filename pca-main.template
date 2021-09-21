@@ -583,8 +583,12 @@ Outputs:
     
   TranscriptionMediaSearchFinderURL:
     Description: Transcript Search Application link
-    Value: !GetAtt MediaSearchFinder.Outputs.MediaSearchFinderURL
-  
+    Value:
+      !If
+      - ShouldEnableKendraSearch
+      - !GetAtt MediaSearchFinder.Outputs.MediaSearchFinderURL
+      - "Not enabled"
+ 
   WebAppURL:
     Description: PCA Web Application link
     Value: !GetAtt PCAUI.Outputs.WebUri  
