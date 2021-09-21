@@ -51,19 +51,8 @@ export default class ResultFooter extends React.Component<
       );
     }
 
-    // BobS: Modified to enable link to PCA Call Analysis, using Uri containied in document attribute
     let sourceLink;
-    let uri;
-    let label;
-    const pcaCallAnalysisUri = _.get(attributes,"ANALYSIS_URI.StringValue");
-    if (pcaCallAnalysisUri) {
-      uri = pcaCallAnalysisUri;
-      label = "Open Call Analysis";
-    } else {
-      uri = queryResultItem.DocumentURI;
-      label = uri;
-    }
-
+    const uri = queryResultItem.DocumentURI;
     if (uri && !_.isEmpty(uri)) {
       sourceLink = (
         <div className="display-inline action-link">
@@ -73,7 +62,7 @@ export default class ResultFooter extends React.Component<
             target="_blank"
             rel="noopener noreferrer"
           >
-            {truncateString(label!, MAX_URI_LENGTH)}
+            {truncateString(uri, MAX_URI_LENGTH)}
           </a>
         </div>
       );

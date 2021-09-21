@@ -87,7 +87,24 @@ def get_entity_values(entityType, dicts):
     if entityDict:
         list = entityDict["Values"]
     return list
-    
+
+def durationBucket(durationStr):
+    """
+    Return string category label for call duration
+    """
+    duration = int(float(durationStr))
+    if duration < 60:
+        return "0 to 1 min"
+    elif duration < 120:
+        return "1 min to 2 min"
+    elif duration < 180:
+        return "2 min to 3 min"
+    elif duration < 300:
+        return "3 min to 5 min"
+    elif duration < 600:
+        return "5 min to 10 min"
+    else:
+        return "over 10 min"
 
 def put_kendra_document(indexId, analysisUri, conversationAnalytics, text):
     """
@@ -132,7 +149,7 @@ def put_kendra_document(indexId, analysisUri, conversationAnalytics, text):
             {
                 "Key": "DURATION",
                 "Value": {
-                    "LongValue": int(float(conversationAnalytics["Duration"]))
+                    "StringValue": durationBucket(conversationAnalytics["Duration"])
                 }
             },
             {

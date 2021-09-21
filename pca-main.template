@@ -6,7 +6,7 @@ Parameters:
 
   AdminUsername:
     Type: String
-    Default: "Admin"
+    Default: "admin"
     Description: (Required) Username for admin user
     
   AdminEmail:
@@ -397,7 +397,7 @@ Resources:
           Search: 
             Displayable: true
             Facetable: true
-          Type: 'LONG_VALUE'
+          Type: 'STRING_VALUE'
         - Name: ENTITY_PERSON
           Search: 
             Displayable: true

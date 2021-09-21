@@ -5,7 +5,7 @@ Description: Amazon Transcribe Post Call Analytics - PCA UI
 Parameters:
   AdminUsername:
     Type: String
-    Default: "Admin"
+    Default: "admin"
     Description: (Required) Username for admin user
     
   AdminEmail:
