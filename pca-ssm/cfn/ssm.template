@@ -106,12 +106,14 @@ Parameters:
   SpeakerNames:
     Type: String
     Default: Agent | Caller
-    Description: Default tags used for speaker names, separated by " | "
+    Description: >-
+        Tags used for speaker names in transcripts, in channel/speaker order, separated by " | ".
+        For Call Analytics the name Agent must exist in either the first or second posision
 
   SpeakerSeparationType:
     Type: String
-    Default: speaker
-    Description: Separation mode for speakers, either explicitly Speaker or Channel, or Auto where audio stereo=>Channel and mono=>Speaker
+    Default: channel
+    Description: Separation mode for speakers: must be speaker (mono) channel (stereo/auto-select)
 
   StepFunctionName:
     Type: String
@@ -134,6 +136,11 @@ Parameters:
     Type: String
     Default: en-US
     Description: Allows files delivered from a non-standard bucket to be based upon this language
+
+  TranscribeApiMode:
+    Type: String
+    Default: standard
+    Description: Specifies which Transcribe API to use for new jobs - must be standard or analytics
 
   TranscribeLanguages:
     Type: String
