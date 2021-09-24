@@ -18,7 +18,7 @@ CONF_MINPOSITIVE = "MinSentimentPositive"
 CONF_S3BUCKET_OUTPUT = "OutputBucketName"
 CONF_PREFIX_PARSED_RESULTS = "OutputBucketParsedResults"
 CONF_SPEAKER_NAMES = "SpeakerNames"
-CONF_SPEAKER_SEPARATION = "SpeakerSeparationType"
+CONF_SPEAKER_MODE = "SpeakerSeparationType"
 COMP_SFN_NAME = "StepFunctionName"
 CONF_SUPPORT_BUCKET = "SupportFilesBucketName"
 CONF_TRANSCRIBE_LANG = "TranscribeLanguages"
@@ -26,11 +26,16 @@ CONF_TRANSCRIBE_ALTLANG = "TranscribeAlternateLanguage"
 CONF_VOCABNAME = "VocabularyName"
 CONF_FILTER_MODE = "VocabFilterMode"
 CONF_FILTER_NAME = "VocabFilterName"
+CONF_TRANSCRIBE_API = "TranscribeApiMode"
 
 # Parameter store fieldnames used by bulk import
 BULK_S3_BUCKET = "BulkUploadBucket"
 BULK_JOB_LIMIT = "BulkUploadMaxTranscribeJobs"
 BULK_MAX_DRIP_RATE = "BulkUploadMaxDripRate"
+
+# Transcribe API Modes
+API_STANDARD = "standard"
+API_ANALYTICS = "analytics"
 
 # Speaker separation modes
 SPEAKER_MODE_SPEAKER = "speaker"
@@ -91,10 +96,11 @@ def loadConfiguration():
                                                CONF_S3BUCKET_INPUT, CONF_PREFIX_RAW_AUDIO, CONF_PREFIX_FAILED_AUDIO,
                                                CONF_MAX_SPEAKERS])
     fullParamList2 = ssm.get_parameters(Names=[CONF_MINNEGATIVE, CONF_MINPOSITIVE, CONF_S3BUCKET_OUTPUT,
-                                               CONF_PREFIX_PARSED_RESULTS, CONF_SPEAKER_NAMES, CONF_SPEAKER_SEPARATION,
+                                               CONF_PREFIX_PARSED_RESULTS, CONF_SPEAKER_NAMES, CONF_SPEAKER_MODE,
                                                COMP_SFN_NAME, CONF_SUPPORT_BUCKET, CONF_TRANSCRIBE_LANG,
                                                CONF_TRANSCRIBE_ALTLANG])
-    fullParamList3 = ssm.get_parameters(Names=[CONF_VOCABNAME, CONF_CONVO_LOCATION, CONF_ENTITY_TYPES, CONF_FILTER_MODE, CONF_FILTER_NAME])
+    fullParamList3 = ssm.get_parameters(Names=[CONF_VOCABNAME, CONF_CONVO_LOCATION, CONF_ENTITY_TYPES, CONF_FILTER_MODE,
+                                               CONF_FILTER_NAME, CONF_TRANSCRIBE_API])
 
     # Extract our parameters into our config
     extractParameters(fullParamList1, False)
@@ -113,9 +119,9 @@ def loadConfiguration():
         appConfig[CONF_FILTER_NAME] = ""
 
     # Validate speaker-separation mode
-    appConfig[CONF_SPEAKER_SEPARATION] = appConfig[CONF_SPEAKER_SEPARATION].lower()
-    if (appConfig[CONF_SPEAKER_SEPARATION]) not in SPEAKER_MODES:
-        appConfig[CONF_SPEAKER_SEPARATION] = SPEAKER_MODE_SPEAKER
+    appConfig[CONF_SPEAKER_MODE] = appConfig[CONF_SPEAKER_MODE].lower()
+    if (appConfig[CONF_SPEAKER_MODE]) not in SPEAKER_MODES:
+        appConfig[CONF_SPEAKER_MODE] = SPEAKER_MODE_SPEAKER
 
     # Do any processing (casting, list expansion, etc) that we some parameters need
     appConfig[CONF_MINNEGATIVE] = float(appConfig[CONF_MINNEGATIVE])
