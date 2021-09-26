@@ -935,8 +935,7 @@ class TranscribeParser:
             uri = self.transcribeJobInfo["Transcript"]["RedactedTranscriptFileUri"]
         else:
             uri = self.transcribeJobInfo["Transcript"]["TranscriptFileUri"]
-        offset = uri.find(outputS3Bucket) + len(outputS3Bucket) + 1
-        self.jsonOutputFilename = uri[offset:]
+        self.jsonOutputFilename = uri.split("/")[-1]
         jsonFilepath = TMP_DIR + '/' + self.jsonOutputFilename
         s3Client = boto3.client('s3')
 
