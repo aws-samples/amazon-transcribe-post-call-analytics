@@ -166,7 +166,7 @@ def submitTranscribeJob(bucket, key, lang_code):
         # Should have a clear run at doing the job now
         kwargs = {'CallAnalyticsJobName': job_name,
                   'Media': media_settings,
-                  'OutputLocation': "s3://" + cf.appConfig[cf.CONF_S3BUCKET_OUTPUT],
+                  'OutputLocation': f"s3://{cf.appConfig[cf.CONF_S3BUCKET_OUTPUT]}/{cf.appConfig[cf.CONF_PREFIX_TRANSCRIBE_RESULTS]}/",
                   'DataAccessRoleArn': role_arn,
                   'Settings': job_settings,
                   'ChannelDefinitions': [chan_def_agent, chan_def_cust]
@@ -196,6 +196,7 @@ def submitTranscribeJob(bucket, key, lang_code):
                   'LanguageCode': lang_code,
                   'Media': media_settings,
                   'OutputBucketName': cf.appConfig[cf.CONF_S3BUCKET_OUTPUT],
+                  'OutputKey': cf.appConfig[cf.CONF_PREFIX_TRANSCRIBE_RESULTS] + '/',
                   'Settings': job_settings,
                   'JobExecutionSettings': execution_settings,
                   'ContentRedaction': content_redaction

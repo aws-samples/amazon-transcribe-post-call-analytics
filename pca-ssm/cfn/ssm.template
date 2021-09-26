@@ -98,10 +98,15 @@ Parameters:
       (Optional) Existing bucket where Transcribe output files are delivered. 
       Leave blank to automatically create new bucket.
 
+  OutputBucketTranscribeResults:
+    Type: String
+    Default: transcribeResults
+    Description: Folder within the output S3 bucket where Transcribe results are written
+    
   OutputBucketParsedResults:
     Type: String
     Default: parsedFiles
-    Description: Folder within the output S3 bucket where parsed results are written to
+    Description: Folder within the output S3 bucket where parsed results are written
 
   SpeakerNames:
     Type: String
@@ -113,7 +118,7 @@ Parameters:
   SpeakerSeparationType:
     Type: String
     Default: channel
-    Description: Separation mode for speakers: must be speaker (mono) channel (stereo/auto-select)
+    Description: Separation mode for speakers - must be speaker (mono) channel (stereo/auto-select)
 
   StepFunctionName:
     Type: String
@@ -356,12 +361,20 @@ Resources:
       Description: Bucket where Transcribe output files are delivered
       Value: !Ref OutputBucketName
 
+  OutputBucketTranscribeResultsParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: OutputBucketTranscribeResults
+      Type: String
+      Description: Folder within the output S3 bucket where Transcribe results are written
+      Value: !Ref OutputBucketParsedResults  
+
   OutputBucketParsedResultsParameter:
     Type: "AWS::SSM::Parameter"
     Properties:
       Name: OutputBucketParsedResults
       Type: String
-      Description: Folder within the output S3 bucket where parsed results are written to
+      Description: Folder within the output S3 bucket where parsed results are written
       Value: !Ref OutputBucketParsedResults
 
   SpeakerNamesParameter:

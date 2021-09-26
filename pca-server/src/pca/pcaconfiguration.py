@@ -16,6 +16,7 @@ CONF_MAX_SPEAKERS = "MaxSpeakers"
 CONF_MINNEGATIVE = "MinSentimentNegative"
 CONF_MINPOSITIVE = "MinSentimentPositive"
 CONF_S3BUCKET_OUTPUT = "OutputBucketName"
+CONF_PREFIX_TRANSCRIBE_RESULTS = "OutputBucketTranscribeResults"
 CONF_PREFIX_PARSED_RESULTS = "OutputBucketParsedResults"
 CONF_SPEAKER_NAMES = "SpeakerNames"
 CONF_SPEAKER_MODE = "SpeakerSeparationType"
@@ -110,7 +111,7 @@ def loadConfiguration():
                                                CONF_FILENAME_DATETIME_REGEX, CONF_FILENAME_DATETIME_FIELDMAP,
                                                CONF_FILENAME_GUID_REGEX, CONF_FILENAME_AGENT_REGEX,
                                                CONF_KENDRA_INDEX_ID])
-    fullParamList4 = ssm.get_parameters(Names=[CONF_WEB_URI, CONF_TRANSCRIBE_API])                                           
+    fullParamList4 = ssm.get_parameters(Names=[CONF_WEB_URI, CONF_TRANSCRIBE_API, CONF_PREFIX_TRANSCRIBE_RESULTS])                                           
 
     # Extract our parameters into our config
     extractParameters(fullParamList1, False)
