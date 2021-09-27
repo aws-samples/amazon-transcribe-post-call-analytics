@@ -367,7 +367,7 @@ Resources:
       Name: OutputBucketTranscribeResults
       Type: String
       Description: Folder within the output S3 bucket where Transcribe results are written
-      Value: !Ref OutputBucketParsedResults  
+      Value: !Ref OutputBucketTranscribeResults  
 
   OutputBucketParsedResultsParameter:
     Type: "AWS::SSM::Parameter"

@@ -936,16 +936,16 @@ class TranscribeParser:
         else:
             uri = self.transcribeJobInfo["Transcript"]["TranscriptFileUri"]
         self.jsonOutputFilename = uri.split("/")[-1]
+        transcriptResultsKey = f"{cf.appConfig[cf.CONF_PREFIX_TRANSCRIBE_RESULTS]}/{self.jsonOutputFilename}"
         jsonFilepath = TMP_DIR + '/' + self.jsonOutputFilename
         s3Client = boto3.client('s3')
-
         # Now download - this has been known to get a "404 HeadObject Not Found",
         # which makes no sense, so if that happens then re-try in a sec.  Only once.
         try:
-            s3Client.download_file(outputS3Bucket, self.jsonOutputFilename, jsonFilepath)
+            s3Client.download_file(outputS3Bucket, transcriptResultsKey, jsonFilepath)
         except:
             time.sleep(3)
-            s3Client.download_file(outputS3Bucket, self.jsonOutputFilename, jsonFilepath)
+            s3Client.download_file(outputS3Bucket, transcriptResultsKey, jsonFilepath)
 
         # Before we process, let's load up any required simply entity map
         self.loadSimpleEntityStringMap()
