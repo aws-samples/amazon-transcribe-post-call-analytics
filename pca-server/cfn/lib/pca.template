@@ -155,6 +155,9 @@ Resources:
 
   LogGroup:
     Type: AWS::Logs::LogGroup
+    Properties: 
+      LogGroupName: !Sub '/aws/vendedlogs/${StepFunctionName}'
+      RetentionInDays: 90
 
   Role:
     Type: "AWS::IAM::Role"
