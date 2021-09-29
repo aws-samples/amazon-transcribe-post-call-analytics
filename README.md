@@ -41,6 +41,11 @@ OR
 
 The only parameter that you MUST supply is the **AdminEmail** parameter. All other parameters have defaults.
 
+You may also want to deploy sample data to test the solution and polulate the UI with some sample calls. Set `loadSampleAudioFiles` parameter to `true`.
+  
+There's also an option to install a separate transcript search feature, using kendra. This deploys a Kendra index and a (separate) 
+search web app. To enable this set `EnableTranscriptKendraSearch` to `Yes, create new Kendra Index (Developer Edition)`
+  
 While the stack is creating, you will receive an email confirming your Admin username, your temporary password, and the URL for the newly installed PCA web application.
 
 ![VerificationEmail](images/verificationEmail.png)
