@@ -3,6 +3,10 @@ import Table from "react-bootstrap/Table";
 import { list } from "../api/api";
 import config from "../config";
 
+// TODO:
+// * Wrap entire table row with hyperlink
+// * Format timestamp and average accuracy
+
 function Home() {
   const [tableData, setTableData] = useState([]);
 
