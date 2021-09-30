@@ -71,9 +71,9 @@ if $PUBLIC; then
 else
    ./publish-privatebucket.sh ${BUCKET} ${PREFIX}/mediasearch | tee /tmp/mediasearch.out
 fi
-mediasearch_template=$(grep "Finder Template URL:" /tmp/mediasearch.out | awk '{print $4}')
 popd
-curl $mediasearch_template --output build/pca-mediasearch-finder.yaml
+mediasearch_template="s3://${BUCKET}/${PREFIX}/mediasearch/msfinder.yaml"
+aws s3 cp $mediasearch_template build/pca-mediasearch-finder.yaml
 
 
 echo "Packaging Cfn artifacts"
