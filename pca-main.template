@@ -85,7 +85,7 @@ Parameters:
     Default: ""
     Description: >-
       (Optional) Existing bucket holding all audio files for the system. 
-      Leave blank to automatically create new bucket.
+      Leave blank to automatically create new bucket with intelligent tiering storage and automated retention policy.
 
   InputBucketRawAudio:
     Type: String
@@ -112,7 +112,7 @@ Parameters:
     Default: ""
     Description: >-
       (Optional) Existing bucket where Transcribe output files are delivered. 
-      Leave blank to automatically create new bucket.
+      Leave blank to automatically create new bucket with intelligent tiering storage and automated retention policy.
 
   OutputBucketTranscribeResults:
     Type: String
@@ -229,6 +229,22 @@ Parameters:
         - 'Yes, create new Kendra Index (Enterprise Edition)'
     Description: Optionally make call transcripts searchable, using Amazon Kendra.
 
+  RetentionDays:
+    Type: Number
+    Default: 365
+    AllowedValues:
+      - 30
+      - 60
+      - 90
+      - 180
+      - 365
+      - 730
+      - 1460
+    Description: >
+      When using auto-provisioned S3 buckets, your audio files and associated call analysis data will be 
+      automatically and permanently deleted after the specified number of retention days. The application
+      does not currently archive recordings or call data. 
+
 Metadata:
     AWS::CloudFormation::Interface:
         ParameterGroups:
@@ -246,12 +262,13 @@ Metadata:
               Parameters:
                   - EnableTranscriptKendraSearch
             - Label:
-                default: S3 Bucket Names
+                default: S3 Bucket Names and Retention Policy
               Parameters:
                   - InputBucketName
                   - BulkUploadBucketName
                   - OutputBucketName
                   - SupportFilesBucketName
+                  - RetentionDays
             - Label:
                 default: Filename metadata parsing
               Parameters:
@@ -294,6 +311,14 @@ Resources:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
               SSEAlgorithm: AES256
+      LifecycleConfiguration:
+        Rules:
+          - Id: StorageClassAndRetention
+            Status: Enabled
+            ExpirationInDays: !Ref RetentionDays
+            Transitions:
+              - TransitionInDays: 1
+                StorageClass: INTELLIGENT_TIERING
 
   OutputBucket:
     Condition: ShouldCreateOutputBucket
@@ -304,6 +329,14 @@ Resources:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
               SSEAlgorithm: AES256
+      LifecycleConfiguration:
+        Rules:
+          - Id: LifecycleRule
+            Status: Enabled
+            ExpirationInDays: !Ref RetentionDays
+            Transitions:
+              - TransitionInDays: 1
+                StorageClass: INTELLIGENT_TIERING
 
   SupportFilesBucket:
     Condition: ShouldCreateSupportFilesBucket
