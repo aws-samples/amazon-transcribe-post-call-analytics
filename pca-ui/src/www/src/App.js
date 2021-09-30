@@ -2,7 +2,7 @@ import {
   BrowserRouter as Router,
   Switch,
   Route,
-  NavLink
+  NavLink,
 } from "react-router-dom";
 import { Navbar, Nav, Container } from "react-bootstrap";
 import Home from "./routes/Home";
@@ -10,10 +10,10 @@ import Search from "./routes/Search";
 import Dashboard from "./routes/Dashboard";
 
 const routes = [
-  { path: '/', name: 'Home', Component: Home },
-  { path: '/dashboard', name: 'Dashboard', Component: Dashboard },
-  { path: '/search', name: 'Search', Component: Search },
-]
+  { path: "/", name: "Home", Component: Home },
+  { path: "/dashboard", name: "Dashboard", Component: Dashboard },
+  { path: "/search", name: "Search", Component: Search },
+];
 
 function Navigation() {
   return (
@@ -23,7 +23,7 @@ function Navigation() {
         <Navbar.Toggle aria-controls="navbar-nav" />
         <Navbar.Collapse id="navbar-nav">
           <Nav className="me-auto">
-            {routes.map(route => (
+            {routes.map((route) => (
               <Nav.Link
                 key={route.path}
                 as={NavLink}
@@ -38,14 +38,14 @@ function Navigation() {
         </Navbar.Collapse>
       </Container>
     </Navbar>
-  )
+  );
 }
 
 function App() {
   return (
     <Router>
       <>
-        <Navigation/>
+        <Navigation />
         <Container className="py-3">
           <Switch>
             {routes.map(({ path, Component }) => (
