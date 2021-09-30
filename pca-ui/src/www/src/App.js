@@ -10,9 +10,9 @@ import Search from "./routes/Search";
 import Dashboard from "./routes/Dashboard";
 
 const routes = [
-  { path: "/", name: "Home", Component: Home },
-  { path: "/dashboard", name: "Dashboard", Component: Dashboard },
+  { path: "/dashboard/:key*", name: "Dashboard", Component: Dashboard },
   { path: "/search", name: "Search", Component: Search },
+  { path: "/", name: "Home", Component: Home },
 ];
 
 function Navigation() {
@@ -49,7 +49,7 @@ function App() {
         <Container className="py-3">
           <Switch>
             {routes.map(({ path, Component }) => (
-              <Route key={path} exact path={path}>
+              <Route key={path} path={path}>
                 <div className="page">
                   <Component />
                 </div>
