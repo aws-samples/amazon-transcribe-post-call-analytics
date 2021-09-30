@@ -23,6 +23,7 @@ function Home() {
       <Table striped bordered hover>
         <thead>
           <tr>
+            <th>#</th>
             <th>Job Name</th>
             <th>Timestamp</th>
             <th>Average Accuracy</th>
@@ -31,8 +32,9 @@ function Home() {
           </tr>
         </thead>
         <tbody>
-          {tableData.map((row) => (
+          {tableData.map((row, index) => (
             <tr>
+              <td>{index}</td>
               <td>{row.jobName}</td>
               <td>{row.timestamp}</td>
               <td>{row.accuracy}</td>
