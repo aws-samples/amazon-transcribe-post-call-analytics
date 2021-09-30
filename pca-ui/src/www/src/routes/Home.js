@@ -38,7 +38,9 @@ function Home() {
         <tbody>
           {tableData.map((row, index) => (
             <tr>
-              <td>{index}</td>
+              <td>
+                <a href={`/dashboard/${row.key}`}>{index}</a>
+              </td>
               <td>{row.jobName}</td>
               <td>{row.timestamp}</td>
               <td>{row.accuracy}</td>
