@@ -33,6 +33,8 @@ function Dashboard() {
   const { key } = useParams();
 
   const [data, setData] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [speakerOrder, setSpeakerOrder] = useState({
     spk_0: "Agent",
     spk_1: "Caller",
@@ -40,8 +42,15 @@ function Dashboard() {
 
   useEffect(() => {
     const getData = async () => {
-      const d = await get(key);
-      setData(d);
+      try {
+        const d = await get(key);
+        setData(d);
+      } catch (err) {
+        console.error(err);
+        setError(true);
+      } finally {
+        setLoading(false);
+      }
     };
     getData();
   }, [key]);
