@@ -175,24 +175,37 @@ function Dashboard() {
         <Card>
           <Card.Body>
             <Card.Title>Entities</Card.Title>
-            <Card.Text>
-              {loading ? (
-                <Spinner size="sm" animation="border" role="status">
-                  <span className="visually-hidden">Loading...</span>
-                </Spinner>
-              ) : (
-                <Stack gap={2} direction="horizontal">
-                  {data.ConversationAnalytics.CustomEntities.map((e, i) => (
-                    <Entity color={i} key={i} count={e.Count} type={e.Name} />
-                  ))}
-                </Stack>
-              )}
-            </Card.Text>
+            {loading ? (
+              <Spinner size="sm" animation="border" role="status">
+                <span className="visually-hidden">Loading...</span>
+              </Spinner>
+            ) : (
+              <Stack gap={2} direction="horizontal">
+                {data.ConversationAnalytics.CustomEntities.map((e, i) => (
+                  <Entity color={i} key={i} count={e.Count} type={e.Name} />
+                ))}
+              </Stack>
+            )}
           </Card.Body>
         </Card>
         <Card>
           <Card.Body>
-            <Card.Title>Transcript</Card.Title>
+            <Card.Title>
+              Transcript
+              {!loading && (
+                <audio
+                  className="float-end"
+                  controls
+                  src={
+                    data.ConversationAnalytics.SourceInformation[0]
+                      .TranscribeJobInfo.MediaFileUri
+                  }
+                >
+                  Your browser does not support the
+                  <code>audio</code> element.
+                </audio>
+              )}
+            </Card.Title>
             <Card.Text>
               {loading ? (
                 <Spinner size="sm" animation="border" role="status">
