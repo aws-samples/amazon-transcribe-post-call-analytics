@@ -193,14 +193,20 @@ function Dashboard() {
           <Card.Body>
             <Card.Title>Transcript</Card.Title>
             <Card.Text>
-              {(data?.SpeechSegments || []).map((s, i) => (
-                <TranscriptSegment
-                  key={i}
-                  name={speakerOrder[s.SegmentSpeaker]}
-                  segmentStart={s.SegmentStartTime}
-                  text={s.DisplayText}
-                />
-              ))}
+              {loading ? (
+                <Spinner size="sm" animation="border" role="status">
+                  <span className="visually-hidden">Loading...</span>
+                </Spinner>
+              ) : (
+                (data?.SpeechSegments || []).map((s, i) => (
+                  <TranscriptSegment
+                    key={i}
+                    name={speakerOrder[s.SegmentSpeaker]}
+                    segmentStart={s.SegmentStartTime}
+                    text={s.DisplayText}
+                  />
+                ))
+              )}
             </Card.Text>
           </Card.Body>
         </Card>
