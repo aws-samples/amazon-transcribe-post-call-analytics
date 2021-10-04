@@ -163,8 +163,9 @@ function Dashboard() {
           <Card.Body>
             <Card.Title>Transcript</Card.Title>
             <Card.Text>
-              {(data?.SpeechSegments || []).map((s) => (
+              {(data?.SpeechSegments || []).map((s, i) => (
                 <TranscriptSegment
+                  key={i}
                   name={speakerOrder[s.SegmentSpeaker]}
                   segmentStart={s.SegmentStartTime}
                   text={s.DisplayText}
