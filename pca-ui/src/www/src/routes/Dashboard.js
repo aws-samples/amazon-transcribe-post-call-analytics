@@ -10,7 +10,12 @@ import Spinner from "react-bootstrap/Spinner";
 import Badge from "react-bootstrap/Badge";
 
 // TODO
-// * Add rest of overview
+// * Display type
+// * Call duration
+// * Format Timestamp
+// * Format Percentages
+// * Style Transcript
+// * Add Swap Agent/Caller
 
 const ValueWithLabel = ({ label, children }) => (
   <div className="mb-3">
@@ -75,26 +80,36 @@ function Dashboard() {
     getData();
   }, [key]);
 
+  const getAverageSentiment = (d, target) => {
+    const id = Object.entries(speakerOrder).find(([_, v]) => v === target);
+    console.log(id);
+    const targetObj = d?.ConversationAnalytics?.SentimentTrends.find(
+      (s) => s.Speaker === id[0]
+    );
+
+    return targetObj?.AverageSentiment;
+  };
+
   const firstCol = [
     {
       label: "Timestamp",
-      value: (d) => d.ConversationAnalytics?.ConversationTime,
+      value: (d) => d?.ConversationAnalytics?.ConversationTime,
     },
     {
       label: "Entity Recognizer Name",
-      value: (d) => d.ConversationAnalytics?.EntityRecognizerName,
+      value: (d) => d?.ConversationAnalytics?.EntityRecognizerName,
     },
     {
       label: "Language Code",
-      value: (d) => d.ConversationAnalytics?.LanguageCode,
+      value: (d) => d?.ConversationAnalytics?.LanguageCode,
     },
     {
       label: "Agent Sentiment",
-      value: (d) => "TODO",
+      value: (d) => getAverageSentiment(d, "Agent"),
     },
     {
       label: "Customer Sentiment",
-      value: (d) => "TODO",
+      value: (d) => getAverageSentiment(d, "Caller"),
     },
   ];
 
@@ -104,7 +119,7 @@ function Dashboard() {
     {
       label: "File Format",
       value: (d) =>
-        d.data?.ConversationAnalytics?.SourceInformation[0]?.TranscribeJobInfo
+        d?.ConversationAnalytics?.SourceInformation[0]?.TranscribeJobInfo
           ?.MediaFormat,
     },
 
@@ -113,20 +128,20 @@ function Dashboard() {
     {
       label: "Sample Rate",
       value: (d) =>
-        d.data?.ConversationAnalytics?.SourceInformation[0]?.TranscribeJobInfo
+        d?.ConversationAnalytics?.SourceInformation[0]?.TranscribeJobInfo
           ?.MediaSampleRateHertz,
     },
 
     {
       label: "Custom Vocabulary",
       value: (d) =>
-        d.data?.ConversationAnalytics?.SourceInformation[0]?.TranscribeJobInfo
+        d?.ConversationAnalytics?.SourceInformation[0]?.TranscribeJobInfo
           ?.VocabularyName,
     },
     {
       label: "Word Accuracy",
       value: (d) =>
-        d.ConversationAnalytics.SourceInformation[0]?.TranscribeJobInfo
+        d?.ConversationAnalytics.SourceInformation[0]?.TranscribeJobInfo
           ?.AverageAccuracy,
     },
   ];
@@ -181,7 +196,7 @@ function Dashboard() {
               </Spinner>
             ) : (
               <Stack gap={2} direction="horizontal">
-                {data.ConversationAnalytics.CustomEntities.map((e, i) => (
+                {data?.ConversationAnalytics?.CustomEntities.map((e, i) => (
                   <Entity color={i} key={i} count={e.Count} type={e.Name} />
                 ))}
               </Stack>
@@ -197,8 +212,8 @@ function Dashboard() {
                   className="float-end"
                   controls
                   src={
-                    data.ConversationAnalytics.SourceInformation[0]
-                      .TranscribeJobInfo.MediaFileUri
+                    data?.ConversationAnalytics?.SourceInformation[0]
+                      ?.TranscribeJobInfo?.MediaFileUri
                   }
                 >
                   Your browser does not support the
