@@ -14,8 +14,8 @@ import Row from "react-bootstrap/Row";
 // * Add Transcipts
 
 const ValueWithLabel = ({ label, children }) => (
-  <div class="mb-l">
-    <h5 class="mb-s" color="text-label">
+  <div class="mb-3">
+    <h5 class="mb-1" color="text-label">
       {label}
     </h5>
     <div>{children}</div>
