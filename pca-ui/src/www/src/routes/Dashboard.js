@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router";
-import { get } from "../api/api";
+import { get, swap } from "../api/api";
 import { Percentage, Time } from "../format";
+
 import Card from "react-bootstrap/Card";
 import Stack from "react-bootstrap/Stack";
 import Col from "react-bootstrap/Col";
@@ -9,6 +10,8 @@ import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Spinner from "react-bootstrap/Spinner";
 import Badge from "react-bootstrap/Badge";
+import Button from "react-bootstrap/Button";
+
 import Smile from "../images/smile.png";
 import Frown from "../images/frown.png";
 import Neutral from "../images/neutral.png";
@@ -16,7 +19,6 @@ import Neutral from "../images/neutral.png";
 // TODO
 // * Display type
 // * Format Timestamp
-// * Add Swap Agent/Caller
 // * Add graph
 
 const ValueWithLabel = ({ label, children }) => (
@@ -107,6 +109,16 @@ function Dashboard() {
     getData();
   }, [key]);
 
+  const swapAgent = async () => {
+    try {
+      const resp = await swap(key);
+      window.location.reload(false);
+    } catch (err) {
+      console.error(err);
+      setError(err);
+    }
+  };
+
   const getAverageSentiment = (d, target) => {
     const id = Object.entries(speakerOrder).find(([_, v]) => v === target);
     const targetObj = d?.ConversationAnalytics?.SentimentTrends.find(
@@ -181,6 +193,12 @@ function Dashboard() {
     <div>
       <h3>Dashboard</h3>
       <Stack direction="vertical" gap={4}>
+        <div>
+          <h3 className="d-inline">Dashboard</h3>
+          <Button onClick={swapAgent} className="float-end">
+            Swap Agent/Caller
+          </Button>
+        </div>
         <Card>
           <Card.Body>
             <Container>
