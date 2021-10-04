@@ -132,7 +132,10 @@ Parameters:
   SpeakerSeparationType:
     Type: String
     Default: speaker
-    Description: Separation mode for speakers, either explicitly Speaker or Channel, or Auto where audio stereo=>Channel and mono=>Speaker
+    AllowedValues:
+        - speaker
+        - channel
+    Description: Separation mode diarization - typically speaker for mono files, channel for stereo files
 
   StepFunctionName:
     Type: String
@@ -164,7 +167,15 @@ Parameters:
   VocabularyName:
     Type: String
     Default: undefined
-    Description: Name of the custom vocabulary to use for Transcribe (not including language suffix, e.g. -en-US)
+    Description: Name of the custom vocabulary to use for Transcribe (omit the language suffix, e.g. -en-US)
+
+  TranscribeApiMode:
+    Type: String
+    Default: standard
+    AllowedValues:
+        - standard
+        - analytics
+    Description: Set the default operational mode for Transcribe
 
   ffmpegDownloadUrl:
     Type: String
@@ -530,6 +541,7 @@ Resources:
           - !Ref SupportFilesBucketName
         TranscribeAlternateLanguage: !Ref TranscribeAlternateLanguage
         TranscribeLanguages: !Ref TranscribeLanguages
+        TranscribeApiMode: !Ref TranscribeApiMode
         VocabularyName: !Ref VocabularyName
         FilenameDatetimeRegex: !Ref FilenameDatetimeRegex
         FilenameDatetimeFieldMap: !Ref FilenameDatetimeFieldMap

@@ -12,6 +12,9 @@ Parameters:
     Type: String
     Default: ffmpeg.zip
 
+  Boto3Layer:
+    Type: String
+
   SupportFilesBucketName:
     Type: AWS::SSM::Parameter::Value<String>
     Default: SupportFilesBucketName
@@ -99,9 +102,11 @@ Resources:
       Timeout: 15
       Layers:
         - !Ref FFMPEGLayer
+        - !Ref Boto3Layer
       Environment:
         Variables:
           RoleArn: !GetAtt TranscribeRole.Arn
+          AWS_DATA_PATH: "/opt/models"
       Role: !GetAtt TranscribeLambdaRole.Arn
 
   SFGetDetectedLanguage:
@@ -122,6 +127,10 @@ Resources:
       Timeout: 600
       Layers:
         - !Ref FFMPEGLayer
+        - !Ref Boto3Layer
+      Environment:
+        Variables:
+          AWS_DATA_PATH: "/opt/models"
       Policies:
         - arn:aws:iam::aws:policy/AmazonTranscribeReadOnlyAccess
         - arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess
