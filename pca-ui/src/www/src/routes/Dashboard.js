@@ -17,6 +17,7 @@ import Neutral from "../images/neutral.png";
 // * Display type
 // * Format Timestamp
 // * Add Swap Agent/Caller
+// * Add graph
 
 const ValueWithLabel = ({ label, children }) => (
   <div className="mb-3">
@@ -73,7 +74,7 @@ const Sentiment = ({ score }) => {
       <img
         src={icon}
         alt={alt}
-        style={{ display: "inline", width: "20%", marginRight: "1rem" }}
+        style={{ display: "inline", width: "2rem", marginRight: "1rem" }}
       />
       {Percentage(score)}
     </span>
