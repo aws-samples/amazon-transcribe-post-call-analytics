@@ -51,6 +51,7 @@ def lambda_handler(event, context):
         role_arn = os.environ["RoleArn"]
         jobName = pcacommon.submitTranscribeJob(bucket, clipFileKey, langCode, role_arn)
         sfData["jobName"] = jobName
+        sfData["apiMode"] = cf.API_STANDARD
     except Exception as e:
         print(e)
         # If we cannot sort out the clip then we can only continue with the first language

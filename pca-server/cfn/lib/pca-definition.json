@@ -93,26 +93,7 @@
           "IntervalSeconds": 5,
           "ErrorEquals": ["Lambda.Unknown"]
       }],
-      "Next": "SwitchFrenchDialect?"
-    },
-    "SwitchFrenchDialect?": {
-        "Comment": "Checks if lang was fr-FR, as we're having issues with some en-US being tagged fr-CA",
-        "Type": "Choice",
-        "Choices": [
-            {
-                "Variable": "$.langCode",
-                "StringEquals": "fr-FR",
-                "Next": "SwitchFRtoCA"
-            }
-        ],
-        "Default": "TranscribeAudio"
-    },
-    "SwitchFRtoCA": {
-        "Comment": "Replace detected language fr-FR with fr-CA for main transcription job",
-        "Type": "Pass",
-        "Result": "fr-CA",
-        "ResultPath": "$.langCode",
-        "Next": "TranscribeAudio"
+      "Next": "TranscribeAudio"
     },
     "TranscribeStarted?": {
       "Type": "Choice",
