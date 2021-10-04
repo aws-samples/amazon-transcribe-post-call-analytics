@@ -54,6 +54,15 @@ const Entity = ({ type, count, color }) => {
   );
 };
 
+export function Time(input) {
+  var mins = Math.floor(input / 60);
+  var secs = Math.floor(input - mins * 60).toLocaleString("en-GB", {
+    maximumFractionDigits: 1,
+  });
+
+  return `${mins}`.padStart(2, "0") + ":" + `${secs}`.padStart(2, "0");
+}
+
 function Dashboard() {
   const { key } = useParams();
 
@@ -82,7 +91,6 @@ function Dashboard() {
 
   const getAverageSentiment = (d, target) => {
     const id = Object.entries(speakerOrder).find(([_, v]) => v === target);
-    console.log(id);
     const targetObj = d?.ConversationAnalytics?.SentimentTrends.find(
       (s) => s.Speaker === id[0]
     );
@@ -123,7 +131,10 @@ function Dashboard() {
           ?.MediaFormat,
     },
 
-    { label: "Call Duration", value: (d) => "TODO" },
+    {
+      label: "Call Duration",
+      value: (d) => Time(d.ConversationAnalytics.Duration),
+    },
 
     {
       label: "Sample Rate",
