@@ -16,6 +16,7 @@ def lambda_handler(event, context):
 
     # Extract our parameters
     jobName = event["Input"]["jobName"]
+    api_mode = event["Input"]["apiMode"]
     taskToken = event["TaskToken"]
 
     # If the jobName is "" then that means no task was started - the Step Function
@@ -27,6 +28,7 @@ def lambda_handler(event, context):
     ddbClient = boto3.client("dynamodb")
     response = ddbClient.put_item(Item={
                                     'PKJobId': {'S': jobName},
+                                    'SKApiMode': {'S': api_mode},
                                     'taskToken': {'S': taskToken},
                                     'taskState': {'S': json.dumps(event["Input"])}
                                   },
@@ -42,9 +44,10 @@ if __name__ == "__main__":
             "bucket": "ajk-call-analytics-demo",
             "key": "audio/example-call.wav",
             "langCode": "en-US",
-            "jobName": "example-call.wav.wav"
+            "jobName": "stereo.mp3",
+            "apiMode": "analytics"
         },
         "TaskToken": "tesGGDSAG3RWEF"
     }
-    os.environ['TableName'] = 'pcaSFTaskTracker'
+    os.environ['TableName'] = 'cci-PCAServer-MK00H3MPFXK9-DDB-1DUUJKPYBH0LP-Table-1AOTYJNH0R9RF'
     lambda_handler(event, "")

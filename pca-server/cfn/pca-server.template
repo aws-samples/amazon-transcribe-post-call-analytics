@@ -27,6 +27,11 @@ Resources:
       Parameters:
         ffmpegDownloadUrl: !Ref ffmpegDownloadUrl
 
+  BOTO3:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: lib/boto3.template
+
   DDB:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -39,6 +44,7 @@ Resources:
       Parameters:
         TableName: !GetAtt DDB.Outputs.TableName
         FFMPEGZipName: !GetAtt FFMPEG.Outputs.FFMPEGZipName
+        Boto3Layer: !GetAtt BOTO3.Outputs.Boto3Layer
 
   Trigger:
     Type: AWS::CloudFormation::Stack
@@ -46,6 +52,7 @@ Resources:
       TemplateURL: lib/trigger.template
       Parameters:
         TableName: !GetAtt DDB.Outputs.TableName
+        Boto3Layer: !GetAtt BOTO3.Outputs.Boto3Layer
 
   BulkImport:
     Type: AWS::CloudFormation::Stack

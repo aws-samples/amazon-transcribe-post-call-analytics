@@ -113,7 +113,7 @@ Parameters:
   SpeakerSeparationType:
     Type: String
     Default: channel
-    Description: Separation mode for speakers: must be speaker (mono) channel (stereo/auto-select)
+    Description: Separation mode for speakers - must be speaker (mono) channel (stereo/auto-select)
 
   StepFunctionName:
     Type: String

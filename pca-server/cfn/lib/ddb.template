@@ -9,8 +9,12 @@ Resources:
       KeySchema:
         - AttributeName: PKJobId
           KeyType: HASH
+        - AttributeName: SKApiMode
+          KeyType: RANGE
       AttributeDefinitions:
         - AttributeName: PKJobId
+          AttributeType: S
+        - AttributeName: SKApiMode      
           AttributeType: S
       BillingMode: PAY_PER_REQUEST
 

@@ -85,7 +85,7 @@ def submitTranscribeJob(bucket, key, lang_code):
     @param bucket: Bucket holding the audio file to be tested
     @param key: Key for the audio file in the bucket
     @param lang_code: Configured language code for the audio file
-    @return: Name of the transcription job
+    @return: Name of the transcription job, and the Transcript API mode
     '''
 
     # Work out our API mode for Transcribe, and get our boto3 client
@@ -206,8 +206,8 @@ def submitTranscribeJob(bucket, key, lang_code):
             **{k: v for k, v in kwargs.items() if v is not None}
         )
 
-    # Return our job name, as we need to track it
-    return job_name
+    # Return our job name and api mode, as we need to track them
+    return job_name, api_mode
 
 
 def evaluate_transcribe_mode(bucket, key):
@@ -261,8 +261,9 @@ def lambda_handler(event, context):
     langCode = sfData["langCode"]
 
     try:
-        jobName = submitTranscribeJob(event["bucket"], key, langCode)
-        sfData["jobName"] = jobName
+        job_name, api_mode = submitTranscribeJob(event["bucket"], key, langCode)
+        sfData["jobName"] = job_name
+        sfData["apiMode"] = api_mode
         return sfData
     except Exception as e:
         print(e)
@@ -275,10 +276,10 @@ def lambda_handler(event, context):
 if __name__ == "__main__":
     # Standard test event
     event = {
-        "bucket": "ak-cci-support",
-        # "key": "testAudio/mono.wav",
-        "key": "testAudio/stereo.mp3",
+        "bucket": "ak-cci-input",
+        # "key": "originalAudio/mono.wav",
+        "key": "originalAudio/stereo.mp3",
         "langCode": "en-US"
     }
-    os.environ['RoleArn'] = 'arn:aws:iam::543648494853:role/cci-PCAServer-JOL389RCJLHY-PCA-145D-TranscribeRole-MWJEFF52IF3R'
+    os.environ['RoleArn'] = 'arn:aws:iam::543648494853:role/cci-07-PCAServer-5IOUU5NAJR9O-PCA-T-TranscribeRole-1MJD9E20C1IS4'
     lambda_handler(event, "")
