@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router";
 import { get } from "../api/api";
+import { Percentage } from "../format";
 import Card from "react-bootstrap/Card";
 import Stack from "react-bootstrap/Stack";
 import Col from "react-bootstrap/Col";
@@ -11,9 +12,7 @@ import Badge from "react-bootstrap/Badge";
 
 // TODO
 // * Display type
-// * Call duration
 // * Format Timestamp
-// * Format Percentages
 // * Style Transcript
 // * Add Swap Agent/Caller
 
@@ -95,7 +94,7 @@ function Dashboard() {
       (s) => s.Speaker === id[0]
     );
 
-    return targetObj?.AverageSentiment;
+    return Percentage(targetObj?.AverageSentiment);
   };
 
   const firstCol = [
@@ -152,8 +151,10 @@ function Dashboard() {
     {
       label: "Word Accuracy",
       value: (d) =>
-        d?.ConversationAnalytics.SourceInformation[0]?.TranscribeJobInfo
-          ?.AverageAccuracy,
+        Percentage(
+          d?.ConversationAnalytics.SourceInformation[0]?.TranscribeJobInfo
+            ?.AverageAccuracy
+        ),
     },
   ];
 
