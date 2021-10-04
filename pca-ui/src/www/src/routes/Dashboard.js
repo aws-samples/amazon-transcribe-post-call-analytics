@@ -81,7 +81,7 @@ function Dashboard() {
     },
     {
       label: "Entity Recognizer Name",
-      value: (d) => "TODO",
+      value: (d) => d.ConversationAnalytics?.EntityRecognizerName,
     },
     {
       label: "Language Code",
@@ -116,15 +116,14 @@ function Dashboard() {
           ?.MediaSampleRateHertz,
     },
 
-    { label: "Custom Vocabulary", value: (d) => "TODO" },
     {
-      label: "Word Accuracy",
+      label: "Custom Vocabulary",
       value: (d) =>
-        d.ConversationAnalytics.SourceInformation[0]?.TranscribeJobInfo
-          ?.AverageAccuracy,
+        d.data?.ConversationAnalytics?.SourceInformation[0]?.TranscribeJobInfo
+          ?.VocabularyName,
     },
     {
-      label: "Accuracy",
+      label: "Word Accuracy",
       value: (d) =>
         d.ConversationAnalytics.SourceInformation[0]?.TranscribeJobInfo
           ?.AverageAccuracy,
