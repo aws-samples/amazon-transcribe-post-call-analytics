@@ -232,22 +232,21 @@ function Dashboard() {
                 </audio>
               )}
             </Card.Title>
-            <Card.Text>
-              {loading ? (
-                <Spinner size="sm" animation="border" role="status">
-                  <span className="visually-hidden">Loading...</span>
-                </Spinner>
-              ) : (
-                (data?.SpeechSegments || []).map((s, i) => (
-                  <TranscriptSegment
-                    key={i}
-                    name={speakerOrder[s.SegmentSpeaker]}
-                    segmentStart={s.SegmentStartTime}
-                    text={s.DisplayText}
-                  />
-                ))
-              )}
-            </Card.Text>
+
+            {loading ? (
+              <Spinner size="sm" animation="border" role="status">
+                <span className="visually-hidden">Loading...</span>
+              </Spinner>
+            ) : (
+              (data?.SpeechSegments || []).map((s, i) => (
+                <TranscriptSegment
+                  key={i}
+                  name={speakerOrder[s.SegmentSpeaker]}
+                  segmentStart={s.SegmentStartTime}
+                  text={s.DisplayText}
+                />
+              ))
+            )}
           </Card.Body>
         </Card>
       </Stack>
