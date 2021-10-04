@@ -47,7 +47,7 @@ const Entity = ({ type, count, color }) => {
     "light",
   ];
 
-  const c = colors[(color % colors.length) - 1];
+  const c = colors[color % colors.length];
 
   return (
     <Badge bg={c}>
