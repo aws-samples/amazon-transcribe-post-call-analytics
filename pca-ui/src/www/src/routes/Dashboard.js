@@ -148,7 +148,7 @@ function Dashboard() {
                           <span className="visually-hidden">Loading...</span>
                         </Spinner>
                       ) : (
-                        entry.value(data)
+                        entry.value(data) || "-"
                       )}
                     </ValueWithLabel>
                   ))}
@@ -162,7 +162,7 @@ function Dashboard() {
                           <span className="visually-hidden">Loading...</span>
                         </Spinner>
                       ) : (
-                        entry.value(data)
+                        entry.value(data) || "-"
                       )}
                     </ValueWithLabel>
                   ))}
