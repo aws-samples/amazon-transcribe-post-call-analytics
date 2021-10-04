@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router";
 import { get } from "../api/api";
-import { Percentage } from "../format";
+import { Percentage, Time } from "../format";
 import Card from "react-bootstrap/Card";
 import Stack from "react-bootstrap/Stack";
 import Col from "react-bootstrap/Col";
@@ -16,7 +16,6 @@ import Neutral from "../images/neutral.png";
 // TODO
 // * Display type
 // * Format Timestamp
-// * Style Transcript
 // * Add Swap Agent/Caller
 
 const ValueWithLabel = ({ label, children }) => (
@@ -28,10 +27,10 @@ const ValueWithLabel = ({ label, children }) => (
   </div>
 );
 
-const TranscriptSegment = ({ name, segmentStart, text }) => (
+const TranscriptSegment = ({ name, segmentStart, text, primary }) => (
   <div>
-    <span>
-      {name} - {segmentStart}
+    <span style={{ color: "#808080" }}>
+      {name} - {Time(segmentStart)}
     </span>
     <p>{text}</p>
   </div>
