@@ -9,6 +9,9 @@ import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Spinner from "react-bootstrap/Spinner";
 import Badge from "react-bootstrap/Badge";
+import Smile from "../images/smile.png";
+import Frown from "../images/frown.png";
+import Neutral from "../images/neutral.png";
 
 // TODO
 // * Display type
@@ -53,14 +56,30 @@ const Entity = ({ type, count, color }) => {
   );
 };
 
-export function Time(input) {
-  var mins = Math.floor(input / 60);
-  var secs = Math.floor(input - mins * 60).toLocaleString("en-GB", {
-    maximumFractionDigits: 1,
-  });
-
-  return `${mins}`.padStart(2, "0") + ":" + `${secs}`.padStart(2, "0");
-}
+const Sentiment = ({ score }) => {
+  let icon;
+  let alt;
+  if (score > 0) {
+    icon = Smile;
+    alt = "positive";
+  } else if (score < 0) {
+    icon = Frown;
+    alt = "negative";
+  } else {
+    alt = "neutral";
+    icon = Neutral;
+  }
+  return (
+    <span>
+      <img
+        src={icon}
+        alt={alt}
+        style={{ display: "inline", width: "20%", marginRight: "1rem" }}
+      />
+      {Percentage(score)}
+    </span>
+  );
+};
 
 function Dashboard() {
   const { key } = useParams();
@@ -94,7 +113,7 @@ function Dashboard() {
       (s) => s.Speaker === id[0]
     );
 
-    return Percentage(targetObj?.AverageSentiment);
+    return targetObj?.AverageSentiment;
   };
 
   const firstCol = [
@@ -112,11 +131,11 @@ function Dashboard() {
     },
     {
       label: "Agent Sentiment",
-      value: (d) => getAverageSentiment(d, "Agent"),
+      value: (d) => <Sentiment score={getAverageSentiment(d, "Agent")} />,
     },
     {
       label: "Customer Sentiment",
-      value: (d) => getAverageSentiment(d, "Caller"),
+      value: (d) => <Sentiment score={getAverageSentiment(d, "Caller")} />,
     },
   ];
 
