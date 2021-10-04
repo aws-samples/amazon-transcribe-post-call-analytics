@@ -8,7 +8,6 @@ import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 
 // TODO
-// * Fix Value with label spacing
 // * Add rest of overview
 // * Add entities
 // * Add Transcipts
@@ -42,8 +41,8 @@ function Dashboard() {
       <Stack direction="vertical" gap={4}>
         <Card>
           <Card.Body>
-            <Card.Title>Overview</Card.Title>
             <Container>
+              <Card.Title>Overview</Card.Title>
               <Row>
                 <Col>
                   <ValueWithLabel label={"Timestamp"}>
