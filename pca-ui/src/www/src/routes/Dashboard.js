@@ -190,8 +190,7 @@ function Dashboard() {
   ];
 
   return (
-    <div>
-      <h3>Dashboard</h3>
+    <Container>
       <Stack direction="vertical" gap={4}>
         <div>
           <h3 className="d-inline">Dashboard</h3>
@@ -201,39 +200,37 @@ function Dashboard() {
         </div>
         <Card>
           <Card.Body>
-            <Container>
-              <Card.Title>Overview</Card.Title>
-              <Row>
-                <Col>
-                  {firstCol.map((entry, i) => (
-                    <ValueWithLabel key={i} label={entry.label}>
-                      {loading ? (
-                        <Spinner size="sm" animation="border" role="status">
-                          <span className="visually-hidden">Loading...</span>
-                        </Spinner>
-                      ) : (
-                        entry.value(data) || "-"
-                      )}
-                    </ValueWithLabel>
-                  ))}
-                </Col>
+            <Card.Title>Overview</Card.Title>
+            <Row>
+              <Col>
+                {firstCol.map((entry, i) => (
+                  <ValueWithLabel key={i} label={entry.label}>
+                    {loading ? (
+                      <Spinner size="sm" animation="border" role="status">
+                        <span className="visually-hidden">Loading...</span>
+                      </Spinner>
+                    ) : (
+                      entry.value(data) || "-"
+                    )}
+                  </ValueWithLabel>
+                ))}
+              </Col>
 
-                <Col>
-                  {secondCol.map((entry, i) => (
-                    <ValueWithLabel key={i} label={entry.label}>
-                      {loading ? (
-                        <Spinner size="sm" animation="border" role="status">
-                          <span className="visually-hidden">Loading...</span>
-                        </Spinner>
-                      ) : (
-                        entry.value(data) || "-"
-                      )}
-                    </ValueWithLabel>
-                  ))}
-                </Col>
-                <Col></Col>
-              </Row>
-            </Container>
+              <Col>
+                {secondCol.map((entry, i) => (
+                  <ValueWithLabel key={i} label={entry.label}>
+                    {loading ? (
+                      <Spinner size="sm" animation="border" role="status">
+                        <span className="visually-hidden">Loading...</span>
+                      </Spinner>
+                    ) : (
+                      entry.value(data) || "-"
+                    )}
+                  </ValueWithLabel>
+                ))}
+              </Col>
+              <Col></Col>
+            </Row>
           </Card.Body>
         </Card>
         <Card>
@@ -288,7 +285,7 @@ function Dashboard() {
           </Card.Body>
         </Card>
       </Stack>
-    </div>
+    </Container>
   );
 }
 
