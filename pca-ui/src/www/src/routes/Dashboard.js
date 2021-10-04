@@ -7,6 +7,7 @@ import Col from "react-bootstrap/Col";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Spinner from "react-bootstrap/Spinner";
+import Badge from "react-bootstrap/Badge";
 
 // TODO
 // * Add rest of overview
@@ -30,6 +31,23 @@ const TranscriptSegment = ({ name, segmentStart, text }) => (
     <p>{text}</p>
   </div>
 );
+
+const Entity = ({ type, count, color }) => {
+  const colors = [
+    "primary",
+    "secondary",
+    "success",
+    "warning",
+    "info",
+    "light",
+  ];
+  return (
+    <Badge bg={colors[color]}>
+      {type} x {count}
+    </Badge>
+  );
+};
+
 function Dashboard() {
   const { key } = useParams();
 
@@ -158,8 +176,17 @@ function Dashboard() {
           <Card.Body>
             <Card.Title>Entities</Card.Title>
             <Card.Text>
-              Some quick example text to build on the card title and make up the
-              bulk of the card's content.
+              {loading ? (
+                <Spinner size="sm" animation="border" role="status">
+                  <span className="visually-hidden">Loading...</span>
+                </Spinner>
+              ) : (
+                <Stack gap={2} direction="horizontal">
+                  {data.ConversationAnalytics.CustomEntities.map((e, i) => (
+                    <Entity color={i} key={i} count={e.Count} type={e.Name} />
+                  ))}
+                </Stack>
+              )}
             </Card.Text>
           </Card.Body>
         </Card>
