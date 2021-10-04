@@ -6,7 +6,7 @@ import Stack from "react-bootstrap/Stack";
 import Col from "react-bootstrap/Col";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
-import Placeholder from "react-bootstrap/Placeholder";
+import Spinner from "react-bootstrap/Spinner";
 
 // TODO
 // * Add rest of overview
@@ -14,8 +14,8 @@ import Placeholder from "react-bootstrap/Placeholder";
 // * Add Transcipts
 
 const ValueWithLabel = ({ label, children }) => (
-  <div class="mb-3">
-    <h5 class="mb-1" color="text-label">
+  <div className="mb-3">
+    <h5 className="mb-1" color="text-label">
       {label}
     </h5>
     <div>{children}</div>
@@ -126,7 +126,9 @@ function Dashboard() {
                   {firstCol.map((entry, i) => (
                     <ValueWithLabel key={i} label={entry.label}>
                       {loading ? (
-                        <Placeholder animation="glow" size="sm" />
+                        <Spinner size="sm" animation="border" role="status">
+                          <span className="visually-hidden">Loading...</span>
+                        </Spinner>
                       ) : (
                         entry.value(data)
                       )}
@@ -138,7 +140,9 @@ function Dashboard() {
                   {secondCol.map((entry, i) => (
                     <ValueWithLabel key={i} label={entry.label}>
                       {loading ? (
-                        <Placeholder animation="glow" size="sm" />
+                        <Spinner size="sm" animation="border" role="status">
+                          <span className="visually-hidden">Loading...</span>
+                        </Spinner>
                       ) : (
                         entry.value(data)
                       )}
