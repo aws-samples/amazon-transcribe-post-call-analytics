@@ -11,8 +11,6 @@ import Badge from "react-bootstrap/Badge";
 
 // TODO
 // * Add rest of overview
-// * Add entities
-// * Add Transcipts
 
 const ValueWithLabel = ({ label, children }) => (
   <div className="mb-3">
