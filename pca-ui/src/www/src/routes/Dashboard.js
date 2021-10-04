@@ -21,10 +21,22 @@ const ValueWithLabel = ({ label, children }) => (
   </div>
 );
 
+const TranscriptSegment = ({ name, segmentStart, text }) => (
+  <div>
+    <span>
+      {name} - {segmentStart}
+    </span>
+    <p>{text}</p>
+  </div>
+);
 function Dashboard() {
   const { key } = useParams();
 
   const [data, setData] = useState({});
+  const [speakerOrder, setSpeakerOrder] = useState({
+    spk_0: "Agent",
+    spk_1: "Caller",
+  });
 
   useEffect(() => {
     const getData = async () => {
@@ -75,8 +87,13 @@ function Dashboard() {
           <Card.Body>
             <Card.Title>Transcript</Card.Title>
             <Card.Text>
-              Some quick example text to build on the card title and make up the
-              bulk of the card's content.
+              {(data?.SpeechSegments || []).map((s) => (
+                <TranscriptSegment
+                  name={speakerOrder[s.SegmentSpeaker]}
+                  segmentStart={s.SegmentStartTime}
+                  text={s.DisplayText}
+                />
+              ))}
             </Card.Text>
           </Card.Body>
         </Card>
