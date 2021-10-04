@@ -6,6 +6,7 @@ import Stack from "react-bootstrap/Stack";
 import Col from "react-bootstrap/Col";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
+import Placeholder from "react-bootstrap/Placeholder";
 
 // TODO
 // * Add rest of overview
@@ -54,11 +55,67 @@ function Dashboard() {
     };
     getData();
   }, [key]);
+
+  const firstCol = [
+    {
+      label: "Timestamp",
+      value: (d) => d.ConversationAnalytics?.ConversationTime,
+    },
+    {
+      label: "Entity Recognizer Name",
+      value: (d) => "TODO",
+    },
+    {
+      label: "Language Code",
+      value: (d) => d.ConversationAnalytics?.LanguageCode,
+    },
+    {
+      label: "Agent Sentiment",
+      value: (d) => "TODO",
+    },
+    {
+      label: "Customer Sentiment",
+      value: (d) => "TODO",
+    },
+  ];
+
+  const secondCol = [
+    { label: "Type", value: (d) => "TODO" },
+    { label: "Job Name", value: (d) => key },
+    {
+      label: "File Format",
+      value: (d) =>
+        d.data?.ConversationAnalytics?.SourceInformation[0]?.TranscribeJobInfo
+          ?.MediaFormat,
+    },
+
+    { label: "Call Duration", value: (d) => "TODO" },
+
+    {
+      label: "Sample Rate",
+      value: (d) =>
+        d.data?.ConversationAnalytics?.SourceInformation[0]?.TranscribeJobInfo
+          ?.MediaSampleRateHertz,
+    },
+
+    { label: "Custom Vocabulary", value: (d) => "TODO" },
+    {
+      label: "Word Accuracy",
+      value: (d) =>
+        d.ConversationAnalytics.SourceInformation[0]?.TranscribeJobInfo
+          ?.AverageAccuracy,
+    },
+    {
+      label: "Accuracy",
+      value: (d) =>
+        d.ConversationAnalytics.SourceInformation[0]?.TranscribeJobInfo
+          ?.AverageAccuracy,
+    },
+  ];
+
   return (
     <div>
       <h3>Dashboard</h3>
-      <h4>{key}</h4>
-
       <Stack direction="vertical" gap={4}>
         <Card>
           <Card.Body>
@@ -66,18 +123,28 @@ function Dashboard() {
               <Card.Title>Overview</Card.Title>
               <Row>
                 <Col>
-                  <ValueWithLabel label={"Timestamp"}>
-                    {data.ConversationAnalytics?.ConversationTime}
-                  </ValueWithLabel>
-                  <ValueWithLabel label={"Entity Recognizer Name"}>
-                    TODO
-                  </ValueWithLabel>
-                  <ValueWithLabel label={"Entity Recognizer Name"}>
-                    TODO
-                  </ValueWithLabel>
+                  {firstCol.map((entry, i) => (
+                    <ValueWithLabel key={i} label={entry.label}>
+                      {loading ? (
+                        <Placeholder animation="glow" size="sm" />
+                      ) : (
+                        entry.value(data)
+                      )}
+                    </ValueWithLabel>
+                  ))}
                 </Col>
 
-                <Col></Col>
+                <Col>
+                  {secondCol.map((entry, i) => (
+                    <ValueWithLabel key={i} label={entry.label}>
+                      {loading ? (
+                        <Placeholder animation="glow" size="sm" />
+                      ) : (
+                        entry.value(data)
+                      )}
+                    </ValueWithLabel>
+                  ))}
+                </Col>
                 <Col></Col>
               </Row>
             </Container>
