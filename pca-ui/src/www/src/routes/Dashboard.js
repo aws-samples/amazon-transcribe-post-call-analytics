@@ -198,10 +198,16 @@ function Dashboard() {
           ?.VocabularyName,
     },
     {
+      label: "Vocabularly Filter",
+      value: (d) =>
+        d.ConversationAnalytics.SourceInformation[0]?.TranscribeJobInfo
+          ?.VocabularyFilter,
+    },
+    {
       label: "Word Accuracy",
       value: (d) =>
         Percentage(
-          d?.ConversationAnalytics.SourceInformation[0]?.TranscribeJobInfo
+          d.ConversationAnalytics.SourceInformation[0]?.TranscribeJobInfo
             ?.AverageAccuracy
         ),
     },
