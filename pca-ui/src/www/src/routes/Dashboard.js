@@ -30,10 +30,20 @@ const ValueWithLabel = ({ label, children }) => (
   </div>
 );
 
-const TranscriptSegment = ({ name, segmentStart, text, primary }) => (
+const TranscriptSegment = ({ name, segmentStart, text, onClick }) => (
   <div>
     <span style={{ color: "#808080" }}>
-      {name} - {Time(segmentStart)}
+      {name} -{" "}
+      <span
+        data-currenttime={segmentStart}
+        onClick={onClick}
+        style={{
+          color: "cadetblue",
+          cursor: "pointer",
+        }}
+      >
+        {Time(segmentStart)}
+      </span>
     </span>
     <p>{text}</p>
   </div>
@@ -126,6 +136,14 @@ function Dashboard() {
     );
 
     return targetObj?.AverageSentiment;
+  };
+
+  const setAudioCurrentTime = (e) => {
+    const a = document.getElementsByTagName("audio")[0];
+    console.log({ e });
+
+    a.currentTime = e.target.dataset.currenttime;
+    console.log({ a });
   };
 
   const firstCol = [
@@ -279,6 +297,7 @@ function Dashboard() {
                   name={speakerOrder[s.SegmentSpeaker]}
                   segmentStart={s.SegmentStartTime}
                   text={s.DisplayText}
+                  onClick={setAudioCurrentTime}
                 />
               ))
             )}
