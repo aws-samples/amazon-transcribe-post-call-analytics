@@ -11,7 +11,9 @@ import { entities as getEntities, languages as getLanguages } from "../api/api";
 function Search() {
   const [entities, setEntities] = useState([]);
   const [languageCodes, setLanguageCodes] = useState([]);
+
   const [startDate, setStartDate] = useState(new Date());
+  const [endDate, setEndDate] = useState(null);
 
   const [error, setError] = useState();
   const [loading, setLoading] = useState(true);
@@ -35,6 +37,12 @@ function Search() {
     getData();
   }, []);
 
+  const handleDates = (dates) => {
+    const [start, end] = dates;
+    setStartDate(start);
+    setEndDate(end);
+  };
+
   return (
     <Container>
       <h3>Search</h3>
@@ -49,11 +57,14 @@ function Search() {
         </Form.Group>
         <Form.Group>
           <Form.Label>Date Range</Form.Label>
-          <FormText>From</FormText>
           <DatePicker
             selected={startDate}
-            onChange={(date) => setStartDate(date)}
+            startDate={startDate}
+            endDate={endDate}
+            selectsRange
             dateFormat="yyyy-MM-dd"
+            onChange={handleDates}
+            maxDate={new Date()}
           />
         </Form.Group>
         <Form.Group>
