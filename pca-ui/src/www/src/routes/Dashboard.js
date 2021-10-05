@@ -269,11 +269,20 @@ function Dashboard() {
         </Card>
         <Card>
           <Card.Body>
-            <Card.Title>
-              Transcript
+            <Card.Title
+              className="sticky-top"
+              style={{
+                marginBottom: "1rem",
+                padding: "1rem",
+                background: "white",
+              }}
+            >
+              <div style={{ display: "inline-flex", paddingBottom: "1rem" }}>
+                Transcript
+              </div>
               {!loading && (
                 <audio
-                  className="float-end"
+                  style={{ float: "right" }}
                   controls
                   src={
                     data?.ConversationAnalytics?.SourceInformation[0]
