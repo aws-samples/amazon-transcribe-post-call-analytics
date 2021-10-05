@@ -151,6 +151,7 @@ function Dashboard() {
       label: "Timestamp",
       value: (d) => d?.ConversationAnalytics?.ConversationTime,
     },
+    { label: "Agent", value: (d) => d?.ConversationAnalytics?.Agent },
     {
       label: "Entity Recognizer Name",
       value: (d) => d?.ConversationAnalytics?.EntityRecognizerName,
@@ -171,7 +172,7 @@ function Dashboard() {
 
   const secondCol = [
     { label: "Type", value: (d) => "TODO" },
-    { label: "Job Name", value: (d) => key },
+    { label: "Guid", value: (d) => d?.ConversationAnalytics?.GUID },
     {
       label: "File Format",
       value: (d) =>
