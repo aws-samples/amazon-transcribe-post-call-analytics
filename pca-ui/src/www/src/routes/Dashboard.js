@@ -30,10 +30,20 @@ const ValueWithLabel = ({ label, children }) => (
   </div>
 );
 
-const TranscriptSegment = ({ name, segmentStart, text, primary }) => (
+const TranscriptSegment = ({ name, segmentStart, text, onClick }) => (
   <div>
     <span style={{ color: "#808080" }}>
-      {name} - {Time(segmentStart)}
+      {name} -{" "}
+      <span
+        data-currenttime={segmentStart}
+        onClick={onClick}
+        style={{
+          color: "cadetblue",
+          cursor: "pointer",
+        }}
+      >
+        {Time(segmentStart)}
+      </span>
     </span>
     <p>{text}</p>
   </div>
@@ -128,11 +138,20 @@ function Dashboard() {
     return targetObj?.AverageSentiment;
   };
 
+  const setAudioCurrentTime = (e) => {
+    const a = document.getElementsByTagName("audio")[0];
+    console.log({ e });
+
+    a.currentTime = e.target.dataset.currenttime;
+    console.log({ a });
+  };
+
   const firstCol = [
     {
       label: "Timestamp",
       value: (d) => d?.ConversationAnalytics?.ConversationTime,
     },
+    { label: "Agent", value: (d) => d?.ConversationAnalytics?.Agent },
     {
       label: "Entity Recognizer Name",
       value: (d) => d?.ConversationAnalytics?.EntityRecognizerName,
@@ -153,7 +172,7 @@ function Dashboard() {
 
   const secondCol = [
     { label: "Type", value: (d) => "TODO" },
-    { label: "Job Name", value: (d) => key },
+    { label: "Guid", value: (d) => d?.ConversationAnalytics?.GUID },
     {
       label: "File Format",
       value: (d) =>
@@ -180,10 +199,16 @@ function Dashboard() {
           ?.VocabularyName,
     },
     {
+      label: "Vocabularly Filter",
+      value: (d) =>
+        d.ConversationAnalytics.SourceInformation[0]?.TranscribeJobInfo
+          ?.VocabularyFilter,
+    },
+    {
       label: "Word Accuracy",
       value: (d) =>
         Percentage(
-          d?.ConversationAnalytics.SourceInformation[0]?.TranscribeJobInfo
+          d.ConversationAnalytics.SourceInformation[0]?.TranscribeJobInfo
             ?.AverageAccuracy
         ),
     },
@@ -251,11 +276,20 @@ function Dashboard() {
         </Card>
         <Card>
           <Card.Body>
-            <Card.Title>
-              Transcript
+            <Card.Title
+              className="sticky-top"
+              style={{
+                marginBottom: "1rem",
+                padding: "1rem",
+                background: "white",
+              }}
+            >
+              <div style={{ display: "inline-flex", paddingBottom: "1rem" }}>
+                Transcript
+              </div>
               {!loading && (
                 <audio
-                  className="float-end"
+                  style={{ float: "right" }}
                   controls
                   src={
                     data?.ConversationAnalytics?.SourceInformation[0]
@@ -279,6 +313,7 @@ function Dashboard() {
                   name={speakerOrder[s.SegmentSpeaker]}
                   segmentStart={s.SegmentStartTime}
                   text={s.DisplayText}
+                  onClick={setAudioCurrentTime}
                 />
               ))
             )}
