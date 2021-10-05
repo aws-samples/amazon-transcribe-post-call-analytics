@@ -18,11 +18,12 @@ import sys
 import time
 
 # Sentiment helpers
-MIN_SENTIMENT_LENGTH = 16
+MIN_SENTIMENT_LENGTH = 8
 NLP_THROTTLE_RETRIES = 1
 
 # PII and other Markers
 PII_PLACEHOLDER = "[PII]"
+PII_PLACEHOLDER_MASK = "*" * len(PII_PLACEHOLDER)
 TMP_DIR = "/tmp"
 
 
@@ -41,6 +42,9 @@ class SpeechSegment:
         self.segmentIsNegative = False
         self.segmentAllSentiments = []
         self.segmentCustomEntities = []
+        self.segmentLoudnessScores = []
+        self.segmentInterruption = False
+        self.segmentIssuesDetected = []
 
 
 class TranscribeParser:
@@ -66,6 +70,10 @@ class TranscribeParser:
         self.matchedSimpleEntities = {}
         self.audioPlaybackUri = ""
         self.duration = 0.0
+        self.transcript_uri = ""
+        self.api_mode = cf.API_STANDARD
+        self.analytics_channel_map = {}
+
         cf.loadConfiguration()
 
         # Check the model exists - if now we may use simple file entity detection instead
@@ -166,14 +174,23 @@ class TranscribeParser:
         # Build up a list of speaker labels from the config; note that if we
         # have more speakers than configured then we still return something
         speakerLabels = []
-        for speaker in range(self.maxSpeakerIndex + 1):
-            nextLabel = {}
-            nextLabel["Speaker"] = "spk_" + str(speaker)
-            try:
-                nextLabel["DisplayText"] = cf.appConfig[cf.CONF_SPEAKER_NAMES][speaker]
-            except:
-                nextLabel["DisplayText"] = "Unknown-" + str(speaker)
-            speakerLabels.append(nextLabel)
+
+        # Standard Transcribe - look them up in the order in the config
+        if self.api_mode == cf.API_STANDARD:
+            for speaker in range(self.maxSpeakerIndex + 1):
+                next_label = {}
+                next_label["Speaker"] = "spk_" + str(speaker)
+                try:
+                    next_label["DisplayText"] = cf.appConfig[cf.CONF_SPEAKER_NAMES][speaker]
+                except:
+                    next_label["DisplayText"] = "Unknown-" + str(speaker)
+        # Analytics is more prescriptive - they're defined in the call results
+        elif self.api_mode == cf.API_ANALYTICS:
+            for speaker in self.analytics_channel_map:
+                next_label = {}
+                next_label["Speaker"] = "spk_" + str(self.analytics_channel_map[speaker])
+                next_label["DisplayText"] = speaker.title()
+                speakerLabels.append(next_label)
         resultsHeaderInfo["SpeakerLabels"] = speakerLabels
 
         # Sentiment Trends
@@ -211,6 +228,7 @@ class TranscribeParser:
         '''
         "TranscribeJobInfo": {
             "TranscriptionJobName": "string",
+            "TranscribeApiType": "string",
             "CompletionTime": "string",
             "VocabularyName": "string",
             "MediaFormat": "string",
@@ -224,12 +242,11 @@ class TranscribeParser:
         transcribeJobInfo = {}
 
         # Some fields we pick off the basic job info
-        transcribeJobInfo["TranscriptionJobName"] = self.transcribeJobInfo["TranscriptionJobName"]
+        transcribeJobInfo["TranscribeApiType"] = self.api_mode
         transcribeJobInfo["CompletionTime"] = str(self.transcribeJobInfo["CompletionTime"])
         transcribeJobInfo["MediaFormat"] = self.transcribeJobInfo["MediaFormat"]
         transcribeJobInfo["MediaSampleRateHertz"] = self.transcribeJobInfo["MediaSampleRateHertz"]
         transcribeJobInfo["MediaOriginalUri"] = self.transcribeJobInfo["Media"]["MediaFileUri"]
-        transcribeJobInfo["ChannelIdentification"] = int(self.transcribeJobInfo["Settings"]["ChannelIdentification"])
         transcribeJobInfo["AverageAccuracy"] = self.cummulativeWordAccuracy / max(float(self.numWordsParsed), 1.0)
 
         # Did we create an MP3 output file?  If so then use it for playback rather than the original
@@ -247,6 +264,14 @@ class TranscribeParser:
             vocab_filter = self.transcribeJobInfo["Settings"]["VocabularyFilterName"]
             vocab_method = self.transcribeJobInfo["Settings"]["VocabularyFilterMethod"]
             transcribeJobInfo["VocabularyFilter"] = vocab_filter + " [" + vocab_method + "]"
+
+        # Some fields are different in the job-status depending upon which API we were using
+        if self.api_mode == cf.API_ANALYTICS:
+            transcribeJobInfo["TranscriptionJobName"] = self.transcribeJobInfo["CallAnalyticsJobName"]
+            transcribeJobInfo["ChannelIdentification"] = 1
+        else:
+            transcribeJobInfo["TranscriptionJobName"] = self.transcribeJobInfo["TranscriptionJobName"]
+            transcribeJobInfo["ChannelIdentification"] = int(self.transcribeJobInfo["Settings"]["ChannelIdentification"])
 
         return transcribeJobInfo
 
@@ -447,7 +472,7 @@ class TranscribeParser:
 
         return entityResponse
 
-    def performComprehendNLP(self, segmentList):
+    def extract_nlp(self, segment_list):
         """
         Generates sentiment per speech segment, inserting the results into the input list.
         If we had no valid language for Comprehend to use then we use Neutral for everything.
@@ -456,77 +481,103 @@ class TranscribeParser:
         """
         client = boto3.client("comprehend")
 
-        # Work out with Comprehend language model to use
-        if self.comprehendLanguageCode == "":
-            # If there's no language model then everything is Neutral
-            neutralSentimentSet = {'Positive': 0.0, 'Negative': 0.0, 'Neutral': 1.0, 'Mixed': 0.0}
+        # Setup some sentiment blocks - used when we have no Comprehend
+        # language or where we need "something" for Call Analytics
+        sentiment_set_neutral = {'Positive': 0.0, 'Negative': 0.0, 'Neutral': 1.0, 'Mixed': 0.0}
+        sentiment_set_positive = {'Positive': 1.0, 'Negative': 0.0, 'Neutral': 0.0, 'Mixed': 0.0}
+        sentiment_set_negative = {'Positive': 0.0, 'Negative': 1.0, 'Neutral': 0.0, 'Mixed': 0.0}
 
         # Go through each of our segments
-        for nextSegment in segmentList:
-            if len(nextSegment.segmentText) >= MIN_SENTIMENT_LENGTH:
-                nextText = nextSegment.segmentText
-                # If we have a language model then extract sentiment via Comprehend
+        for next_segment in segment_list:
+            if len(next_segment.segmentText) >= MIN_SENTIMENT_LENGTH:
+                nextText = next_segment.segmentText
+
+                # First, set the sentiment scores in the transcript.  In Call Analytics mode
+                # we already have a sentiment marker (+ve/-ve) per turn of the transcript
+                if self.api_mode == cf.API_ANALYTICS:
+                    # Just set some fake scores against the line to match the sentiment type
+                    if next_segment.segmentIsPositive:
+                        next_segment.segmentAllSentiments = sentiment_set_positive
+                    elif next_segment.segmentIsNegative:
+                        next_segment.segmentAllSentiments = sentiment_set_negative
+                    else:
+                        next_segment.segmentAllSentiments = sentiment_set_neutral
+                # Standard Transcribe requires us to use Comprehend
+                else:
+                    # We can only use Comprehend if we have a language code
+                    if self.comprehendLanguageCode == "":
+                        # We had no language - use default neutral sentiment scores
+                        next_segment.segmentAllSentiments = sentiment_set_neutral
+                        next_segment.segmentPositive = 0.0
+                        next_segment.segmentNegative = 0.0
+                    else:
+                        # For Standard Transcribe we need to set the sentiment marker based on score thresholds
+                        sentimentResponse = self.comprehendSingleSentiment(nextText, client)
+                        positiveBase = sentimentResponse["SentimentScore"]["Positive"]
+                        negativeBase = sentimentResponse["SentimentScore"]["Negative"]
+
+                        # If we're over the NEGATIVE threshold then we're negative
+                        if negativeBase >= self.min_sentiment_negative:
+                            next_segment.segmentSentiment = "Negative"
+                            next_segment.segmentIsNegative = True
+                            next_segment.segmentSentimentScore = negativeBase
+                        # Else if we're over the POSITIVE threshold then we're positive,
+                        # otherwise we're either MIXED or NEUTRAL and we don't really care
+                        elif positiveBase >= self.min_sentiment_positive:
+                            next_segment.segmentSentiment = "Positive"
+                            next_segment.segmentIsPositive = True
+                            next_segment.segmentSentimentScore = positiveBase
+
+                        # Store all of the original sentiments for future use
+                        next_segment.segmentAllSentiments = sentimentResponse["SentimentScore"]
+                        next_segment.segmentPositive = positiveBase
+                        next_segment.segmentNegative = negativeBase
+
+                # If we have a language model then extract entities via Comprehend,
+                # and the same methodology is used for all of the Transcribe modes
                 if self.comprehendLanguageCode != "":
                     # Get sentiment and standard entity detection from Comprehend
-                    sentimentResponse = self.comprehendSingleSentiment(nextText, client)
-                    entityResponse = self.comprehendSingleEntity(nextText, client)
+                    pii_masked_text = nextText.replace(PII_PLACEHOLDER, PII_PLACEHOLDER_MASK)
+                    entity_response = self.comprehendSingleEntity(pii_masked_text, client)
 
                     # Filter for desired entity types
-                    for detectedEntity in entityResponse["Entities"]:
-                        self.extractEntitiesFromLine(detectedEntity, nextSegment, cf.appConfig[cf.CONF_ENTITY_TYPES])
+                    for detected_entity in entity_response["Entities"]:
+                        self.extractEntitiesFromLine(detected_entity, next_segment, cf.appConfig[cf.CONF_ENTITY_TYPES])
 
                     # Now do the same for any entities we can find in a custom model.  At the
                     # time of writing, Custom Entity models in Comprehend are ENGLISH ONLY
                     if (self.customEntityEndpointARN != "") and (self.comprehendLanguageCode == "en"):
                         # Call the custom model and insert
-                        customEntityResponse = client.detect_entities(Text=nextText,
-                                                                      EndpointArn=self.customEntityEndpointARN)
-                        for detectedEntity in customEntityResponse["Entities"]:
-                            self.extractEntitiesFromLine(detectedEntity, nextSegment, [])
+                        custom_entity_response = client.detect_entities(Text=pii_masked_text,
+                                                                        EndpointArn=self.customEntityEndpointARN)
+                        for detected_entity in custom_entity_response["Entities"]:
+                            self.extractEntitiesFromLine(detected_entity, next_segment, [])
 
-                    # Now onto the sentiment - begin by storing the raw values
-                    positiveBase = sentimentResponse["SentimentScore"]["Positive"]
-                    negativeBase = sentimentResponse["SentimentScore"]["Negative"]
-
-                    # If we're over the NEGATIVE threshold then we're negative
-                    if negativeBase >= self.min_sentiment_negative:
-                        nextSegment.segmentSentiment = "Negative"
-                        nextSegment.segmentIsNegative = True
-                        nextSegment.segmentSentimentScore = negativeBase
-                    # Else if we're over the POSITIVE threshold then we're positive,
-                    # otherwise we're either MIXED or NEUTRAL and we don't really care
-                    elif positiveBase >= self.min_sentiment_positive:
-                        nextSegment.segmentSentiment = "Positive"
-                        nextSegment.segmentIsPositive = True
-                        nextSegment.segmentSentimentScore = positiveBase
-
-                    # Store all of the original sentiments for future use
-                    nextSegment.segmentAllSentiments = sentimentResponse["SentimentScore"]
-                    nextSegment.segmentPositive = positiveBase
-                    nextSegment.segmentNegative = negativeBase
-                else:
-                    # We had no language - default sentiment, no new entities
-                    nextSegment.segmentAllSentiments = neutralSentimentSet
-                    nextSegment.segmentPositive = 0.0
-                    nextSegment.segmentNegative = 0.0
-
-
-    def generateSpeakerLabel(self, transcribeSpeaker):
+    def generateSpeakerLabel(self, standard_ts_speaker="", analytics_ts_speaker=""):
         '''
         Takes the Transcribed-generated speaker, which could be spk_{N} or ch_{N}, and returns the label spk_{N}.
         This allows us to have a consistent label in the output JSON, which means that a header field in the
         output is able to dynamically swap the display labels.  This is needed as we cannot guarantee, especially
         with speaker-separated, who speaks first
         '''
-        index = transcribeSpeaker.find("_")
-        speaker = int(transcribeSpeaker[index + 1:])
+
+        # Extract our speaker number
+        if standard_ts_speaker != "":
+            # Standard transcribe gives us ch_0 or spk_0
+            index = standard_ts_speaker.find("_")
+            speaker = int(standard_ts_speaker[index + 1:])
+        elif (analytics_ts_speaker != "") and (self.analytics_channel_map != {}):
+            # Analytics has a map of participant to channel
+            speaker = self.analytics_channel_map[analytics_ts_speaker]
+
+        # Track the maximum and return the label
         if speaker > self.maxSpeakerIndex:
             self.maxSpeakerIndex = speaker
         newLabel = "spk_" + str(speaker)
         return newLabel
 
 
-    def createTurnByTurnSegments(self, transcribeJobFilename):
+    def createTurnByTurnSegments(self, transcribe_job_filename):
         """
         Creates a list of conversational turns, splitting up by speaker or if there's a noticeable pause in
         conversation.  Notes, this works differently for speaker-separated and channel-separated files. For speaker-
@@ -539,12 +590,19 @@ class TranscribeParser:
         speechSegmentList = []
 
         # Load in the JSON file for processing
-        json_filepath = Path(transcribeJobFilename)
+        json_filepath = Path(transcribe_job_filename)
         data = json.load(open(json_filepath.absolute(), "r", encoding="utf-8"))
+        is_analytics_mode = (self.api_mode == cf.API_ANALYTICS)
 
         # Decide on our operational mode and set the overall job language
-        isChannelMode = self.transcribeJobInfo["Settings"]["ChannelIdentification"]
-        isSpeakerMode = not self.transcribeJobInfo["Settings"]["ChannelIdentification"]
+        if is_analytics_mode:
+            # We ignore speaker/channel mode on Analytics
+            isChannelMode = False
+            isSpeakerMode = False
+        else:
+            # Channel/Speaker-mode only relevant if not using analytics
+            isChannelMode = self.transcribeJobInfo["Settings"]["ChannelIdentification"]
+            isSpeakerMode = not isChannelMode
 
         lastSpeaker = ""
         lastEndTime = 0.0
@@ -552,7 +610,7 @@ class TranscribeParser:
         confidenceList = []
         nextSpeechSegment = None
 
-        # Process a Speaker-separated file
+        # Process a Speaker-separated non-Analytics file
         if isSpeakerMode:
             # A segment is a blob of pronunciation and punctuation by an individual speaker
             for segment in data["results"]["speaker_labels"]["segments"]:
@@ -562,7 +620,7 @@ class TranscribeParser:
                     # Pick out our next data
                     nextStartTime = float(segment["start_time"])
                     nextEndTime = float(segment["end_time"])
-                    nextSpeaker = self.generateSpeakerLabel( str(segment["speaker_label"]))
+                    nextSpeaker = self.generateSpeakerLabel(standard_ts_speaker=str(segment["speaker_label"]))
 
                     # If we've changed speaker, or there's a 3-second gap, create a new row
                     if (nextSpeaker != lastSpeaker) or ((nextStartTime - lastEndTime) >= 3.0):
@@ -593,7 +651,7 @@ class TranscribeParser:
                             confidence = float(result["redactions"][0]["confidence"])
 
                         # Write the word, and a leading space if this isn't the start of the segment
-                        if (skipLeadingSpace):
+                        if skipLeadingSpace:
                             skipLeadingSpace = False
                             wordToAdd = result["content"]
                         else:
@@ -610,8 +668,10 @@ class TranscribeParser:
 
                         # Add word and confidence to the segment and to our overall stats
                         nextSpeechSegment.segmentText += wordToAdd
-                        confidenceList.append({"Text": wordToAdd, "Confidence": confidence,
-                                               "StartTime": float(word["start_time"]), "EndTime": float(word["end_time"])})
+                        confidenceList.append({"Text": wordToAdd,
+                                               "Confidence": confidence,
+                                               "StartTime": float(word["start_time"]),
+                                               "EndTime": float(word["end_time"])})
                         self.numWordsParsed += 1
                         self.cummulativeWordAccuracy += confidence
 
@@ -625,7 +685,7 @@ class TranscribeParser:
                 if len(channel["items"]) > 0:
 
                     # We have the same speaker all the way through this channel
-                    nextSpeaker = self.generateSpeakerLabel(str(channel["channel_label"]))
+                    nextSpeaker = self.generateSpeakerLabel(standard_ts_speaker=str(channel["channel_label"]))
                     for word in channel["items"]:
                         # Pick out our next data from a 'pronunciation'
                         if word["type"] == "pronunciation":
@@ -634,7 +694,8 @@ class TranscribeParser:
 
                             # If we've changed speaker, or we haven't and the
                             # pause is very small, then start a new text segment
-                            if (nextSpeaker != lastSpeaker) or ((nextSpeaker == lastSpeaker) and ((nextStartTime - lastEndTime) > 0.1)):
+                            if (nextSpeaker != lastSpeaker) or\
+                                    ((nextSpeaker == lastSpeaker) and ((nextStartTime - lastEndTime) > 0.1)):
                                 nextSpeechSegment = SpeechSegment()
                                 speechSegmentList.append(nextSpeechSegment)
                                 nextSpeechSegment.segmentStartTime = nextStartTime
@@ -659,7 +720,7 @@ class TranscribeParser:
                                 confidence = float(result["redactions"][0]["confidence"])
 
                             # Write the word, and a leading space if this isn't the start of the segment
-                            if (skipLeadingSpace):
+                            if skipLeadingSpace:
                                 skipLeadingSpace = False
                                 wordToAdd = result["content"]
                             else:
@@ -676,8 +737,10 @@ class TranscribeParser:
 
                             # Add word and confidence to the segment and to our overall stats
                             nextSpeechSegment.segmentText += wordToAdd
-                            confidenceList.append({"Text": wordToAdd, "Confidence": confidence,
-                                                   "StartTime": float(word["start_time"]), "EndTime": float(word["end_time"])})
+                            confidenceList.append({"Text": wordToAdd,
+                                                   "Confidence": confidence,
+                                                   "StartTime": float(word["start_time"]),
+                                                   "EndTime": float(word["end_time"])})
                             self.numWordsParsed += 1
                             self.cummulativeWordAccuracy += confidence
 
@@ -686,8 +749,90 @@ class TranscribeParser:
             speechSegmentList = sorted(speechSegmentList, key=lambda segment: segment.segmentStartTime)
             speechSegmentList = self.mergeSpeakerSegments(speechSegmentList)
 
+        # Process a Call Analytics file
+        elif is_analytics_mode:
+
+            # Create our speaker mapping - we need consistent output like spk_0 | spk_1
+            # across all Transcribe API variants to help the UI render it all the same
+            for channel_def in self.transcribeJobInfo["ChannelDefinitions"]:
+                self.analytics_channel_map[channel_def["ParticipantRole"]] = channel_def["ChannelId"]
+
+            # Lookup shortcuts
+            interrupts = data["ConversationCharacteristics"]["Interruptions"]
+
+            # Each turn has already been processed by Transcribe, so the outputs are in order
+            for turn in data["Transcript"]:
+
+                # Get our next speaker name
+                nextSpeaker = self.generateSpeakerLabel(analytics_ts_speaker=turn["ParticipantRole"])
+
+                # Setup the next speaker block
+                nextSpeechSegment = SpeechSegment()
+                speechSegmentList.append(nextSpeechSegment)
+                nextSpeechSegment.segmentStartTime = float(turn["BeginOffsetMillis"]) / 1000.0
+                nextSpeechSegment.segmentEndTime = float(turn["EndOffsetMillis"]) / 1000.0
+                nextSpeechSegment.segmentSpeaker = nextSpeaker
+                nextSpeechSegment.segmentText = turn["Content"]
+                nextSpeechSegment.segmentLoudnessScores = turn["LoudnessScores"]
+                confidenceList = []
+                nextSpeechSegment.segmentConfidence = confidenceList
+                skipLeadingSpace = True
+
+                # Check if this block is within an interruption block for the speaker
+                if turn["ParticipantRole"] in interrupts["InterruptionsByInterrupter"]:
+                    for entry in interrupts["InterruptionsByInterrupter"][turn["ParticipantRole"]]:
+                        if turn["BeginOffsetMillis"] == entry["BeginOffsetMillis"]:
+                            nextSpeechSegment.segmentInterruption = True
+
+                # Record any issues detected
+                if "IssuesDetected" in turn:
+                    for issue in turn["IssuesDetected"]:
+                        # Grab the transcript offsets for the issue text
+                        nextSpeechSegment.segmentIssuesDetected.append(issue["CharacterOffsets"])
+
+                # Process each word in this turn
+                for word in turn["Items"]:
+                    # Pick out our next data from a 'pronunciation'
+                    if word["Type"] == "pronunciation":
+                        # Write the word, and a leading space if this isn't the start of the segment
+                        if skipLeadingSpace:
+                            skipLeadingSpace = False
+                            wordToAdd = word["Content"]
+                        else:
+                            wordToAdd = " " + word["Content"]
+
+                        # If the word is redacted then the word confidence is a bit more buried
+                        if "Confidence" in word:
+                            conf_score = float(word["Confidence"])
+                        elif "Redaction" in word:
+                            conf_score = float(word["Redaction"][0]["Confidence"])
+
+                        # Add the word and confidence to this segment's list and to our overall stats
+                        confidenceList.append({"Text": wordToAdd,
+                                               "Confidence": conf_score,
+                                               "StartTime": float(word["BeginOffsetMillis"]) / 1000.0,
+                                               "EndTime": float(word["BeginOffsetMillis"] / 1000.0)})
+                        self.numWordsParsed += 1
+                        self.cummulativeWordAccuracy += conf_score
+
+                    else:
+                        # Punctuation, needs to be added to the previous word
+                        last_word = nextSpeechSegment.segmentConfidence[-1]
+                        last_word["Text"] = last_word["Text"] + word["Content"]
+
+                # Tag on the sentiment - analytics has no per-turn numbers
+                turn_sentiment = turn["Sentiment"]
+                if turn_sentiment == "POSITIVE":
+                    nextSpeechSegment.segmentIsPositive = True
+                    nextSpeechSegment.segmentPositive = 1.0
+                    nextSpeechSegment.segmentSentimentScore = 1.0
+                elif turn_sentiment == "NEGATIVE":
+                    nextSpeechSegment.segmentIsNegative = True
+                    nextSpeechSegment.segmentNegative = 1.0
+                    nextSpeechSegment.segmentSentimentScore = 1.0
+
         # Inject sentiments into the segment list
-        self.performComprehendNLP(speechSegmentList)
+        self.extract_nlp(speechSegmentList)
 
         # If we ended up with any matched simple entities then insert
         # them, which we can now do as we now have the sentence order
@@ -902,17 +1047,52 @@ class TranscribeParser:
                 print(e)
                 print("Unable to create MP3 version of original audio file - could not find FFMPEG libraries")
 
-    def parseTranscribeFile(self, transcribeJob):
+    def load_transcribe_job_info(self, sf_event):
+        """
+        Loads in the job status for the job named in input event.  The event will inform the method which of the
+        Transcribe APIs should be called (e.g. standard or call analytics).
+
+        :param sf_event: Event info passed down from Step Functions
+        :return: The job's current completion status
+        """
+        transcribe_client = boto3.client("transcribe")
+        job_name = sf_event["jobName"]
+        self.api_mode = sf_event["apiMode"]
+
+        if self.api_mode == cf.API_STANDARD:
+            # Standard Transcribe job
+            self.transcribeJobInfo = transcribe_client.get_transcription_job(TranscriptionJobName=job_name)["TranscriptionJob"]
+            job_status = self.transcribeJobInfo["TranscriptionJobStatus"]
+            if "ContentRedaction" in self.transcribeJobInfo:
+                self.transcript_uri = self.transcribeJobInfo["Transcript"]["RedactedTranscriptFileUri"]
+            else:
+                self.transcript_uri = self.transcribeJobInfo["Transcript"]["TranscriptFileUri"]
+        elif self.api_mode == cf.API_ANALYTICS:
+            # Call Analytics Transcribe job
+            self.transcribeJobInfo = transcribe_client.get_call_analytics_job(CallAnalyticsJobName=job_name)["CallAnalyticsJob"]
+            job_status = self.transcribeJobInfo["CallAnalyticsJobStatus"]
+            if "RedactedTranscriptFileUri" in self.transcribeJobInfo["Transcript"]:
+                self.transcript_uri = self.transcribeJobInfo["Transcript"]["RedactedTranscriptFileUri"]
+            else:
+                self.transcript_uri = self.transcribeJobInfo["Transcript"]["TranscriptFileUri"]
+        else:
+            # This should not happen, but will trigger an exception later
+            job_status = "UNKNOWN"
+
+        return job_status
+
+    def parse_transcribe_file(self, sf_event):
         """
         Parses the output from the specified Transcribe job
         """
         # Load in the Amazon Transcribe job header information, ensuring that the job has completed
         transcribe = boto3.client("transcribe")
+        job_name = sf_event["jobName"]
         try:
-            self.transcribeJobInfo = transcribe.get_transcription_job(TranscriptionJobName = transcribeJob)["TranscriptionJob"]
-            assert self.transcribeJobInfo["TranscriptionJobStatus"] == "COMPLETED", f"Transcription job '{transcribeJob}' has not yet completed."
+            job_status = self.load_transcribe_job_info(sf_event)
+            assert job_status == "COMPLETED", f"Transcription job '{job_name}' has not yet completed."
         except transcribe.exceptions.BadRequestException:
-            assert False, f"Unable to load information for Transcribe job named '{transcribeJob}'."
+            assert False, f"Unable to load information for Transcribe job named '{job_name}'."
 
         # Create an MP3 playback file if we have to
         self.createPlaybackMP3Audio()
@@ -922,36 +1102,33 @@ class TranscribeParser:
         outputS3Key = cf.appConfig[cf.CONF_PREFIX_PARSED_RESULTS]
 
         # Parse Call GUID and Agent Name/ID from filename if possible
-        self.setGUID(transcribeJob)
-        self.setAgent(transcribeJob)
-        
+        self.setGUID(job_name)
+        self.setAgent(job_name)
+
         # Work out the conversation time and set the language code
-        self.calculateTranscribeConversationTime(transcribeJob)
+        self.calculateTranscribeConversationTime(job_name)
         self.setComprehendLanguageCode(self.transcribeJobInfo["LanguageCode"])
 
-        # Download the job JSON results file to a local temp file - redacted if the job used it
-        # if self.transcribeJobInfo["ContentRedaction"]:
-        if "ContentRedaction" in self.transcribeJobInfo:
-            uri = self.transcribeJobInfo["Transcript"]["RedactedTranscriptFileUri"]
-        else:
-            uri = self.transcribeJobInfo["Transcript"]["TranscriptFileUri"]
-        self.jsonOutputFilename = uri.split("/")[-1]
-        transcriptResultsKey = f"{cf.appConfig[cf.CONF_PREFIX_TRANSCRIBE_RESULTS]}/{self.jsonOutputFilename}"
-        jsonFilepath = TMP_DIR + '/' + self.jsonOutputFilename
-        s3Client = boto3.client('s3')
+        # Download the job JSON results file to a local temp file - different Transcribe modes put
+        # the files in different folder structures, so just strip everything past the bucket name
+        self.jsonOutputFilename = self.transcript_uri.split("/")[-1]
+        json_filepath = TMP_DIR + '/' + self.jsonOutputFilename
+        transcriptResultsKey = "/".join(self.transcript_uri.split("/")[4:])
+
         # Now download - this has been known to get a "404 HeadObject Not Found",
         # which makes no sense, so if that happens then re-try in a sec.  Only once.
+        s3Client = boto3.client('s3')
         try:
-            s3Client.download_file(outputS3Bucket, transcriptResultsKey, jsonFilepath)
+            s3Client.download_file(outputS3Bucket, transcriptResultsKey, json_filepath)
         except:
             time.sleep(3)
-            s3Client.download_file(outputS3Bucket, transcriptResultsKey, jsonFilepath)
+            s3Client.download_file(outputS3Bucket, transcriptResultsKey, json_filepath)
 
         # Before we process, let's load up any required simply entity map
         self.loadSimpleEntityStringMap()
 
         # Now create turn-by-turn diarisation, with associated sentiments and entities
-        self.speechSegmentList = self.createTurnByTurnSegments(jsonFilepath)
+        self.speechSegmentList = self.createTurnByTurnSegments(json_filepath)
         
         # generate JSON results
         output = self.outputAsJSON()
@@ -967,7 +1144,7 @@ class TranscribeParser:
         kendraIndexId = cf.appConfig[cf.CONF_KENDRA_INDEX_ID]
         if (kendraIndexId != "None"):
             analysisUri = f"{cf.appConfig[cf.CONF_WEB_URI]}#parsedFiles/{self.jsonOutputFilename}"
-            transcript_with_markers = prepare_transcript(jsonFilepath)
+            transcript_with_markers = prepare_transcript(json_filepath)
             conversationAnalytics = output["ConversationAnalytics"]
             put_kendra_document(kendraIndexId, analysisUri, conversationAnalytics, transcript_with_markers)
             
@@ -977,213 +1154,35 @@ class TranscribeParser:
 
 def lambda_handler(event, context):
     # Load our configuration data
-    sfData = copy.deepcopy(event)
+    sf_data = copy.deepcopy(event)
     cf.loadConfiguration()
 
     # Instantiate our parser and write out our processed file
-    jobName = sfData["jobName"]
     transcribeParser = TranscribeParser(cf.appConfig[cf.CONF_MINPOSITIVE],
                                         cf.appConfig[cf.CONF_MINNEGATIVE],
                                         cf.appConfig[cf.CONF_ENTITYENDPOINT])
-    outputFilename = transcribeParser.parseTranscribeFile(jobName)
-
+    outputFilename = transcribeParser.parse_transcribe_file(sf_data)
 
     # Get the object from the event and show its content type
-    sfData["parsedJsonFile"] = outputFilename
-    return sfData
+    sf_data["parsedJsonFile"] = outputFilename
+    return sf_data
 
-def fullRefresh(processNotPatch):
-    """
-    Takes every file in the output results bucket and either re-processes it or just patches the JSON file.
-    Note, if the Transcribe job has expired (90 days) and we're doing full re-processing then the original
-    job may no longer exist and that file cannot be updated
-    """
-    # Build up our list of output files in S3
-    cf.loadConfiguration()
-    resultsBucket = cf.appConfig[cf.CONF_S3BUCKET_OUTPUT]
-    resultsPrefix = cf.appConfig[cf.CONF_PREFIX_PARSED_RESULTS]
-    s3Client = boto3.client("s3")
-    response = s3Client.list_objects_v2(Bucket=resultsBucket, Prefix=resultsPrefix)
-    s3Entries = response["Contents"]
-    while ("NextContinuationToken" in response):
-        response = s3Client.list_objects_v2(Bucket=resultsBucket, Prefix=resultsPrefix,
-                                            ContinuationToken=response["NextContinuationToken"])
-        s3Entries += response["Contents"]
-
-    # Now step through and re-process each one
-    jobNo = 1
-    for nextEvent in s3Entries:
-        # Download the results file and get it into a JSON structure
-        filename = TMP_DIR + "/" + nextEvent["Key"].split("/")[-1]
-        s3Client.download_file(resultsBucket, nextEvent["Key"], filename)
-        json_filepath = Path(filename)
-        data = json.load(open(json_filepath.absolute(), "r", encoding="utf-8"))
-
-        # Option 1 - try and fully reprocess the original file
-        if processNotPatch:
-            # Build up the event structure for the standard file processor
-            nextRefreshEvent = {}
-            headerData = data["ConversationAnalytics"]
-            transcribeJobData = headerData["SourceInformation"][0]["TranscribeJobInfo"]
-            media = urlparse(transcribeJobData["MediaOriginalUri"])
-            nextRefreshEvent["bucket"] = media.netloc
-            nextRefreshEvent["key"] = media.path.lstrip("/")
-            nextRefreshEvent["jobName"] = transcribeJobData["TranscriptionJobName"]
-            nextRefreshEvent["langCode"] = headerData["LanguageCode"]
-            nextRefreshEvent["transcribeStatus"] = "COMPLETED"
-
-            # Check original audio still exists
-            try:
-                response = s3Client.head_object(Bucket=nextRefreshEvent["bucket"], Key=nextRefreshEvent["key"])
-
-                # Now call the lambda handler to process this "new" event
-                print(f"Re-processing job {jobNo} of {len(s3Entries)} - {nextRefreshEvent['key']}")
-                try:
-                    lambda_handler(nextRefreshEvent, "")
-                except Exception as e:
-                    print(f"Error re-processing job {jobNo} of {len(jobList)} - Transcribe job {nextEvent['jobName']} likely to be missing")
-            except Exception as e:
-                print(f"Cannot re-process job {jobNo} of {len(jobList)} - no source audio file {nextEvent['key']}")
-        # Option 2 - patch the JSON files with something quite specific
-        else:
-            # PATCH - this adds a call duration to the header level of the JSON structure
-            print(f"Re-processing job {jobNo} of {len(s3Entries)} - {nextEvent['Key'].split('/')[-1]}")
-            lastWordEnd = data["SpeechSegments"][-1]["WordConfidence"][-1]["EndTime"]
-            data["ConversationAnalytics"]["Duration"] = str(lastWordEnd)
-
-            # Write out the JSON data to our S3 location
-            s3Resource = boto3.resource('s3')
-            s3Object = s3Resource.Object(resultsBucket, nextEvent["Key"])
-            s3Object.put(
-                Body=(bytes(json.dumps(data).encode('UTF-8')))
-            )
-
-        # Ready for next file
-        jobNo += 1
-
-# Helper to pull out clip files from our list
-def extractClipEntries(s3List, searchTerm):
-    results = []
-    for eachEntry in s3List:
-        if searchTerm in eachEntry["Key"]:
-            results.append(eachEntry)
-    return results
-
-# Delete all _clip files in the S3 output bucket
-def removeClipOutputFiles():
-    cf.loadConfiguration()
-
-    # Get the list of S3 files in the output bucket containing "_clip,"
-    resultsBucket = cf.appConfig[cf.CONF_S3BUCKET_OUTPUT]
-    s3Client = boto3.client("s3")
-    response = s3Client.list_objects_v2(Bucket=resultsBucket)
-    s3Entries = extractClipEntries(response["Contents"], "_clip.")
-    while ("NextContinuationToken" in response):
-        response = s3Client.list_objects_v2(Bucket=resultsBucket, ContinuationToken=response["NextContinuationToken"])
-        s3Entries += extractClipEntries(response["Contents"], "_clip.")
-
-    # Process each one
-    for eachEntry in s3Entries:
-        print(eachEntry["Key"])
-        s3Client.delete_object(Bucket=resultsBucket, Key=eachEntry["Key"])
-
-def downloadHistory():
-    sfnArn = "arn:aws:states:us-east-1:143957329893:stateMachine:PostCallAnalyticsWorkflow"
-    sfnClient = boto3.client('stepfunctions')
-
-    # Get a list of failed executions
-    response = sfnClient.list_executions(stateMachineArn=sfnArn, statusFilter="FAILED")
-    failedExecutions = response["executions"]
-    while ("nextToken" in response):
-        response = sfnClient.list_executions(stateMachineArn=sfnArn, statusFilter="FAILED", nextToken=response["nextToken"])
-        failedExecutions += response["executions"]
-    print(len(failedExecutions))
-
-    # Now go through each one and copy the input details
-    for failedExe in failedExecutions:
-        # Get file details
-        runDetails = sfnClient.describe_execution(executionArn=failedExe["executionArn"])
-        inputData = json.loads(runDetails["input"])
-        failedExe['input'] = inputData
-        failedExe['startDate'] = str(failedExe['startDate'])
-        failedExe['stopDate'] = str(failedExe['stopDate'])
-
-    # Save these results to disc
-    with open('failed_exe_history.json', 'w', encoding='utf-8') as f:
-        json.dump(failedExecutions, f, ensure_ascii=False, indent=4)
-
-def moveFailedAudioFiles():
-    cf.loadConfiguration()
-    audioBucket = cf.appConfig[cf.CONF_S3BUCKET_INPUT]
-    audioPrefix = cf.appConfig[cf.CONF_PREFIX_RAW_AUDIO]
-    failedPrefix = cf.appConfig[cf.CONF_PREFIX_FAILED_AUDIO]
-    sfnClient = boto3.client('stepfunctions')
-    s3Client = boto3.client("s3")
-
-    # First, get our step function
-    ourStepFunction = cf.appConfig[cf.COMP_SFN_NAME]
-    response = sfnMachinesResult = sfnClient.list_state_machines(maxResults = 1000)
-    sfnArnList = list(filter(lambda x: x["stateMachineArn"].endswith(ourStepFunction), sfnMachinesResult["stateMachines"]))
-    if sfnArnList == []:
-        # Doesn't exist
-        raise Exception(
-            'Cannot find configured Step Function \'{}\' in the AWS account in this region - cannot begin workflow.'.format(ourStepFunction))
-    sfnArn = sfnArnList[0]['stateMachineArn']
-
-    # Now get a list of all failed Step Functions and their audio inputs
-    response = sfnClient.list_executions(stateMachineArn=sfnArn, statusFilter="FAILED")
-    failedExecutions = response["executions"]
-    while ("nextToken" in response):
-        response = sfnClient.list_executions(stateMachineArn=sfnArn, statusFilter="FAILED", nextToken=response["nextToken"])
-        failedExecutions += response["executions"]
-
-    # Now go through each one, and if the source audio is still there then move it
-    for failedExe in failedExecutions:
-        # Get file details
-        runDetails = sfnClient.describe_execution(executionArn=failedExe["executionArn"])
-        inputData = json.loads(runDetails["input"])
-        if "key" in inputData:
-            originalAudioKey = inputData["key"]
-
-            # Now try and move the original source audio file to the "failed" folder
-            try:
-                # Copy and delete file
-                copySourcePath = audioBucket + "/" + originalAudioKey
-                copyDestnKey = failedPrefix + "/" + originalAudioKey.split('/')[-1]
-                s3Client.copy_object(Bucket=audioBucket, CopySource=copySourcePath, Key=copyDestnKey)
-                s3Client.delete_object(Bucket=audioBucket, Key=originalAudioKey)
-                print("Moved failed audio file " + originalAudioKey)
-            except Exception as e:
-                # If it failed to copy then don't worry, it probably just didn't exist
-                print(str(e) + " : " + originalAudioKey)
-                pass
 
 # Main entrypoint for testing
 if __name__ == "__main__":
-    # Check if we're doing a full refresh or similar
-    if len(sys.argv) == 2:
-        if sys.argv[1] == "--full-refresh":
-            # Full refresh - do that then exit
-            fullRefresh(True)
-        elif sys.argv[1] == "--patch-json":
-            # Patching the output files
-            fullRefresh(False)
-        elif sys.argv[1] == "--remove-clips":
-            # Remove redundant clip output files
-            removeClipOutputFiles()
-        elif sys.argv[1] == "--move-failures":
-            # Temporary update - delete me when done
-            moveFailedAudioFiles()
-        elif sys.argv[1] == "--get-history":
-            # Temporary update - delete me when done
-            downloadHistory()
-    else:
-        # Standard test event
-        event = {
-            "bucket": "ajk-call-analytics-demo",
-            "key": "audio/example-call.wav",
-            "langCode": "en-US",
-            "jobName": "example-call.wav.wav",
-            "transcribeStatus": "COMPLETED"
-        }
-        lambda_handler(event, "")
+    # Standard test event
+    event = {
+        "bucket": "ak-cci-input",
+        # "key": "originalAudio/mono.wav",
+        # "apiMode": "standard",
+        # "jobName": "mono.wav",
+        # "key": "originalAudio/stereo_std.mp3",
+        # "apiMode": "standard",
+        # "jobName": "stereo_std.mp3",
+        "key": "originalAudio/stereo.mp3",
+        "apiMode": "analytics",
+        "jobName": "stereo.mp3",
+        "langCode": "en-US",
+        "transcribeStatus": "COMPLETED"
+    }
+    lambda_handler(event, "")
