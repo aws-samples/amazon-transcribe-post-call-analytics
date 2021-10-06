@@ -173,6 +173,7 @@ function Dashboard() {
   const secondCol = [
     { label: "Type", value: (d) => "TODO" },
     { label: "Guid", value: (d) => d?.ConversationAnalytics?.GUID },
+    { label: "Job Id", value: (d) => key },
     {
       label: "File Format",
       value: (d) =>
@@ -280,7 +281,6 @@ function Dashboard() {
               className="sticky-top"
               style={{
                 marginBottom: "1rem",
-                padding: "1rem",
                 background: "white",
               }}
             >
