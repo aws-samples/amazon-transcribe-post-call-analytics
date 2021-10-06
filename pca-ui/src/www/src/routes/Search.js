@@ -17,6 +17,15 @@ function Search() {
   const [error, setError] = useState();
   const [loading, setLoading] = useState(true);
 
+  const [query, setQuery] = useState({
+    entity: "",
+    timestampFrom: "",
+    timestampTo: "",
+    language: "",
+    sentimentWho: "Agent",
+    sentimentWhat: "Average",
+    sentimentDirection: "positive",
+  });
   useState(() => {
     const getData = async () => {
       try {
@@ -38,8 +47,17 @@ function Search() {
 
   const handleDates = (dates) => {
     const [start, end] = dates;
+
+    handleQueryInput(start, "timestampFrom");
+    handleQueryInput(end, "timestampTo");
+
     setStartDate(start);
     setEndDate(end);
+  };
+
+  const handleQueryInput = (input, field) => {
+    console.log({ input });
+    setQuery((q) => ({ ...q, [field]: input }));
   };
 
   return (
@@ -48,9 +66,9 @@ function Search() {
       <Form>
         <Form.Group className="mb-3">
           <Form.Label>Language Code</Form.Label>
-          <Form.Select>
-            {languageCodes.map((code) => (
-              <option>{code}</option>
+          <Form.Select
+            onChange={(e) => handleQueryInput(e.target.value, "language")}
+          >
             ))}
             <option value="">-</option>
           </Form.Select>
@@ -70,14 +88,32 @@ function Search() {
         </Form.Group>
 
         <Form.Group className="mb-3">
-          <Form.Label>Sentiment</Form.Label>
-          <Form.Control />
+          <Form.Check
+            onChange={(e) => handleQueryInput(e.target.value, "sentimentWho")}
+            inline
+            name="whoCalled"
+            label="Agent"
+            type="radio"
+            value={"agent"}
+          />
+          <Form.Check
+            onChange={(e) =>
+              handleQueryInput(e.currentTarget.value, "sentimentWho")
+            }
+            inline
+            label="Caller"
+            name="whoCalled"
+            type="radio"
+            value="caller"
+          />
           <Form.Text></Form.Text>
         </Form.Group>
 
         <Form.Group className="mb-3">
           <Form.Label>Entities</Form.Label>
-          <Form.Select>
+          <Form.Select
+            onChange={(e) => handleQueryInput(e.target.value, "entity")}
+          >
             <option value="">-</option>
             {entities.map((entity) => (
               <option value={entity}>{entity}</option>
