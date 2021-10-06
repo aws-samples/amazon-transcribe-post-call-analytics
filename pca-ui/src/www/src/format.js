@@ -1,3 +1,5 @@
+import { DateTime } from "luxon";
+
 export function Time(input) {
   var mins = Math.floor(input / 60);
   var secs = Math.floor(input - mins * 60).toLocaleString("en-GB", {
@@ -20,4 +22,10 @@ export function Number(input) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
+}
+
+export function Timestamp(input) {
+  const dt = DateTime.fromMillis(input);
+  console.log(dt);
+  return dt.toISO();
 }
