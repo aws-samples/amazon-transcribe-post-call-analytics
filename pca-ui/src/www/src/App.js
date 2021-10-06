@@ -10,8 +10,13 @@ import Search from "./routes/Search";
 import Dashboard from "./routes/Dashboard";
 
 const routes = [
-  { path: "/dashboard/:key*", name: "Dashboard", Component: Dashboard },
   { path: "/search", name: "Search", Component: Search },
+  {
+    path: "/dashboard/:key*",
+    name: "Dashboard",
+    Component: Dashboard,
+    hide: true,
+  },
   { path: "/", name: "Home", Component: Home },
 ];
 
@@ -23,17 +28,20 @@ function Navigation() {
         <Navbar.Toggle aria-controls="navbar-nav" />
         <Navbar.Collapse id="navbar-nav">
           <Nav className="me-auto">
-            {routes.map((route) => (
-              <Nav.Link
-                key={route.path}
-                as={NavLink}
-                to={route.path}
-                activeClassName="active"
-                exact
-              >
-                {route.name}
-              </Nav.Link>
-            ))}
+            {routes
+              .filter((r) => !r.hide)
+              .reverse()
+              .map((route) => (
+                <Nav.Link
+                  key={route.path}
+                  as={NavLink}
+                  to={route.path}
+                  activeClassName="active"
+                  exact
+                >
+                  {route.name}
+                </Nav.Link>
+              ))}
           </Nav>
         </Navbar.Collapse>
       </Container>
