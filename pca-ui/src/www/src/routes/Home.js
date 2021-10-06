@@ -9,14 +9,20 @@ import config from "../config";
 
 function Home() {
   const [data, setData] = useState([]);
-
+  const [loading, setLoading] = useState(true);
   useEffect(() => {
     const getData = async () => {
-      const results = await list({
-        count: config.api.pageSize,
-      });
+      try {
+        const results = await list({
+          count: config.api.pageSize,
+        });
 
-      setData(results);
+        setData(results);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
     };
     getData();
   }, []);
@@ -24,7 +30,7 @@ function Home() {
   return (
     <div>
       <h3>Home</h3>
-      <ContactTable data={data} />
+      <ContactTable data={data} loading={loading} />
     </div>
   );
 }
