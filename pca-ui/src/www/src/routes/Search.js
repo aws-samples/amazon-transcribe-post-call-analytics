@@ -69,6 +69,8 @@ function Search() {
           <Form.Select
             onChange={(e) => handleQueryInput(e.target.value, "language")}
           >
+            {languageCodes.map((code, i) => (
+              <option key={i}>{code}</option>
             ))}
             <option value="">-</option>
           </Form.Select>
@@ -115,8 +117,10 @@ function Search() {
             onChange={(e) => handleQueryInput(e.target.value, "entity")}
           >
             <option value="">-</option>
-            {entities.map((entity) => (
-              <option value={entity}>{entity}</option>
+            {entities.map((entity, i) => (
+              <option key={i} value={entity}>
+                {entity}
+              </option>
             ))}
           </Form.Select>
           <Form.Text></Form.Text>
