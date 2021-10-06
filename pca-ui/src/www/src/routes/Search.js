@@ -1,6 +1,5 @@
 import { useState } from "react";
-import Container from "react-bootstrap/Container";
-import FormText from "react-bootstrap/esm/FormText";
+
 import Form from "react-bootstrap/Form";
 import DatePicker from "react-datepicker";
 
@@ -44,18 +43,20 @@ function Search() {
   };
 
   return (
-    <Container>
+    <>
       <h3>Search</h3>
       <Form>
-        <Form.Group>
+        <Form.Group className="mb-3">
           <Form.Label>Language Code</Form.Label>
           <Form.Select>
             {languageCodes.map((code) => (
               <option>{code}</option>
             ))}
+            <option value="">-</option>
           </Form.Select>
         </Form.Group>
-        <Form.Group>
+
+        <Form.Group className="mb-3">
           <Form.Label>Date Range</Form.Label>
           <DatePicker
             selected={startDate}
@@ -67,22 +68,25 @@ function Search() {
             maxDate={new Date()}
           />
         </Form.Group>
-        <Form.Group>
+
+        <Form.Group className="mb-3">
           <Form.Label>Sentiment</Form.Label>
           <Form.Control />
           <Form.Text></Form.Text>
         </Form.Group>
-        <Form.Group>
+
+        <Form.Group className="mb-3">
           <Form.Label>Entities</Form.Label>
           <Form.Select>
+            <option value="">-</option>
             {entities.map((entity) => (
-              <option>{entity}</option>
+              <option value={entity}>{entity}</option>
             ))}
           </Form.Select>
           <Form.Text></Form.Text>
         </Form.Group>
       </Form>
-    </Container>
+    </>
   );
 }
 
