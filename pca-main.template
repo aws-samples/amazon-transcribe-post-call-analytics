@@ -154,11 +154,6 @@ Parameters:
       (Optional) Existing bucket that hold supporting files, such as the  file-based
       entity recognition mapping files.  Leave blank to automatically create new bucket.
 
-  TranscribeAlternateLanguage:
-    Type: String
-    Default: en-US
-    Description: Allows files delivered from a non-standard bucket to be based upon this language
-
   TranscribeLanguages:
     Type: String
     Default: en-US
@@ -552,7 +547,6 @@ Resources:
           - ShouldCreateSupportFilesBucket
           - !Ref SupportFilesBucket
           - !Ref SupportFilesBucketName
-        TranscribeAlternateLanguage: !Ref TranscribeAlternateLanguage
         TranscribeLanguages: !Ref TranscribeLanguages
         TranscribeApiMode: !Ref TranscribeApiMode
         VocabFilterName: !Ref VocabFilterName

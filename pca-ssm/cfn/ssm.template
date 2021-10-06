@@ -137,11 +137,6 @@ Parameters:
       file-based entity recognition mapping files. 
       Leave blank to automatically create new bucket.
 
-  TranscribeAlternateLanguage:
-    Type: String
-    Default: en-US
-    Description: Allows files delivered from a non-standard bucket to be based upon this language
-
   TranscribeApiMode:
     Type: String
     Default: standard
@@ -416,14 +411,6 @@ Resources:
       Type: String
       Description: Bucket that hold supporting files, such as the file-based entity recognition mapping files
       Value: !Ref SupportFilesBucketName
-
-  TranscribeAlternateLanguageParameter:
-    Type: "AWS::SSM::Parameter"
-    Properties:
-      Name: TranscribeAlternateLanguage
-      Type: String
-      Description: Allows files delivered from a non-standard bucket to be based upon this language
-      Value: !Ref TranscribeAlternateLanguage
 
   TranscribeApiModeParameter:
     Type: "AWS::SSM::Parameter"

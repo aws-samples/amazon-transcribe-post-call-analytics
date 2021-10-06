@@ -48,16 +48,11 @@ def lambda_handler(event, context):
             'Cannot find configured Step Function \'{}\' in the AWS account in this region - cannot begin workflow.'.format(ourStepFunction))
     sfnArn = sfnArnList[0]['stateMachineArn']
 
-    # Decide what language this should be transcribed in.  The logic is:
-    # SSM:TranscribeLanguages == {2+ languages} => Transcribe Language Detection [blank lang-code]
-    # SSM:InputBucketName == {S3 trigger bucket} => SSM:TranscribeLanguages
-    # => SSM:TranscribeAlternateLanguage
-    transcribeLanguage = ""
-    if not cf.isAutoLanguageDetectionSet():
-        if bucket == cf.appConfig[cf.CONF_S3BUCKET_INPUT]:
-            transcribeLanguage = cf.appConfig[cf.CONF_TRANSCRIBE_LANG][0]
-        else:
-            transcribeLanguage = cf.appConfig[cf.CONF_TRANSCRIBE_ALTLANG]
+    # Decide what language this should be transcribed in - leave it blank to trigger auto-detection
+    if cf.isAutoLanguageDetectionSet():
+        transcribeLanguage = ""
+    else:
+        transcribeLanguage = cf.appConfig[cf.CONF_TRANSCRIBE_LANG][0]
 
     # Trigger a new Step Function execution
     parameters = '{\n  \"bucket\": \"' + bucket + '\",\n' +\

@@ -23,7 +23,6 @@ CONF_SPEAKER_MODE = "SpeakerSeparationType"
 COMP_SFN_NAME = "StepFunctionName"
 CONF_SUPPORT_BUCKET = "SupportFilesBucketName"
 CONF_TRANSCRIBE_LANG = "TranscribeLanguages"
-CONF_TRANSCRIBE_ALTLANG = "TranscribeAlternateLanguage"
 CONF_VOCABNAME = "VocabularyName"
 CONF_FILENAME_DATETIME_REGEX = "FilenameDatetimeRegex"
 CONF_FILENAME_DATETIME_FIELDMAP = "FilenameDatetimeFieldMap"
@@ -105,13 +104,13 @@ def loadConfiguration():
     fullParamList2 = ssm.get_parameters(Names=[CONF_MINNEGATIVE, CONF_MINPOSITIVE, CONF_S3BUCKET_OUTPUT,
                                                CONF_PREFIX_PARSED_RESULTS, CONF_SPEAKER_NAMES, CONF_SPEAKER_MODE,
                                                COMP_SFN_NAME, CONF_SUPPORT_BUCKET, CONF_TRANSCRIBE_LANG,
-                                               CONF_TRANSCRIBE_ALTLANG])
+                                               CONF_PREFIX_TRANSCRIBE_RESULTS])
     fullParamList3 = ssm.get_parameters(Names=[CONF_VOCABNAME, CONF_CONVO_LOCATION, CONF_ENTITY_TYPES, 
                                                CONF_FILTER_MODE, CONF_FILTER_NAME, 
                                                CONF_FILENAME_DATETIME_REGEX, CONF_FILENAME_DATETIME_FIELDMAP,
                                                CONF_FILENAME_GUID_REGEX, CONF_FILENAME_AGENT_REGEX,
                                                CONF_KENDRA_INDEX_ID])
-    fullParamList4 = ssm.get_parameters(Names=[CONF_WEB_URI, CONF_TRANSCRIBE_API, CONF_PREFIX_TRANSCRIBE_RESULTS])                                           
+    fullParamList4 = ssm.get_parameters(Names=[CONF_WEB_URI, CONF_TRANSCRIBE_API])
 
     # Extract our parameters into our config
     extractParameters(fullParamList1, False)
