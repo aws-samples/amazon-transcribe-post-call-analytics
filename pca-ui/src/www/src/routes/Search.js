@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
+import Card from "react-bootstrap/Card";
 import DatePicker from "react-datepicker";
 
 import "react-datepicker/dist/react-datepicker.css";
@@ -11,26 +12,21 @@ import {
   languages as getLanguages,
   search,
 } from "../api/api";
+import { ContactTable } from "../components/ContactTable";
 
 function Search() {
   const [entities, setEntities] = useState([]);
   const [languageCodes, setLanguageCodes] = useState([]);
 
-  const [startDate, setStartDate] = useState(new Date());
+  const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
 
+  const [editing, setEditing] = useState(true);
   const [error, setError] = useState();
   const [loading, setLoading] = useState(true);
+  const [loadingResults, setLoadingResults] = useState(false);
 
-  const [query, setQuery] = useState({
-    entity: "",
-    timestampFrom: "",
-    timestampTo: "",
-    language: "",
-    sentimentWho: "Agent",
-    sentimentWhat: "Average",
-    sentimentDirection: "positive",
-  });
+  const [query, setQuery] = useState({});
 
   const [results, setResults] = useState([]);
 
@@ -71,10 +67,14 @@ function Search() {
   const onClick = () => {
     const getData = async () => {
       try {
+        setLoadingResults(true);
+        setEditing(false);
         const data = await search(query);
         setResults(data);
       } catch (e) {
         console.error(e);
+      } finally {
+        setLoadingResults(false);
       }
     };
 
@@ -84,7 +84,7 @@ function Search() {
   return (
     <>
       <h3>Search</h3>
-      <Form>
+      <Form className="mb-5">
         <Form.Group className="mb-3">
           <Form.Label>Language Code</Form.Label>
           <Form.Select
@@ -197,8 +197,27 @@ function Search() {
           Search
         </Button>
       </Form>
+
+      {!editing && !loadingResults ? (
+        <div>
+          {results.length === 0 ? (
+            <NoMatches />
+          ) : (
+            <ContactTable data={results} />
+          )}
+        </div>
+      ) : null}
     </>
   );
 }
+
+const NoMatches = () => (
+  <Card>
+    <Card.Body>
+      <Card.Title>No Matches</Card.Title>
+      <Card.Subtitle>Please try a different query</Card.Subtitle>
+    </Card.Body>
+  </Card>
+);
 
 export default Search;
