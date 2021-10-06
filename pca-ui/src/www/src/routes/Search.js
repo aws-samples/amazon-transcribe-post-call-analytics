@@ -1,11 +1,16 @@
 import { useState } from "react";
 
 import Form from "react-bootstrap/Form";
+import Button from "react-bootstrap/Button";
 import DatePicker from "react-datepicker";
 
 import "react-datepicker/dist/react-datepicker.css";
 
-import { entities as getEntities, languages as getLanguages } from "../api/api";
+import {
+  entities as getEntities,
+  languages as getLanguages,
+  search,
+} from "../api/api";
 
 function Search() {
   const [entities, setEntities] = useState([]);
@@ -26,6 +31,9 @@ function Search() {
     sentimentWhat: "Average",
     sentimentDirection: "positive",
   });
+
+  const [results, setResults] = useState([]);
+
   useState(() => {
     const getData = async () => {
       try {
@@ -48,8 +56,8 @@ function Search() {
   const handleDates = (dates) => {
     const [start, end] = dates;
 
-    handleQueryInput(start, "timestampFrom");
-    handleQueryInput(end, "timestampTo");
+    handleQueryInput(new Date(start).getTime(), "timestampFrom");
+    handleQueryInput(new Date(end).getTime(), "timestampTo");
 
     setStartDate(start);
     setEndDate(end);
@@ -58,6 +66,19 @@ function Search() {
   const handleQueryInput = (input, field) => {
     console.log({ input });
     setQuery((q) => ({ ...q, [field]: input }));
+  };
+
+  const onClick = () => {
+    const getData = async () => {
+      try {
+        const data = await search(query);
+        setResults(data);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+
+    getData();
   };
 
   return (
@@ -90,13 +111,14 @@ function Search() {
         </Form.Group>
 
         <Form.Group className="mb-3">
+          <Form.Label>Sentiment</Form.Label>
           <Form.Check
             onChange={(e) => handleQueryInput(e.target.value, "sentimentWho")}
-            inline
-            name="whoCalled"
+            name="sentimentWho"
             label="Agent"
             type="radio"
             value={"agent"}
+            inline
           />
           <Form.Check
             onChange={(e) =>
@@ -104,11 +126,57 @@ function Search() {
             }
             inline
             label="Caller"
-            name="whoCalled"
+            name="sentimentWho"
             type="radio"
             value="caller"
           />
           <Form.Text></Form.Text>
+        </Form.Group>
+
+        <Form.Group className="mb-3 ">
+          <Form.Label>Unknown</Form.Label>
+          <Form.Check
+            onChange={(e) => handleQueryInput(e.target.value, "sentimentWhat")}
+            name="sentimentWhat"
+            label="Average"
+            type="radio"
+            value={"average"}
+            inline
+          />
+          <Form.Check
+            onChange={(e) =>
+              handleQueryInput(e.currentTarget.value, "sentimentWhat")
+            }
+            inline
+            label="Trend"
+            name="sentimentWhat"
+            type="radio"
+            value="trend"
+          />
+        </Form.Group>
+
+        <Form.Group className="mb-3">
+          <Form.Label>Unknown</Form.Label>
+          <Form.Check
+            onChange={(e) =>
+              handleQueryInput(e.target.value, "sentimentDirection")
+            }
+            name="sentimentDirection"
+            label="Positive"
+            type="radio"
+            value={"positive"}
+            inline
+          />
+          <Form.Check
+            onChange={(e) =>
+              handleQueryInput(e.currentTarget.value, "sentimentDirection")
+            }
+            inline
+            label="Negative"
+            name="sentimentDirection"
+            type="radio"
+            value="negative"
+          />
         </Form.Group>
 
         <Form.Group className="mb-3">
@@ -125,6 +193,9 @@ function Search() {
           </Form.Select>
           <Form.Text></Form.Text>
         </Form.Group>
+        <Button bg={"primary"} onClick={onClick}>
+          Search
+        </Button>
       </Form>
     </>
   );
