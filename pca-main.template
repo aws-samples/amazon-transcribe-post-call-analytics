@@ -164,6 +164,19 @@ Parameters:
     Default: en-US
     Description: Language to be used for Transcription - multiple entries separated by " | " will trigger Language Detection
 
+  VocabFilterMode:
+    Type: String
+    Default: mask
+    AllowedValues:
+        - mask
+        - remove
+    Description: The mode to use for vocabulary filtering - must be one of mask or remove (tag is not supported)
+
+  VocabFilterName:
+    Type: String
+    Default: undefined
+    Description: Name of the vocabulary filter to use for Transcribe (not including language suffix, e.g. -en)
+
   VocabularyName:
     Type: String
     Default: undefined
@@ -542,6 +555,8 @@ Resources:
         TranscribeAlternateLanguage: !Ref TranscribeAlternateLanguage
         TranscribeLanguages: !Ref TranscribeLanguages
         TranscribeApiMode: !Ref TranscribeApiMode
+        VocabFilterName: !Ref VocabFilterName
+        VocabFilterMode: !Ref VocabFilterMode
         VocabularyName: !Ref VocabularyName
         FilenameDatetimeRegex: !Ref FilenameDatetimeRegex
         FilenameDatetimeFieldMap: !Ref FilenameDatetimeFieldMap

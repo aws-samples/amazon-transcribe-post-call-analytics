@@ -155,7 +155,7 @@ Parameters:
   VocabFilterMode:
     Type: String
     Default: mask
-    Description: The mode to use for vocabulary filtering - must be one of mask, remove or tag
+    Description: The mode to use for vocabulary filtering - must be one of mask or remove (tag is not supported)
 
   VocabFilterName:
     Type: String
@@ -425,6 +425,14 @@ Resources:
       Description: Allows files delivered from a non-standard bucket to be based upon this language
       Value: !Ref TranscribeAlternateLanguage
 
+  TranscribeApiModeParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: TranscribeApiMode
+      Type: String
+      Description: Specifies which Transcribe API to use for new jobs - must be standard or analytics
+      Value: !Ref TranscribeApiMode
+
   TranscribeLanguagesParameter:
     Type: "AWS::SSM::Parameter"
     Properties:
@@ -438,7 +446,7 @@ Resources:
     Properties:
       Name: VocabFilterMode
       Type: String
-      Description: he mode to use for vocabulary filtering - must be one of mask, remove or tag
+      Description: The mode to use for vocabulary filtering - must be one of mask or remove (tag is not supported)
       Value: !Ref VocabFilterMode
 
   VocabFilterNameParameter:
@@ -446,7 +454,7 @@ Resources:
     Properties:
       Name: VocabFilterName
       Type: String
-      Description: Name of the vocabulary filter to use for Transcribe (not including language suffix, e.g. -en)
+      Description: Name of the vocabulary filter to use for Transcribe (not including language suffix, e.g. -en-US)
       Value: !Ref VocabFilterName
 
   VocabularyNameParameter:

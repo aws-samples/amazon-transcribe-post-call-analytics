@@ -184,6 +184,7 @@ class TranscribeParser:
                     next_label["DisplayText"] = cf.appConfig[cf.CONF_SPEAKER_NAMES][speaker]
                 except:
                     next_label["DisplayText"] = "Unknown-" + str(speaker)
+                speakerLabels.append(next_label)
         # Analytics is more prescriptive - they're defined in the call results
         elif self.api_mode == cf.API_ANALYTICS:
             for speaker in self.analytics_channel_map:
@@ -919,13 +920,13 @@ class TranscribeParser:
         fieldmap = cf.appConfig[cf.CONF_FILENAME_DATETIME_FIELDMAP]
         print(f"INFO: Parsing datetime from filename '{filename}' using regex: '{regex}' and fieldmap: '{fieldmap}'.")
         try:
+            self.conversationLocation = cf.appConfig[cf.CONF_CONVO_LOCATION]
             match = re.search(regex, filename)
             fieldstring = " ".join(match.groups())
             self.conversationTime = str(datetime.strptime(fieldstring, fieldmap))
             print(f"INFO: Assembled datetime: '{self.conversationTime}'")
-            self.conversationLocation = cf.appConfig[cf.CONF_CONVO_LOCATION]
         except Exception as e:
-            # If everything fails system will use "now" as the datetime in UTC
+            # If everything fails system will use "now" as the datetime in UTC, which is likely wrong
             print(e)
             print(f"WARNING: Unable to parse datetime from filename. Defaulting to current system time.")
             if self.conversationLocation == "":
@@ -991,8 +992,7 @@ class TranscribeParser:
             try:
                 response = s3.get_object(Bucket=bucket, Key=key)
             except Exception as e:
-                # Mapping file doesn't exist, so just quietly exit but log something
-                print("ERROR: Configured simple entity file {} in bucket {} does not exist - entity detection not possible".format(key, bucket))
+                # Mapping file doesn't exist, so just quietly exit
                 self.simpleEntityMatchingUsed = False
                 return
 
@@ -1176,12 +1176,12 @@ if __name__ == "__main__":
         # "key": "originalAudio/mono.wav",
         # "apiMode": "standard",
         # "jobName": "mono.wav",
-        # "key": "originalAudio/stereo_std.mp3",
-        # "apiMode": "standard",
-        # "jobName": "stereo_std.mp3",
-        "key": "originalAudio/stereo.mp3",
-        "apiMode": "analytics",
-        "jobName": "stereo.mp3",
+        "key": "originalAudio/stereo_std.mp3",
+        "apiMode": "standard",
+        "jobName": "stereo_std.mp3",
+        # "key": "originalAudio/stereo.mp3",
+        # "apiMode": "analytics",
+        # "jobName": "stereo.mp3",
         "langCode": "en-US",
         "transcribeStatus": "COMPLETED"
     }
