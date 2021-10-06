@@ -33,6 +33,8 @@ CONF_FILTER_NAME = "VocabFilterName"
 CONF_KENDRA_INDEX_ID = "KendraIndexId"
 CONF_WEB_URI = "WebUri"
 CONF_TRANSCRIBE_API = "TranscribeApiMode"
+CONF_REDACTION_TRANSCRIPT = "CallRedactionTranscript"
+CONF_REDACTION_AUDIO = "CallRedactionAudio"
 
 # Parameter store fieldnames used by bulk import
 BULK_S3_BUCKET = "BulkUploadBucket"
@@ -110,7 +112,8 @@ def loadConfiguration():
                                                CONF_FILENAME_DATETIME_REGEX, CONF_FILENAME_DATETIME_FIELDMAP,
                                                CONF_FILENAME_GUID_REGEX, CONF_FILENAME_AGENT_REGEX,
                                                CONF_KENDRA_INDEX_ID])
-    fullParamList4 = ssm.get_parameters(Names=[CONF_WEB_URI, CONF_TRANSCRIBE_API])
+    fullParamList4 = ssm.get_parameters(Names=[CONF_WEB_URI, CONF_TRANSCRIBE_API, CONF_REDACTION_TRANSCRIPT,
+                                               CONF_REDACTION_AUDIO])
 
     # Extract our parameters into our config
     extractParameters(fullParamList1, False)
@@ -144,12 +147,30 @@ def loadConfiguration():
     appConfig[CONF_TRANSCRIBE_LANG] = appConfig[CONF_TRANSCRIBE_LANG].split(" | ")
     appConfig[CONF_SPEAKER_NAMES] = appConfig[CONF_SPEAKER_NAMES].split(" | ")
 
+
 def isAutoLanguageDetectionSet():
     """
     Returns flag to indicate if we need to do Auto Language Detection in Transcribe,
     which is indicated by multiple languages being defined on the config parameter
     """
     return len(appConfig[CONF_TRANSCRIBE_LANG]) > 1
+
+
+def isTranscriptRedactionEnabled():
+    """
+    Returns flag to indicate if we need to enable Transcribe redaxtion
+    """
+    return appConfig[CONF_REDACTION_TRANSCRIPT] == "true"
+
+
+def isAudioRedactionEnabled():
+    """
+    Returns flag to indicate if we need to only allow the playback of redacted audio.  This is only
+    valid on Call Analytics jobs, as other Transcribe modes don't generate redacted audio, and it
+    is only generated if transcription was enabled in the first place
+    """
+    return isTranscriptRedactionEnabled() and (appConfig[CONF_REDACTION_AUDIO] == "true")
+
 
 if __name__ == "__main__":
     loadConfiguration()

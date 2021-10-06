@@ -1009,23 +1009,21 @@ class TranscribeParser:
             except Exception as e:
                 print(e)
 
-    def createPlaybackMP3Audio(self):
+    def create_playback_mp3_audio(self, audio_uri):
         """
         Creates and MP3-version of the audio file used in the Transcribe job, as the HTML5 <audio> playback
         controller cannot play them back if they are GSM-encoded 8Khz WAV files.  Still need to work out how
         to check for then encoding type via FFMPEG, but we do get the other info from Transcribe.
 
-        Note - if the source audio is in a bucket that isn't the standard one, e.g. it's the alternate location,
-        then the audio is always transcoded, as the UI may not have access to that bucket for playback
+        @param audio_uri: URI of the audio file to be potentially dowloaded and converted
         """
 
         # Get some info on the audio file before continuing
-        s3Object = urlparse(self.transcribeJobInfo["Media"]["MediaFileUri"])
+        s3Object = urlparse(audio_uri)
         bucket = s3Object.netloc
 
-        # 8Khz WAV or non-standard bucket audio gets converted
-        if (bucket != cf.appConfig[cf.CONF_S3BUCKET_INPUT]) or\
-                ((self.transcribeJobInfo["MediaFormat"] == "wav") and (self.transcribeJobInfo["MediaSampleRateHertz"] == 8000)):
+        # 8Khz WAV audio gets converted
+        if (self.transcribeJobInfo["MediaFormat"] == "wav") and (self.transcribeJobInfo["MediaSampleRateHertz"] == 8000):
             # First, we need to download the original audio file
             fileObject = s3Object.path.lstrip('/')
             inputFilename = TMP_DIR + '/' + fileObject.split('/')[-1]
@@ -1036,7 +1034,8 @@ class TranscribeParser:
             # Transform the file via FFMPEG - this will exception if not installed
             try:
                 # Just convert from source to destination format
-                subprocess.call(['ffmpeg', '-nostats', '-loglevel', '0', '-y', '-i', inputFilename, outputFilename], stdin=subprocess.DEVNULL)
+                subprocess.call(['ffmpeg', '-nostats', '-loglevel', '0', '-y', '-i', inputFilename, outputFilename],
+                                stdin=subprocess.DEVNULL)
 
                 # Now upload the output file to the configured playback folder in the main input bucket
                 s3FileKey = cf.appConfig[cf.CONF_PREFIX_MP3_PLAYBACK] + '/' + outputFilename.split('/')[-1]
@@ -1094,8 +1093,21 @@ class TranscribeParser:
         except transcribe.exceptions.BadRequestException:
             assert False, f"Unable to load information for Transcribe job named '{job_name}'."
 
-        # Create an MP3 playback file if we have to
-        self.createPlaybackMP3Audio()
+        # Create an MP3 playback file if we have to, using the redacted audio file if needed
+        if ("RedactedMediaFileUri" in self.transcribeJobInfo["Media"]) and cf.isAudioRedactionEnabled():
+            # Copy the redacted audio into the playback folder
+            # TODO - Once the UI Lambda that plays the audio is changed to NOT assume that the redacted
+            # TODO - audio is in the input bucket we can just set the playback URI to the audio location
+            redacted_url = "s3://" + "/".join(self.transcribeJobInfo["Media"]["RedactedMediaFileUri"].split("/")[3:])
+            s3_object = urlparse(redacted_url)
+            s3_client = boto3.resource("s3")
+            source = {"Bucket": s3_object.netloc, "Key": s3_object.path[1:]}
+            dest_key = cf.appConfig[cf.CONF_PREFIX_MP3_PLAYBACK] + '/' + redacted_url.split('/')[-1]
+            s3_client.meta.client.copy(source, cf.appConfig[cf.CONF_S3BUCKET_INPUT], dest_key)
+            self.audioPlaybackUri = "s3://" + cf.appConfig[cf.CONF_S3BUCKET_INPUT] + "/" + dest_key
+        else:
+            # Just sort out the input file
+            self.create_playback_mp3_audio(self.transcribeJobInfo["Media"]["MediaFileUri"])
 
         # Pick out the config parameters that we need
         outputS3Bucket = cf.appConfig[cf.CONF_S3BUCKET_OUTPUT]
@@ -1176,12 +1188,12 @@ if __name__ == "__main__":
         # "key": "originalAudio/mono.wav",
         # "apiMode": "standard",
         # "jobName": "mono.wav",
-        "key": "originalAudio/stereo_std.mp3",
-        "apiMode": "standard",
-        "jobName": "stereo_std.mp3",
-        # "key": "originalAudio/stereo.mp3",
-        # "apiMode": "analytics",
-        # "jobName": "stereo.mp3",
+        # "key": "originalAudio/stereo_std.mp3",
+        # "apiMode": "standard",
+        # "jobName": "stereo_std.mp3",
+        "key": "originalAudio/stereo.mp3",
+        "apiMode": "analytics",
+        "jobName": "stereo.mp3",
         "langCode": "en-US",
         "transcribeStatus": "COMPLETED"
     }

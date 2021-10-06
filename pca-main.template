@@ -185,6 +185,22 @@ Parameters:
         - analytics
     Description: Set the default operational mode for Transcribe
 
+  CallRedactionTranscript:
+    Type: String
+    Default: true
+    AllowedValues:
+        - true
+        - false
+    Description: Enable or disable Transcribe's redaction feature
+
+  CallRedactionAudio:
+    Type: String
+    Default: true
+    AllowedValues:
+        - true
+        - false
+    Description: When transcript redaction is enabled in Call Analytics, only allow playback of the redacted audio
+
   ffmpegDownloadUrl:
     Type: String
     Default: https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz
@@ -549,6 +565,8 @@ Resources:
           - !Ref SupportFilesBucketName
         TranscribeLanguages: !Ref TranscribeLanguages
         TranscribeApiMode: !Ref TranscribeApiMode
+        CallRedactionTranscript: !Ref CallRedactionTranscript
+        CallRedactionAudio: !Ref CallRedactionAudio
         VocabFilterName: !Ref VocabFilterName
         VocabFilterMode: !Ref VocabFilterMode
         VocabularyName: !Ref VocabularyName

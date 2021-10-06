@@ -142,6 +142,16 @@ Parameters:
     Default: standard
     Description: Specifies which Transcribe API to use for new jobs - must be standard or analytics
 
+  CallRedactionTranscript:
+    Type: String
+    Default: true
+    Description: Enable or disable Transcribe's redaction feature
+
+  CallRedactionAudio:
+    Type: String
+    Default: true
+    Description: When transcript redaction is enabled in Call Analytics, only allow playback of the redacted audio
+
   TranscribeLanguages:
     Type: String
     Default: en-US
@@ -419,6 +429,22 @@ Resources:
       Type: String
       Description: Specifies which Transcribe API to use for new jobs - must be standard or analytics
       Value: !Ref TranscribeApiMode
+
+  CallRedactionTranscriptParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: CallRedactionTranscript
+      Type: String
+      Description: Enable or disable Transcribe's redaction feature
+      Value: !Ref CallRedactionTranscript
+
+  CallRedactionAudioParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: CallRedactionAudio
+      Type: String
+      Description: When transcript redaction is enabled in Call Analytics, only allow playback of the redacted audio
+      Value: !Ref CallRedactionAudio
 
   TranscribeLanguagesParameter:
     Type: "AWS::SSM::Parameter"

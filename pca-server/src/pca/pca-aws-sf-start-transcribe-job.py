@@ -134,9 +134,9 @@ def submitTranscribeJob(bucket, key, lang_code):
         # Doesn't exist - don't use it
         pass
 
-    # Get our role ARN from the environment and enable content redaction (if possible)
+    # Get our role ARN from the environment and enable content redaction (if possible, and if wanted)
     role_arn = os.environ["RoleArn"]
-    if lang_code in cf.appConfig[cf.CONF_REDACTION_LANGS]:
+    if cf.isTranscriptRedactionEnabled() and (lang_code in cf.appConfig[cf.CONF_REDACTION_LANGS]):
         content_redaction = {'RedactionType': 'PII', 'RedactionOutput': 'redacted_and_unredacted'}
     else:
         content_redaction = None
