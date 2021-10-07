@@ -64,6 +64,11 @@ pushd pca-ui/src/lambda
 npm install
 popd
 
+pushd pca-ui/src/www
+npm install
+npm build
+popd
+
 # Build and deploy embedded MediaSearch project
 pushd aws-kendra-transcribe-media-search
 if $PUBLIC; then
