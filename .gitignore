@@ -1,2 +1,4 @@
+# Local development
 node_modules
 build
+/pca-ui/src/www/public/config.js
