@@ -1,5 +1,6 @@
 import * as auth from "./auth.js";
-import config from "../config";
+
+const config = window.pcaSettings;
 
 function handleError(err) {
   console.debug(err);

@@ -1,5 +1,4 @@
-import config from "../config";
-
+const config = window.pcaSettings;
 const webUri = `${window.location.protocol}//${window.location.host}/`;
 const loginUrl = `${config.auth.uri}/login?client_id=${config.auth.clientId}&response_type=code&redirect_uri=${webUri}`;
 
