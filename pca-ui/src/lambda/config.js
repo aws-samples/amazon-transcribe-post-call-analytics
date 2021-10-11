@@ -2,22 +2,22 @@ const AWS = require("aws-sdk");
 const response = require("cfn-response");
 const s3 = new AWS.S3();
 
-const key = "js/config.js";
+const key = "config.js";
 
 exports.handler = function (event, context) {
-    console.log("Event:", JSON.stringify(event, null, 4));
+  console.log("Event:", JSON.stringify(event, null, 4));
 
-    if (event.RequestType == "Delete") {
-        console.log("Nothing to do on delete");
-        return response.send(event, context, response.SUCCESS);
-    }
+  if (event.RequestType == "Delete") {
+    console.log("Nothing to do on delete");
+    return response.send(event, context, response.SUCCESS);
+  }
 
-    const props = event.ResourceProperties;
+  const props = event.ResourceProperties;
 
-    const bucket = props.Bucket;
+  const bucket = props.Bucket;
 
-	const config = `
-const config = {
+  const config = `
+window.pcaSettings = {
     auth: {
         uri: "${props.AuthUri}",
         clientId: "${props.AuthClientId}",
@@ -31,16 +31,19 @@ const config = {
     },
 };`;
 
-	s3.upload({
-		Body: config,
-		Bucket: bucket,
-		Key: key,
-		ContentType: "application/javascript",
-	}).promise().then(msg => {
-		response.send(event, context, response.SUCCESS);
-	}).catch(err => {
-		response.send(event, context, response.FAILED, {
-			error: err,
-		});
-	});
+  s3.upload({
+    Body: config,
+    Bucket: bucket,
+    Key: key,
+    ContentType: "application/javascript",
+  })
+    .promise()
+    .then((msg) => {
+      response.send(event, context, response.SUCCESS);
+    })
+    .catch((err) => {
+      response.send(event, context, response.FAILED, {
+        error: err,
+      });
+    });
 };
