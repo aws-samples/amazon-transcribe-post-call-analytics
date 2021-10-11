@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { list } from "../api/api";
 import { ContactTable } from "../components/ContactTable";
-import config from "../config";
+
+const config = window.s1f1Settings;
 
 // TODO:
 // * Wrap entire table row with hyperlink
