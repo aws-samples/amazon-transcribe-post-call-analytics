@@ -66,7 +66,7 @@ popd
 
 pushd pca-ui/src/www
 npm install
-npm build
+npm run build
 popd
 
 # Build and deploy embedded MediaSearch project
