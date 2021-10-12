@@ -8,6 +8,9 @@ import { Navbar, Nav, Container } from "react-bootstrap";
 import Home from "./routes/Home";
 import Search from "./routes/Search";
 import Dashboard from "./routes/Dashboard";
+import { useState } from "react";
+import { useEffect } from "react";
+import { handleCode, getToken } from "./api/auth";
 
 const routes = [
   { path: "/search", name: "Search", Component: Search },
@@ -50,6 +53,12 @@ function Navigation() {
 }
 
 function App() {
+  useEffect(() => {
+    (async () => {
+      Promise.resolve().then(handleCode).then(getToken);
+    })();
+  }, []);
+
   return (
     <Router>
       <>

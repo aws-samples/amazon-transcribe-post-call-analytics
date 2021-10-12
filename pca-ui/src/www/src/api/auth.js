@@ -55,11 +55,11 @@ async function authRequest(grant_type, data) {
     body.append(key, data[key]);
   });
 
-  console.debug("Body:", body);
+  console.debug("Body:", body.toString());
 
   let response;
   try {
-    response = await window.fetch(`${config.auth.uri}/oauth2/token`, {
+    response = await fetch(`${config.auth.uri}/oauth2/token`, {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
