@@ -8,7 +8,6 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import {
   parseAuthQueryString,
   getToken,
-  refreshToken,
   redirectToLogin,
   handleCode,
 } from "./api/auth";
@@ -30,9 +29,8 @@ const renderApp = () => {
     if (!token) throw new Error("No token, auth required");
     renderApp();
   } catch (e) {
-    console.log(e);
-    if (e === "SessionExpired") refreshToken() && renderApp();
-    else redirectToLogin();
+    console.error(e);
+    redirectToLogin();
   }
 })();
 
