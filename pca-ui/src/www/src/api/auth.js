@@ -9,13 +9,17 @@ export function redirectToLogin(message, err) {
   window.location.href = loginUrl;
 }
 
-export async function handleCode() {
+export function parseAuthQueryString() {
   const params = new URLSearchParams(window.location.search);
   const code = params.get("code");
-  if (code === null) {
-    return; // No code to handle
+  const error = params.get("error");
+  if (error) {
+    throw new Error(params.get("error_description") || "Invalid configuration");
   }
+  return code;
+}
 
+export async function handleCode(code) {
   console.debug("Exchanging code for token:", code);
 
   let data;
@@ -28,15 +32,10 @@ export async function handleCode() {
     return redirectToLogin("Couldn't validate code", err);
   }
 
-  console.debug("Code data:", data);
-
-  window.localStorage.setItem("id_token", data.id_token);
-  window.localStorage.setItem("access_token", data.access_token);
-  window.localStorage.setItem("refresh_token", data.refresh_token);
-
-  console.debug("Stored new tokens");
+  store(data);
 
   // Remove code from URL
+  const params = new URLSearchParams(window.location.search);
   params.delete("code");
   let queryString = params.toString();
   if (queryString.length > 0) {
@@ -54,35 +53,29 @@ async function authRequest(grant_type, data) {
     body.append(key, data[key]);
   });
 
-  console.debug("Body:", body);
+  const url = `${config.auth.uri}/oauth2/token`;
 
-  let response;
-  try {
-    response = await window.fetch(`${config.auth.uri}/oauth2/token`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: body,
-    });
-  } catch (e) {
-    console.debug("Auth err:", e);
-    console.debug({ response });
-  }
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: body,
+  });
 
   if (!response.ok) {
     console.debug(response);
     throw new Error("Bad response from auth endpoint");
   }
 
-  return await response.json();
+  return response.json();
 }
 
 export async function getToken() {
   const token = window.localStorage.getItem("access_token");
 
-  if (!token) {
-    return redirectToLogin("No token");
+  if (token === null) {
+    return;
   }
 
   try {
@@ -91,22 +84,14 @@ export async function getToken() {
       return token;
     }
   } catch (err) {
-    return redirectToLogin("Bad token", err);
+    console.debug(err);
   }
 
   // Refresh tokens
   console.debug("Expired token");
 
   try {
-    let data = await authRequest("refresh_token", {
-      refresh_token: window.localStorage.getItem("refresh_token"),
-    });
-
-    console.debug("Tokens refreshed");
-    window.localStorage.setItem("id_token", data.id_token);
-    window.localStorage.setItem("access_token", data.access_token);
-
-    return data.access_token;
+    return refreshToken();
   } catch (err) {
     return redirectToLogin("Error refreshing tokens", err);
   }
@@ -118,4 +103,25 @@ function payloadFromToken(token) {
   if (parts.length !== 3) throw new Error("Invalid token");
 
   return JSON.parse(window.atob(parts[1]));
+}
+
+export async function refreshToken() {
+  // Remove old tokens
+  window.localStorage.removeItem("id_token");
+  window.localStorage.removeItem("access_token");
+  // Get new token
+  let data = await authRequest("refresh_token", {
+    refresh_token: window.localStorage.getItem("refresh_token"),
+  });
+  console.debug("Tokens refreshed");
+
+  store(data);
+
+  return data.access_token;
+}
+
+function store(data) {
+  window.localStorage.setItem("id_token", data.id_token);
+  window.localStorage.setItem("access_token", data.access_token);
+  window.localStorage.setItem("refresh_token", data.refresh_token);
 }
