@@ -33,11 +33,7 @@ export async function handleCode(code) {
     return redirectToLogin("Couldn't validate code", err);
   }
 
-  console.debug("Code data:", data);
-
   store(data);
-
-  console.debug("Stored new tokens");
 
   // Remove code from URL
   const params = new URLSearchParams(window.location.search);
@@ -96,15 +92,7 @@ export async function getToken() {
   console.debug("Expired token");
 
   try {
-    let data = await authRequest("refresh_token", {
-      refresh_token: window.localStorage.getItem("refresh_token"),
-    });
-
-    console.debug("Tokens refreshed");
-    window.localStorage.setItem("id_token", data.id_token);
-    window.localStorage.setItem("access_token", data.access_token);
-
-    return data.access_token;
+    return refreshToken();
   } catch (err) {
     return redirectToLogin("Error refreshing tokens", err);
   }
@@ -130,11 +118,11 @@ export async function refreshToken() {
 
   store(data);
 
-  return data.id_token;
+  return data.access_token;
 }
 
-const store = (data) => {
+function store(data) {
   window.localStorage.setItem("id_token", data.id_token);
   window.localStorage.setItem("access_token", data.access_token);
   window.localStorage.setItem("refresh_token", data.refresh_token);
-};
+}
