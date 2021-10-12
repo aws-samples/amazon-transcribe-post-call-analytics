@@ -35,9 +35,7 @@ export async function handleCode(code) {
 
   console.debug("Code data:", data);
 
-  window.localStorage.setItem("id_token", data.id_token);
-  window.localStorage.setItem("access_token", data.access_token);
-  window.localStorage.setItem("refresh_token", data.refresh_token);
+  store(data);
 
   console.debug("Stored new tokens");
 
@@ -61,7 +59,6 @@ async function authRequest(grant_type, data) {
   });
 
   const url = `${config.auth.uri}/oauth2/token`;
-  console.debug({ body: body.toString(), url });
 
   const response = await fetch(url, {
     method: "POST",
@@ -131,9 +128,13 @@ export async function refreshToken() {
   });
   console.debug("Tokens refreshed");
 
-  window.localStorage.setItem("id_token", data.id_token);
-  window.localStorage.setItem("access_token", data.access_token);
-  window.localStorage.setItem("refresh_token", data.refresh_token);
+  store(data);
 
   return data.id_token;
 }
+
+const store = (data) => {
+  window.localStorage.setItem("id_token", data.id_token);
+  window.localStorage.setItem("access_token", data.access_token);
+  window.localStorage.setItem("refresh_token", data.refresh_token);
+};
