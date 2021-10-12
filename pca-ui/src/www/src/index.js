@@ -5,6 +5,14 @@ import App from "./App";
 import reportWebVitals from "./reportWebVitals";
 import "bootstrap/dist/css/bootstrap.min.css";
 
+import {
+  parseAuthQueryString,
+  getToken,
+  refreshToken,
+  redirectToLogin,
+  handleCode,
+} from "./api/auth";
+
 const renderApp = () => {
   ReactDOM.render(
     <React.StrictMode>
@@ -15,7 +23,17 @@ const renderApp = () => {
 };
 
 (async () => {
-  renderApp();
+  try {
+    const tokenData = parseAuthQueryString();
+    if (tokenData) await handleCode(tokenData);
+    const token = await getToken();
+    if (!token) throw new Error("No token, auth required");
+    renderApp();
+  } catch (e) {
+    console.log(e);
+    if (e === "SessionExpired") refreshToken() && renderApp();
+    else redirectToLogin();
+  }
 })();
 
 // If you want to start measuring performance in your app, pass a function
