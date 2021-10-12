@@ -4,7 +4,13 @@ import "./index.css";
 import App from "./App";
 import reportWebVitals from "./reportWebVitals";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { getToken, handleCode } from "./api/auth";
+
+import {
+  parseAuthQueryString,
+  getToken,
+  redirectToLogin,
+  handleCode,
+} from "./api/auth";
 
 const renderApp = () => {
   ReactDOM.render(
@@ -17,18 +23,14 @@ const renderApp = () => {
 
 (async () => {
   try {
-    handleCode();
-
-    getToken();
-
+    const tokenData = parseAuthQueryString();
+    if (tokenData) await handleCode(tokenData);
+    const token = await getToken();
+    if (!token) throw new Error("No token, auth required");
     renderApp();
-
-    //   if (!token) throw new Error("No token, auth required");
-    //   renderApp();
   } catch (e) {
-    //   console.log(e);
-    //   if (typeof e === SessionExpired) refreshToken() && renderApp();
-    //   else redirectToLogin();
+    console.error(e);
+    redirectToLogin();
   }
 })();
 
