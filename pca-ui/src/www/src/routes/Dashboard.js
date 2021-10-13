@@ -21,7 +21,6 @@ import Neutral from "../images/neutral.png";
 
 // TODO
 // * Display type
-// * Format Timestamp
 // * Add graph
 
 const ValueWithLabel = ({ label, children }) => (
@@ -281,7 +280,17 @@ function Dashboard() {
                 className="mb-3"
               >
                 {data?.ConversationAnalytics?.CustomEntities.map((e, i) => (
-                  <Tab eventKey={e.Name} title={`${e.Name} x ${e.Count}`}>
+                  <Tab
+                    eventKey={e.Name}
+                    title={
+                      <span>
+                        {e.Name}{" "}
+                        <Badge bg="secondary" pill={true}>
+                          {e.Count}
+                        </Badge>
+                      </span>
+                    }
+                  >
                     <ListGroup variant="flush">
                       {e.Values.map((v, i) => (
                         <ListGroup.Item key={i}>
