@@ -51,31 +51,6 @@ const TranscriptSegment = ({ name, segmentStart, text, onClick }) => (
   </div>
 );
 
-const Entity = ({ type, count, color, values }) => {
-  const colors = [
-    "primary",
-    "secondary",
-    "success",
-    "warning",
-    "info",
-    "light",
-  ];
-
-  const c = colors[color % colors.length];
-
-  return (
-    <Tab eventKey={type} title={`${type} x ${count}`}>
-      <ListGroup>
-        {values.map((v, i) => (
-          <ListGroup.Item key={i}>
-            <p>{v} hi world</p>
-          </ListGroup.Item>
-        ))}
-      </ListGroup>
-    </Tab>
-  );
-};
-
 const Sentiment = ({ score }) => {
   let icon;
   let alt;
