@@ -113,7 +113,14 @@ function Dashboard({ setAlert }) {
   ];
 
   const secondCol = [
-    { label: "Type", value: (d) => "TODO" },
+    {
+      label: "Type",
+      value: (d) =>
+        d?.ConversationAnalytics?.SourceInformation[0]?.TranscribeJobInfo
+          ?.TranscribeApiType === "analytics"
+          ? "Transcribe Call Analytics"
+          : "Transcribe",
+    },
     { label: "Guid", value: (d) => d?.ConversationAnalytics?.GUID },
     { label: "Job Id", value: (d) => key },
     {
