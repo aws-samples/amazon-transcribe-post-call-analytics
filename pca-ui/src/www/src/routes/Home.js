@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { list } from "../api/api";
 import { ContactTable } from "../components/ContactTable";
 
-const config = window.s1f1Settings;
+const config = window.pcaSettings;
 
 // TODO:
 // * Wrap entire table row with hyperlink

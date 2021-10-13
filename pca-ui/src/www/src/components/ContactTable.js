@@ -13,8 +13,8 @@ const columns = [
 ];
 
 const Loading = () =>
-  columns.map((c) => (
-    <td>
+  columns.map((c, i) => (
+    <td key={i}>
       <Placeholder as="p" animation="glow">
         <Placeholder xs={12} />
       </Placeholder>
@@ -25,8 +25,8 @@ export const ContactTable = ({ data = [], loading = false }) => (
   <Table striped bordered hover>
     <thead>
       <tr>
-        {columns.map((c) => (
-          <th>{c.label}</th>
+        {columns.map((c, i) => (
+          <th key={i}>{c.label}</th>
         ))}
       </tr>
     </thead>
@@ -36,10 +36,10 @@ export const ContactTable = ({ data = [], loading = false }) => (
           <Loading />
         </tr>
       ) : (
-        data.map((row, index) => (
-          <tr>
-            {columns.map((c) => (
-              <td>{c.value(row, index)}</td>
+        data.map((row, i) => (
+          <tr key={i}>
+            {columns.map((c, j) => (
+              <td key={j}>{c.value(row, i)}</td>
             ))}
           </tr>
         ))
