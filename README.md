@@ -27,7 +27,7 @@ When complete, it displays the URLS for the CloudFormation templates, 1-click UR
 Outputs
 Template URL: https://s3.us-east-1.amazonaws.com/pca-artifacts-bucket/pca/artifacts/pca-main.yaml
 CF Launch URL: https://us-east-1.console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/create/review?templateURL=https://s3.us-east-1.amazonaws.com/pca-artifacts-bucket/pca/artifacts/pca-main.yaml&stackName=PostCallAnalytics
-CLI Deploy: aws cloudformation deploy --template-file /home/ec2-user/environment/aws-transcribe-post-call-analytics/packaged.template --capabilities CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND --stack-name PostCallAnalytics --parameter-overrides AdminEmail=johndoe@example.com
+CLI Deploy: aws cloudformation deploy --template-file /home/ec2-user/environment/aws-transcribe-post-call-analytics/build/packaged.template --capabilities CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND --stack-name PostCallAnalytics --parameter-overrides AdminEmail=johndoe@example.com
 ```
 
 

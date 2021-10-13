@@ -98,7 +98,7 @@ aws cloudformation validate-template --template-url $template > /dev/null || exi
 echo "Outputs"
 echo Template URL: $template
 echo CF Launch URL: https://${region}.console.aws.amazon.com/cloudformation/home?region=${region}#/stacks/create/review?templateURL=${template}\&stackName=PostCallAnalytics
-echo CLI Deploy: aws cloudformation deploy --template-file `pwd`/packaged.template --capabilities CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND --stack-name PostCallAnalytics --parameter-overrides AdminEmail=johndoe@example.com
+echo CLI Deploy: aws cloudformation deploy --template-file `pwd`/build/packaged.template --capabilities CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND --stack-name PostCallAnalytics --parameter-overrides AdminEmail=johndoe@example.com
 
 echo Done
 exit 0
