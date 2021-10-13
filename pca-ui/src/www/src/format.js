@@ -26,6 +26,5 @@ export function Number(input) {
 
 export function Timestamp(input) {
   const dt = DateTime.fromMillis(input);
-  console.log(dt);
   return dt.toISO();
 }
