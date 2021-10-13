@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router";
-import { get, swap } from "../api/api";
+import { entities, get, list, swap } from "../api/api";
 import { Percentage, Time } from "../format";
 
 import Card from "react-bootstrap/Card";
@@ -11,6 +11,9 @@ import Row from "react-bootstrap/Row";
 import Spinner from "react-bootstrap/Spinner";
 import Badge from "react-bootstrap/Badge";
 import Button from "react-bootstrap/Button";
+import Tabs from "react-bootstrap/Tabs";
+import Tab from "react-bootstrap/Tab";
+import ListGroup from "react-bootstrap/ListGroup";
 
 import Smile from "../images/smile.png";
 import Frown from "../images/frown.png";
@@ -49,7 +52,7 @@ const TranscriptSegment = ({ name, segmentStart, text, onClick }) => (
   </div>
 );
 
-const Entity = ({ type, count, color }) => {
+const Entity = ({ type, count, color, values }) => {
   const colors = [
     "primary",
     "secondary",
@@ -62,9 +65,15 @@ const Entity = ({ type, count, color }) => {
   const c = colors[color % colors.length];
 
   return (
-    <Badge bg={c}>
-      {type} x {count}
-    </Badge>
+    <Tab eventKey={type} title={`${type} x ${count}`}>
+      <ListGroup>
+        {values.map((v, i) => (
+          <ListGroup.Item key={i}>
+            <p>{v} hi world</p>
+          </ListGroup.Item>
+        ))}
+      </ListGroup>
+    </Tab>
   );
 };
 
@@ -140,10 +149,7 @@ function Dashboard() {
 
   const setAudioCurrentTime = (e) => {
     const a = document.getElementsByTagName("audio")[0];
-    console.log({ e });
-
     a.currentTime = e.target.dataset.currenttime;
-    console.log({ a });
   };
 
   const firstCol = [
@@ -267,11 +273,25 @@ function Dashboard() {
                 <span className="visually-hidden">Loading...</span>
               </Spinner>
             ) : (
-              <Stack gap={2} direction="horizontal">
+              <Tabs
+                defaultActiveKey={
+                  data?.ConversationAnalytics?.CustomEntities[0].Name
+                }
+                id="entitities-tab-group"
+                className="mb-3"
+              >
                 {data?.ConversationAnalytics?.CustomEntities.map((e, i) => (
-                  <Entity color={i} key={i} count={e.Count} type={e.Name} />
+                  <Tab eventKey={e.Name} title={`${e.Name} x ${e.Count}`}>
+                    <ListGroup variant="flush">
+                      {e.Values.map((v, i) => (
+                        <ListGroup.Item key={i}>
+                          <p>{v}</p>
+                        </ListGroup.Item>
+                      ))}
+                    </ListGroup>
+                  </Tab>
                 ))}
-              </Stack>
+              </Tabs>
             )}
           </Card.Body>
         </Card>
