@@ -51,6 +51,36 @@ const TranscriptSegment = ({ name, segmentStart, text, onClick }) => (
   </div>
 );
 
+const Entities = ({ data }) => (
+  <Tabs
+    defaultActiveKey={data[0].Name}
+    id="entitities-tab-group"
+    className="mb-3"
+  >
+    {data.map((e, i) => (
+      <Tab
+        eventKey={e.Name}
+        title={
+          <span>
+            {e.Name}{" "}
+            <Badge bg="secondary" pill={true}>
+              {e.Count}
+            </Badge>
+          </span>
+        }
+      >
+        <ListGroup variant="flush">
+          {e.Values.map((v, i) => (
+            <ListGroup.Item key={i}>
+              <p>{v}</p>
+            </ListGroup.Item>
+          ))}
+        </ListGroup>
+      </Tab>
+    ))}
+  </Tabs>
+);
+
 const Sentiment = ({ score }) => {
   let icon;
   let alt;
@@ -247,35 +277,7 @@ function Dashboard() {
                 <span className="visually-hidden">Loading...</span>
               </Spinner>
             ) : (
-              <Tabs
-                defaultActiveKey={
-                  data?.ConversationAnalytics?.CustomEntities[0].Name
-                }
-                id="entitities-tab-group"
-                className="mb-3"
-              >
-                {data?.ConversationAnalytics?.CustomEntities.map((e, i) => (
-                  <Tab
-                    eventKey={e.Name}
-                    title={
-                      <span>
-                        {e.Name}{" "}
-                        <Badge bg="secondary" pill={true}>
-                          {e.Count}
-                        </Badge>
-                      </span>
-                    }
-                  >
-                    <ListGroup variant="flush">
-                      {e.Values.map((v, i) => (
-                        <ListGroup.Item key={i}>
-                          <p>{v}</p>
-                        </ListGroup.Item>
-                      ))}
-                    </ListGroup>
-                  </Tab>
-                ))}
-              </Tabs>
+              <Entities data={data?.ConversationAnalytics?.CustomEntities} />
             )}
           </Card.Body>
         </Card>
