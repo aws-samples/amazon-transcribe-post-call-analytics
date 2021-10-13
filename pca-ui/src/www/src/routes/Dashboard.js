@@ -11,6 +11,9 @@ import Row from "react-bootstrap/Row";
 import Spinner from "react-bootstrap/Spinner";
 import Badge from "react-bootstrap/Badge";
 import Button from "react-bootstrap/Button";
+import Tabs from "react-bootstrap/Tabs";
+import Tab from "react-bootstrap/Tab";
+import ListGroup from "react-bootstrap/ListGroup";
 
 import Smile from "../images/smile.png";
 import Frown from "../images/frown.png";
@@ -18,7 +21,6 @@ import Neutral from "../images/neutral.png";
 
 // TODO
 // * Display type
-// * Format Timestamp
 // * Add graph
 
 const ValueWithLabel = ({ label, children }) => (
@@ -49,24 +51,35 @@ const TranscriptSegment = ({ name, segmentStart, text, onClick }) => (
   </div>
 );
 
-const Entity = ({ type, count, color }) => {
-  const colors = [
-    "primary",
-    "secondary",
-    "success",
-    "warning",
-    "info",
-    "light",
-  ];
-
-  const c = colors[color % colors.length];
-
-  return (
-    <Badge bg={c}>
-      {type} x {count}
-    </Badge>
-  );
-};
+const Entities = ({ data }) => (
+  <Tabs
+    defaultActiveKey={data[0].Name}
+    id="entitities-tab-group"
+    className="mb-3"
+  >
+    {data.map((e, i) => (
+      <Tab
+        eventKey={e.Name}
+        title={
+          <span>
+            {e.Name}{" "}
+            <Badge bg="secondary" pill={true}>
+              {e.Count}
+            </Badge>
+          </span>
+        }
+      >
+        <ListGroup variant="flush">
+          {e.Values.map((v, i) => (
+            <ListGroup.Item key={i}>
+              <p>{v}</p>
+            </ListGroup.Item>
+          ))}
+        </ListGroup>
+      </Tab>
+    ))}
+  </Tabs>
+);
 
 const Sentiment = ({ score }) => {
   let icon;
@@ -140,10 +153,7 @@ function Dashboard() {
 
   const setAudioCurrentTime = (e) => {
     const a = document.getElementsByTagName("audio")[0];
-    console.log({ e });
-
     a.currentTime = e.target.dataset.currenttime;
-    console.log({ a });
   };
 
   const firstCol = [
@@ -267,11 +277,7 @@ function Dashboard() {
                 <span className="visually-hidden">Loading...</span>
               </Spinner>
             ) : (
-              <Stack gap={2} direction="horizontal">
-                {data?.ConversationAnalytics?.CustomEntities.map((e, i) => (
-                  <Entity color={i} key={i} count={e.Count} type={e.Name} />
-                ))}
-              </Stack>
+              <Entities data={data?.ConversationAnalytics?.CustomEntities} />
             )}
           </Card.Body>
         </Card>
