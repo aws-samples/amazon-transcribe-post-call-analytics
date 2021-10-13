@@ -23,7 +23,7 @@ function Search() {
 
   const [editing, setEditing] = useState(true);
   const [error, setError] = useState();
-  const [loading, setLoading] = useState(true);
+  const [loadingOptions, setLoadingOptions] = useState(true);
   const [loadingResults, setLoadingResults] = useState(false);
 
   const [query, setQuery] = useState({});
@@ -39,10 +39,10 @@ function Search() {
         const l = await getLanguages();
         setLanguageCodes(l);
       } catch (err) {
-        console.log(err);
+        console.debug(err);
         setError(err);
       } finally {
-        setLoading(false);
+        setLoadingOptions(false);
       }
     };
 
@@ -60,7 +60,7 @@ function Search() {
   };
 
   const handleQueryInput = (input, field) => {
-    console.log({ input });
+    console.debug({ input });
     setQuery((q) => ({ ...q, [field]: input }));
   };
 
@@ -90,7 +90,7 @@ function Search() {
           <Form.Select
             onChange={(e) => handleQueryInput(e.target.value, "language")}
           >
-            {languageCodes.map((code, i) => (
+            {(languageCodes || []).map((code, i) => (
               <option key={i}>{code}</option>
             ))}
             <option value="">-</option>
@@ -185,7 +185,7 @@ function Search() {
             onChange={(e) => handleQueryInput(e.target.value, "entity")}
           >
             <option value="">-</option>
-            {entities.map((entity, i) => (
+            {(entities || []).map((entity, i) => (
               <option key={i} value={entity}>
                 {entity}
               </option>
