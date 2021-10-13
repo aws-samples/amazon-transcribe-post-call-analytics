@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router";
-import { entities, get, list, swap } from "../api/api";
+import { get, swap } from "../api/api";
 import { Percentage, Time } from "../format";
 
 import Card from "react-bootstrap/Card";
