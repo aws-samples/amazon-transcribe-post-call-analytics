@@ -115,7 +115,7 @@ function Search({ setAlert }) {
         </Form.Group>
 
         <Form.Group className="mb-3">
-          <Form.Label>Sentiment</Form.Label>
+          <Form.Label className="me-3">Sentiment of</Form.Label>
           <Form.Check
             onChange={(e) => handleQueryInput(e.target.value, "sentimentWho")}
             name="sentimentWho"
@@ -138,7 +138,7 @@ function Search({ setAlert }) {
         </Form.Group>
 
         <Form.Group className="mb-3 ">
-          <Form.Label>Unknown</Form.Label>
+          <Form.Label className="me-3">Statistic</Form.Label>
           <Form.Check
             onChange={(e) => handleQueryInput(e.target.value, "sentimentWhat")}
             name="sentimentWhat"
@@ -160,7 +160,7 @@ function Search({ setAlert }) {
         </Form.Group>
 
         <Form.Group className="mb-3">
-          <Form.Label>Unknown</Form.Label>
+          <Form.Label className="me-3">Direction</Form.Label>
           <Form.Check
             onChange={(e) =>
               handleQueryInput(e.target.value, "sentimentDirection")
