@@ -1,8 +1,6 @@
 import { useState } from "react";
 
-import Form from "react-bootstrap/Form";
-import Button from "react-bootstrap/Button";
-import Card from "react-bootstrap/Card";
+import { Button, Form } from "react-bootstrap";
 import DatePicker from "react-datepicker";
 
 import "react-datepicker/dist/react-datepicker.css";
@@ -22,7 +20,7 @@ function Search({ setAlert }) {
   const [endDate, setEndDate] = useState(null);
 
   const [editing, setEditing] = useState(true);
-  const [error, setError] = useState();
+
   const [loadingOptions, setLoadingOptions] = useState(true);
   const [loadingResults, setLoadingResults] = useState(false);
 
@@ -33,6 +31,7 @@ function Search({ setAlert }) {
   useState(() => {
     const getData = async () => {
       try {
+        setLoadingOptions(true);
         const e = await getEntities();
         setEntities(e);
 
@@ -71,8 +70,8 @@ function Search({ setAlert }) {
   const onClick = () => {
     const getData = async () => {
       try {
-        setLoadingResults(true);
         setEditing(false);
+        setLoadingResults(true);
         const data = await search(query);
         setResults(data);
       } catch (e) {
@@ -90,7 +89,9 @@ function Search({ setAlert }) {
       <h3>Search</h3>
       <Form className="mb-5">
         <Form.Group className="mb-3">
-          <Form.Label>Language Code</Form.Label>
+          <Form.Label>
+            <h5>Language Code</h5>
+          </Form.Label>
           <Form.Select
             onChange={(e) => handleQueryInput(e.target.value, "language")}
           >
@@ -102,7 +103,9 @@ function Search({ setAlert }) {
         </Form.Group>
 
         <Form.Group className="mb-3">
-          <Form.Label>Date Range</Form.Label>
+          <Form.Label>
+            <h5>Date Range</h5>
+          </Form.Label>
           <DatePicker
             selected={startDate}
             startDate={startDate}
@@ -114,77 +117,42 @@ function Search({ setAlert }) {
           />
         </Form.Group>
 
-        <Form.Group className="mb-3">
-          <Form.Label>Sentiment</Form.Label>
-          <Form.Check
-            onChange={(e) => handleQueryInput(e.target.value, "sentimentWho")}
-            name="sentimentWho"
-            label="Agent"
-            type="radio"
-            value={"agent"}
-            inline
-          />
-          <Form.Check
-            onChange={(e) =>
-              handleQueryInput(e.currentTarget.value, "sentimentWho")
-            }
-            inline
-            label="Caller"
-            name="sentimentWho"
-            type="radio"
-            value="caller"
-          />
-          <Form.Text></Form.Text>
-        </Form.Group>
+        <RadioInput
+          label="Sentiment of"
+          onChange={(e) => handleQueryInput(e.target.value, "sentimentWho")}
+          choices={[
+            { value: "agent", label: "Agent" },
+            { value: "caller", label: "Caller" },
+          ]}
+          name="sentimentWho"
+        />
 
-        <Form.Group className="mb-3 ">
-          <Form.Label>Unknown</Form.Label>
-          <Form.Check
-            onChange={(e) => handleQueryInput(e.target.value, "sentimentWhat")}
-            name="sentimentWhat"
-            label="Average"
-            type="radio"
-            value={"average"}
-            inline
-          />
-          <Form.Check
-            onChange={(e) =>
-              handleQueryInput(e.currentTarget.value, "sentimentWhat")
-            }
-            inline
-            label="Trend"
-            name="sentimentWhat"
-            type="radio"
-            value="trend"
-          />
-        </Form.Group>
+        <RadioInput
+          label="Statistic"
+          onChange={(e) => handleQueryInput(e.target.value, "sentimentWhat")}
+          name="sentimentWhat"
+          choices={[
+            { value: "average", label: "Average" },
+            { value: "trend", label: "Trend" },
+          ]}
+        />
+
+        <RadioInput
+          label="Direction"
+          onChange={(e) =>
+            handleQueryInput(e.target.value, "sentimentDirection")
+          }
+          choices={[
+            { value: "positive", label: "Positive" },
+            { value: "negative", label: "Negative" },
+          ]}
+          name="sentimentDirection"
+        />
 
         <Form.Group className="mb-3">
-          <Form.Label>Unknown</Form.Label>
-          <Form.Check
-            onChange={(e) =>
-              handleQueryInput(e.target.value, "sentimentDirection")
-            }
-            name="sentimentDirection"
-            label="Positive"
-            type="radio"
-            value={"positive"}
-            inline
-          />
-          <Form.Check
-            onChange={(e) =>
-              handleQueryInput(e.currentTarget.value, "sentimentDirection")
-            }
-            inline
-            label="Negative"
-            name="sentimentDirection"
-            type="radio"
-            value="negative"
-          />
-        </Form.Group>
-
-        <Form.Group className="mb-3">
-          <Form.Label>Entities</Form.Label>
+          <Form.Label>
+            <h5>Entities</h5>
+          </Form.Label>
           <Form.Select
             onChange={(e) => handleQueryInput(e.target.value, "entity")}
           >
@@ -202,26 +170,40 @@ function Search({ setAlert }) {
         </Button>
       </Form>
 
-      {!editing && !loadingResults ? (
-        <div>
-          {results.length === 0 ? (
-            <NoMatches />
-          ) : (
-            <ContactTable data={results} />
-          )}
-        </div>
-      ) : null}
+      {!editing && (
+        <ContactTable
+          data={results}
+          loading={loadingResults}
+          empty={<NoMatches />}
+        />
+      )}
     </>
   );
 }
-
 const NoMatches = () => (
-  <Card>
-    <Card.Body>
-      <Card.Title>No Matches</Card.Title>
-      <Card.Subtitle>Please try a different query</Card.Subtitle>
-    </Card.Body>
-  </Card>
+  <div>
+    <h2>No Matches</h2>
+    <p>Please try a different query</p>
+  </div>
+);
+
+const RadioInput = ({ label, onChange, name, choices = [] }) => (
+  <Form.Group className="mb-3">
+    <Form.Label className="me-3">
+      <h5>{label}</h5>
+    </Form.Label>
+    {choices.map((c) => (
+      <Form.Check
+        onChange={onChange}
+        name={name}
+        label={c.label}
+        type="radio"
+        value={c.value}
+        inline
+      />
+    ))}
+    <Form.Text></Form.Text>
+  </Form.Group>
 );
 
 export default Search;
