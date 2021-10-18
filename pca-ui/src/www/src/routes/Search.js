@@ -170,10 +170,22 @@ function Search({ setAlert }) {
         </Button>
       </Form>
 
-      {!editing && <ContactTable data={results} loading={loadingResults} />}
+      {!editing && (
+        <ContactTable
+          data={results}
+          loading={loadingResults}
+          empty={<NoMatches />}
+        />
+      )}
     </>
   );
 }
+const NoMatches = () => (
+  <div>
+    <h2>No Matches</h2>
+    <p>Please try a different query</p>
+  </div>
+);
 
 const RadioInput = ({ label, onChange, name, choices = [] }) => (
   <Form.Group className="mb-3">

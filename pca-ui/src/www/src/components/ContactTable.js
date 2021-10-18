@@ -20,20 +20,15 @@ const Loading = () =>
     </td>
   ));
 
-const NoMatches = () => (
+const NoMatches = ({ children }) => (
   <tr>
     <td colspan={columns.length}>
-      <div className="d-flex justify-content-center py-4">
-        <div>
-          <h2>No Matches</h2>
-          <p>Please try a different query</p>
-        </div>
-      </div>
+      <div className="d-flex justify-content-center py-4">{children}</div>
     </td>
   </tr>
 );
 
-export const ContactTable = ({ data = [], loading = false }) => {
+export const ContactTable = ({ data = [], loading = false, empty }) => {
   const history = useHistory();
 
   const onClick = (e) => {
@@ -54,8 +49,8 @@ export const ContactTable = ({ data = [], loading = false }) => {
           <tr>
             <Loading />
           </tr>
-        ) : data.length == 0 ? (
-          <NoMatches />
+        ) : data.length === 0 ? (
+          <NoMatches children={empty} />
         ) : (
           data.map((row, i) => (
             <tr
