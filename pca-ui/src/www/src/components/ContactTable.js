@@ -1,5 +1,4 @@
-import Table from "react-bootstrap/Table";
-import Placeholder from "react-bootstrap/Placeholder";
+import { Placeholder, Table } from "react-bootstrap";
 import { useHistory } from "react-router-dom";
 import { Percentage, Time, Timestamp } from "../format";
 
@@ -21,7 +20,15 @@ const Loading = () =>
     </td>
   ));
 
-export const ContactTable = ({ data = [], loading = false }) => {
+const NoMatches = ({ children }) => (
+  <tr>
+    <td colspan={columns.length}>
+      <div className="d-flex justify-content-center py-4">{children}</div>
+    </td>
+  </tr>
+);
+
+export const ContactTable = ({ data = [], loading = false, empty }) => {
   const history = useHistory();
 
   const onClick = (e) => {
@@ -42,6 +49,8 @@ export const ContactTable = ({ data = [], loading = false }) => {
           <tr>
             <Loading />
           </tr>
+        ) : data.length === 0 ? (
+          <NoMatches children={empty} />
         ) : (
           data.map((row, i) => (
             <tr

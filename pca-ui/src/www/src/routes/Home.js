@@ -4,13 +4,10 @@ import { ContactTable } from "../components/ContactTable";
 
 const config = window.pcaSettings;
 
-// TODO:
-// * Wrap entire table row with hyperlink
-// * Format timestamp and average accuracy
-
 function Home({ setAlert }) {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
+
   useEffect(() => {
     const getData = async () => {
       try {
@@ -31,14 +28,20 @@ function Home({ setAlert }) {
       }
     };
     getData();
-  }, []);
+  }, [setAlert]);
 
   return (
     <div>
       <h3>Home</h3>
-      <ContactTable data={data} loading={loading} />
+      <ContactTable data={data} loading={loading} empty={<Empty />} />
     </div>
   );
 }
+
+const Empty = () => (
+  <div>
+    <h2>No results</h2>
+  </div>
+);
 
 export default Home;
