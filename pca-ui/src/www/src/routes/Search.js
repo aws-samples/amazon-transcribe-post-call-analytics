@@ -14,7 +14,7 @@ import {
 } from "../api/api";
 import { ContactTable } from "../components/ContactTable";
 
-function Search() {
+function Search({ setAlert }) {
   const [entities, setEntities] = useState([]);
   const [languageCodes, setLanguageCodes] = useState([]);
 
@@ -40,7 +40,11 @@ function Search() {
         setLanguageCodes(l);
       } catch (err) {
         console.debug(err);
-        setError(err);
+        setAlert({
+          heading: "Something went wrong",
+          variant: "danger",
+          text: "Unable to load data. Please try again later",
+        });
       } finally {
         setLoadingOptions(false);
       }

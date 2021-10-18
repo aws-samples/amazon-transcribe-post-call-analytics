@@ -8,7 +8,7 @@ const config = window.pcaSettings;
 // * Wrap entire table row with hyperlink
 // * Format timestamp and average accuracy
 
-function Home() {
+function Home({ setAlert }) {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
@@ -21,6 +21,11 @@ function Home() {
         setData(results);
       } catch (e) {
         console.error(e);
+        setAlert({
+          heading: "Something went wrong",
+          variant: "danger",
+          text: "Unable to load data. Please try again later",
+        });
       } finally {
         setLoading(false);
       }
