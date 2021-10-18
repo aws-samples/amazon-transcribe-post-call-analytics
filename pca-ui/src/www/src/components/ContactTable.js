@@ -1,6 +1,6 @@
 import Table from "react-bootstrap/Table";
 import Placeholder from "react-bootstrap/Placeholder";
-
+import { useHistory } from "react-router-dom";
 import { Percentage, Time, Timestamp } from "../format";
 
 const columns = [
@@ -21,29 +21,41 @@ const Loading = () =>
     </td>
   ));
 
-export const ContactTable = ({ data = [], loading = false }) => (
-  <Table striped bordered hover>
-    <thead>
-      <tr>
-        {columns.map((c, i) => (
-          <th key={i}>{c.label}</th>
-        ))}
-      </tr>
-    </thead>
-    <tbody>
-      {loading ? (
+export const ContactTable = ({ data = [], loading = false }) => {
+  const history = useHistory();
+
+  const onClick = (e) => {
+    history.push(`/dashboard/${e.key}`);
+  };
+
+  return (
+    <Table border hover striped>
+      <thead>
         <tr>
-          <Loading />
+          {columns.map((c, i) => (
+            <th key={i}>{c.label}</th>
+          ))}
         </tr>
-      ) : (
-        data.map((row, i) => (
-          <tr key={i}>
-            {columns.map((c, j) => (
-              <td key={j}>{c.value(row, i)}</td>
-            ))}
+      </thead>
+      <tbody>
+        {loading ? (
+          <tr>
+            <Loading />
           </tr>
-        ))
-      )}
-    </tbody>
-  </Table>
-);
+        ) : (
+          data.map((row, i) => (
+            <tr
+              key={i}
+              onClick={(e) => onClick(row)}
+              style={{ cursor: "pointer" }}
+            >
+              {columns.map((c, j) => (
+                <td key={j}>{c.value(row, i)}</td>
+              ))}
+            </tr>
+          ))
+        )}
+      </tbody>
+    </Table>
+  );
+};
