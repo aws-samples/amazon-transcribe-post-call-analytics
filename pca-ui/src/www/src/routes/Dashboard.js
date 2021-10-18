@@ -3,17 +3,18 @@ import { useParams } from "react-router";
 import { get, swap } from "../api/api";
 import { Percentage, Time } from "../format";
 
-import Card from "react-bootstrap/Card";
-import Stack from "react-bootstrap/Stack";
-import Col from "react-bootstrap/Col";
-import Container from "react-bootstrap/Container";
-import Row from "react-bootstrap/Row";
-import Spinner from "react-bootstrap/Spinner";
-import Badge from "react-bootstrap/Badge";
-import Button from "react-bootstrap/Button";
-import Tabs from "react-bootstrap/Tabs";
-import Tab from "react-bootstrap/Tab";
-import ListGroup from "react-bootstrap/ListGroup";
+import {
+  Badge,
+  Button,
+  Card,
+  Col,
+  ListGroup,
+  Placeholder,
+  Row,
+  Stack,
+  Tab,
+  Tabs,
+} from "react-bootstrap";
 
 import Smile from "../images/smile.png";
 import Frown from "../images/frown.png";
@@ -32,7 +33,20 @@ const ValueWithLabel = ({ label, children }) => (
   </div>
 );
 
-const TranscriptSegment = ({ name, segmentStart, text, onClick }) => (
+const LoadingPlaceholder = () => (
+  <Placeholder as="p" animation="glow">
+    <Placeholder xs={12} />
+  </Placeholder>
+);
+
+const TranscriptSegment = ({
+  name,
+  segmentStart,
+  text,
+  onClick,
+  highlightLocations,
+  highlightFunc,
+}) => (
   <div>
     <span style={{ color: "#808080" }}>
       {name} -{" "}
@@ -47,9 +61,31 @@ const TranscriptSegment = ({ name, segmentStart, text, onClick }) => (
         {Time(segmentStart)}
       </span>
     </span>
-    <p>{text}</p>
+    <span
+      dangerouslySetInnerHTML={{
+        __html: highlightFunc(text, highlightLocations),
+      }}
+    ></span>
   </div>
 );
+
+// hightlightAt takes a string to highlight and an array of location objects that
+// describe the startOffset, endOffset and highlight style for that span
+// Assumes location array is in ascending offset order.
+const highlightAt = (text, locations) => {
+  console.log(locations);
+  return locations.reverse().reduce((t, loc) => {
+    const ret = `${t.slice(
+      0,
+      loc.start
+    )}<span style="border: solid red">${t.slice(
+      loc.start,
+      loc.end + 1
+    )}</span>${t.slice(loc.end)}`;
+    console.log(ret);
+    return ret;
+  }, text);
+};
 
 const Entities = ({ data }) => (
   <Tabs
@@ -59,6 +95,7 @@ const Entities = ({ data }) => (
   >
     {data.map((e, i) => (
       <Tab
+        key={i}
         eventKey={e.Name}
         title={
           <span>
@@ -110,8 +147,9 @@ function Dashboard({ setAlert }) {
   const { key } = useParams();
 
   const [data, setData] = useState({});
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [loading, setLoading] = useState(true);
+
   const [speakerOrder, setSpeakerOrder] = useState({
     spk_0: "Agent",
     spk_1: "Caller",
@@ -234,107 +272,95 @@ function Dashboard({ setAlert }) {
   ];
 
   return (
-    <Container>
-      <Stack direction="vertical" gap={4}>
-        <div>
-          <h3 className="d-inline">Dashboard</h3>
-          <Button onClick={swapAgent} className="float-end">
-            Swap Agent/Caller
-          </Button>
-        </div>
-        <Card>
-          <Card.Body>
-            <Card.Title>Overview</Card.Title>
-            <Row>
-              <Col>
-                {firstCol.map((entry, i) => (
-                  <ValueWithLabel key={i} label={entry.label}>
-                    {loading ? (
-                      <Spinner size="sm" animation="border" role="status">
-                        <span className="visually-hidden">Loading...</span>
-                      </Spinner>
-                    ) : (
-                      entry.value(data) || "-"
-                    )}
-                  </ValueWithLabel>
-                ))}
-              </Col>
+    <Stack direction="vertical" gap={4}>
+      <div>
+        <h3 className="d-inline">Dashboard</h3>
+        <Button onClick={swapAgent} className="float-end">
+          Swap Agent/Caller
+        </Button>
+      </div>
+      <Card>
+        <Card.Body>
+          <Card.Title>Overview</Card.Title>
+          <Row>
+            <Col>
+              {firstCol.map((entry, i) => (
+                <ValueWithLabel key={i} label={entry.label}>
+                  {loading ? <LoadingPlaceholder /> : entry.value(data) || "-"}
+                </ValueWithLabel>
+              ))}
+            </Col>
 
-              <Col>
-                {secondCol.map((entry, i) => (
-                  <ValueWithLabel key={i} label={entry.label}>
-                    {loading ? (
-                      <Spinner size="sm" animation="border" role="status">
-                        <span className="visually-hidden">Loading...</span>
-                      </Spinner>
-                    ) : (
-                      entry.value(data) || "-"
-                    )}
-                  </ValueWithLabel>
-                ))}
-              </Col>
-              <Col></Col>
-            </Row>
-          </Card.Body>
-        </Card>
-        <Card>
-          <Card.Body>
-            <Card.Title>Entities</Card.Title>
-            {loading ? (
-              <Spinner size="sm" animation="border" role="status">
-                <span className="visually-hidden">Loading...</span>
-              </Spinner>
-            ) : (
-              <Entities data={data?.ConversationAnalytics?.CustomEntities} />
+            <Col>
+              {secondCol.map((entry, i) => (
+                <ValueWithLabel key={i} label={entry.label}>
+                  {loading ? <LoadingPlaceholder /> : entry.value(data) || "-"}
+                </ValueWithLabel>
+              ))}
+            </Col>
+            <Col></Col>
+          </Row>
+        </Card.Body>
+      </Card>
+      <Card>
+        <Card.Body>
+          <Card.Title>Entities</Card.Title>
+          {loading ? (
+            <LoadingPlaceholder />
+          ) : (
+            <Entities data={data?.ConversationAnalytics?.CustomEntities} />
+          )}
+        </Card.Body>
+      </Card>
+      <Card>
+        <Card.Body>
+          <Card.Title
+            className="sticky-top"
+            style={{
+              marginBottom: "1rem",
+              background: "white",
+            }}
+          >
+            <div style={{ display: "inline-flex", paddingBottom: "1rem" }}>
+              Transcript
+            </div>
+            {!loading && (
+              <audio
+                style={{ float: "right" }}
+                controls
+                src={
+                  data?.ConversationAnalytics?.SourceInformation[0]
+                    ?.TranscribeJobInfo?.MediaFileUri
+                }
+              >
+                Your browser does not support the
+                <code>audio</code> element.
+              </audio>
             )}
-          </Card.Body>
-        </Card>
-        <Card>
-          <Card.Body>
-            <Card.Title
-              className="sticky-top"
-              style={{
-                marginBottom: "1rem",
-                background: "white",
-              }}
-            >
-              <div style={{ display: "inline-flex", paddingBottom: "1rem" }}>
-                Transcript
-              </div>
-              {!loading && (
-                <audio
-                  style={{ float: "right" }}
-                  controls
-                  src={
-                    data?.ConversationAnalytics?.SourceInformation[0]
-                      ?.TranscribeJobInfo?.MediaFileUri
-                  }
-                >
-                  Your browser does not support the
-                  <code>audio</code> element.
-                </audio>
-              )}
-            </Card.Title>
+          </Card.Title>
 
-            {loading ? (
-              <Spinner size="sm" animation="border" role="status">
-                <span className="visually-hidden">Loading...</span>
-              </Spinner>
-            ) : (
-              (data?.SpeechSegments || []).map((s, i) => (
-                <TranscriptSegment
-                  key={i}
-                  name={speakerOrder[s.SegmentSpeaker]}
-                  segmentStart={s.SegmentStartTime}
-                  text={s.DisplayText}
-                  onClick={setAudioCurrentTime}
-                />
-              ))
-            )}
-          </Card.Body>
-        </Card>
-      </Stack>
-    </Container>
+          {loading ? (
+            <LoadingPlaceholder />
+          ) : (
+            (data?.SpeechSegments || []).map((s, i) => (
+              <TranscriptSegment
+                key={i}
+                name={speakerOrder[s.SegmentSpeaker]}
+                segmentStart={s.SegmentStartTime}
+                text={s.DisplayText}
+                onClick={setAudioCurrentTime}
+                highlightLocations={s.EntitiesDetected.map((e) => ({
+                  start: e.BeginOffset,
+                  end: e.EndOffset,
+                  style: "red",
+                }))}
+                highlightFunc={highlightAt}
+              />
+            ))
+          )}
+        </Card.Body>
+      </Card>
+    </Stack>
   );
 }
 
