@@ -61,11 +61,12 @@ const TranscriptSegment = ({
         {Time(segmentStart)}
       </span>
     </span>
-    <span
+    <p>{text}</p>
+    {/* <span
       dangerouslySetInnerHTML={{
         __html: highlightFunc(text, highlightLocations),
       }}
-    ></span>
+    ></span> */}
   </div>
 );
 
@@ -274,7 +275,7 @@ function Dashboard({ setAlert }) {
   return (
     <Stack direction="vertical" gap={4}>
       <div>
-        <h3 className="d-inline">Dashboard</h3>
+        <h3 className="d-inline">Contact Summary</h3>
         <Button onClick={swapAgent} className="float-end">
           Swap Agent/Caller
         </Button>
@@ -313,10 +314,13 @@ function Dashboard({ setAlert }) {
         </Card.Body>
       </Card>
       <Card>
-        <Card.Body>
+        <Card.Body
+          style={{ paddingTop: 0 }} // Counteract 16px padding of Card Title
+        >
           <Card.Title
             className="sticky-top"
             style={{
+              paddingTop: "16px",
               marginBottom: "1rem",
               background: "white",
             }}
