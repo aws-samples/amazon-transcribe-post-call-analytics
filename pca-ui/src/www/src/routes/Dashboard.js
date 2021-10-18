@@ -39,6 +39,14 @@ const LoadingPlaceholder = () => (
   </Placeholder>
 );
 
+const TranscriptSegment = ({
+  name,
+  segmentStart,
+  text,
+  onClick,
+  highlightLocations,
+  highlightFunc,
+}) => (
   <div>
     <span style={{ color: "#808080" }}>
       {name} -{" "}
@@ -53,9 +61,31 @@ const LoadingPlaceholder = () => (
         {Time(segmentStart)}
       </span>
     </span>
-    <p>{text}</p>
+    <span
+      dangerouslySetInnerHTML={{
+        __html: highlightFunc(text, highlightLocations),
+      }}
+    ></span>
   </div>
 );
+
+// hightlightAt takes a string to highlight and an array of location objects that
+// describe the startOffset, endOffset and highlight style for that span
+// Assumes location array is in ascending offset order.
+const highlightAt = (text, locations) => {
+  console.log(locations);
+  return locations.reverse().reduce((t, loc) => {
+    const ret = `${t.slice(
+      0,
+      loc.start
+    )}<span style="border: solid red">${t.slice(
+      loc.start,
+      loc.end + 1
+    )}</span>${t.slice(loc.end)}`;
+    console.log(ret);
+    return ret;
+  }, text);
+};
 
 const Entities = ({ data }) => (
   <Tabs
@@ -117,8 +147,9 @@ function Dashboard({ setAlert }) {
   const { key } = useParams();
 
   const [data, setData] = useState({});
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [loading, setLoading] = useState(true);
+
   const [speakerOrder, setSpeakerOrder] = useState({
     spk_0: "Agent",
     spk_1: "Caller",
@@ -241,80 +272,95 @@ function Dashboard({ setAlert }) {
   ];
 
   return (
-    <Container>
-      <Stack direction="vertical" gap={4}>
-        <div>
-          <h3 className="d-inline">Dashboard</h3>
-          <Button onClick={swapAgent} className="float-end">
-            Swap Agent/Caller
-          </Button>
-        </div>
-        <Card>
-          <Card.Body>
-            <Card.Title>Overview</Card.Title>
-            <Row>
-              <Col>
-                {firstCol.map((entry, i) => (
-                  <ValueWithLabel key={i} label={entry.label}>
-                    {loading ? (
-                      <LoadingPlaceholder />
-                    ) : (
-                      entry.value(data) || "-"
-                    )}
-                  </ValueWithLabel>
-                ))}
-              </Col>
+    <Stack direction="vertical" gap={4}>
+      <div>
+        <h3 className="d-inline">Dashboard</h3>
+        <Button onClick={swapAgent} className="float-end">
+          Swap Agent/Caller
+        </Button>
+      </div>
+      <Card>
+        <Card.Body>
+          <Card.Title>Overview</Card.Title>
+          <Row>
+            <Col>
+              firstCol.map((entry, i) => (
+              <ValueWithLabel key={i} label={entry.label}>
+                {loading ? <LoadingPlaceholder /> : entry.value(data) || "-"}
+              </ValueWithLabel>
+              ))}
+            </Col>
 
-              <Col>
-                {secondCol.map((entry, i) => (
-                  <ValueWithLabel key={i} label={entry.label}>
-                    {loading ? (
-                      <LoadingPlaceholder />
-                    ) : (
-                      entry.value(data) || "-"
-                    )}
-                  </ValueWithLabel>
-                ))}
-              </Col>
-              <Col></Col>
-            </Row>
-          </Card.Body>
-        </Card>
-        <Card>
-          <Card.Body>
-            <Card.Title>Entities</Card.Title>
+            <Col>
+              {secondCol.map((entry, i) => (
+                <ValueWithLabel key={i} label={entry.label}>
+                  {loading ? <LoadingPlaceholder /> : entry.value(data) || "-"}
+                </ValueWithLabel>
+              ))}
+            </Col>
+            <Col></Col>
+          </Row>
+        </Card.Body>
+      </Card>
+      <Card>
+        <Card.Body>
+          <Card.Title>Entities</Card.Title>
+          {loading ? (
             <LoadingPlaceholder />
-              {!loading && (
-                <audio
-                  style={{ float: "right" }}
-                  controls
-                  src={
-                    data?.ConversationAnalytics?.SourceInformation[0]
-                      ?.TranscribeJobInfo?.MediaFileUri
-                  }
-                >
-                  Your browser does not support the
-                  <code>audio</code> element.
-                </audio>
-              )}
-            </Card.Title>
-
-            {loading ? (
-            <LoadingPlaceholder />
-              (data?.SpeechSegments || []).map((s, i) => (
-                <TranscriptSegment
-                  key={i}
-                  name={speakerOrder[s.SegmentSpeaker]}
-                  segmentStart={s.SegmentStartTime}
-                  text={s.DisplayText}
-                  onClick={setAudioCurrentTime}
-                />
-              ))
+          ) : (
+            <Entities data={data?.ConversationAnalytics?.CustomEntities} />
+          )}
+        </Card.Body>
+      </Card>
+      <Card>
+        <Card.Body>
+          <Card.Title
+            className="sticky-top"
+            style={{
+              marginBottom: "1rem",
+              background: "white",
+            }}
+          >
+            <div style={{ display: "inline-flex", paddingBottom: "1rem" }}>
+              Transcript
+            </div>
+            {!loading && (
+              <audio
+                style={{ float: "right" }}
+                controls
+                src={
+                  data?.ConversationAnalytics?.SourceInformation[0]
+                    ?.TranscribeJobInfo?.MediaFileUri
+                }
+              >
+                Your browser does not support the
+                <code>audio</code> element.
+              </audio>
             )}
-          </Card.Body>
-        </Card>
-      </Stack>
-    </Container>
+          </Card.Title>
+
+          {loading ? (
+            <LoadingPlaceholder />
+          ) : (
+            (data?.SpeechSegments || []).map((s, i) => (
+              <TranscriptSegment
+                key={i}
+                name={speakerOrder[s.SegmentSpeaker]}
+                segmentStart={s.SegmentStartTime}
+                text={s.DisplayText}
+                onClick={setAudioCurrentTime}
+                highlightLocations={s.EntitiesDetected.map((e) => ({
+                  start: e.BeginOffset,
+                  end: e.EndOffset,
+                  style: "red",
+                }))}
+                highlightFunc={highlightAt}
+              />
+            ))
+          )}
+        </Card.Body>
+      </Card>
+    </Stack>
   );
 }
 
