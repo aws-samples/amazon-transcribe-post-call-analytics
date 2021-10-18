@@ -284,10 +284,10 @@ function Dashboard({ setAlert }) {
           <Card.Title>Overview</Card.Title>
           <Row>
             <Col>
-              firstCol.map((entry, i) => (
-              <ValueWithLabel key={i} label={entry.label}>
-                {loading ? <LoadingPlaceholder /> : entry.value(data) || "-"}
-              </ValueWithLabel>
+              {firstCol.map((entry, i) => (
+                <ValueWithLabel key={i} label={entry.label}>
+                  {loading ? <LoadingPlaceholder /> : entry.value(data) || "-"}
+                </ValueWithLabel>
               ))}
             </Col>
 
