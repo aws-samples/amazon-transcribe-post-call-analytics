@@ -3,17 +3,18 @@ import { useParams } from "react-router";
 import { get, swap } from "../api/api";
 import { Percentage, Time } from "../format";
 
-import Card from "react-bootstrap/Card";
-import Stack from "react-bootstrap/Stack";
-import Col from "react-bootstrap/Col";
-import Container from "react-bootstrap/Container";
-import Row from "react-bootstrap/Row";
-import Spinner from "react-bootstrap/Spinner";
-import Badge from "react-bootstrap/Badge";
-import Button from "react-bootstrap/Button";
-import Tabs from "react-bootstrap/Tabs";
-import Tab from "react-bootstrap/Tab";
-import ListGroup from "react-bootstrap/ListGroup";
+import {
+  Badge,
+  Button,
+  Card,
+  Col,
+  ListGroup,
+  Placeholder,
+  Row,
+  Stack,
+  Tab,
+  Tabs,
+} from "react-bootstrap";
 
 import Smile from "../images/smile.png";
 import Frown from "../images/frown.png";
@@ -32,7 +33,12 @@ const ValueWithLabel = ({ label, children }) => (
   </div>
 );
 
-const TranscriptSegment = ({ name, segmentStart, text, onClick }) => (
+const LoadingPlaceholder = () => (
+  <Placeholder as="p" animation="glow">
+    <Placeholder xs={12} />
+  </Placeholder>
+);
+
   <div>
     <span style={{ color: "#808080" }}>
       {name} -{" "}
@@ -59,6 +65,7 @@ const Entities = ({ data }) => (
   >
     {data.map((e, i) => (
       <Tab
+        key={i}
         eventKey={e.Name}
         title={
           <span>
@@ -250,9 +257,7 @@ function Dashboard({ setAlert }) {
                 {firstCol.map((entry, i) => (
                   <ValueWithLabel key={i} label={entry.label}>
                     {loading ? (
-                      <Spinner size="sm" animation="border" role="status">
-                        <span className="visually-hidden">Loading...</span>
-                      </Spinner>
+                      <LoadingPlaceholder />
                     ) : (
                       entry.value(data) || "-"
                     )}
@@ -264,9 +269,7 @@ function Dashboard({ setAlert }) {
                 {secondCol.map((entry, i) => (
                   <ValueWithLabel key={i} label={entry.label}>
                     {loading ? (
-                      <Spinner size="sm" animation="border" role="status">
-                        <span className="visually-hidden">Loading...</span>
-                      </Spinner>
+                      <LoadingPlaceholder />
                     ) : (
                       entry.value(data) || "-"
                     )}
@@ -280,27 +283,7 @@ function Dashboard({ setAlert }) {
         <Card>
           <Card.Body>
             <Card.Title>Entities</Card.Title>
-            {loading ? (
-              <Spinner size="sm" animation="border" role="status">
-                <span className="visually-hidden">Loading...</span>
-              </Spinner>
-            ) : (
-              <Entities data={data?.ConversationAnalytics?.CustomEntities} />
-            )}
-          </Card.Body>
-        </Card>
-        <Card>
-          <Card.Body>
-            <Card.Title
-              className="sticky-top"
-              style={{
-                marginBottom: "1rem",
-                background: "white",
-              }}
-            >
-              <div style={{ display: "inline-flex", paddingBottom: "1rem" }}>
-                Transcript
-              </div>
+            <LoadingPlaceholder />
               {!loading && (
                 <audio
                   style={{ float: "right" }}
@@ -317,10 +300,7 @@ function Dashboard({ setAlert }) {
             </Card.Title>
 
             {loading ? (
-              <Spinner size="sm" animation="border" role="status">
-                <span className="visually-hidden">Loading...</span>
-              </Spinner>
-            ) : (
+            <LoadingPlaceholder />
               (data?.SpeechSegments || []).map((s, i) => (
                 <TranscriptSegment
                   key={i}
