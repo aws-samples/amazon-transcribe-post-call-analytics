@@ -89,7 +89,9 @@ function Search({ setAlert }) {
       <h3>Search</h3>
       <Form className="mb-5">
         <Form.Group className="mb-3">
-          <Form.Label>Language Code</Form.Label>
+          <Form.Label>
+            <h5>Language Code</h5>
+          </Form.Label>
           <Form.Select
             onChange={(e) => handleQueryInput(e.target.value, "language")}
           >
@@ -101,7 +103,9 @@ function Search({ setAlert }) {
         </Form.Group>
 
         <Form.Group className="mb-3">
-          <Form.Label>Date Range</Form.Label>
+          <Form.Label>
+            <h5>Date Range</h5>
+          </Form.Label>
           <DatePicker
             selected={startDate}
             startDate={startDate}
@@ -146,7 +150,9 @@ function Search({ setAlert }) {
         />
 
         <Form.Group className="mb-3">
-          <Form.Label>Entities</Form.Label>
+          <Form.Label>
+            <h5>Entities</h5>
+          </Form.Label>
           <Form.Select
             onChange={(e) => handleQueryInput(e.target.value, "entity")}
           >
