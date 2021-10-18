@@ -106,7 +106,7 @@ const Sentiment = ({ score }) => {
   );
 };
 
-function Dashboard() {
+function Dashboard({ setAlert }) {
   const { key } = useParams();
 
   const [data, setData] = useState({});
@@ -125,12 +125,16 @@ function Dashboard() {
       } catch (err) {
         console.error(err);
         setError(true);
+        setAlert({
+          variant: "danger",
+          text: "Unable to load data. Please try again later",
+        });
       } finally {
         setLoading(false);
       }
     };
     getData();
-  }, [key]);
+  }, [key, setAlert]);
 
   const swapAgent = async () => {
     try {
@@ -138,7 +142,11 @@ function Dashboard() {
       window.location.reload(false);
     } catch (err) {
       console.error(err);
-      setError(err);
+      setAlert({
+        heading: "Something went wrong",
+        variant: "danger",
+        text: "Unable to swap agent. Please try again later",
+      });
     }
   };
 

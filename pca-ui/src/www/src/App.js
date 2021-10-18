@@ -4,10 +4,11 @@ import {
   Route,
   NavLink,
 } from "react-router-dom";
-import { Navbar, Nav, Container } from "react-bootstrap";
+import { Navbar, Nav, Container, Alert } from "react-bootstrap";
 import Home from "./routes/Home";
 import Search from "./routes/Search";
 import Dashboard from "./routes/Dashboard";
+import { useState } from "react";
 
 const routes = [
   { path: "/search", name: "Search", Component: Search },
@@ -50,16 +51,29 @@ function Navigation() {
 }
 
 function App() {
+  const [alert, setAlert] = useState();
+
+  const onDismiss = () => {
+    setAlert(null);
+  };
   return (
     <Router>
       <>
         <Navigation />
+        {alert && (
+          <Alert variant={alert.variant} dismissible onDismiss={onDismiss}>
+            <Container className="py-3 ps-4">
+              <Alert.Heading>{alert.heading}</Alert.Heading>
+              {alert.text}
+            </Container>
+          </Alert>
+        )}
         <Container className="py-3">
           <Switch>
             {routes.map(({ path, Component }) => (
               <Route key={path} path={path}>
                 <div className="page">
-                  <Component />
+                  <Component setAlert={setAlert} />
                 </div>
               </Route>
             ))}
