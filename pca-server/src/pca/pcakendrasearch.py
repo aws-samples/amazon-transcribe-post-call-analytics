@@ -9,15 +9,8 @@ import pcaconfiguration as cf
 KENDRA = boto3.client('kendra')
 S3 = boto3.client('s3')
 
-def prepare_transcript(transcript_file):
-    """
-    Parses the output from the Transcribe job, inserting time markers at the start of each sentence.
-    The time markers enable Kendra search results to link to the relevant time marker in the 
-    correspondiong audio recording.
-    """
-    print(f"prepare_transcript(transcript_file={transcript_file[0:100]}...)")
-    with open(transcript_file) as f:
-        transcript = json.load(f)
+def prepare_transcript_standard(transcript):
+    print(f"prepare_transcript_callanalytics(...)")
     items = transcript["results"]["items"]
     txt = ""
     sentence = ""
@@ -36,8 +29,47 @@ def prepare_transcript(transcript_file):
         txt = txt + " " + sentence + " "
     out = textwrap.fill(txt, width=70)
     return out
-    
 
+def prepare_transcript_callanalytics(transcript):
+    print(f"prepare_transcript_callanalytics(...)")
+    turns = transcript["Transcript"]
+    txt = ""
+    sentence = ""
+    for turn in turns:
+        items = turn["Items"]
+        for i in items:
+            if (i["Type"] == 'punctuation'):
+                sentence = sentence + i["Content"]
+                if (i["Content"] == '.'):
+                    #sentence completed
+                    txt = txt + " " + sentence + " "
+                    sentence = ""
+            else: 
+                if (sentence == ''):
+                    start_time = i["BeginOffsetMillis"]/1000
+                    sentence = "[" + str(start_time) + "]"
+                sentence = sentence + " " + i["Content"]
+    if (sentence != ""):
+        txt = txt + " " + sentence + " "
+    out = textwrap.fill(txt, width=70)
+    return out    
+
+def prepare_transcript(transcript_file):
+    """
+    Parses the output from the Transcribe job, inserting time markers at the start of each sentence.
+    The time markers enable Kendra search results to link to the relevant time marker in the 
+    correspondiong audio recording.
+    """
+    print(f"prepare_transcript(transcript_file={transcript_file[0:100]}...)")
+    with open(transcript_file) as f:
+        transcript = json.load(f)
+    # detect if transcript is from Transcribe standard or Transcribe Call Analytics
+    if "results" in transcript:
+        return prepare_transcript_standard(transcript)
+    else:
+        return prepare_transcript_callanalytics(transcript)
+
+    
 def parse_s3uri(s3ur1):
     """
     Parses bucket, key, and filename from an S3 uri, eg s3://bucket/prefix/filename 
