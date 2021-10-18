@@ -1,8 +1,6 @@
 import { useState } from "react";
 
-import Form from "react-bootstrap/Form";
-import Button from "react-bootstrap/Button";
-import Card from "react-bootstrap/Card";
+import { Button, Form } from "react-bootstrap";
 import DatePicker from "react-datepicker";
 
 import "react-datepicker/dist/react-datepicker.css";
@@ -22,7 +20,7 @@ function Search({ setAlert }) {
   const [endDate, setEndDate] = useState(null);
 
   const [editing, setEditing] = useState(true);
-  const [error, setError] = useState();
+
   const [loadingOptions, setLoadingOptions] = useState(true);
   const [loadingResults, setLoadingResults] = useState(false);
 
@@ -33,6 +31,7 @@ function Search({ setAlert }) {
   useState(() => {
     const getData = async () => {
       try {
+        setLoadingOptions(true);
         const e = await getEntities();
         setEntities(e);
 
@@ -71,8 +70,8 @@ function Search({ setAlert }) {
   const onClick = () => {
     const getData = async () => {
       try {
-        setLoadingResults(true);
         setEditing(false);
+        setLoadingResults(true);
         const data = await search(query);
         setResults(data);
       } catch (e) {
@@ -168,7 +167,7 @@ function Search({ setAlert }) {
             name="sentimentDirection"
             label="Positive"
             type="radio"
-            value={"positive"}
+            value="positive"
             inline
           />
           <Form.Check
@@ -202,26 +201,9 @@ function Search({ setAlert }) {
         </Button>
       </Form>
 
-      {!editing && !loadingResults ? (
-        <div>
-          {results.length === 0 ? (
-            <NoMatches />
-          ) : (
-            <ContactTable data={results} />
-          )}
-        </div>
-      ) : null}
+      {!editing && <ContactTable data={results} loading={loadingResults} />}
     </>
   );
 }
-
-const NoMatches = () => (
-  <Card>
-    <Card.Body>
-      <Card.Title>No Matches</Card.Title>
-      <Card.Subtitle>Please try a different query</Card.Subtitle>
-    </Card.Body>
-  </Card>
-);
 
 export default Search;
