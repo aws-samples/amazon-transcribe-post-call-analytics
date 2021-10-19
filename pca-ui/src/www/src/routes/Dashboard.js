@@ -39,6 +39,28 @@ const LoadingPlaceholder = () => (
   </Placeholder>
 );
 
+const SentimentIcon = ({ score }) => {
+  let icon;
+  let alt;
+  if (score > 0) {
+    icon = Smile;
+    alt = "positive";
+  } else if (score < 0) {
+    icon = Frown;
+    alt = "negative";
+  } else {
+    alt = "neutral";
+    icon = Neutral;
+  }
+  return (
+    <img
+      src={icon}
+      alt={alt}
+      style={{ display: "inline", width: "2rem", marginRight: "1rem" }}
+    />
+  );
+};
+
 const TranscriptSegment = ({
   name,
   segmentStart,
@@ -46,28 +68,34 @@ const TranscriptSegment = ({
   onClick,
   highlightLocations,
   highlightFunc,
+  score,
 }) => (
-  <div>
-    <span style={{ color: "#808080" }}>
-      {name} -{" "}
-      <span
-        data-currenttime={segmentStart}
-        onClick={onClick}
-        style={{
-          color: "cadetblue",
-          cursor: "pointer",
-        }}
-      >
-        {Time(segmentStart)}
+  <Row>
+    <Col sm={1} className="pt-2">
+      <SentimentIcon score={score} />
+    </Col>
+    <Col>
+      <span style={{ color: "#808080" }}>
+        {name} -{" "}
+        <span
+          data-currenttime={segmentStart}
+          onClick={onClick}
+          style={{
+            color: "cadetblue",
+            cursor: "pointer",
+          }}
+        >
+          {Time(segmentStart)}
+        </span>
       </span>
-    </span>
-    <p>{text}</p>
-    {/* <span
+      <p>{text}</p>
+      {/* <span
       dangerouslySetInnerHTML={{
         __html: highlightFunc(text, highlightLocations),
       }}
     ></span> */}
-  </div>
+    </Col>
+  </Row>
 );
 
 // hightlightAt takes a string to highlight and an array of location objects that
@@ -120,25 +148,9 @@ const Entities = ({ data }) => (
 );
 
 const Sentiment = ({ score }) => {
-  let icon;
-  let alt;
-  if (score > 0) {
-    icon = Smile;
-    alt = "positive";
-  } else if (score < 0) {
-    icon = Frown;
-    alt = "negative";
-  } else {
-    alt = "neutral";
-    icon = Neutral;
-  }
   return (
     <span>
-      <img
-        src={icon}
-        alt={alt}
-        style={{ display: "inline", width: "2rem", marginRight: "1rem" }}
-      />
+      <SentimentIcon score={score} />
       {Percentage(score)}
     </span>
   );
@@ -359,6 +371,7 @@ function Dashboard({ setAlert }) {
                   style: "red",
                 }))}
                 highlightFunc={highlightAt}
+                score={s.SentimentIsPositive - s.SentimentIsNegative}
               />
             ))
           )}
