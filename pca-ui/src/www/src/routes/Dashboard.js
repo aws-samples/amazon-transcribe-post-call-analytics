@@ -4,6 +4,8 @@ import useSWR from "swr";
 import { get, swap } from "../api/api";
 import { Formatter } from "../format";
 
+import { ValueWithLabel } from "../components/ValueWithLabel";
+import { SentimentIcon } from "../components/SentimentIcon";
 import {
   Badge,
   Button,
@@ -17,50 +19,15 @@ import {
   Tabs,
 } from "react-bootstrap";
 
-import Smile from "../images/smile.png";
-import Frown from "../images/frown.png";
-import Neutral from "../images/neutral.png";
-
 // TODO
 // * Display type
 // * Add graph
-
-const ValueWithLabel = ({ label, children }) => (
-  <div className="mb-3">
-    <h5 className="mb-1" color="text-label">
-      {label}
-    </h5>
-    <div>{children}</div>
-  </div>
-);
 
 const LoadingPlaceholder = () => (
   <Placeholder as="p" animation="glow">
     <Placeholder xs={12} />
   </Placeholder>
 );
-
-const SentimentIcon = ({ score }) => {
-  let icon;
-  let alt;
-  if (score > 0) {
-    icon = Smile;
-    alt = "positive sentiment";
-  } else if (score < 0) {
-    icon = Frown;
-    alt = "negative sentiment";
-  } else {
-    alt = "neutral sentiment";
-    icon = Neutral;
-  }
-  return (
-    <img
-      src={icon}
-      alt={alt}
-      className="sentiment"
-    />
-  );
-};
 
 const TranscriptSegment = ({
   name,
@@ -78,10 +45,7 @@ const TranscriptSegment = ({
     <Col>
       <span className={"text-muted segment"}>
         {name} -{" "}
-        <span
-          data-currenttime={segmentStart}
-          onClick={onClick}
-        >
+        <span data-currenttime={segmentStart} onClick={onClick}>
           {Formatter.Time(segmentStart)}
         </span>
       </span>
@@ -313,16 +277,9 @@ function Dashboard({ setAlert }) {
         </Card.Body>
       </Card>
       <Card>
-        <Card.Body
-          className="pt-0"
-        >
-          <Card.Title
-            className="sticky-top pt-3 mb-2 bg-white"
-          >
-            <div
-              className="d-inline-flex pb-3">
-              Transcript
-            </div>
+        <Card.Body className="pt-0">
+          <Card.Title className="sticky-top pt-3 mb-2 bg-white">
+            <div className="d-inline-flex pb-3">Transcript</div>
             {data && (
               <audio
                 className="float-right"
