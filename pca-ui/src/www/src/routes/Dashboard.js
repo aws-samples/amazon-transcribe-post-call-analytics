@@ -68,10 +68,11 @@ const TranscriptSegment = ({
   onClick,
   highlightLocations,
   highlightFunc,
+  score,
 }) => (
   <Row>
     <Col sm={1} className="pt-2">
-      <SentimentIcon score={1} />
+      <SentimentIcon score={score} />
     </Col>
     <Col>
       <span style={{ color: "#808080" }}>
@@ -370,6 +371,7 @@ function Dashboard({ setAlert }) {
                   style: "red",
                 }))}
                 highlightFunc={highlightAt}
+                score={s.SentimentIsPositive - s.SentimentIsNegative}
               />
             ))
           )}
