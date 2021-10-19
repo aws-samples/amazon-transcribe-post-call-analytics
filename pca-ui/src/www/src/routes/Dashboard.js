@@ -45,12 +45,12 @@ const SentimentIcon = ({ score }) => {
   let alt;
   if (score > 0) {
     icon = Smile;
-    alt = "positive";
+    alt = "positive sentiment";
   } else if (score < 0) {
     icon = Frown;
-    alt = "negative";
+    alt = "negative sentiment";
   } else {
-    alt = "neutral";
+    alt = "neutral sentiment";
     icon = Neutral;
   }
   return (
