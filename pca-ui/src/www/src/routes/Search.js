@@ -15,17 +15,12 @@ import { ContactTable } from "../components/ContactTable";
 function Search({ setAlert }) {
   const [entities, setEntities] = useState([]);
   const [languageCodes, setLanguageCodes] = useState([]);
-
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
-
   const [editing, setEditing] = useState(true);
-
   const [loadingOptions, setLoadingOptions] = useState(true);
   const [loadingResults, setLoadingResults] = useState(false);
-
   const [query, setQuery] = useState({});
-
   const [results, setResults] = useState([]);
 
   useState(() => {
