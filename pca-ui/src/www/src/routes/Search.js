@@ -30,25 +30,22 @@ function Search({ setAlert }) {
 
   useState(() => {
     const getData = async () => {
-      try {
-        setLoadingOptions(true);
-        const e = await getEntities();
-        setEntities(e);
+      setLoadingOptions(true);
 
-        const l = await getLanguages();
-        setLanguageCodes(l);
-      } catch (err) {
-        console.debug(err);
-        setAlert({
-          heading: "Something went wrong",
-          variant: "danger",
-          text: "Unable to load data. Please try again later",
-        });
-      } finally {
-        setLoadingOptions(false);
-      }
+      Promise.all([
+        getEntities().then((e) => setEntities(e)),
+        getLanguages().then((l) => setLanguageCodes(l)),
+      ])
+        .catch((err) => {
+          console.error(err);
+          setAlert({
+            heading: "Something went wrong",
+            variant: "danger",
+            text: "Unable to load data. Please try again later",
+          });
+        })
+        .finally(setLoadingOptions(false));
     };
-
     getData();
   }, []);
 
