@@ -2,9 +2,6 @@ import { useState } from "react";
 
 import { Button, Form } from "react-bootstrap";
 import DatePicker from "react-datepicker";
-
-import "react-datepicker/dist/react-datepicker.css";
-
 import {
   entities as getEntities,
   languages as getLanguages,
