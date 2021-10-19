@@ -55,32 +55,12 @@ async function getRequest(resource, data) {
   return request(url.toString());
 }
 
-const itemCache = {};
-const headerCache = {};
-
-export function invalidate(key) {
-  delete itemCache[key];
-  delete headerCache[key];
-}
-
 export async function get(key) {
-  if (key in itemCache) {
-    return itemCache[key];
-  }
-
-  const result = getRequest(`get/${key}`);
-  itemCache[key] = result;
-  return result;
+  return getRequest(`get/${key}`);
 }
 
 export async function head(key) {
-  if (key in headerCache) {
-    return headerCache[key];
-  }
-
-  const result = getRequest(`head/${key}`);
-  headerCache[key] = result;
-  return result;
+  return getRequest(`head/${key}`);
 }
 
 export async function search(query) {
