@@ -328,7 +328,7 @@ function Dashboard({ setAlert }) {
               className="d-inline-flex pb-3">
               Transcript
             </div>
-            {!data && !error && (
+            {data && (
               <audio
                 className="float-right"
                 controls
