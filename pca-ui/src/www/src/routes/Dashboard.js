@@ -86,11 +86,6 @@ const TranscriptSegment = ({
         </span>
       </span>
       <p>{text}</p>
-      {/* <span
-      dangerouslySetInnerHTML={{
-        __html: highlightFunc(text, highlightLocations),
-      }}
-    ></span> */}
     </Col>
   </Row>
 );
