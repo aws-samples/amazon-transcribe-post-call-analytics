@@ -12,8 +12,7 @@ import { ContactTable } from "../components/ContactTable";
 function Search({ setAlert }) {
   const [entities, setEntities] = useState([]);
   const [languageCodes, setLanguageCodes] = useState([]);
-  const [startDate, setStartDate] = useState(null);
-  const [endDate, setEndDate] = useState(null);
+
   const [editing, setEditing] = useState(true);
   const [loadingOptions, setLoadingOptions] = useState(true);
   const [loadingResults, setLoadingResults] = useState(false);
@@ -46,9 +45,6 @@ function Search({ setAlert }) {
 
     handleQueryInput(new Date(start).getTime(), "timestampFrom");
     handleQueryInput(new Date(end).getTime(), "timestampTo");
-
-    setStartDate(start);
-    setEndDate(end);
   };
 
   const handleQueryInput = (input, field) => {
@@ -96,9 +92,6 @@ function Search({ setAlert }) {
             <h5>Date Range</h5>
           </Form.Label>
           <DatePicker
-            selected={startDate}
-            startDate={startDate}
-            endDate={endDate}
             selectsRange
             dateFormat="yyyy-MM-dd"
             onChange={handleDates}
