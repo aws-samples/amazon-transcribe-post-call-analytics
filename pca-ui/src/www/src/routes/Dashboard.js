@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams } from "react-router";
 import useSWR from "swr";
 import { get, swap } from "../api/api";
@@ -177,7 +177,7 @@ function Dashboard({ setAlert }) {
 
   const swapAgent = async () => {
     try {
-      const resp = await swap(key);
+      await swap(key);
       window.location.reload(false);
     } catch (err) {
       console.error(err);
