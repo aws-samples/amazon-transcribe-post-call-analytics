@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams } from "react-router";
+import useSWR from "swr";
 import { get, swap } from "../api/api";
 import { Formatter } from "../format";
 
@@ -159,37 +160,24 @@ const Sentiment = ({ score }) => {
 function Dashboard({ setAlert }) {
   const { key } = useParams();
 
-  const [data, setData] = useState({});
-  const [error, setError] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const { data, error } = useSWR(`/get/${key}`, () => get(key));
+
+  if (error) {
+    console.error(error);
+    setAlert({
+      variant: "danger",
+      text: "Unable to load data. Please try again later",
+    });
+  }
 
   const [speakerOrder, setSpeakerOrder] = useState({
     spk_0: "Agent",
     spk_1: "Caller",
   });
 
-  useEffect(() => {
-    const getData = async () => {
-      try {
-        const d = await get(key);
-        setData(d);
-      } catch (err) {
-        console.error(err);
-        setError(true);
-        setAlert({
-          variant: "danger",
-          text: "Unable to load data. Please try again later",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-    getData();
-  }, [key, setAlert]);
-
   const swapAgent = async () => {
     try {
-      const resp = await swap(key);
+      await swap(key);
       window.location.reload(false);
     } catch (err) {
       console.error(err);
@@ -299,7 +287,11 @@ function Dashboard({ setAlert }) {
             <Col>
               {firstCol.map((entry, i) => (
                 <ValueWithLabel key={i} label={entry.label}>
-                  {loading ? <LoadingPlaceholder /> : entry.value(data) || "-"}
+                  {!data && !error ? (
+                    <LoadingPlaceholder />
+                  ) : (
+                    entry.value(data) || "-"
+                  )}
                 </ValueWithLabel>
               ))}
             </Col>
@@ -307,7 +299,11 @@ function Dashboard({ setAlert }) {
             <Col>
               {secondCol.map((entry, i) => (
                 <ValueWithLabel key={i} label={entry.label}>
-                  {loading ? <LoadingPlaceholder /> : entry.value(data) || "-"}
+                  {!data && !error ? (
+                    <LoadingPlaceholder />
+                  ) : (
+                    entry.value(data) || "-"
+                  )}
                 </ValueWithLabel>
               ))}
             </Col>
@@ -318,7 +314,7 @@ function Dashboard({ setAlert }) {
       <Card>
         <Card.Body>
           <Card.Title>Entities</Card.Title>
-          {loading ? (
+          {!data && !error ? (
             <LoadingPlaceholder />
           ) : (
             <Entities data={data?.ConversationAnalytics?.CustomEntities} />
@@ -340,7 +336,7 @@ function Dashboard({ setAlert }) {
             <div style={{ display: "inline-flex", paddingBottom: "1rem" }}>
               Transcript
             </div>
-            {!loading && (
+            {!data && !error && (
               <audio
                 style={{ float: "right" }}
                 controls
@@ -355,7 +351,7 @@ function Dashboard({ setAlert }) {
             )}
           </Card.Title>
 
-          {loading ? (
+          {!data && !error ? (
             <LoadingPlaceholder />
           ) : (
             (data?.SpeechSegments || []).map((s, i) => (

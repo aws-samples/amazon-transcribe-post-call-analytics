@@ -1,5 +1,5 @@
 import { useState } from "react";
-
+import useSWR from "swr";
 import { Button, Form } from "react-bootstrap";
 import DatePicker from "react-datepicker";
 import {
@@ -10,35 +10,20 @@ import {
 import { ContactTable } from "../components/ContactTable";
 
 function Search({ setAlert }) {
-  const [entities, setEntities] = useState([]);
-  const [languageCodes, setLanguageCodes] = useState([]);
-
   const [editing, setEditing] = useState(true);
-  const [loadingOptions, setLoadingOptions] = useState(true);
-  const [loadingResults, setLoadingResults] = useState(false);
   const [query, setQuery] = useState({});
-  const [results, setResults] = useState([]);
-
-  useState(() => {
-    const getData = async () => {
-      setLoadingOptions(true);
-
-      Promise.all([
-        getEntities().then((e) => setEntities(e)),
-        getLanguages().then((l) => setLanguageCodes(l)),
-      ])
-        .catch((err) => {
-          console.error(err);
-          setAlert({
-            heading: "Something went wrong",
-            variant: "danger",
-            text: "Unable to load data. Please try again later",
-          });
-        })
-        .finally(setLoadingOptions(false));
-    };
-    getData();
-  }, []);
+  const { data: entities, error: errorEntities } = useSWR(
+    `/entities`,
+    getEntities
+  );
+  const { data: languageCodes, error: errorLanguageCodes } = useSWR(
+    `/languages`,
+    getLanguages
+  );
+  const { data: results, error: errorResults } = useSWR(
+    [`/search`, query],
+    () => search(query)
+  );
 
   const handleDates = (dates) => {
     const [start, end] = dates;
@@ -53,21 +38,16 @@ function Search({ setAlert }) {
   };
 
   const onClick = () => {
-    const getData = async () => {
-      try {
-        setEditing(false);
-        setLoadingResults(true);
-        const data = await search(query);
-        setResults(data);
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setLoadingResults(false);
-      }
-    };
-
-    getData();
+    setEditing(false);
   };
+
+  if (errorLanguageCodes || errorEntities || errorResults) {
+    setAlert({
+      heading: "Something went wrong",
+      variant: "danger",
+      text: "Unable to load search data. Please try again later",
+    });
+  }
 
   return (
     <>
@@ -93,6 +73,8 @@ function Search({ setAlert }) {
           </Form.Label>
           <DatePicker
             selectsRange
+            startDate={query.timestampFrom}
+            endDate={query.timestampTo}
             dateFormat="yyyy-MM-dd"
             onChange={handleDates}
             maxDate={new Date()}
@@ -155,7 +137,7 @@ function Search({ setAlert }) {
       {!editing && (
         <ContactTable
           data={results}
-          loading={loadingResults}
+          loading={!results && !errorResults}
           empty={<NoMatches />}
         />
       )}
