@@ -1,6 +1,6 @@
 import { DateTime } from "luxon";
 
-export function Time(input) {
+function Time(input) {
   var mins = Math.floor(input / 60);
   var secs = Math.floor(input - mins * 60).toLocaleString("en-GB", {
     maximumFractionDigits: 1,
@@ -9,7 +9,7 @@ export function Time(input) {
   return `${mins}`.padStart(2, "0") + ":" + `${secs}`.padStart(2, "0");
 }
 
-export function Percentage(input) {
+function Percentage(input) {
   return input.toLocaleString("en-GB", {
     style: "percent",
     minimumFractionDigits: 1,
@@ -17,14 +17,16 @@ export function Percentage(input) {
   });
 }
 
-export function Number(input) {
+function Number(input) {
   return input.toLocaleString("en-GB", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
 }
 
-export function Timestamp(input) {
+function Timestamp(input) {
   const dt = DateTime.fromMillis(input);
   return dt.toISO();
 }
+
+export const Formatter = { Percentage, Number, Time, Timestamp };

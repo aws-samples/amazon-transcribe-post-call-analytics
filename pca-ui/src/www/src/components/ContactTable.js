@@ -1,14 +1,14 @@
 import { Placeholder, Table } from "react-bootstrap";
 import { useHistory } from "react-router-dom";
-import { Percentage, Time, Timestamp } from "../format";
+import { Formatter } from "../format";
 
 const columns = [
   { label: "#", value: (d, i) => <a href={`/dashboard/${d.key}`}>{i}</a> },
   { label: "Job Name", value: (d) => d.jobName },
-  { label: "Timestamp", value: (d) => Timestamp(d.timestamp) },
-  { label: "Accuracy", value: (d) => Percentage(d.accuracy) },
+  { label: "Timestamp", value: (d) => Formatter.Timestamp(d.timestamp) },
+  { label: "Accuracy", value: (d) => Formatter.Percentage(d.accuracy) },
   { label: "Language Code", value: (d) => d.lang },
-  { label: "Call Duration", value: (d) => Time(d.duration) },
+  { label: "Call Duration", value: (d) => Formatter.Time(d.duration) },
 ];
 
 const Loading = () =>
