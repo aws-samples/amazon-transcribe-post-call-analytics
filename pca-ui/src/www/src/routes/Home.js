@@ -1,39 +1,26 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
+import useSWR from "swr";
 import { list } from "../api/api";
 import { ContactTable } from "../components/ContactTable";
 
 const config = window.pcaSettings;
 
 function Home({ setAlert }) {
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const fetcher = () => list({ count: config.api.pageSize });
+  const { data, error } = useSWR(`/list`, fetcher);
 
-  useEffect(() => {
-    const getData = async () => {
-      try {
-        const results = await list({
-          count: config.api.pageSize,
-        });
-
-        setData(results);
-      } catch (e) {
-        console.error(e);
-        setAlert({
-          heading: "Something went wrong",
-          variant: "danger",
-          text: "Unable to load data. Please try again later",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-    getData();
-  }, [setAlert]);
+  if (error) {
+    setAlert({
+      heading: "Something went wrong",
+      variant: "danger",
+      text: "Unable to load data. Please try again later",
+    });
+  }
 
   return (
     <div>
       <h3>Home</h3>
-      <ContactTable data={data} loading={loading} empty={<Empty />} />
+      <ContactTable data={data} loading={!data && !error} empty={<Empty />} />
     </div>
   );
 }
