@@ -24,6 +24,8 @@ NLP_THROTTLE_RETRIES = 1
 # PII and other Markers
 PII_PLACEHOLDER = "[PII]"
 PII_PLACEHOLDER_MASK = "*" * len(PII_PLACEHOLDER)
+KNOWN_SPEAKER_PREFIX = "spk_"
+UNKNOWN_SPEAKER_PREFIX = "Unknown_"
 TMP_DIR = "/tmp"
 
 
@@ -73,6 +75,7 @@ class TranscribeParser:
         self.transcript_uri = ""
         self.api_mode = cf.API_STANDARD
         self.analytics_channel_map = {}
+        self.asr_output = ""
 
         cf.loadConfiguration()
 
@@ -96,7 +99,6 @@ class TranscribeParser:
         self.simpleEntityMatchingUsed = (self.customEntityEndpointARN == "") and \
                                         (cf.appConfig[cf.CONF_ENTITY_FILE] != "")
 
-
     def generateSpeakerSentimentTrend(self, speaker, spkNum):
         '''
         Generates and returns a sentiment trend block for this speaker
@@ -107,8 +109,7 @@ class TranscribeParser:
           "SentimentChange": "float"
         }
         '''
-        speakerTrend = {}
-        speakerTrend["Speaker"] = speaker
+        speakerTrend = {"Speaker": speaker}
 
         speakerTurns = 0
         sumSentiment = 0.0
@@ -151,7 +152,7 @@ class TranscribeParser:
 
         return speakerTrend
 
-    def createOutputConversationAnalytics(self):
+    def create_output_conversation_analytics(self):
         '''
         Generates some conversation-level analytics for this document, which includes information
         about the call, speaker labels, sentiment trends and entities
@@ -179,17 +180,17 @@ class TranscribeParser:
         if self.api_mode == cf.API_STANDARD:
             for speaker in range(self.maxSpeakerIndex + 1):
                 next_label = {}
-                next_label["Speaker"] = "spk_" + str(speaker)
+                next_label["Speaker"] = KNOWN_SPEAKER_PREFIX + str(speaker)
                 try:
                     next_label["DisplayText"] = cf.appConfig[cf.CONF_SPEAKER_NAMES][speaker]
                 except:
-                    next_label["DisplayText"] = "Unknown-" + str(speaker)
+                    next_label["DisplayText"] = UNKNOWN_SPEAKER_PREFIX + str(speaker)
                 speakerLabels.append(next_label)
         # Analytics is more prescriptive - they're defined in the call results
         elif self.api_mode == cf.API_ANALYTICS:
             for speaker in self.analytics_channel_map:
                 next_label = {}
-                next_label["Speaker"] = "spk_" + str(self.analytics_channel_map[speaker])
+                next_label["Speaker"] = KNOWN_SPEAKER_PREFIX + str(self.analytics_channel_map[speaker])
                 next_label["DisplayText"] = speaker.title()
                 speakerLabels.append(next_label)
         resultsHeaderInfo["SpeakerLabels"] = speakerLabels
@@ -197,8 +198,13 @@ class TranscribeParser:
         # Sentiment Trends
         sentimentTrends = []
         for speaker in range(self.maxSpeakerIndex + 1):
-            sentimentTrends.append(self.generateSpeakerSentimentTrend("spk_" + str(speaker), speaker))
+            sentimentTrends.append(self.generateSpeakerSentimentTrend(KNOWN_SPEAKER_PREFIX + str(speaker), speaker))
         resultsHeaderInfo["SentimentTrends"] = sentimentTrends
+
+        # Analytics mode additional metadata
+        if self.api_mode == cf.API_ANALYTICS:
+            # Speaker and non-talk time
+            resultsHeaderInfo["SpeakerTime"] = self.extract_analytics_speaker_time(self.asr_output["ConversationCharacteristics"])
 
         # Detected custom entity summaries next
         customEntityList = []
@@ -212,7 +218,7 @@ class TranscribeParser:
 
         # Decide which source information block to add - only one for now
         transcribeSourceInfo = {}
-        transcribeSourceInfo["TranscribeJobInfo"] = self.createOutputTranscribeJobInfo()
+        transcribeSourceInfo["TranscribeJobInfo"] = self.create_output_transcribe_job_info()
         sourceInfo = []
         sourceInfo.append(transcribeSourceInfo)
         resultsHeaderInfo["SourceInformation"] = sourceInfo
@@ -225,21 +231,12 @@ class TranscribeParser:
 
         return resultsHeaderInfo
 
-    def createOutputTranscribeJobInfo(self):
-        '''
-        "TranscribeJobInfo": {
-            "TranscriptionJobName": "string",
-            "TranscribeApiType": "string",
-            "CompletionTime": "string",
-            "VocabularyName": "string",
-            "MediaFormat": "string",
-            "MediaSampleRateHertz": "integer",
-            "MediaFileUri": "string",
-            "MediaOriginalUri": "string",
-            "ChannelIdentification": "boolean",
-            "AverageAccuracy": "float"
-         }
-        '''
+    def create_output_transcribe_job_info(self):
+        """
+        Creates the information about the underlying Transcribe job
+
+        @return: JSON structure representing the original Transcribe job
+        """
         transcribeJobInfo = {}
 
         # Some fields we pick off the basic job info
@@ -276,47 +273,10 @@ class TranscribeParser:
 
         return transcribeJobInfo
 
-    def createOutputSpeechSegments(self):
+    def create_output_speech_segments(self):
         '''
         Creates a list of speech segments for this conversation, including custom entities
-
-         "SpeechSegments": [
-            {
-              "SegmentStartTime": "float",
-              "SegmentEndTime": "float",
-              "SegmentSpeaker": "string",
-              "OriginalText": "string",
-              "DisplayText": "string",
-              "TextEdited": "boolean",
-              "SentimentIsPositive": "boolean",
-              "SentimentIsNegative": "boolean",
-              "SentimentScore": "float",
-              "BaseSentimentScores": {
-                "Positive": "float",
-                "Negative": "float",
-                "Neutral": "float",
-                "Mixed": "float"
-              },
-              "EntitiesDetected": [
-                {
-                  "Type": "string",
-                  "Text": "string",
-                  "BeginOffset": "integer",
-                  "EndOffset": "integer",
-                  "Score": "float"
-                }
-              ],
-              "WordConfidence": [
-                {
-                  "Text": "string",
-                  "Confidence": "float",
-                  "StartTime": "float",
-                  "EndTime": "float"
-                }
-              ]
-            }
-          ]
-          '''
+        '''
         speechSegments = []
 
         # Loop through each of our speech segments
@@ -343,16 +303,15 @@ class TranscribeParser:
 
         return speechSegments
 
-    def outputAsJSON(self):
-        '''
-        {
-            "ConversationAnalytics": { },
-            "SpeechSegments": [ ]
-        }
-        '''
+    def create_json_results(self):
+        """
+        Creates a single JSON structure that holds every aspect of the post-call processing
+
+        @return: JSON structure holding all of the results
+        """
         outputJson = {}
-        outputJson["ConversationAnalytics"] = self.createOutputConversationAnalytics()
-        outputJson["SpeechSegments"] = self.createOutputSpeechSegments()
+        outputJson["ConversationAnalytics"] = self.create_output_conversation_analytics()
+        outputJson["SpeechSegments"] = self.create_output_speech_segments()
 
         return outputJson
 
@@ -435,7 +394,7 @@ class TranscribeParser:
 
         self.comprehendLanguageCode = targetLangModel
 
-    def comprehendSingleSentiment(self, text, client):
+    def comprehend_single_sentiment(self, text, client):
         """
         Perform sentiment analysis, but try and avert throttling by trying one more time if this exceptions.
         It is not a replacement for limit increases, but will help limit failures if usage suddenly grows
@@ -454,7 +413,7 @@ class TranscribeParser:
 
         return sentimentResponse
 
-    def comprehendSingleEntity(self, text, client):
+    def comprehend_single_entity(self, text, client):
         """
         Perform entity analysis, but try and avert throttling by trying one more time if this exceptions.
         It is not a replacement for limit increases, but will help limit failures if usage suddenly grows
@@ -472,6 +431,45 @@ class TranscribeParser:
                     raise e
 
         return entityResponse
+
+    def extract_analytics_speaker_time(self, conv_characteristics):
+        """
+        Generates information on the speaking time in the call analytics results.  It creates the following information:
+        - Number of seconds spoken by each speaker
+        - Number of second of non-talk time
+        - A list of instances of non-talk time in the call
+
+        @param conv_characteristics: "ConversationCharacteristics" block from the Call Analytics results
+        @return: JSON structure for the "SpeakerTime" construct
+        """
+        speaker_time = {}
+
+        # Extract the talk-time per participant, setting it to 0 is they are missing
+        for speaker in self.analytics_channel_map:
+            if speaker in conv_characteristics["TalkTime"]["DetailsByParticipant"]:
+                speaker_talk_time = conv_characteristics["TalkTime"]["DetailsByParticipant"][speaker]["TotalTimeMillis"]
+            else:
+                speaker_talk_time = 0
+            speaker_tag = KNOWN_SPEAKER_PREFIX + str(self.analytics_channel_map[speaker])
+            speaker_time[speaker_tag] = {"TotalTimeSecs":  float(speaker_talk_time / 1000)}
+
+        # Extra the quiet-time instances and also generate the total quiet time value
+        non_talk_list = conv_characteristics["NonTalkTime"]["Instances"]
+        non_talk_instances = []
+        quiet_time = 0
+        for quiet in non_talk_list:
+            # Update our total time, and add this instance to our list
+            quiet_time += quiet["DurationMillis"]
+            next_instance = {"BeginOffsetSecs": float(quiet["BeginOffsetMillis"] / 1000),
+                             "EndOffsetSecs": float(quiet["EndOffsetMillis"] / 1000),
+                             "DurationSecs": float(quiet["DurationMillis"] / 1000)}
+            non_talk_instances.append(next_instance)
+
+        # Insert the non-talk time metrics into our results
+        speaker_time["NonTalkTime"] = {"Instances": non_talk_instances}
+        speaker_time["NonTalkTime"]["TotalTimeSecs"] = float(quiet_time / 1000)
+
+        return speaker_time
 
     def extract_nlp(self, segment_list):
         """
@@ -513,7 +511,7 @@ class TranscribeParser:
                         next_segment.segmentNegative = 0.0
                     else:
                         # For Standard Transcribe we need to set the sentiment marker based on score thresholds
-                        sentimentResponse = self.comprehendSingleSentiment(nextText, client)
+                        sentimentResponse = self.comprehend_single_sentiment(nextText, client)
                         positiveBase = sentimentResponse["SentimentScore"]["Positive"]
                         negativeBase = sentimentResponse["SentimentScore"]["Negative"]
 
@@ -539,7 +537,7 @@ class TranscribeParser:
                 if self.comprehendLanguageCode != "":
                     # Get sentiment and standard entity detection from Comprehend
                     pii_masked_text = nextText.replace(PII_PLACEHOLDER, PII_PLACEHOLDER_MASK)
-                    entity_response = self.comprehendSingleEntity(pii_masked_text, client)
+                    entity_response = self.comprehend_single_entity(pii_masked_text, client)
 
                     # Filter for desired entity types
                     for detected_entity in entity_response["Entities"]:
@@ -592,7 +590,7 @@ class TranscribeParser:
 
         # Load in the JSON file for processing
         json_filepath = Path(transcribe_job_filename)
-        data = json.load(open(json_filepath.absolute(), "r", encoding="utf-8"))
+        self.asr_output = json.load(open(json_filepath.absolute(), "r", encoding="utf-8"))
         is_analytics_mode = (self.api_mode == cf.API_ANALYTICS)
 
         # Decide on our operational mode and set the overall job language
@@ -614,7 +612,7 @@ class TranscribeParser:
         # Process a Speaker-separated non-Analytics file
         if isSpeakerMode:
             # A segment is a blob of pronunciation and punctuation by an individual speaker
-            for segment in data["results"]["speaker_labels"]["segments"]:
+            for segment in self.asr_output["results"]["speaker_labels"]["segments"]:
 
                 # If there is content in the segment then pick out the time and speaker
                 if len(segment["items"]) > 0:
@@ -642,7 +640,7 @@ class TranscribeParser:
                     for word in segment["items"]:
 
                         # Get the word with the highest confidence
-                        pronunciations = list(filter(lambda x: x["type"] == "pronunciation", data["results"]["items"]))
+                        pronunciations = list(filter(lambda x: x["type"] == "pronunciation", self.asr_output["results"]["items"]))
                         word_result = list(filter(lambda x: x["start_time"] == word["start_time"] and x["end_time"] == word["end_time"], pronunciations))
                         try:
                             result = sorted(word_result[-1]["alternatives"], key=lambda x: x["confidence"])[-1]
@@ -660,8 +658,8 @@ class TranscribeParser:
 
                         # If the next item is punctuation, add it to the current word
                         try:
-                            word_result_index = data["results"]["items"].index(word_result[0])
-                            next_item = data["results"]["items"][word_result_index + 1]
+                            word_result_index = self.asr_output["results"]["items"].index(word_result[0])
+                            next_item = self.asr_output["results"]["items"][word_result_index + 1]
                             if next_item["type"] == "punctuation":
                                 wordToAdd += next_item["alternatives"][0]["content"]
                         except IndexError:
@@ -680,7 +678,7 @@ class TranscribeParser:
         elif isChannelMode:
 
             # A channel contains all pronunciation and punctuation from a single speaker
-            for channel in data["results"]["channel_labels"]["channels"]:
+            for channel in self.asr_output["results"]["channel_labels"]["channels"]:
 
                 # If there is content in the channel then start processing it
                 if len(channel["items"]) > 0:
@@ -759,10 +757,10 @@ class TranscribeParser:
                 self.analytics_channel_map[channel_def["ParticipantRole"]] = channel_def["ChannelId"]
 
             # Lookup shortcuts
-            interrupts = data["ConversationCharacteristics"]["Interruptions"]
+            interrupts = self.asr_output["ConversationCharacteristics"]["Interruptions"]
 
             # Each turn has already been processed by Transcribe, so the outputs are in order
-            for turn in data["Transcript"]:
+            for turn in self.asr_output["Transcript"]:
 
                 # Get our next speaker name
                 nextSpeaker = self.generateSpeakerLabel(analytics_ts_speaker=turn["ParticipantRole"])
@@ -832,6 +830,9 @@ class TranscribeParser:
                     nextSpeechSegment.segmentNegative = 1.0
                     nextSpeechSegment.segmentSentimentScore = 1.0
 
+            # Extract other Analytics-only metadata from the file
+            self.extract_analytics_speaker_time(self.asr_output["ConversationCharacteristics"])
+
         # Inject sentiments into the segment list
         self.extract_nlp(speechSegmentList)
 
@@ -847,7 +848,7 @@ class TranscribeParser:
         # Return our full turn-by-turn speaker segment list with sentiment
         return speechSegmentList
 
-    def createSimpleEntityEntries(self, speechSegments):
+    def createSimpleEntityEntries(self, speech_segments):
         """
         Searches through the speech segments given and updates them with any of the simple entity mapping
         entries that we've found.  It also updates the line-level items.  Both methods simulate the same
@@ -855,7 +856,7 @@ class TranscribeParser:
         """
 
         # Need to check each of our speech segments for each of our entity blocks
-        for nextTurn in speechSegments:
+        for nextTurn in speech_segments:
             # Now check this turn for each entity
             turnText = nextTurn.segmentText.lower()
             for nextEntity in self.simpleEntityMap:
@@ -872,7 +873,7 @@ class TranscribeParser:
             # Work through each segment
             # TODO Need to check we don't highlight characters in the middle of transcribed word
             # TODO Need to try and handle simple plurals (e.g. type="log" should match "logs")
-            for segment in speechSegments:
+            for segment in speech_segments:
                 # Check if the entity text appear somewhere
                 turnText = segment.segmentText.lower()
                 searchFrom = 0
@@ -895,7 +896,7 @@ class TranscribeParser:
                     # Now look to see if it's repeated in this segment
                     index = turnText.find(entity, nextSearchFrom)
 
-    def calculateTranscribeConversationTime(self, filename):
+    def calculate_transcribe_conversation_time(self, filename):
         '''
         Tries to work out the conversation time based upon patterns in the filename.
         
@@ -1118,7 +1119,7 @@ class TranscribeParser:
         self.setAgent(job_name)
 
         # Work out the conversation time and set the language code
-        self.calculateTranscribeConversationTime(job_name)
+        self.calculate_transcribe_conversation_time(job_name)
         self.setComprehendLanguageCode(self.transcribeJobInfo["LanguageCode"])
 
         # Download the job JSON results file to a local temp file - different Transcribe modes put
@@ -1141,9 +1142,9 @@ class TranscribeParser:
 
         # Now create turn-by-turn diarisation, with associated sentiments and entities
         self.speechSegmentList = self.createTurnByTurnSegments(json_filepath)
-        
+
         # generate JSON results
-        output = self.outputAsJSON()
+        output = self.create_json_results()
 
         # Write out the JSON data to our S3 location
         s3Resource = boto3.resource('s3')
@@ -1185,15 +1186,18 @@ if __name__ == "__main__":
     # Standard test event
     event = {
         "bucket": "ak-cci-input",
-        # "key": "originalAudio/mono.wav",
-        # "apiMode": "standard",
-        # "jobName": "mono.wav",
+        "key": "originalAudio/mono.wav",
+        "apiMode": "standard",
+        "jobName": "mono.wav",
         # "key": "originalAudio/stereo_std.mp3",
         # "apiMode": "standard",
         # "jobName": "stereo_std.mp3",
-        "key": "originalAudio/stereo.mp3",
-        "apiMode": "analytics",
-        "jobName": "stereo.mp3",
+        # "key": "originalAudio/stereo.mp3",
+        # "apiMode": "analytics",
+        # "jobName": "stereo.mp3",
+        # "key": "originalAudio/example-call.wav",
+        # "apiMode": "analytics",
+        # "jobName": "example-call.wav",
         "langCode": "en-US",
         "transcribeStatus": "COMPLETED"
     }
