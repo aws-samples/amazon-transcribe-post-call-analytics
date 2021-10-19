@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router";
 import { get, swap } from "../api/api";
-import { Percentage, Time } from "../format";
+import { Formatter } from "../format";
 
 import {
   Badge,
@@ -85,7 +85,7 @@ const TranscriptSegment = ({
             cursor: "pointer",
           }}
         >
-          {Time(segmentStart)}
+          {Formatter.Time(segmentStart)}
         </span>
       </span>
       <p>{text}</p>
@@ -151,7 +151,7 @@ const Sentiment = ({ score }) => {
   return (
     <span>
       <SentimentIcon score={score} />
-      {Percentage(score)}
+      {Formatter.Percentage(score)}
     </span>
   );
 };
@@ -252,7 +252,7 @@ function Dashboard({ setAlert }) {
 
     {
       label: "Call Duration",
-      value: (d) => Time(d.ConversationAnalytics.Duration),
+      value: (d) => Formatter.Time(d.ConversationAnalytics.Duration),
     },
 
     {
@@ -277,7 +277,7 @@ function Dashboard({ setAlert }) {
     {
       label: "Word Accuracy",
       value: (d) =>
-        Percentage(
+        Formatter.Percentage(
           d.ConversationAnalytics.SourceInformation[0]?.TranscribeJobInfo
             ?.AverageAccuracy
         ),

@@ -2,9 +2,6 @@ import { useState } from "react";
 
 import { Button, Form } from "react-bootstrap";
 import DatePicker from "react-datepicker";
-
-import "react-datepicker/dist/react-datepicker.css";
-
 import {
   entities as getEntities,
   languages as getLanguages,
@@ -16,39 +13,30 @@ function Search({ setAlert }) {
   const [entities, setEntities] = useState([]);
   const [languageCodes, setLanguageCodes] = useState([]);
 
-  const [startDate, setStartDate] = useState(null);
-  const [endDate, setEndDate] = useState(null);
-
   const [editing, setEditing] = useState(true);
-
   const [loadingOptions, setLoadingOptions] = useState(true);
   const [loadingResults, setLoadingResults] = useState(false);
-
   const [query, setQuery] = useState({});
-
   const [results, setResults] = useState([]);
 
   useState(() => {
     const getData = async () => {
-      try {
-        setLoadingOptions(true);
-        const e = await getEntities();
-        setEntities(e);
+      setLoadingOptions(true);
 
-        const l = await getLanguages();
-        setLanguageCodes(l);
-      } catch (err) {
-        console.debug(err);
-        setAlert({
-          heading: "Something went wrong",
-          variant: "danger",
-          text: "Unable to load data. Please try again later",
-        });
-      } finally {
-        setLoadingOptions(false);
-      }
+      Promise.all([
+        getEntities().then((e) => setEntities(e)),
+        getLanguages().then((l) => setLanguageCodes(l)),
+      ])
+        .catch((err) => {
+          console.error(err);
+          setAlert({
+            heading: "Something went wrong",
+            variant: "danger",
+            text: "Unable to load data. Please try again later",
+          });
+        })
+        .finally(setLoadingOptions(false));
     };
-
     getData();
   }, []);
 
@@ -57,9 +45,6 @@ function Search({ setAlert }) {
 
     handleQueryInput(new Date(start).getTime(), "timestampFrom");
     handleQueryInput(new Date(end).getTime(), "timestampTo");
-
-    setStartDate(start);
-    setEndDate(end);
   };
 
   const handleQueryInput = (input, field) => {
@@ -107,9 +92,6 @@ function Search({ setAlert }) {
             <h5>Date Range</h5>
           </Form.Label>
           <DatePicker
-            selected={startDate}
-            startDate={startDate}
-            endDate={endDate}
             selectsRange
             dateFormat="yyyy-MM-dd"
             onChange={handleDates}

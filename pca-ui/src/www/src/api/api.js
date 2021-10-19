@@ -16,15 +16,15 @@ async function request(url, method, body) {
     },
   };
 
-  if (body != null) {
+  if (body !== null) {
     options.body = JSON.stringify(body);
     options.headers["Content-Type"] = "application/json";
   }
 
-  console.debug("Request opts:", JSON.stringify(options, null, 4));
-
   let response;
   try {
+    console.debug("Request opts:", JSON.stringify(options, null, 4));
+
     response = await fetch(url, options);
   } catch (err) {
     return handleError(err);
