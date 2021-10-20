@@ -7,7 +7,7 @@ import {
 import { Navbar, Nav, Container, Alert } from "react-bootstrap";
 import Home from "./routes/Home";
 import Search from "./routes/Search";
-import Dashboard from "./routes/Dashboard/Dashboard";
+import Dashboard from "./routes/Dashboard/index";
 import { useState } from "react";
 
 const routes = [
