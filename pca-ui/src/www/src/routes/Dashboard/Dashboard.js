@@ -1,58 +1,18 @@
 import { useState } from "react";
 import { useParams } from "react-router";
 import useSWR from "swr";
-import { get, swap } from "../api/api";
-import { Formatter } from "../format";
-
-import { ValueWithLabel } from "../components/ValueWithLabel";
-import { SentimentIcon } from "../components/SentimentIcon";
-import {
-  Badge,
-  Button,
-  Card,
-  Col,
-  ListGroup,
-  Placeholder,
-  Row,
-  Stack,
-  Tab,
-  Tabs,
-} from "react-bootstrap";
+import { get, swap } from "../../api/api";
+import { Formatter } from "../../format";
+import { TranscriptSegment } from "./TranscriptSegment";
+import { Entities } from "./Entities";
+import { ValueWithLabel } from "../../components/ValueWithLabel";
+import { SentimentIcon } from "../../components/SentimentIcon";
+import { Placeholder } from "../../components/Placeholder";
+import { Button, Card, Col, Row, Stack } from "react-bootstrap";
 
 // TODO
 // * Display type
 // * Add graph
-
-const LoadingPlaceholder = () => (
-  <Placeholder as="p" animation="glow">
-    <Placeholder xs={12} />
-  </Placeholder>
-);
-
-const TranscriptSegment = ({
-  name,
-  segmentStart,
-  text,
-  onClick,
-  highlightLocations,
-  highlightFunc,
-  score,
-}) => (
-  <Row>
-    <Col sm={1} className="pt-2">
-      <SentimentIcon score={score} />
-    </Col>
-    <Col>
-      <span className={"text-muted segment"}>
-        {name} -{" "}
-        <span data-currenttime={segmentStart} onClick={onClick}>
-          {Formatter.Time(segmentStart)}
-        </span>
-      </span>
-      <p>{text}</p>
-    </Col>
-  </Row>
-);
 
 // highlightAt takes a string to highlight and an array of location objects that
 // describe the startOffset, endOffset and highlight style for that span
@@ -71,37 +31,6 @@ const highlightAt = (text, locations) => {
     return ret;
   }, text);
 };
-
-const Entities = ({ data }) => (
-  <Tabs
-    defaultActiveKey={data[0].Name}
-    id="entities-tab-group"
-    className="mb-3"
-  >
-    {data.map((e, i) => (
-      <Tab
-        key={i}
-        eventKey={e.Name}
-        title={
-          <span>
-            {e.Name}{" "}
-            <Badge bg="secondary" pill={true}>
-              {e.Count}
-            </Badge>
-          </span>
-        }
-      >
-        <ListGroup variant="flush">
-          {e.Values.map((v, i) => (
-            <ListGroup.Item key={i}>
-              <p>{v}</p>
-            </ListGroup.Item>
-          ))}
-        </ListGroup>
-      </Tab>
-    ))}
-  </Tabs>
-);
 
 const Sentiment = ({ score }) => {
   return (
@@ -242,11 +171,7 @@ function Dashboard({ setAlert }) {
             <Col>
               {firstCol.map((entry, i) => (
                 <ValueWithLabel key={i} label={entry.label}>
-                  {!data && !error ? (
-                    <LoadingPlaceholder />
-                  ) : (
-                    entry.value(data) || "-"
-                  )}
+                  {!data && !error ? <Placeholder /> : entry.value(data) || "-"}
                 </ValueWithLabel>
               ))}
             </Col>
@@ -254,11 +179,7 @@ function Dashboard({ setAlert }) {
             <Col>
               {secondCol.map((entry, i) => (
                 <ValueWithLabel key={i} label={entry.label}>
-                  {!data && !error ? (
-                    <LoadingPlaceholder />
-                  ) : (
-                    entry.value(data) || "-"
-                  )}
+                  {!data && !error ? <Placeholder /> : entry.value(data) || "-"}
                 </ValueWithLabel>
               ))}
             </Col>
@@ -270,7 +191,7 @@ function Dashboard({ setAlert }) {
         <Card.Body>
           <Card.Title>Entities</Card.Title>
           {!data && !error ? (
-            <LoadingPlaceholder />
+            <Placeholder />
           ) : (
             <Entities data={data?.ConversationAnalytics?.CustomEntities} />
           )}
@@ -296,7 +217,7 @@ function Dashboard({ setAlert }) {
           </Card.Title>
 
           {!data && !error ? (
-            <LoadingPlaceholder />
+            <Placeholder />
           ) : (
             (data?.SpeechSegments || []).map((s, i) => (
               <TranscriptSegment
