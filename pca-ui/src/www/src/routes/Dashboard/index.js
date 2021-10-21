@@ -9,7 +9,7 @@ import { ValueWithLabel } from "../../components/ValueWithLabel";
 import { SentimentIcon } from "../../components/SentimentIcon";
 import { Placeholder } from "../../components/Placeholder";
 import { Button, Card, Col, Row, Stack } from "react-bootstrap";
-import { Line } from "react-chartjs-2";
+import { SentimentChart } from "./SentimentChart";
 
 // TODO
 // * Display type
@@ -157,41 +157,6 @@ function Dashboard({ setAlert }) {
     },
   ];
 
-  function ColourMap(keys, s, l) {
-    s = s || 100;
-    l = l || 50;
-
-    const start = 45;
-    const range = 315;
-
-    let out = {};
-
-    keys.forEach((key, i) => {
-      out[key] = `hsl(${Math.floor(
-        start + (i * range) / keys.length
-      )}, ${s}%, ${l}%)`;
-    });
-
-    return out;
-  }
-
-  const colours = ColourMap(["Agent", "Caller"]);
-  // Find first and last utterances from each speaker
-  let first = {};
-  let last = {};
-
-  Object.keys(speakerOrder).forEach((speaker) => {
-    data.SpeechSegments.forEach((part, i) => {
-      if (part.SegmentSpeaker === speaker) {
-        if (first[speaker] == null) {
-          first[speaker] = i;
-        }
-
-        last[speaker] = i;
-      }
-    });
-  });
-
   return (
     <Stack direction="vertical" gap={4}>
       <div>
@@ -222,65 +187,7 @@ function Dashboard({ setAlert }) {
             <Col>
               Sentiment Chart
               {data && (
-                <Line
-                  data={{
-                    labels: data.SpeechSegments.map((part) => {
-                      return Math.floor(part.SegmentStartTime);
-                    }),
-
-                    datasets: Object.keys(speakerOrder).map((speaker) => {
-                      return {
-                        label: speakerOrder[speaker],
-                        borderColor: colours[speakerOrder[speaker]],
-                        fill: false,
-                        spanGaps: true,
-                        data: data.SpeechSegments.map((part, i) => {
-                          if (part.SegmentSpeaker !== speaker) {
-                            return null;
-                          }
-
-                          if (part.SentimentIsPositive) {
-                            return part.SentimentScore;
-                            //return 2 * ((1-(1-part.SentimentScore)/(1 - positiveThreshold))*0.5);
-                          }
-
-                          if (part.SentimentIsNegative) {
-                            return -part.SentimentScore;
-                            //return 2 * ((1-part.SentimentScore)/(1 - negativeThreshold)*0.5-0.5);
-                          }
-
-                          if (i === first[speaker] || i === last[speaker]) {
-                            return 0;
-                          }
-
-                          return null;
-                        }),
-                      };
-                    }),
-                  }}
-                  options={{
-                    scales: {
-                      xAxes: [
-                        {
-                          display: false,
-                        },
-                      ],
-                      yAxes: [
-                        {
-                          display: true,
-                        },
-                      ],
-                    },
-                    legend: {
-                      display: true,
-                    },
-                    title: {
-                      text: "Call Sentiment over time",
-                      display: true,
-                      position: "bottom",
-                    },
-                  }}
-                />
+                <SentimentChart data={data} speakerOrder={speakerOrder} />
               )}
             </Col>
           </Row>
