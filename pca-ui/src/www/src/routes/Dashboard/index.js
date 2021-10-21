@@ -1,99 +1,18 @@
 import { useState } from "react";
 import { useParams } from "react-router";
 import useSWR from "swr";
-import { get, swap } from "../api/api";
-import { Formatter } from "../format";
-
-import {
-  Badge,
-  Button,
-  Card,
-  Col,
-  ListGroup,
-  Placeholder,
-  Row,
-  Stack,
-  Tab,
-  Tabs,
-} from "react-bootstrap";
-
-import Smile from "../images/smile.png";
-import Frown from "../images/frown.png";
-import Neutral from "../images/neutral.png";
+import { get, swap } from "../../api/api";
+import { Formatter } from "../../format";
+import { TranscriptSegment } from "./TranscriptSegment";
+import { Entities } from "./Entities";
+import { ValueWithLabel } from "../../components/ValueWithLabel";
+import { SentimentIcon } from "../../components/SentimentIcon";
+import { Placeholder } from "../../components/Placeholder";
+import { Button, Card, Col, Row, Stack } from "react-bootstrap";
 
 // TODO
 // * Display type
 // * Add graph
-
-const ValueWithLabel = ({ label, children }) => (
-  <div className="mb-3">
-    <h5 className="mb-1" color="text-label">
-      {label}
-    </h5>
-    <div>{children}</div>
-  </div>
-);
-
-const LoadingPlaceholder = () => (
-  <Placeholder as="p" animation="glow">
-    <Placeholder xs={12} />
-  </Placeholder>
-);
-
-const SentimentIcon = ({ score }) => {
-  let icon;
-  let alt;
-  if (score > 0) {
-    icon = Smile;
-    alt = "positive";
-  } else if (score < 0) {
-    icon = Frown;
-    alt = "negative";
-  } else {
-    alt = "neutral";
-    icon = Neutral;
-  }
-  return (
-    <img
-      src={icon}
-      alt={alt}
-      className="sentiment"
-    />
-  );
-};
-
-const TranscriptSegment = ({
-  name,
-  segmentStart,
-  text,
-  onClick,
-  highlightLocations,
-  highlightFunc,
-  score,
-}) => (
-  <Row>
-    <Col sm={1} className="pt-2">
-      <SentimentIcon score={score} />
-    </Col>
-    <Col>
-      <span className={"text-muted segment"}>
-        {name} -{" "}
-        <span
-          data-currenttime={segmentStart}
-          onClick={onClick}
-        >
-          {Formatter.Time(segmentStart)}
-        </span>
-      </span>
-      <p>{text}</p>
-      {/* <span
-      dangerouslySetInnerHTML={{
-        __html: highlightFunc(text, highlightLocations),
-      }}
-    ></span> */}
-    </Col>
-  </Row>
-);
 
 // highlightAt takes a string to highlight and an array of location objects that
 // describe the startOffset, endOffset and highlight style for that span
@@ -112,37 +31,6 @@ const highlightAt = (text, locations) => {
     return ret;
   }, text);
 };
-
-const Entities = ({ data }) => (
-  <Tabs
-    defaultActiveKey={data[0].Name}
-    id="entities-tab-group"
-    className="mb-3"
-  >
-    {data.map((e, i) => (
-      <Tab
-        key={i}
-        eventKey={e.Name}
-        title={
-          <span>
-            {e.Name}{" "}
-            <Badge bg="secondary" pill={true}>
-              {e.Count}
-            </Badge>
-          </span>
-        }
-      >
-        <ListGroup variant="flush">
-          {e.Values.map((v, i) => (
-            <ListGroup.Item key={i}>
-              <p>{v}</p>
-            </ListGroup.Item>
-          ))}
-        </ListGroup>
-      </Tab>
-    ))}
-  </Tabs>
-);
 
 const Sentiment = ({ score }) => {
   return (
@@ -283,11 +171,7 @@ function Dashboard({ setAlert }) {
             <Col>
               {firstCol.map((entry, i) => (
                 <ValueWithLabel key={i} label={entry.label}>
-                  {!data && !error ? (
-                    <LoadingPlaceholder />
-                  ) : (
-                    entry.value(data) || "-"
-                  )}
+                  {!data && !error ? <Placeholder /> : entry.value(data) || "-"}
                 </ValueWithLabel>
               ))}
             </Col>
@@ -295,11 +179,7 @@ function Dashboard({ setAlert }) {
             <Col>
               {secondCol.map((entry, i) => (
                 <ValueWithLabel key={i} label={entry.label}>
-                  {!data && !error ? (
-                    <LoadingPlaceholder />
-                  ) : (
-                    entry.value(data) || "-"
-                  )}
+                  {!data && !error ? <Placeholder /> : entry.value(data) || "-"}
                 </ValueWithLabel>
               ))}
             </Col>
@@ -311,26 +191,19 @@ function Dashboard({ setAlert }) {
         <Card.Body>
           <Card.Title>Entities</Card.Title>
           {!data && !error ? (
-            <LoadingPlaceholder />
+            <Placeholder />
           ) : (
             <Entities data={data?.ConversationAnalytics?.CustomEntities} />
           )}
         </Card.Body>
       </Card>
       <Card>
-        <Card.Body
-          className="pt-0"
-        >
-          <Card.Title
-            className="sticky-top pt-3 mb-2 bg-white"
-          >
-            <div
-              className="d-inline-flex pb-3">
-              Transcript
-            </div>
-            {!data && !error && (
+        <Card.Body className="pt-0">
+          <Card.Title className="sticky-top pt-3 pb-3 bg-white">
+            <div className="d-inline-flex pb-3">Transcript</div>
+            {data && (
               <audio
-                className="float-right"
+                className="float-end"
                 controls
                 src={
                   data?.ConversationAnalytics?.SourceInformation[0]
@@ -344,7 +217,7 @@ function Dashboard({ setAlert }) {
           </Card.Title>
 
           {!data && !error ? (
-            <LoadingPlaceholder />
+            <Placeholder />
           ) : (
             (data?.SpeechSegments || []).map((s, i) => (
               <TranscriptSegment

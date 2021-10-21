@@ -1,6 +1,7 @@
-import { Placeholder, Table } from "react-bootstrap";
+import { Table } from "react-bootstrap";
 import { useHistory } from "react-router-dom";
 import { Formatter } from "../format";
+import { Placeholder } from "./Placeholder";
 
 const columns = [
   { label: "#", value: (d, i) => <a href={`/dashboard/${d.key}`}>{i}</a> },
@@ -14,9 +15,7 @@ const columns = [
 const Loading = () =>
   columns.map((c, i) => (
     <td key={i}>
-      <Placeholder as="p" animation="glow">
-        <Placeholder xs={12} />
-      </Placeholder>
+      <Placeholder />
     </td>
   ));
 
@@ -53,11 +52,7 @@ export const ContactTable = ({ data = [], loading = false, empty }) => {
           <NoMatches children={empty} />
         ) : (
           data.map((row, i) => (
-            <tr
-              key={i}
-              onClick={(e) => onClick(row)}
-              style={{ cursor: "pointer" }}
-            >
+            <tr className="contact-table" key={i} onClick={(e) => onClick(row)}>
               {columns.map((c, j) => (
                 <td key={j}>{c.value(row, i)}</td>
               ))}
