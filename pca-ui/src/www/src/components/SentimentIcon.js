@@ -17,9 +17,12 @@ export const SentimentIcon = ({ score }) => {
   }
   return (
     <img
+      className="me-2 sentiment-icon"
       src={icon}
       alt={alt}
-      style={{ display: "inline", width: "2rem", marginRight: "1rem" }}
+      // style={{
+      //   width: "2rem",
+      // }}
     />
   );
 };
