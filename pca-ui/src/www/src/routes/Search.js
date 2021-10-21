@@ -45,7 +45,13 @@ function Search({ setAlert }) {
     setAlert({
       heading: "Something went wrong",
       variant: "danger",
-      text: "Unable to load search data. Please try again later",
+      text: `Unable to load search data. ${[
+        errorLanguageCodes,
+        errorEntities,
+        errorResults,
+      ]
+        .filter((e) => !!e)
+        .join(", ")}`,
     });
   }
 

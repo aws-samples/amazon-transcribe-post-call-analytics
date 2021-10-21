@@ -13,7 +13,7 @@ function Home({ setAlert }) {
     setAlert({
       heading: "Something went wrong",
       variant: "danger",
-      text: "Unable to load data. Please try again later",
+      text: `Unable to load data. ${error}`,
     });
   }
 
