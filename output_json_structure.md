@@ -2,6 +2,13 @@
 
 The Transcribe Parser python Lambda function will be triggered on completion of an Amazon Transcribe job, although other sources will be supported in the future.  It will read the Transcribe job information, download the relevant transcription output JSON into local storage and then write out the parsed JSON to a configured S3 location.
 
+```json
+{
+  "ConversationAnalytics": {},
+  "SpeechSegments": []
+}
+```
+
 ### ConversationAnalytics
 
 ###### Section Structure
@@ -275,7 +282,7 @@ Present when the source of the conversation is Amazon Transcribe.  A mixture of 
 
 Contains a single line - or *turn* - of transcribed text, along with sentiment indicators and any other analytics that have been calculated or provided by Transcribe.
 
-**-- NEW FIELDS/SECTIONS --** *LoudnessScores, IssuesDetected*, *SegmentInterruption*, *CategoriesDetected*
+**-- NEW FIELDS/SECTIONS --** *LoudnessScores, IssuesDetected, SegmentInterruption, CategoriesDetected, FollowOnCategories*
 
 ```json
 "SpeechSegments": [
@@ -292,6 +299,7 @@ Contains a single line - or *turn* - of transcribed text, along with sentiment i
     "SentimentScore": "float",
     "LoudnessScores": [ "float" ],
     "CategoriesDetected": [ "string" ],
+    "FollowOnCategories": [ "string" ],
     "BaseSentimentScores": { },
     "EntitiesDetected": [ ],
     "IssuesDetected": [ ],
@@ -313,7 +321,8 @@ Contains a single line - or *turn* - of transcribed text, along with sentiment i
 | SentimentIsNegative | bool      | Indicates if the sentiment of this turn is negatice          |
 | SentimentScore      | float     | Sentiment score in the range [-5.0, +5.0]                    |
 | LoudnessScores      | [ float ] | A list of loudness scores in decibels, one per second of the segment |
-| CategoriesDetected  | [string]  | A list of categories triggered within this segment.  Note, negative rules are always tagged to the first segment |
+| CategoriesDetected  | [string]  | A list of categories triggered by or just prior to this segment.  Note, negative rules are always tagged to the first segment, as they have no start time |
+| FollowOnCategories  | [string]  | A list of categories triggered after this segment, typically only on the final segment to catch categories like silence detection after the final piece of speech |
 | BaseSentimentScores | -         | Set of base sentiment scores from Amazon Comprehend          |
 | EntitiesDetected    | -         | List of custom entities that were detected on this speech segment |
 | IssuesDetected      | -         | List of caller issues that were detected on this speech segment |
@@ -408,150 +417,4 @@ Amazon Transcribe will generate a word-confidence score for every word in the tr
 | Confidence | float  | Word confidence score between 0.00 - 1.00 for this word      |
 | StartTime  | float  | Time in seconds in call where word starts                    |
 | EndTime    | float  | Time in seconds in call where word finishes                  |
-
-### Full JSON Output
-
-##### Output Syntax
-
-```json
-{
-  "ConversationAnalytics": {
-    "Agent": "string",
-    "GUID": "string",
-    "ConversationTime": "string",
-    "ConversationLocation": "string",
-    "ProcessTime": "string",
-    "Duration": "float",
-    "LanguageCode": "string",
-    "EntityRecognizerName": "string",
-    "SpeakerLabels": [
-      {
-        "Speaker": "string",
-        "DisplayText": "string"
-      }
-    ],
-    "SentimentTrends": {
-      "<SpeakerLabels|Speaker>": {
-        "SentimentScore": "float",
-        "SentimentChange": "float",
-        "SentimentPerQuarter": [
-          {
-            "Quarter": "int",
-            "Score": "float",
-            "BeginOffsetSecs": "float",
-            "EndOffsetSecs": "float"
-          }
-        ]
-      }
-    },
-    "SpeakerTime": {
-      "<SpeakerLabels|Speaker>": {
-        "TotalTimeSecs": "float"
-      },
-      "NonTalkTime": {
-        "TotalTimeSecs": "float",
-        "Instances": [
-          {
-            "BeginOffsetSecs": "float",
-            "EndOffsetSecs": "float",
-            "DurationSecs": "float"
-          }
-        ]
-      }
-    },
-    "CustomEntities": [
-      {
-        "Name": "string",
-        "Instances": "integer",
-        "Values": [ "string" ]
-      }  
-    ],
-    "CategoriesDetected": [
-      {
-        "Name": "string",
-        "Instances": "integer",
-        "Timestamps": [
-          {
-            "BeginOffsetSecs": "float",
-            "EndOffsetSecs": "float"
-          }
-        ]
-      }  
-    ],
-    "IssuesDetected": [
-      {
-        "Text": "string",
-        "Timestamps": [
-          {
-            "BeginOffsetSecs": "float",
-            "EndOffsetSecs": "float"
-          }
-        ]
-      }  
-    ],
-    "SourceInformation": [
-      {
-        "TranscribeJobInfo": {
-          "TranscriptionJobName": "string",
-          "TranscribeApiType": "string",
-          "CompletionTime": "string",
-          "VocabularyName": "string",
-          "VocabularyFilter": "string",
-          "MediaFormat": "string",
-          "MediaSampleRateHertz": "integer",
-          "MediaFileUri": "string",
-          "MediaOriginalUri": "string",
-          "ChannelIdentification": "boolean",
-          "AverageAccuracy": "float"
-        }
-      }
-    ]
-  },
-   
-  "SpeechSegments": [
-    {
-      "SegmentStartTime": "float",
-      "SegmentEndTime": "float",
-      "SegmentSpeaker": "string",
-      "SegmentInterruption": "boolean",
-      "OriginalText": "string",
-      "DisplayText": "string",
-      "TextEdited": "boolean",
-      "SentimentIsPositive": "boolean",
-      "SentimentIsNegative": "boolean",
-      "SentimentScore": "float",
-      "BaseSentimentScores": {
-        "Positive": "float",
-        "Negative": "float",
-        "Neutral": "float"
-      },
-      "EntitiesDetected": [
-        {
-          "Type": "string",
-          "Text": "string",
-          "BeginOffset": "integer",
-          "EndOffset": "integer",
-          "Score": "float"
-        }
-      ],
-      "IssuesDetected": [
-        {
-          "Text": "string",
-          "BeginOffset": "integer",
-          "EndOffset": "integer"
-        }
-      ],
-      "LoudnessScores": [ "float" ],
-      "WordConfidence": [
-        {
-          "Text": "string",
-          "Confidence": "float",
-          "StartTime": "float",
-          "EndTime": "float"
-        }
-      ]
-    }
-  ]
-}
-```
 

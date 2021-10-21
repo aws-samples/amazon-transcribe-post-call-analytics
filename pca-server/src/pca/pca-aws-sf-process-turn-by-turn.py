@@ -47,13 +47,15 @@ class SpeechSegment:
         self.segmentLoudnessScores = []
         self.segmentInterruption = False
         self.segmentIssuesDetected = []
+        self.segmentCategoriesDetectedPre = []
+        self.segmentCategoriesDetectedPost = []
 
 
 class TranscribeParser:
 
-    def __init__(self, minSentimentPos, minSentimentNeg, customEntityEndpoint):
-        self.min_sentiment_positive = minSentimentPos
-        self.min_sentiment_negative = minSentimentNeg
+    def __init__(self, min_sentiment_pos, min_sentiment_neg, custom_entity_endpoint):
+        self.min_sentiment_positive = min_sentiment_pos
+        self.min_sentiment_negative = min_sentiment_neg
         self.transcribeJobInfo = ""
         self.conversationLanguageCode = ""
         self.comprehendLanguageCode = ""
@@ -66,7 +68,7 @@ class TranscribeParser:
         self.numWordsParsed = 0
         self.cummulativeWordAccuracy = 0.0
         self.maxSpeakerIndex = 0
-        self.customEntityEndpointName = customEntityEndpoint
+        self.customEntityEndpointName = custom_entity_endpoint
         self.customEntityEndpointARN = ""
         self.simpleEntityMap = {}
         self.matchedSimpleEntities = {}
@@ -99,7 +101,7 @@ class TranscribeParser:
         self.simpleEntityMatchingUsed = (self.customEntityEndpointARN == "") and \
                                         (cf.appConfig[cf.CONF_ENTITY_FILE] != "")
 
-    def generateSpeakerSentimentTrend(self, speaker, spkNum):
+    def generate_speaker_sentiment_trend(self, speaker, spkNum):
         '''
         Generates and returns a sentiment trend block for this speaker
 
@@ -198,13 +200,14 @@ class TranscribeParser:
         # Sentiment Trends
         sentimentTrends = []
         for speaker in range(self.maxSpeakerIndex + 1):
-            sentimentTrends.append(self.generateSpeakerSentimentTrend(KNOWN_SPEAKER_PREFIX + str(speaker), speaker))
+            sentimentTrends.append(self.generate_speaker_sentiment_trend(KNOWN_SPEAKER_PREFIX + str(speaker), speaker))
         resultsHeaderInfo["SentimentTrends"] = sentimentTrends
 
         # Analytics mode additional metadata
         if self.api_mode == cf.API_ANALYTICS:
             # Speaker and non-talk time
             resultsHeaderInfo["SpeakerTime"] = self.extract_analytics_speaker_time(self.asr_output["ConversationCharacteristics"])
+            resultsHeaderInfo["CategoriesDetected"] = self.extract_analytics_categories(self.asr_output["Categories"])
 
         # Detected custom entity summaries next
         customEntityList = []
@@ -297,6 +300,8 @@ class TranscribeParser:
             nextSegment["BaseSentimentScores"] = segment.segmentAllSentiments
             nextSegment["EntitiesDetected"] = segment.segmentCustomEntities
             nextSegment["WordConfidence"] = segment.segmentConfidence
+            nextSegment["CategoriesDetected"] = segment.segmentCategoriesDetectedPre
+            nextSegment["FollowOnCategories"] = segment.segmentCategoriesDetectedPost
 
             # Add what we have to the full list
             speechSegments.append(nextSegment)
@@ -315,7 +320,7 @@ class TranscribeParser:
 
         return outputJson
 
-    def mergeSpeakerSegments(self, inputSegmentList):
+    def merge_speaker_segments(self, inputSegmentList):
         """
         Merges together two adjacent speaker segments if (a) the speaker is
         the same, and (b) if the gap between them is less than 3 seconds
@@ -343,7 +348,7 @@ class TranscribeParser:
 
         return outputSegmentList
 
-    def updateHeaderEntityCount(self, entityType, entityValue):
+    def update_header_entity_count(self, entityType, entityValue):
         """
         Updates the header-level entity structure with the given tuple, but duplicates are not added
         """
@@ -357,24 +362,24 @@ class TranscribeParser:
             keyDetails.append(entityValue)
             self.headerEntityDict[entityType] = keyDetails
 
-    def extractEntitiesFromLine(self, entityLine, speechSegment, typeFilter):
+    def extract_entities_from_line(self, entity_line, speech_segment, type_filter):
         """
         Takes a speech segment and an entity line from Comprehend - standard or custom models - and
         if the entity type is in our input type filter (or is blank) then add it to the transcript
         """
-        if float(entityLine['Score']) >= cf.appConfig[cf.CONF_ENTITYCONF]:
-            entityType = entityLine['Type']
+        if float(entity_line['Score']) >= cf.appConfig[cf.CONF_ENTITYCONF]:
+            entityType = entity_line['Type']
 
             # If we have a type filter then ensure we match it before adding the entry
-            if (typeFilter == []) or (entityType in typeFilter):
+            if (type_filter == []) or (entityType in type_filter):
 
                 # Update our header entry
-                self.updateHeaderEntityCount(entityType, entityLine["Text"])
+                self.update_header_entity_count(entityType, entity_line["Text"])
 
                 # Now do the same with the SpeechSegment, but append the full details
-                speechSegment.segmentCustomEntities.append(entityLine)
+                speech_segment.segmentCustomEntities.append(entity_line)
 
-    def setComprehendLanguageCode(self, transcribeLangCode):
+    def set_comprehend_language_code(self, transcribeLangCode):
         '''
         Based upon the language defined by the input stream set the best-match language code for Comprehend to use
         for this conversation.  It is "best-match" as Comprehend can model in EN, but has no differentiation between
@@ -431,6 +436,67 @@ class TranscribeParser:
                     raise e
 
         return entityResponse
+
+    def extract_analytics_categories(self, categories):
+        """
+        This will extract and return the header information for detected categories, but it will also inject
+        markers into the SpeechSegments to indicate on which line of the transcript a particular category should
+        be highlighted in a UI
+
+        @param categories: "Categories" block from the Call Analytics results
+        @return: JSON structure for header-level "CategoriesDetected" block
+        """
+
+        # Work around each of the matched categories
+        timed_categories = {}
+        categories_detected = []
+        for matched_cat in categories["MatchedCategories"]:
+
+            # Record the name and the instance count, which will be 0 for a "not found" type of category
+            next_category = {"Name": matched_cat}
+            next_category["Instances"] = len(categories["MatchedDetails"][matched_cat]["PointsOfInterest"])
+            timestamp_array = []
+
+            # Map across all of the instance timestamps (if any)
+            for instance in categories["MatchedDetails"][matched_cat]["PointsOfInterest"]:
+                # Store the timestamps for the header
+                next_poi_time = {"BeginOffsetSecs": float(instance["BeginOffsetMillis"]/1000)}
+                next_poi_time["EndOffsetSecs"] = float(instance["EndOffsetMillis"]/1000)
+                timestamp_array.append((next_poi_time))
+
+                # Keep our time-keyed category list up to date
+                if next_poi_time["BeginOffsetSecs"] not in timed_categories:
+                    timed_categories[next_poi_time["BeginOffsetSecs"]] = [matched_cat]
+                else:
+                    timed_categories[next_poi_time["BeginOffsetSecs"]].append(matched_cat)
+
+            # "Missing" categories have no timestamps, so record them against a time of 0.0 seconds
+            if next_category["Instances"] == 0:
+                # Keep out time-keyed category list up to date
+                if 0.0 not in timed_categories:
+                    timed_categories[0.0] = [matched_cat]
+                else:
+                    timed_categories[0.0].append(matched_cat)
+
+            # Put it all together
+            next_category["Timestamps"] = timestamp_array
+            categories_detected.append(next_category)
+
+        # If we had some categories then ensure each segment is tagged with them
+        if len(timed_categories) > 0:
+            # Go through each speech segment and see if a category fits here
+            for segment in self.speechSegmentList:
+                for cat_time in timed_categories.copy().keys():
+                    if cat_time <= segment.segmentStartTime:
+                        segment.segmentCategoriesDetectedPre += timed_categories[cat_time]
+                        timed_categories.pop(cat_time)
+
+            # If we have any categories left then tag them to the final segment
+            for category in timed_categories:
+                self.speechSegmentList[-1].segmentCategoriesDetectedPost += timed_categories[category]
+
+        # Return the header structure for detected categories
+        return categories_detected
 
     def extract_analytics_speaker_time(self, conv_characteristics):
         """
@@ -541,7 +607,7 @@ class TranscribeParser:
 
                     # Filter for desired entity types
                     for detected_entity in entity_response["Entities"]:
-                        self.extractEntitiesFromLine(detected_entity, next_segment, cf.appConfig[cf.CONF_ENTITY_TYPES])
+                        self.extract_entities_from_line(detected_entity, next_segment, cf.appConfig[cf.CONF_ENTITY_TYPES])
 
                     # Now do the same for any entities we can find in a custom model.  At the
                     # time of writing, Custom Entity models in Comprehend are ENGLISH ONLY
@@ -550,9 +616,9 @@ class TranscribeParser:
                         custom_entity_response = client.detect_entities(Text=pii_masked_text,
                                                                         EndpointArn=self.customEntityEndpointARN)
                         for detected_entity in custom_entity_response["Entities"]:
-                            self.extractEntitiesFromLine(detected_entity, next_segment, [])
+                            self.extract_entities_from_line(detected_entity, next_segment, [])
 
-    def generateSpeakerLabel(self, standard_ts_speaker="", analytics_ts_speaker=""):
+    def generate_speaker_label(self, standard_ts_speaker="", analytics_ts_speaker=""):
         '''
         Takes the Transcribed-generated speaker, which could be spk_{N} or ch_{N}, and returns the label spk_{N}.
         This allows us to have a consistent label in the output JSON, which means that a header field in the
@@ -576,7 +642,7 @@ class TranscribeParser:
         return newLabel
 
 
-    def createTurnByTurnSegments(self, transcribe_job_filename):
+    def create_turn_by_turn_segments(self, transcribe_job_filename):
         """
         Creates a list of conversational turns, splitting up by speaker or if there's a noticeable pause in
         conversation.  Notes, this works differently for speaker-separated and channel-separated files. For speaker-
@@ -619,7 +685,7 @@ class TranscribeParser:
                     # Pick out our next data
                     nextStartTime = float(segment["start_time"])
                     nextEndTime = float(segment["end_time"])
-                    nextSpeaker = self.generateSpeakerLabel(standard_ts_speaker=str(segment["speaker_label"]))
+                    nextSpeaker = self.generate_speaker_label(standard_ts_speaker=str(segment["speaker_label"]))
 
                     # If we've changed speaker, or there's a 3-second gap, create a new row
                     if (nextSpeaker != lastSpeaker) or ((nextStartTime - lastEndTime) >= 3.0):
@@ -684,7 +750,7 @@ class TranscribeParser:
                 if len(channel["items"]) > 0:
 
                     # We have the same speaker all the way through this channel
-                    nextSpeaker = self.generateSpeakerLabel(standard_ts_speaker=str(channel["channel_label"]))
+                    nextSpeaker = self.generate_speaker_label(standard_ts_speaker=str(channel["channel_label"]))
                     for word in channel["items"]:
                         # Pick out our next data from a 'pronunciation'
                         if word["type"] == "pronunciation":
@@ -746,7 +812,7 @@ class TranscribeParser:
             # Sort the segments, as they are in channel-order and not speaker-order, then
             # merge together turns from the same speaker that are very close together
             speechSegmentList = sorted(speechSegmentList, key=lambda segment: segment.segmentStartTime)
-            speechSegmentList = self.mergeSpeakerSegments(speechSegmentList)
+            speechSegmentList = self.merge_speaker_segments(speechSegmentList)
 
         # Process a Call Analytics file
         elif is_analytics_mode:
@@ -763,7 +829,7 @@ class TranscribeParser:
             for turn in self.asr_output["Transcript"]:
 
                 # Get our next speaker name
-                nextSpeaker = self.generateSpeakerLabel(analytics_ts_speaker=turn["ParticipantRole"])
+                nextSpeaker = self.generate_speaker_label(analytics_ts_speaker=turn["ParticipantRole"])
 
                 # Setup the next speaker block
                 nextSpeechSegment = SpeechSegment()
@@ -839,7 +905,7 @@ class TranscribeParser:
         # If we ended up with any matched simple entities then insert
         # them, which we can now do as we now have the sentence order
         if self.simpleEntityMap != {}:
-            self.createSimpleEntityEntries(speechSegmentList)
+            self.create_simple_entity_entries(speechSegmentList)
 
         # Now set the overall call duration if we actually had any speech
         if len(speechSegmentList) > 0:
@@ -848,7 +914,7 @@ class TranscribeParser:
         # Return our full turn-by-turn speaker segment list with sentiment
         return speechSegmentList
 
-    def createSimpleEntityEntries(self, speech_segments):
+    def create_simple_entity_entries(self, speech_segments):
         """
         Searches through the speech segments given and updates them with any of the simple entity mapping
         entries that we've found.  It also updates the line-level items.  Both methods simulate the same
@@ -868,7 +934,7 @@ class TranscribeParser:
 
             # Start by recording this in the header
             entityEntry = self.matchedSimpleEntities[entity]
-            self.updateHeaderEntityCount(entityEntry["Type"], entityEntry["Original"])
+            self.update_header_entity_count(entityEntry["Type"], entityEntry["Original"])
 
             # Work through each segment
             # TODO Need to check we don't highlight characters in the middle of transcribed word
@@ -933,7 +999,7 @@ class TranscribeParser:
             if self.conversationLocation == "":
                 self.conversationLocation = "Etc/UTC"
                 
-    def setGUID(self, filename):
+    def set_guid(self, filename):
         '''
         Tries to parse a GUID for the call from the filename using a configurable Regular Expression.
         The GUID value must be matched using one or more parenthesized groups in the regex. 
@@ -952,7 +1018,7 @@ class TranscribeParser:
             guid='None'
         self.guid = guid
 
-    def setAgent(self, filename):
+    def set_agent(self, filename):
         '''
         Tries to parse an Agent name or ID from the filename using a configurable Regular Expression.
         The AGENT value must be matched using one or more parenthesized groups in the regex. 
@@ -971,7 +1037,7 @@ class TranscribeParser:
             agent='None'
         self.agent = agent
 
-    def loadSimpleEntityStringMap(self):
+    def load_simple_entity_string_map(self):
         """
         Loads in any defined simple entity map for later use - this must be a CSV file, but it will be defined
         without a language code.  We will append the Comprehend language code to the filename and use that,
@@ -1115,12 +1181,12 @@ class TranscribeParser:
         outputS3Key = cf.appConfig[cf.CONF_PREFIX_PARSED_RESULTS]
 
         # Parse Call GUID and Agent Name/ID from filename if possible
-        self.setGUID(job_name)
-        self.setAgent(job_name)
+        self.set_guid(job_name)
+        self.set_agent(job_name)
 
         # Work out the conversation time and set the language code
         self.calculate_transcribe_conversation_time(job_name)
-        self.setComprehendLanguageCode(self.transcribeJobInfo["LanguageCode"])
+        self.set_comprehend_language_code(self.transcribeJobInfo["LanguageCode"])
 
         # Download the job JSON results file to a local temp file - different Transcribe modes put
         # the files in different folder structures, so just strip everything past the bucket name
@@ -1138,10 +1204,10 @@ class TranscribeParser:
             s3Client.download_file(outputS3Bucket, transcriptResultsKey, json_filepath)
 
         # Before we process, let's load up any required simply entity map
-        self.loadSimpleEntityStringMap()
+        self.load_simple_entity_string_map()
 
         # Now create turn-by-turn diarisation, with associated sentiments and entities
-        self.speechSegmentList = self.createTurnByTurnSegments(json_filepath)
+        self.speechSegmentList = self.create_turn_by_turn_segments(json_filepath)
 
         # generate JSON results
         output = self.create_json_results()
@@ -1186,18 +1252,18 @@ if __name__ == "__main__":
     # Standard test event
     event = {
         "bucket": "ak-cci-input",
-        "key": "originalAudio/mono.wav",
-        "apiMode": "standard",
-        "jobName": "mono.wav",
+        # "key": "originalAudio/mono.wav",
+        # "apiMode": "standard",
+        # "jobName": "mono.wav",
         # "key": "originalAudio/stereo_std.mp3",
         # "apiMode": "standard",
         # "jobName": "stereo_std.mp3",
         # "key": "originalAudio/stereo.mp3",
         # "apiMode": "analytics",
         # "jobName": "stereo.mp3",
-        # "key": "originalAudio/example-call.wav",
-        # "apiMode": "analytics",
-        # "jobName": "example-call.wav",
+        "key": "originalAudio/example-call.wav",
+        "apiMode": "analytics",
+        "jobName": "example-call.wav",
         "langCode": "en-US",
         "transcribeStatus": "COMPLETED"
     }
