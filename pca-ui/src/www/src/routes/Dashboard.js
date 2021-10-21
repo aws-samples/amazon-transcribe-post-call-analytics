@@ -57,7 +57,7 @@ const SentimentIcon = ({ score }) => {
     <img
       src={icon}
       alt={alt}
-      style={{ display: "inline", width: "2rem", marginRight: "1rem" }}
+      className="sentiment"
     />
   );
 };
@@ -76,15 +76,11 @@ const TranscriptSegment = ({
       <SentimentIcon score={score} />
     </Col>
     <Col>
-      <span style={{ color: "#808080" }}>
+      <span className={"text-muted segment"}>
         {name} -{" "}
         <span
           data-currenttime={segmentStart}
           onClick={onClick}
-          style={{
-            color: "cadetblue",
-            cursor: "pointer",
-          }}
         >
           {Formatter.Time(segmentStart)}
         </span>
@@ -99,7 +95,7 @@ const TranscriptSegment = ({
   </Row>
 );
 
-// hightlightAt takes a string to highlight and an array of location objects that
+// highlightAt takes a string to highlight and an array of location objects that
 // describe the startOffset, endOffset and highlight style for that span
 // Assumes location array is in ascending offset order.
 const highlightAt = (text, locations) => {
@@ -120,7 +116,7 @@ const highlightAt = (text, locations) => {
 const Entities = ({ data }) => (
   <Tabs
     defaultActiveKey={data[0].Name}
-    id="entitities-tab-group"
+    id="entities-tab-group"
     className="mb-3"
   >
     {data.map((e, i) => (
@@ -257,7 +253,7 @@ function Dashboard({ setAlert }) {
           ?.VocabularyName,
     },
     {
-      label: "Vocabularly Filter",
+      label: "Vocabulary Filter",
       value: (d) =>
         d.ConversationAnalytics.SourceInformation[0]?.TranscribeJobInfo
           ?.VocabularyFilter,
@@ -323,22 +319,18 @@ function Dashboard({ setAlert }) {
       </Card>
       <Card>
         <Card.Body
-          style={{ paddingTop: 0 }} // Counteract 16px padding of Card Title
+          className="pt-0"
         >
           <Card.Title
-            className="sticky-top"
-            style={{
-              paddingTop: "16px",
-              marginBottom: "1rem",
-              background: "white",
-            }}
+            className="sticky-top pt-3 mb-2 bg-white"
           >
-            <div style={{ display: "inline-flex", paddingBottom: "1rem" }}>
+            <div
+              className="d-inline-flex pb-3">
               Transcript
             </div>
             {!data && !error && (
               <audio
-                style={{ float: "right" }}
+                className="float-right"
                 controls
                 src={
                   data?.ConversationAnalytics?.SourceInformation[0]
