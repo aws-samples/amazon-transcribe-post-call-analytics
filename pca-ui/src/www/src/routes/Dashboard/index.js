@@ -199,11 +199,11 @@ function Dashboard({ setAlert }) {
       </Card>
       <Card>
         <Card.Body className="pt-0">
-          <Card.Title className="sticky-top pt-3 mb-2 bg-white">
+          <Card.Title className="sticky-top pt-3 pb-3 bg-white">
             <div className="d-inline-flex pb-3">Transcript</div>
             {data && (
               <audio
-                className="float-right"
+                className="float-end"
                 controls
                 src={
                   data?.ConversationAnalytics?.SourceInformation[0]

@@ -16,15 +16,12 @@ export const TranscriptSegment = ({
       <SentimentIcon score={score} />
     </Col>
     <Col>
-      <span style={{ color: "#808080" }}>
+      <span className={"text-muted segment"}>
         {name} -{" "}
         <span
+          className="audio-start"
           data-currenttime={segmentStart}
           onClick={onClick}
-          style={{
-            color: "cadetblue",
-            cursor: "pointer",
-          }}
         >
           {Formatter.Time(segmentStart)}
         </span>

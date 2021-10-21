@@ -18,3 +18,8 @@ img.sentiment-icon {
 tr.contact-table {
   cursor: pointer;
 }
+
+span.audio-start {
+  color: cadetblue;
+  cursor: pointer;
+}
