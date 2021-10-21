@@ -52,11 +52,7 @@ export const ContactTable = ({ data = [], loading = false, empty }) => {
           <NoMatches children={empty} />
         ) : (
           data.map((row, i) => (
-            <tr
-              key={i}
-              onClick={(e) => onClick(row)}
-              style={{ cursor: "pointer" }}
-            >
+            <tr className="contact-table" key={i} onClick={(e) => onClick(row)}>
               {columns.map((c, j) => (
                 <td key={j}>{c.value(row, i)}</td>
               ))}

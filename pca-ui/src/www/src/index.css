@@ -14,3 +14,7 @@ span.segment {
 img.sentiment-icon {
   width: 40px;
 }
+
+tr.contact-table {
+  cursor: pointer;
+}
