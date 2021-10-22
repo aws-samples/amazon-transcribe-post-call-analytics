@@ -78,6 +78,7 @@ class TranscribeParser:
         self.api_mode = cf.API_STANDARD
         self.analytics_channel_map = {}
         self.asr_output = ""
+        self.issues_detected = []
 
         cf.loadConfiguration()
 
@@ -208,6 +209,7 @@ class TranscribeParser:
             # Speaker and non-talk time
             resultsHeaderInfo["SpeakerTime"] = self.extract_analytics_speaker_time(self.asr_output["ConversationCharacteristics"])
             resultsHeaderInfo["CategoriesDetected"] = self.extract_analytics_categories(self.asr_output["Categories"])
+            resultsHeaderInfo["IssuesDetected"] = self.issues_detected
 
         # Detected custom entity summaries next
         customEntityList = []
@@ -294,14 +296,16 @@ class TranscribeParser:
             nextSegment["OriginalText"] = segment.segmentText
             nextSegment["DisplayText"] = segment.segmentText
             nextSegment["TextEdited"] = 0
+            nextSegment["LoudnessScores"] = segment.segmentLoudnessScores
             nextSegment["SentimentIsPositive"] = int(segment.segmentIsPositive)
             nextSegment["SentimentIsNegative"] = int(segment.segmentIsNegative)
             nextSegment["SentimentScore"] = segment.segmentSentimentScore
             nextSegment["BaseSentimentScores"] = segment.segmentAllSentiments
             nextSegment["EntitiesDetected"] = segment.segmentCustomEntities
-            nextSegment["WordConfidence"] = segment.segmentConfidence
             nextSegment["CategoriesDetected"] = segment.segmentCategoriesDetectedPre
             nextSegment["FollowOnCategories"] = segment.segmentCategoriesDetectedPost
+            nextSegment["IssuesDetected"] = segment.segmentIssuesDetected
+            nextSegment["WordConfidence"] = segment.segmentConfidence
 
             # Add what we have to the full list
             speechSegments.append(nextSegment)
@@ -828,7 +832,7 @@ class TranscribeParser:
             # Each turn has already been processed by Transcribe, so the outputs are in order
             for turn in self.asr_output["Transcript"]:
 
-                # Get our next speaker name
+                 # Get our next speaker name
                 nextSpeaker = self.generate_speaker_label(analytics_ts_speaker=turn["ParticipantRole"])
 
                 # Setup the next speaker block
@@ -848,12 +852,6 @@ class TranscribeParser:
                     for entry in interrupts["InterruptionsByInterrupter"][turn["ParticipantRole"]]:
                         if turn["BeginOffsetMillis"] == entry["BeginOffsetMillis"]:
                             nextSpeechSegment.segmentInterruption = True
-
-                # Record any issues detected
-                if "IssuesDetected" in turn:
-                    for issue in turn["IssuesDetected"]:
-                        # Grab the transcript offsets for the issue text
-                        nextSpeechSegment.segmentIssuesDetected.append(issue["CharacterOffsets"])
 
                 # Process each word in this turn
                 for word in turn["Items"]:
@@ -884,6 +882,20 @@ class TranscribeParser:
                         # Punctuation, needs to be added to the previous word
                         last_word = nextSpeechSegment.segmentConfidence[-1]
                         last_word["Text"] = last_word["Text"] + word["Content"]
+
+                # Record any issues detected
+                if "IssuesDetected" in turn:
+                    for issue in turn["IssuesDetected"]:
+                        # Grab the transcript offsets for the issue text
+                        begin_offset = issue["CharacterOffsets"]["Begin"]
+                        end_offset = issue["CharacterOffsets"]["End"]
+                        next_issue = {"Text": nextSpeechSegment.segmentText[begin_offset:end_offset],
+                                      "BeginOffset": begin_offset,
+                                      "EndOffset": end_offset}
+
+                        # Tag this one on to our segment list and the header list
+                        nextSpeechSegment.segmentIssuesDetected.append(next_issue)
+                        self.issues_detected.append(next_issue)
 
                 # Tag on the sentiment - analytics has no per-turn numbers
                 turn_sentiment = turn["Sentiment"]

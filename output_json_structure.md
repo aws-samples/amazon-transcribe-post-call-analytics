@@ -218,12 +218,8 @@ The issue detection model in Call Analytics will highlight text in the transcrip
 "IssuesDetected": [
   {
     "Text": "string",
-    "Timestamps": [
-      {
-        "BeginOffsetSecs": "float",
-        "EndOffsetSecs": "float"
-      }
-    ]
+    "BeginOffsetSecs": "float",
+    "EndOffsetSecs": "float"
   }  
 ]
 ```
