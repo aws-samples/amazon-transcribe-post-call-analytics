@@ -212,23 +212,23 @@ Note that the *Timestamps* block can be empty, as some categories are triggered 
 
 Note: this information is only available from Call Analytics calls.
 
-The issue detection model in Call Analytics will highlight text in the transcript that it recognises as an issue - it does not give a category for the issue, just the text and location.  This information is listed here, with the relevant transcript words also being highlighted further down in the *SpeechSegments* list.
+The issue detection model in Call Analytics will highlight text in the transcript that it recognises as an issue - it does not give a category for the issue, just the text and location.  This information is listed here, but is repeated further down in the *SpeechSegments* list against the relevant line.
 
 ```json
 "IssuesDetected": [
   {
     "Text": "string",
-    "BeginOffsetSecs": "float",
-    "EndOffsetSecs": "float"
+    "BeginOffset": "integer",
+    "EndOffset": "integer"
   }  
 ]
 ```
 
-| Field           | Type   | Description                                      |
-| --------------- | ------ | ------------------------------------------------ |
-| Text            | string | Text that triggered the issue                    |
-| BeginOffsetSecs | float  | Beginning of the text that identified this issue |
-| EndOffsetSecs   | float  | End of the text that identified thi              |
+| Field       | Type   | Description                                                  |
+| ----------- | ------ | ------------------------------------------------------------ |
+| Text        | string | Text that triggered the issue                                |
+| BeginOffset | float  | Beginning position of the text that identified this issue in the transcript line |
+| EndOffset   | float  | End position of the text that identified this issue in the transcript line |
 
 ###### SourceInformation | TranscribeJobInfo
 

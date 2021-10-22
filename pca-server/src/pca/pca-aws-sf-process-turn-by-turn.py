@@ -293,6 +293,7 @@ class TranscribeParser:
             nextSegment["SegmentStartTime"] = segment.segmentStartTime
             nextSegment["SegmentEndTime"] = segment.segmentEndTime
             nextSegment["SegmentSpeaker"] = segment.segmentSpeaker
+            nextSegment["SegmentInterruption"] = segment.segmentInterruption
             nextSegment["OriginalText"] = segment.segmentText
             nextSegment["DisplayText"] = segment.segmentText
             nextSegment["TextEdited"] = 0
