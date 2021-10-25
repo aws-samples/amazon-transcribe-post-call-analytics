@@ -1,0 +1,25 @@
+@import "react-datepicker/dist/react-datepicker.css";
+
+img.sentiment {
+  display: inline;
+  width: 2rem;
+  margin-right: 1rem;
+}
+
+span.segment {
+  color: cadetblue;
+  cursor: pointer;
+}
+
+img.sentiment-icon {
+  width: 40px;
+}
+
+tr.contact-table {
+  cursor: pointer;
+}
+
+span.audio-start {
+  color: cadetblue;
+  cursor: pointer;
+}
