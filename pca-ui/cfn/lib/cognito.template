@@ -103,6 +103,7 @@ Resources:
         - openid
       CallbackURLs:
         - !Ref WebUri
+        - http://localhost:3000/
       PreventUserExistenceErrors: ENABLED
       SupportedIdentityProviders:
         - COGNITO
