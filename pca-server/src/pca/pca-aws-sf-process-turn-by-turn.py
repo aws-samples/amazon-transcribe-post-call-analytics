@@ -102,58 +102,81 @@ class TranscribeParser:
         self.simpleEntityMatchingUsed = (self.customEntityEndpointARN == "") and \
                                         (cf.appConfig[cf.CONF_ENTITY_FILE] != "")
 
-    def generate_speaker_sentiment_trend(self, speaker, spkNum):
-        '''
-        Generates and returns a sentiment trend block for this speaker
+    def generate_speaker_sentiment_trend(self, speaker, speaker_num):
+        """
+        Generates an entry for the "SentimentTrends" block for the given speaker, which is the overall speaker
+        sentiment score and trend over the call.  For Call Analytics calls we also store the per-quarter sentiment
+        data provided by Transcribe
 
-        {
-          "Speaker": "string",
-          "AverageSentiment": "float",
-          "SentimentChange": "float"
-        }
-        '''
-        speakerTrend = {"Speaker": speaker}
+        @param speaker: Internal name for the speaker (e.g. spk_1)
+        @param speaker_num: Channel number for the speaker (only relevant for Call Analytics)
+        @return:
+        """
 
-        speakerTurns = 0
-        sumSentiment = 0.0
-        firstSentiment = 0.0
-        finalSentiment = 0.0
-        for segment in self.speechSegmentList:
-            if segment.segmentSpeaker == speaker:
-                # Increment our counter for number of speaker turns and update the last turn score
-                speakerTurns += 1
+        # Start with our internal speaker label
+        speaker_trend = {"Speaker": speaker}
 
-                if segment.segmentIsPositive or segment.segmentIsNegative:
-                    # Only really interested in Positive/Negative turns for the stats.  We need to
-                    # average out the calls between +/- 1, so we sum each turn as follows:
-                    # ([sentiment] - [sentimentBase]) / (1 - [sentimentBase])
-                    # with the answer positive/negative based on the sentiment.  We rebase as we have
-                    # thresholds to declare turns as pos/neg, so might be in the range 0.30-1.00. but
-                    # Need this changed to 0.00-1.00
-                    if segment.segmentIsPositive:
-                        sentimentBase = self.min_sentiment_positive
-                        signModifier = 1.0
+        if self.api_mode == cf.API_ANALYTICS:
+            # Speaker scores / trends using Analytics data - find our speaker data
+            speaker = next(key for key, value in self.analytics_channel_map.items() if value == speaker_num)
+            sentiment_block = self.asr_output["ConversationCharacteristics"]["Sentiment"]
+
+            # Store the overall score, then loop through each of the quarter's sentiment
+            speaker_trend["AverageSentiment"] = sentiment_block["OverallSentiment"][speaker]
+            speaker_trend["SentimentPerQuarter"] = []
+            for period in sentiment_block["SentimentByPeriod"]["QUARTER"][speaker]:
+                speaker_trend["SentimentPerQuarter"].append(
+                    {"Quarter": len(speaker_trend["SentimentPerQuarter"])+1,
+                     "Score": period["Score"],
+                     "BeginOffsetSecs": period["BeginOffsetMillis"]/1000.0,
+                     "EndOffsetSecs": period["EndOffsetMillis"]/1000.0}
+                )
+
+            # Trend is simply FINAL-FIRST sentiment
+            speaker_trend["SentimentChange"] = speaker_trend["SentimentPerQuarter"][-1]["Score"] - \
+                                              speaker_trend["SentimentPerQuarter"][0]["Score"]
+        else:
+            # Speaker scores / trends using aggregated data from Comprehend
+            speakerTurns = 0
+            sumSentiment = 0.0
+            firstSentiment = 0.0
+            finalSentiment = 0.0
+            for segment in self.speechSegmentList:
+                if segment.segmentSpeaker == speaker:
+                    # Increment our counter for number of speaker turns and update the last turn score
+                    speakerTurns += 1
+
+                    if segment.segmentIsPositive or segment.segmentIsNegative:
+                        # Only really interested in Positive/Negative turns for the stats.  We need to
+                        # average out the calls between +/- 1, so we sum each turn as follows:
+                        # ([sentiment] - [sentimentBase]) / (1 - [sentimentBase])
+                        # with the answer positive/negative based on the sentiment.  We rebase as we have
+                        # thresholds to declare turns as pos/neg, so might be in the range 0.30-1.00. but
+                        # Need this changed to 0.00-1.00
+                        if segment.segmentIsPositive:
+                            sentimentBase = self.min_sentiment_positive
+                            signModifier = 1.0
+                        else:
+                            sentimentBase = self.min_sentiment_negative
+                            signModifier = -1.0
+
+                        # Calculate score and add it to our total
+                        turnScore = signModifier * ((segment.segmentSentimentScore - sentimentBase) / (1.0 - sentimentBase))
+                        sumSentiment += turnScore
+
+                        # Assist to first-turn score if this is us, and update the last-turn
+                        # score, as we dont' know if this is the last turn for this speaker
+                        if speakerTurns == 1:
+                            firstSentiment = turnScore
+                        finalSentiment = turnScore
                     else:
-                        sentimentBase = self.min_sentiment_negative
-                        signModifier = -1.0
+                        finalSentiment = 0.0
 
-                    # Calculate score and add it to our total
-                    turnScore = signModifier * ((segment.segmentSentimentScore - sentimentBase) / (1.0 - sentimentBase))
-                    sumSentiment += turnScore
+            # Log our trends for this speaker
+            speaker_trend["SentimentChange"] = finalSentiment - firstSentiment
+            speaker_trend["AverageSentiment"] = sumSentiment / max(speakerTurns, 1)
 
-                    # Assist to first-turn score if this is us, and update the last-turn
-                    # score, as we dont' know if this is the last turn for this speaker
-                    if speakerTurns == 1:
-                        firstSentiment = turnScore
-                    finalSentiment = turnScore
-                else:
-                    finalSentiment = 0.0
-
-        # Log our trends for this speaker
-        speakerTrend["SentimentChange"] = finalSentiment - firstSentiment
-        speakerTrend["AverageSentiment"] = sumSentiment / max(speakerTurns, 1)
-
-        return speakerTrend
+        return speaker_trend
 
     def create_output_conversation_analytics(self):
         '''
