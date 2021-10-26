@@ -185,10 +185,11 @@ function Dashboard({ setAlert }) {
               ))}
             </Col>
             <Col>
-              Sentiment Chart
-              {data && (
-                <SentimentChart data={data} speakerOrder={speakerOrder} />
-              )}
+              <ValueWithLabel label="Sentiment Chart">
+                {data && (
+                  <SentimentChart data={data} speakerOrder={speakerOrder} />
+                )}
+              </ValueWithLabel>
             </Col>
           </Row>
         </Card.Body>

@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Line } from "react-chartjs-2";
 
 export const SentimentChart = ({ data, speakerOrder }) => {
@@ -21,20 +22,23 @@ export const SentimentChart = ({ data, speakerOrder }) => {
 
   const colours = ColourMap(["Agent", "Caller"]);
   // Find first and last utterances from each speaker
-  let first = {};
-  let last = {};
 
-  Object.keys(speakerOrder).forEach((speaker) => {
-    data.SpeechSegments.forEach((part, i) => {
-      if (part.SegmentSpeaker === speaker) {
-        if (first[speaker] == null) {
-          first[speaker] = i;
+  const [first, setFirst] = useState({});
+  const [last, setLast] = useState({});
+
+  useEffect(() => {
+    Object.keys(speakerOrder).forEach((speaker) => {
+      data.SpeechSegments.forEach((part, i) => {
+        if (part.SegmentSpeaker === speaker) {
+          if (first[speaker] == null) {
+            setFirst({ ...first, [speaker]: i });
+          }
+
+          setLast({ ...last, [speaker]: i });
         }
-
-        last[speaker] = i;
-      }
+      });
     });
-  });
+  }, [first, last, data, speakerOrder]);
 
   return (
     <Line
