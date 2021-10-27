@@ -7,17 +7,21 @@ export const SentimentChart = ({ data = [], speakerOrder = {} }) => {
     Caller: "hsl(202, 100%, 50%)",
   };
 
-  const firstUtterance = {
-    ...Object.keys(speakerOrder).map((speaker) =>
-      getFirstUtterance(speaker, data)
+  const [firstUtterance] = useState({
+    ...Object.keys(speakerOrder).reduce(
+      (prev, curr) => ({ ...prev, [curr]: getFirstUtterance(curr, data) }),
+      {}
     ),
-  };
+  });
 
-  const lastUtterance = {
-    ...Object.keys(speakerOrder).map((speaker) =>
-      getLastUtterance(speaker, data)
+  const [lastUtterance] = useState({
+    ...Object.keys(speakerOrder).reduce(
+      (prev, curr) => ({ ...prev, [curr]: getLastUtterance(curr, data) }),
+      {}
     ),
-  };
+  });
+
+  console.log({ firstUtterance, lastUtterance });
 
   return (
     <Line
