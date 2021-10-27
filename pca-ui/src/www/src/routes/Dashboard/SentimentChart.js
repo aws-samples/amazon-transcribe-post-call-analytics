@@ -7,19 +7,19 @@ export const SentimentChart = ({ data = [], speakerOrder = {} }) => {
     Caller: "hsl(202, 100%, 50%)",
   };
 
-  const [firstUtterance] = useState({
+  const firstUtterance = {
     ...Object.keys(speakerOrder).reduce(
       (prev, curr) => ({ ...prev, [curr]: getFirstUtterance(curr, data) }),
       {}
     ),
-  });
+  };
 
-  const [lastUtterance] = useState({
+  const lastUtterance = {
     ...Object.keys(speakerOrder).reduce(
       (prev, curr) => ({ ...prev, [curr]: getLastUtterance(curr, data) }),
       {}
     ),
-  });
+  };
 
   console.log({ firstUtterance, lastUtterance });
 
@@ -37,7 +37,7 @@ export const SentimentChart = ({ data = [], speakerOrder = {} }) => {
             fill: false,
             spanGaps: true,
             data: data.map((part, i) => {
-              return getPoint(speaker, firstUtterance, lastUtterance, part, i);
+              return getPoint(speaker, firstUtterance, lastUtterance, part);
             }),
           };
         }),
@@ -70,7 +70,7 @@ const options = {
   },
 };
 
-const getPoint = (speaker, firstUtterance, lastUtterance, part, i) => {
+const getPoint = (speaker, firstUtterance, lastUtterance, part) => {
   if (part.SegmentSpeaker !== speaker) {
     return null;
   }
@@ -83,7 +83,10 @@ const getPoint = (speaker, firstUtterance, lastUtterance, part, i) => {
     return -part.SentimentScore;
   }
 
-  if (i === firstUtterance[speaker] || i === lastUtterance[speaker]) {
+  if (
+    part.SegmentStartTime === firstUtterance[speaker] ||
+    part.SegmentStartTime === lastUtterance[speaker]
+  ) {
     return 0;
   }
 
