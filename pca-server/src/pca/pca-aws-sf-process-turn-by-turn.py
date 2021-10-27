@@ -14,12 +14,12 @@ import re
 import json
 import csv
 import boto3
-import sys
 import time
 
 # Sentiment helpers
 MIN_SENTIMENT_LENGTH = 8
 NLP_THROTTLE_RETRIES = 1
+COMPREHEND_SENTIMENT_SCALER = 5.0
 
 # PII and other Markers
 PII_PLACEHOLDER = "[PII]"
@@ -37,7 +37,7 @@ class SpeechSegment:
         self.segmentSpeaker = ""
         self.segmentText = ""
         self.segmentConfidence = []
-        self.segmentSentimentScore = -1.0    # -1.0 => no sentiment calculated
+        self.segmentSentimentScore = 0.0
         self.segmentPositive = 0.0
         self.segmentNegative = 0.0
         self.segmentIsPositive = False
@@ -113,8 +113,8 @@ class TranscribeParser:
         @return:
         """
 
-        # Start with our internal speaker label
-        speaker_trend = {"Speaker": speaker}
+        # Our empty result block
+        speaker_trend = {}
 
         if self.api_mode == cf.API_ANALYTICS:
             # Speaker scores / trends using Analytics data - find our speaker data
@@ -122,7 +122,7 @@ class TranscribeParser:
             sentiment_block = self.asr_output["ConversationCharacteristics"]["Sentiment"]
 
             # Store the overall score, then loop through each of the quarter's sentiment
-            speaker_trend["AverageSentiment"] = sentiment_block["OverallSentiment"][speaker]
+            speaker_trend["SentimentScore"] = sentiment_block["OverallSentiment"][speaker]
             speaker_trend["SentimentPerQuarter"] = []
             for period in sentiment_block["SentimentByPeriod"]["QUARTER"][speaker]:
                 speaker_trend["SentimentPerQuarter"].append(
@@ -148,11 +148,11 @@ class TranscribeParser:
 
                     if segment.segmentIsPositive or segment.segmentIsNegative:
                         # Only really interested in Positive/Negative turns for the stats.  We need to
-                        # average out the calls between +/- 1, so we sum each turn as follows:
-                        # ([sentiment] - [sentimentBase]) / (1 - [sentimentBase])
+                        # average out the calls between +/- 5, so we sum each turn as follows:
+                        # ([sentiment] - [sentimentBase]) / (5 - [sentimentBase])
                         # with the answer positive/negative based on the sentiment.  We rebase as we have
-                        # thresholds to declare turns as pos/neg, so might be in the range 0.30-1.00. but
-                        # Need this changed to 0.00-1.00
+                        # thresholds to declare turns as pos/neg, so might be in the range 1.5-5.00. but
+                        # Need this changed to 0.00-5.00
                         if segment.segmentIsPositive:
                             sentimentBase = self.min_sentiment_positive
                             signModifier = 1.0
@@ -161,7 +161,7 @@ class TranscribeParser:
                             signModifier = -1.0
 
                         # Calculate score and add it to our total
-                        turnScore = signModifier * ((segment.segmentSentimentScore - sentimentBase) / (1.0 - sentimentBase))
+                        turnScore = signModifier * ((segment.segmentSentimentScore - sentimentBase) / (COMPREHEND_SENTIMENT_SCALER - sentimentBase))
                         sumSentiment += turnScore
 
                         # Assist to first-turn score if this is us, and update the last-turn
@@ -174,7 +174,7 @@ class TranscribeParser:
 
             # Log our trends for this speaker
             speaker_trend["SentimentChange"] = finalSentiment - firstSentiment
-            speaker_trend["AverageSentiment"] = sumSentiment / max(speakerTurns, 1)
+            speaker_trend["SentimentScore"] = sumSentiment / max(speakerTurns, 1)
 
         return speaker_trend
 
@@ -222,9 +222,10 @@ class TranscribeParser:
         resultsHeaderInfo["SpeakerLabels"] = speakerLabels
 
         # Sentiment Trends
-        sentimentTrends = []
+        sentimentTrends = {}
         for speaker in range(self.maxSpeakerIndex + 1):
-            sentimentTrends.append(self.generate_speaker_sentiment_trend(KNOWN_SPEAKER_PREFIX + str(speaker), speaker))
+            full_name = KNOWN_SPEAKER_PREFIX + str(speaker)
+            sentimentTrends[full_name] = self.generate_speaker_sentiment_trend(full_name, speaker)
         resultsHeaderInfo["SentimentTrends"] = sentimentTrends
 
         # Analytics mode additional metadata
@@ -238,9 +239,9 @@ class TranscribeParser:
         customEntityList = []
         for entity in self.headerEntityDict:
             nextEntity = {}
-            nextEntity['Name'] = entity
-            nextEntity['Count'] = len(self.headerEntityDict[entity])
-            nextEntity['Values'] = self.headerEntityDict[entity]
+            nextEntity["Name"] = entity
+            nextEntity["Instances"] = len(self.headerEntityDict[entity])
+            nextEntity["Values"] = self.headerEntityDict[entity]
             customEntityList.append(nextEntity)
         resultsHeaderInfo["CustomEntities"] = customEntityList
 
@@ -273,7 +274,7 @@ class TranscribeParser:
         transcribeJobInfo["MediaFormat"] = self.transcribeJobInfo["MediaFormat"]
         transcribeJobInfo["MediaSampleRateHertz"] = self.transcribeJobInfo["MediaSampleRateHertz"]
         transcribeJobInfo["MediaOriginalUri"] = self.transcribeJobInfo["Media"]["MediaFileUri"]
-        transcribeJobInfo["AverageAccuracy"] = self.cummulativeWordAccuracy / max(float(self.numWordsParsed), 1.0)
+        transcribeJobInfo["AverageWordConfidence"] = self.cummulativeWordAccuracy / max(float(self.numWordsParsed), 1.0)
 
         # Did we create an MP3 output file?  If so then use it for playback rather than the original
         if self.audioPlaybackUri != "":
@@ -436,7 +437,13 @@ class TranscribeParser:
         counter = 0
         while sentimentResponse == {}:
             try:
+                # Get the sentiment, and strip off the MIXED response (as we won't be using it)
                 sentimentResponse = client.detect_sentiment(Text=text, LanguageCode=self.comprehendLanguageCode)
+                sentimentResponse["SentimentScore"].pop("Mixed", None)
+
+                # Now scale our remaining values
+                for sentiment_key in sentimentResponse["SentimentScore"]:
+                    sentimentResponse["SentimentScore"][sentiment_key] *= COMPREHEND_SENTIMENT_SCALER
             except Exception as e:
                 if counter < NLP_THROTTLE_RETRIES:
                     counter += 1
@@ -576,9 +583,9 @@ class TranscribeParser:
 
         # Setup some sentiment blocks - used when we have no Comprehend
         # language or where we need "something" for Call Analytics
-        sentiment_set_neutral = {'Positive': 0.0, 'Negative': 0.0, 'Neutral': 1.0, 'Mixed': 0.0}
-        sentiment_set_positive = {'Positive': 1.0, 'Negative': 0.0, 'Neutral': 0.0, 'Mixed': 0.0}
-        sentiment_set_negative = {'Positive': 0.0, 'Negative': 1.0, 'Neutral': 0.0, 'Mixed': 0.0}
+        sentiment_set_neutral = {'Positive': 0.0, 'Negative': 0.0, 'Neutral': 1.0}
+        sentiment_set_positive = {'Positive': 1.0, 'Negative': 0.0, 'Neutral': 0.0}
+        sentiment_set_negative = {'Positive': 0.0, 'Negative': 1.0, 'Neutral': 0.0}
 
         # Go through each of our segments
         for next_segment in segment_list:
@@ -615,7 +622,7 @@ class TranscribeParser:
                             next_segment.segmentIsNegative = True
                             next_segment.segmentSentimentScore = negativeBase
                         # Else if we're over the POSITIVE threshold then we're positive,
-                        # otherwise we're either MIXED or NEUTRAL and we don't really care
+                        # otherwise we're NEUTRAL and we don't really care
                         elif positiveBase >= self.min_sentiment_positive:
                             next_segment.segmentSentiment = "Positive"
                             next_segment.segmentIsPositive = True
@@ -921,16 +928,17 @@ class TranscribeParser:
                         nextSpeechSegment.segmentIssuesDetected.append(next_issue)
                         self.issues_detected.append(next_issue)
 
-                # Tag on the sentiment - analytics has no per-turn numbers
+                # Tag on the sentiment - analytics has no per-turn numbers, so max out the
+                # positive and negative, which effectively is 1.0 * COMPREHEND_SENTIMENT_SCALER
                 turn_sentiment = turn["Sentiment"]
                 if turn_sentiment == "POSITIVE":
                     nextSpeechSegment.segmentIsPositive = True
                     nextSpeechSegment.segmentPositive = 1.0
-                    nextSpeechSegment.segmentSentimentScore = 1.0
+                    nextSpeechSegment.segmentSentimentScore = COMPREHEND_SENTIMENT_SCALER
                 elif turn_sentiment == "NEGATIVE":
                     nextSpeechSegment.segmentIsNegative = True
                     nextSpeechSegment.segmentNegative = 1.0
-                    nextSpeechSegment.segmentSentimentScore = 1.0
+                    nextSpeechSegment.segmentSentimentScore = COMPREHEND_SENTIMENT_SCALER
 
             # Extract other Analytics-only metadata from the file
             self.extract_analytics_speaker_time(self.asr_output["ConversationCharacteristics"])
