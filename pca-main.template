@@ -278,7 +278,16 @@ Parameters:
     Description: >
       When using auto-provisioned S3 buckets, your audio files and associated call analysis data will be 
       automatically and permanently deleted after the specified number of retention days. The application
-      does not currently archive recordings or call data. 
+      does not currently archive recordings or call data.
+
+  Environment:
+    Description: The type of environment to tag your infrastructure with. You can specify DEV (development), TEST (test), or PROD (production).
+    Type: String
+    AllowedValues:
+      - DEV
+      - TEST
+      - PROD
+    Default: PROD
 
 Metadata:
     AWS::CloudFormation::Interface:
@@ -610,6 +619,7 @@ Resources:
           - !Ref OutputBucket
           - !Ref OutputBucketName
         DataPrefix: !Ref OutputBucketParsedResults
+        Environment: !Ref Environment
 
   MediaSearchFinder:
     Type: AWS::CloudFormation::Stack

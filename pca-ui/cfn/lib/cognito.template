@@ -16,6 +16,12 @@ Parameters:
   WebUri:
     Type: String
 
+  Environment:
+    Type: String
+
+Conditions:
+  IsProd: !Equals [!Ref Environment, true]
+
 Resources:
 
   # Custom resource to transform input to lowercase.                                             
@@ -101,9 +107,11 @@ Resources:
       AllowedOAuthFlowsUserPoolClient: true
       AllowedOAuthScopes:
         - openid
-      CallbackURLs:
-        - !Ref WebUri
-        - http://localhost:3000/
+      CallbackURLs: !If
+        - IsProd
+        - - !Ref WebUri
+        - - !Ref WebUri
+          - http://localhost:3000/
       PreventUserExistenceErrors: ENABLED
       SupportedIdentityProviders:
         - COGNITO

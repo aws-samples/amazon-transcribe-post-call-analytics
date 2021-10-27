@@ -42,6 +42,9 @@ Parameters:
   MainStackName:
     Type: String
     Default: ""
+
+  Environment:
+    Type: String
     
 Conditions:
   isMainStackNameEmpty: !Equals [!Ref MainStackName, '']
@@ -70,6 +73,7 @@ Resources:
         AdminUsername: !Ref AdminUsername
         AdminEmail: !Ref AdminEmail
         WebUri: !GetAtt Web.Outputs.Uri
+        Environment: !Ref Environment
         Name: 
           !If
           - isMainStackNameEmpty
