@@ -6,7 +6,6 @@ export const SentimentChart = ({ data = [], speakerOrder = {} }) => {
     Agent: "hsl(45, 100%, 50%)",
     Caller: "hsl(202, 100%, 50%)",
   };
-  // Find first and last utterances from each speaker
 
   const firstUtterance = {
     ...Object.keys(speakerOrder).map((speaker) =>
@@ -93,7 +92,7 @@ const getFirstUtterance = (speaker, parts) => {
     .reduce(
       (prev, curr) =>
         prev <= curr.SegmentStartTime ? prev : curr.SegmentStartTime,
-      parts[0].SegmentStartTime
+      parts?.[0]?.SegmentStartTime
     );
 };
 const getLastUtterance = (speaker, parts) => {
@@ -102,6 +101,6 @@ const getLastUtterance = (speaker, parts) => {
     .reduce(
       (prev, curr) =>
         prev >= curr.SegmentStartTime ? prev : curr.SegmentStartTime,
-      parts[0].SegmentStartTime
+      parts?.[0]?.SegmentStartTime
     );
 };
