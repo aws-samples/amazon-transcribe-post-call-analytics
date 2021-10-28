@@ -25,9 +25,13 @@ export const TranscriptSegment = ({
           {Formatter.Time(segmentStart)}
         </span>
       </span>
-      {highlightLocations.map(({ start, end, fn }) =>
-        replaceAt(text, start, end, fn)
-      )}
+      <div>
+        {highlightLocations.length
+          ? highlightLocations.map(({ start, end, fn }) =>
+              replaceAt(text, start, end, fn)
+            )
+          : text}
+      </div>
     </Col>
   </Row>
 );
