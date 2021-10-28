@@ -8,7 +8,6 @@ export const TranscriptSegment = ({
   text,
   onClick,
   highlightLocations,
-  highlightFunc,
   score,
 }) => (
   <Row>
@@ -26,7 +25,18 @@ export const TranscriptSegment = ({
           {Formatter.Time(segmentStart)}
         </span>
       </span>
-      <p>{text}</p>
+      {highlightLocations.map(({ start, end, fn }) =>
+        replaceAt(text, start, end, fn)
+      )}
     </Col>
   </Row>
 );
+
+export const replaceAt = (string, beginOffset, endOffset, fn) => {
+  let before = string.slice(0, beginOffset);
+  let after = string.slice(endOffset);
+
+  const target = string.slice(beginOffset, endOffset);
+  const replaced = fn(target);
+  return [before, replaced, after];
+};
