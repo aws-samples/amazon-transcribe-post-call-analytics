@@ -21,8 +21,6 @@ export const SentimentChart = ({ data = [], speakerOrder = {} }) => {
     ),
   };
 
-  console.log({ firstUtterance, lastUtterance });
-
   return (
     <Line
       data={{
