@@ -32,12 +32,12 @@ export const TranscriptSegment = ({
 
 // substituteAt replaces a subset of a string with the value of the fn provided.
 // it returns an array containing string and react elements
-const substituteAt = (input, beginOffset, endOffset, fn) => {
+const substituteAt = (input, beginOffset, endOffset, fn, key) => {
   let before = input.slice(0, beginOffset);
   let after = input.slice(endOffset);
 
   const target = input.slice(beginOffset, endOffset);
-  const replaced = fn(target);
+  const replaced = fn(target, key);
   return [before, replaced, after];
 };
 
@@ -61,6 +61,6 @@ const wrapper = (input, ...opts) => {
 export const applyReplacements = (input, replacements) =>
   replacements.reduceRight(
     (accumulator, { start, end, fn }, i) =>
-      wrapper(accumulator, start, end, fn),
+      wrapper(accumulator, start, end, fn, i),
     input
   );
