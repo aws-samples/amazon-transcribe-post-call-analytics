@@ -10,11 +10,6 @@ export const TranscriptSegment = ({
   highlightLocations,
   score,
 }) => {
-  const t = highlightLocations.reduceRight(
-    (accumulator, { start, end, fn }, i) =>
-      replaceAt(accumulator, start, end, fn),
-    text
-  );
   return (
     <Row>
       <Col sm={1} className="pt-2">
@@ -33,11 +28,7 @@ export const TranscriptSegment = ({
         </span>
         <div>
           {highlightLocations.length
-            ? highlightLocations.reduceRight(
-                (accumulator, { start, end, fn }, i) =>
-                  replaceAt(accumulator, start, end, fn),
-                text
-              )
+            ? applyReplacements(text, highlightLocations)
             : text}
         </div>
       </Col>
@@ -45,21 +36,38 @@ export const TranscriptSegment = ({
   );
 };
 
-export const helper = (string, beginOffset, endOffset, fn) => {
-  let before = string.slice(0, beginOffset);
-  let after = string.slice(endOffset);
+// substituteAt replaces a subset of a string with the value of the fn provided.
+// it returns an array containing string and react elements
+const substituteAt = (input, beginOffset, endOffset, fn) => {
+  let before = input.slice(0, beginOffset);
+  let after = input.slice(endOffset);
 
-  const target = string.slice(beginOffset, endOffset);
+  const target = input.slice(beginOffset, endOffset);
   const replaced = fn(target);
   return [before, replaced, after].flat();
 };
 
-const replaceAt = (input, ...opts) => {
+//
+export const replaceAt = (input, ...opts) => {
   if (!Array.isArray(input)) input = [input];
 
   return input
-    .map((chunk) =>
-      typeof chunk === "string" ? helper(chunk, ...opts) : chunk
+    .map((chunk, i) =>
+      typeof chunk === "string" && i === 0
+        ? substituteAt(chunk, ...opts)
+        : chunk
     )
     .flat();
 };
+
+// applyReplacements applies a series of string replacements to the input.
+// each replacement should consist of a start offset, end offset and
+// function that transforms the target string
+// replacements should be ordered from lowest start offset to highest.
+// Substrings identified by start and endd offsets cannot overlap
+export const applyReplacements = (input, replacements) =>
+  replacements.reduceRight(
+    (accumulator, { start, end, fn }, i) =>
+      replaceAt(accumulator, start, end, fn),
+    input
+  );
