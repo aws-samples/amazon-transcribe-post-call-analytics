@@ -2,7 +2,7 @@ import { applyReplacements } from "./TranscriptSegment";
 import React from "react";
 
 describe("replaceAt", () => {
-  it("works", () => {
+  it("handles a single replacement", () => {
     const input = "Yeah. Hi terry. Um my name is [PII]";
 
     const fn = (matched) => <span>{matched}</span>;
