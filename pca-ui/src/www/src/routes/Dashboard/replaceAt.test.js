@@ -1,5 +1,6 @@
-import { applyReplacements, replaceAt } from "./TranscriptSegment";
+import { applyReplacements } from "./TranscriptSegment";
 import React from "react";
+
 describe("replaceAt", () => {
   it("works", () => {
     const input = "Yeah. Hi terry. Um my name is [PII]";
