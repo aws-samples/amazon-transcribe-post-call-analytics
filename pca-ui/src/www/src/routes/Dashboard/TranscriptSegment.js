@@ -38,7 +38,7 @@ const substituteAt = (input, beginOffset, endOffset, fn) => {
 
   const target = input.slice(beginOffset, endOffset);
   const replaced = fn(target);
-  return [before, replaced, after].flat();
+  return [before, replaced, after];
 };
 
 const wrapper = (input, ...opts) => {
