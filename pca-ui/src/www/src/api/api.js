@@ -3,9 +3,7 @@ import * as auth from "./auth.js";
 const config = window.pcaSettings;
 
 function handleError(err) {
-  console.debug(err);
-
-  alert("Network error. Please try reloading the page.");
+  console.error(err);
 }
 
 async function request(url, method, body) {
