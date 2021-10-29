@@ -1,12 +1,13 @@
-import { replaceAt } from "./TranscriptSegment";
+import { applyReplacements, replaceAt } from "./TranscriptSegment";
 import React from "react";
 describe("replaceAt", () => {
   it("works", () => {
     const input = "Yeah. Hi terry. Um my name is [PII]";
-    const [begin, end] = [9, 14];
-    const fn = (matched) => <span>{matched}</span>;
 
-    const result = replaceAt(input, begin, end, fn);
+    const fn = (matched) => <span>{matched}</span>;
+    const highlightLocations = [{ start: 9, end: 14, fn }];
+
+    const result = applyReplacements(input, highlightLocations);
 
     expect(result).toStrictEqual([
       "Yeah. Hi ",
@@ -23,11 +24,7 @@ describe("replaceAt", () => {
       { start: 31, end: 34, fn },
     ];
 
-    const result = highlightLocations.reduceRight(
-      (accumulator, { start, end, fn }, i) =>
-        replaceAt(accumulator, start, end, fn),
-      input
-    );
+    const result = applyReplacements(input, highlightLocations);
 
     expect(result).toStrictEqual([
       "Yeah. Hi ",
@@ -36,5 +33,12 @@ describe("replaceAt", () => {
       React.createElement("span", {}, "PII"),
       "]",
     ]);
+  });
+
+  it("handles no replacements", () => {
+    const input = "Yeah. Hi terry. Um my name is [PII]";
+    const highlightLocations = [];
+    const result = applyReplacements(input, highlightLocations);
+    expect(result).toStrictEqual(input);
   });
 });

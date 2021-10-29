@@ -25,11 +25,7 @@ export const TranscriptSegment = ({
           {Formatter.Time(segmentStart)}
         </span>
       </span>
-      <div>
-        {highlightLocations.length
-          ? applyReplacements(text, highlightLocations)
-          : text}
-      </div>
+      <div>{applyReplacements(text, highlightLocations)}</div>
     </Col>
   </Row>
 );
@@ -45,8 +41,7 @@ const substituteAt = (input, beginOffset, endOffset, fn) => {
   return [before, replaced, after].flat();
 };
 
-//
-export const replaceAt = (input, ...opts) => {
+const wrapper = (input, ...opts) => {
   if (!Array.isArray(input)) input = [input];
 
   return input
@@ -62,10 +57,10 @@ export const replaceAt = (input, ...opts) => {
 // each replacement should consist of a start offset, end offset and
 // function that transforms the target string
 // replacements should be ordered from lowest start offset to highest.
-// Substrings identified by start and endd offsets cannot overlap
+// Substrings identified by start and end offsets cannot overlap
 export const applyReplacements = (input, replacements) =>
   replacements.reduceRight(
     (accumulator, { start, end, fn }, i) =>
-      replaceAt(accumulator, start, end, fn),
+      wrapper(accumulator, start, end, fn),
     input
   );
