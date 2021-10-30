@@ -1261,7 +1261,7 @@ class TranscribeParser:
         # Index transcript in Kendra, if transcript search is enabled
         kendraIndexId = cf.appConfig[cf.CONF_KENDRA_INDEX_ID]
         if (kendraIndexId != "None"):
-            analysisUri = f"{cf.appConfig[cf.CONF_WEB_URI]}#parsedFiles/{self.jsonOutputFilename}"
+            analysisUri = f"{cf.appConfig[cf.CONF_WEB_URI]}dashboard/parsedFiles/{self.jsonOutputFilename}"
             transcript_with_markers = prepare_transcript(json_filepath)
             conversationAnalytics = output["ConversationAnalytics"]
             put_kendra_document(kendraIndexId, analysisUri, conversationAnalytics, transcript_with_markers)
