@@ -57,7 +57,7 @@ Parameters:
 
   EntityStringMap:
     Type: String
-    Default: undefined.csv
+    Default: sample-entitystringmap.csv
     Description: Basename of a CSV file containing item/Entity maps for when we don't have data for Comprehend Custom Entities (not including language suffix, e.g. -en)
 
   EntityThreshold:
@@ -645,7 +645,7 @@ Outputs:
           - !Ref BulkUploadBucket
           - !Ref BulkUploadBucketName
 
-  InputBucketName:
+  InputBucket:
     Description: S3 Bucket for uploading input audio files
     Value:
       !If
@@ -668,6 +668,14 @@ Outputs:
   OutPutBucketPrefix:
     Description: S3 Bucket path where Transcribe output files are delivered
     Value: !Ref OutputBucketParsedResults
+
+  SupportFilesBucket:
+    Description: S3 Bucket bucket that hold supporting files, such as the file-based entity recognition mapping files
+    Value:
+      !If
+      - ShouldCreateSupportFilesBucket
+      - !Ref SupportFilesBucket
+      - !Ref SupportFilesBucketName  
     
   TranscriptionMediaSearchFinderURL:
     Description: Transcript Search Application link

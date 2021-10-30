@@ -43,7 +43,7 @@ Parameters:
 
   EntityStringMap:
     Type: String
-    Default: undefined.csv
+    Default: sample-entitystringmap.csv
     Description: Basename of a CSV file containing item/Entity maps for when we don't have data for Comprehend Custom Entities (not including language suffix, e.g. -en)
 
   EntityThreshold:
