@@ -4,6 +4,8 @@ const config = window.pcaSettings;
 
 function handleError(err) {
   console.error(err);
+
+  throw err;
 }
 
 async function request(url, method, body) {
