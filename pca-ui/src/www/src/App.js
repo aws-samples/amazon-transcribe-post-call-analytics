@@ -21,7 +21,7 @@ const routes = [
   { path: "/", name: "Home", Component: Home },
 ];
 
-function Navigation() {
+function Navigation({ userId }) {
   return (
     <Navbar bg="light" expand="lg">
       <Container>
@@ -44,6 +44,9 @@ function Navigation() {
                 </Nav.Link>
               ))}
           </Nav>
+          <Navbar.Text>
+            Signed in as: { userId }
+          </Navbar.Text>
         </Navbar.Collapse>
       </Container>
     </Navbar>
@@ -56,10 +59,19 @@ function App() {
   const onDismiss = () => {
     setAlert(null);
   };
+
+  const userToken = localStorage.getItem('id_token');
+  let idToken = userToken.split(".");
+  let idTokenDecoded = atob(idToken[1]);
+  let idTokenJsonArray= JSON.parse(idTokenDecoded);
+  const userName = idTokenJsonArray['cognito:username'];
+
   return (
     <Router>
       <>
-        <Navigation />
+        <Navigation
+          userId = { userName }
+        />
         {alert && (
           <Alert variant={alert.variant} dismissible onDismiss={onDismiss}>
             <Container className="py-3 ps-4">
