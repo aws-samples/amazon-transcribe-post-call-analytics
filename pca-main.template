@@ -319,12 +319,47 @@ Metadata:
                   - SupportFilesBucketName
                   - RetentionDays
             - Label:
+                default: S3 bucket prefixes
+              Parameters:
+                  - InputBucketFailedTranscriptions
+                  - InputBucketRawAudio
+                  - InputBucketAudioPlayback
+                  - OutputBucketParsedResults
+                  - OutputBucketTranscribeResults
+            - Label:
                 default: Filename metadata parsing
               Parameters:
                   - FilenameDatetimeRegex
                   - FilenameDatetimeFieldMap
                   - FilenameGUIDRegex
                   - FilenameAgentRegex
+            - Label:
+                default: Transcription
+              Parameters:
+                  - TranscribeApiMode
+                  - TranscribeLanguages
+                  - VocabFilterMode
+                  - VocabFilterName
+                  - VocabularyName
+                  - SpeakerSeparationType
+                  - SpeakerNames
+                  - MaxSpeakers
+                  - CallRedactionTranscript
+                  - CallRedactionAudio
+                  - ContentRedactionLanguages
+            - Label:
+                default: Entity detection
+              Parameters:
+                  - ComprehendLanguages
+                  - EntityThreshold
+                  - EntityTypes
+                  - EntityRecognizerEndpoint
+                  - EntityStringMap
+            - Label:
+                default: Sentiment detection
+              Parameters:
+                  - MinSentimentNegative
+                  - MinSentimentPositive
 
 Conditions:
   ShouldCreateBulkUploadBucket: !Equals [!Ref BulkUploadBucketName, '']
