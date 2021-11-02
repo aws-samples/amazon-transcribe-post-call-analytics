@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import useSWR from "swr";
 import { Button, Form } from "react-bootstrap";
 import DatePicker from "react-datepicker";
@@ -41,19 +41,21 @@ function Search({ setAlert }) {
     setEditing(false);
   };
 
-  if (errorLanguageCodes || errorEntities || errorResults) {
-    setAlert({
-      heading: "Something went wrong",
-      variant: "danger",
-      text: `Unable to load search data. ${[
-        errorLanguageCodes,
-        errorEntities,
-        errorResults,
-      ]
-        .filter((e) => !!e)
-        .join(", ")}`,
-    });
-  }
+  useEffect(() => {
+    if (errorLanguageCodes || errorEntities || errorResults) {
+      setAlert({
+        heading: "Something went wrong",
+        variant: "danger",
+        text: `Unable to load search data. ${[
+          errorLanguageCodes,
+          errorEntities,
+          errorResults,
+        ]
+          .filter((e) => !!e)
+          .join(", ")}`,
+      });
+    }
+  }, [errorLanguageCodes, errorEntities, errorResults, setAlert]);
 
   return (
     <>

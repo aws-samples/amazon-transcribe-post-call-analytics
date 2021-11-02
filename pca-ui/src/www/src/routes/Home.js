@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import useSWR from "swr";
 import { list } from "../api/api";
 import { ContactTable } from "../components/ContactTable";
@@ -9,13 +9,15 @@ function Home({ setAlert }) {
   const fetcher = () => list({ count: config.api.pageSize });
   const { data, error } = useSWR(`/list`, fetcher);
 
-  if (error) {
-    setAlert({
-      heading: "Something went wrong",
-      variant: "danger",
-      text: `Unable to load data. ${error}`,
-    });
-  }
+  useEffect(() => {
+    if (error) {
+      setAlert({
+        heading: "Something went wrong",
+        variant: "danger",
+        text: `Unable to load data. ${error}`,
+      });
+    }
+  }, [error, setAlert]);
 
   return (
     <div>

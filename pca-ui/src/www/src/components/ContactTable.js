@@ -35,7 +35,7 @@ export const ContactTable = ({ data = [], loading = false, empty }) => {
   };
 
   return (
-    <Table border hover striped>
+    <Table hover striped>
       <thead>
         <tr>
           {columns.map((c, i) => (
