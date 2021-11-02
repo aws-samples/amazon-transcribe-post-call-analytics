@@ -244,9 +244,12 @@ function Dashboard({ setAlert }) {
                 highlightLocations={s.EntitiesDetected.map((e) => ({
                   start: e.BeginOffset,
                   end: e.EndOffset,
-                  style: "red",
+                  fn: (match, key) => (
+                    <span key={key} style={{ backgroundColor: "red" }}>
+                      {match}
+                    </span>
+                  ),
                 }))}
-                highlightFunc={highlightAt}
                 score={s.SentimentIsPositive - s.SentimentIsNegative}
               />
             ))

@@ -1094,8 +1094,10 @@ class TranscribeParser:
             bucket = cf.appConfig[cf.CONF_SUPPORT_BUCKET]
             try:
                 response = s3.get_object(Bucket=bucket, Key=key)
+                print(f"Loaded Entity Mapping file: s3://{bucket}/{key}.")
             except Exception as e:
                 # Mapping file doesn't exist, so just quietly exit
+                print(f"Unable to load Entity Mapping file: s3://{bucket}/{key}. EntityMapping disabled.")
                 self.simpleEntityMatchingUsed = False
                 return
 
@@ -1110,7 +1112,8 @@ class TranscribeParser:
                     if not (checkTerm in self.simpleEntityMap):
                         self.simpleEntityMap[checkTerm] = { "Type": row.pop("Type"), "Original": origTerm }
             except Exception as e:
-                print(e)
+                print(f"Exception reading Entity mapping file: {e}")
+            print(f"Simple Entity Map: {self.simpleEntityMap}")
 
     def create_playback_mp3_audio(self, audio_uri):
         """
@@ -1258,7 +1261,7 @@ class TranscribeParser:
         # Index transcript in Kendra, if transcript search is enabled
         kendraIndexId = cf.appConfig[cf.CONF_KENDRA_INDEX_ID]
         if (kendraIndexId != "None"):
-            analysisUri = f"{cf.appConfig[cf.CONF_WEB_URI]}#parsedFiles/{self.jsonOutputFilename}"
+            analysisUri = f"{cf.appConfig[cf.CONF_WEB_URI]}dashboard/parsedFiles/{self.jsonOutputFilename}"
             transcript_with_markers = prepare_transcript(json_filepath)
             conversationAnalytics = output["ConversationAnalytics"]
             put_kendra_document(kendraIndexId, analysisUri, conversationAnalytics, transcript_with_markers)

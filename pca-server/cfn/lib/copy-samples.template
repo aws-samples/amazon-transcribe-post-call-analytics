@@ -6,6 +6,11 @@ Transform: AWS::Serverless-2016-10-31
 
 Parameters:
 
+
+  SupportFilesBucketName:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: SupportFilesBucketName
+    
   InputBucketName:
     Type: AWS::SSM::Parameter::Value<String>
     Default: InputBucketName
@@ -41,7 +46,10 @@ Resources:
               Effect: Allow
               Action:
                 - s3:PutObject
-              Resource: !Sub arn:aws:s3:::${InputBucketName}/*
+              Resource:
+                - !Sub arn:aws:s3:::${InputBucketName}/*
+                - !Sub arn:aws:s3:::${SupportFilesBucketName}/*
+
 
   CopySamplesFunction:
     Type: "AWS::Lambda::Function"
@@ -53,6 +61,7 @@ Resources:
       Role: !GetAtt CopySamplesRole.Arn
       Environment:
         Variables:
+          SUPPORTFILES_BUCKET_NAME: !Ref SupportFilesBucketName
           INPUT_BUCKET_NAME: !Ref InputBucketName
           INPUT_BUCKET_RAW_AUDIO: !Ref InputBucketRawAudio
 
