@@ -67,3 +67,8 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: lib/copy-samples.template
+      
+  GlueDatabase:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: lib/glue-database.template

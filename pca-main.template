@@ -288,6 +288,11 @@ Parameters:
       - TEST
       - PROD
     Default: PROD
+    
+  DatabaseName:
+    Type: String
+    Default: 'pca'
+    Description: Glue catalog database name used to contain tables/views for SQL integration.
 
 Metadata:
     AWS::CloudFormation::Interface:
@@ -589,6 +594,7 @@ Resources:
           - !Ref KendraIndex
           - 'None'
         WebUri: !GetAtt PCAUI.Outputs.WebUri
+        DatabaseName: !Ref DatabaseName
 
 
   PCAServer:

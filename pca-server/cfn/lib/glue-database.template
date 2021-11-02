@@ -1,0 +1,387 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: Amazon Transcribe Post Call Analytics - PCA Server - Glue Catalog Database 
+
+Transform: AWS::Serverless-2016-10-31
+
+Parameters:
+
+  DatabaseName:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: DatabaseName
+
+  OutputBucketName:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: OutputBucketName
+    
+  OutputBucketParsedResults:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: OutputBucketParsedResults
+
+Resources:
+
+  Database:
+    Type: AWS::Glue::Database
+    Properties: 
+      CatalogId: !Ref AWS::AccountId
+      DatabaseInput: 
+        Description: Post Call Analytics
+        LocationUri: !Sub 's3://${OutputBucketName}/${OutputBucketParsedResults}/'
+        Name: !Ref DatabaseName
+
+  ParsedResultsTable:
+    Type: AWS::Glue::Table
+    Properties: 
+      CatalogId: !Ref AWS::AccountId
+      DatabaseName: !Ref Database
+      TableInput: 
+        Description: maps to parsedOutput JSON containing call summary and turn-by-turn details for each call
+        Name: parsedresults
+        Owner: !Ref 'AWS::StackName'
+        StorageDescriptor: 
+          Columns: 
+            - Name: conversationanalytics
+              Type: struct<guid:string,agent:string,conversationtime:string,conversationlocation:string,processtime:string,languagecode:string,duration:string,speakerlabels:array<struct<speaker:string,displaytext:string>>,sentimenttrends:array<struct<speaker:string,averagesentiment:double,sentimentperquarter:array<struct<quarter:int,score:double,beginoffsetsecs:double,endoffsetsecs:double>>,sentimentchange:double>>,speakertime:struct<spk_0:struct<totaltimesecs:double>,spk_1:struct<totaltimesecs:double>,nontalktime:struct<instances:array<struct<beginoffsetsecs:double,endoffsetsecs:double,durationsecs:double>>,totaltimesecs:double>>,categoriesdetected:array<string>,issuesdetected:array<struct<text:string,beginoffset:int,endoffset:int>>,customentities:array<struct<name:string,count:int,values:array<string>>>,sourceinformation:array<struct<transcribejobinfo:struct<transcribeapitype:string,completiontime:string,mediaformat:string,mediasampleratehertz:int,mediaoriginaluri:string,averageaccuracy:double,mediafileuri:string,transcriptionjobname:string,channelidentification:int>>>,entityrecognizername:string>
+            - Name: speechsegments
+              Type: array<struct<segmentstarttime:double,segmentendtime:double,segmentspeaker:string,segmentinterruption:boolean,originaltext:string,displaytext:string,textedited:int,loudnessscores:array<double>,sentimentispositive:int,sentimentisnegative:int,sentimentscore:double,basesentimentscores:struct<positive:double,negative:double,neutral:double,mixed:double>,entitiesdetected:array<struct<score:double,type:string,text:string,beginoffset:int,endoffset:int>>,categoriesdetected:array<string>,followoncategories:array<string>,issuesdetected:array<struct<text:string,beginoffset:int,endoffset:int>>,wordconfidence:array<struct<text:string,confidence:double,starttime:double,endtime:double>>>>
+          Compressed: False
+          InputFormat: org.apache.hadoop.mapred.TextInputFormat
+          Location: !Sub 's3://${OutputBucketName}/${OutputBucketParsedResults}/'
+          OutputFormat: org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat
+          SerdeInfo: 
+            Name: JSON
+            SerializationLibrary: 'org.openx.data.jsonserde.JsonSerDe'
+        TableType: EXTERNAL_TABLE
+
+  CallDurationAndLanguageView:
+    Type: AWS::Glue::Table
+    Properties: 
+      CatalogId: !Ref AWS::AccountId
+      DatabaseName: !Ref Database
+      TableInput: 
+        Name: v_call_duration_and_language
+        Owner: !Ref 'AWS::StackName'
+        StorageDescriptor:
+          SerdeInfo: {}
+          Columns: 
+            - Name: filename
+              Type: string
+            - Name: languagecode
+              Type: string
+            - Name: speaker_0
+              Type: string
+            - Name: duration
+              Type: string
+            - Name: conversationtime
+              Type: string
+            - Name: formatedconversationtime
+              Type: string
+        TableType: VIRTUAL_VIEW
+        Parameters:
+          presto_view: true
+        ViewOriginalText: 
+          Fn::Join:
+            - ''
+            - - '/* Presto View: '
+              - Fn::Base64: !Sub |
+                  {
+                  "originalSql": "SELECT regexp_extract(\"$path\", '[^/]+$') filename, conversationanalytics.languagecode, conversationanalytics.speakerlabels[1].displaytext speaker_0, conversationanalytics.duration, conversationanalytics.conversationtime, substr(conversationanalytics.conversationtime, 1, 19) formatedconversationtime FROM ${Database}.${ParsedResultsTable}",
+                  "catalog": "awsdatacatalog",
+                  "schema": "${Database}",
+                  "columns": [
+                    {
+                      "name": "filename",
+                      "type": "varchar"
+                    },
+                    {
+                      "name": "languagecode",
+                      "type": "varchar"
+                    },
+                    {
+                      "name": "speaker_0",
+                      "type": "varchar"
+                    },
+                    {
+                      "name": "duration",
+                      "type": "varchar"
+                    },
+                    {
+                      "name": "conversationtime",
+                      "type": "varchar"
+                    },
+                    {
+                      "name": "formatedconversationtime",
+                      "type": "varchar"
+                    }
+                  ]
+                  }
+              - ' */'
+        ViewExpandedText: '/* Presto View */'
+        
+  ConversationSegmentsView:
+    Type: AWS::Glue::Table
+    Properties: 
+      CatalogId: !Ref AWS::AccountId
+      DatabaseName: !Ref Database
+      TableInput: 
+        Name: v_conversation_segments
+        Owner: !Ref 'AWS::StackName'
+        StorageDescriptor:
+          SerdeInfo: {}
+          Columns: 
+            - Name: filename
+              Type: string
+            - Name: languagecode
+              Type: string
+            - Name: speaker_0
+              Type: string
+            - Name: conversationtime
+              Type: string
+            - Name: duration
+              Type: string
+            - Name: formatedconversationtime
+              Type: string
+            - Name: segmentstarttime
+              Type: double
+            - Name: segmentendtime
+              Type: double
+            - Name: segmentspeaker
+              Type: string
+            - Name: sentimentispositive
+              Type: int
+            - Name: sentimentisnegative
+              Type: int
+            - Name: sentimentscore
+              Type: double
+            - Name: displaytext
+              Type: string
+            - Name: textedited
+              Type: int
+            - Name: entitiesdetected
+              Type: array<struct<score:double,type:string,text:string,beginoffset:int,endoffset:int>>
+            - Name: speaker
+              Type: varchar(6)
+        TableType: VIRTUAL_VIEW
+        Parameters:
+          presto_view: true
+        ViewOriginalText: 
+          Fn::Join:
+            - ''
+            - - '/* Presto View: '
+              - Fn::Base64: !Sub |
+                  {
+                  "originalSql": "SELECT regexp_extract(\"$path\", '[^/]+$') filename, conversationanalytics.languagecode, conversationanalytics.speakerlabels[1].displaytext speaker_0, conversationanalytics.conversationtime, conversationanalytics.duration, substr(conversationanalytics.conversationtime, 1, 19) formatedconversationtime, segment.segmentstarttime, segment.segmentendtime, segment.segmentspeaker, segment.sentimentispositive, segment.sentimentisnegative, segment.sentimentscore, segment.displaytext, segment.textedited, segment.entitiesdetected, (CASE WHEN ((conversationanalytics.speakerlabels[1].displaytext = 'Agent') AND (segment.segmentspeaker = 'spk_0')) THEN 'Agent' WHEN ((conversationanalytics.speakerlabels[1].displaytext = 'Agent') AND (segment.segmentspeaker = 'spk_1')) THEN 'Caller' END) Speaker FROM (${Database}.${ParsedResultsTable} CROSS JOIN UNNEST(speechsegments) t (segment))",
+                  "catalog": "awsdatacatalog",
+                  "schema": "${Database}",
+                  "columns": [
+                    {
+                      "name": "filename",
+                      "type": "varchar"
+                    },
+                    {
+                      "name": "languagecode",
+                      "type": "varchar"
+                    },
+                    {
+                      "name": "speaker_0",
+                      "type": "varchar"
+                    },
+                    {
+                      "name": "conversationtime",
+                      "type": "varchar"
+                    },
+                    {
+                      "name": "duration",
+                      "type": "varchar"
+                    },
+                    {
+                      "name": "formatedconversationtime",
+                      "type": "varchar"
+                    },
+                    {
+                      "name": "segmentstarttime",
+                      "type": "double"
+                    },
+                    {
+                      "name": "segmentendtime",
+                      "type": "double"
+                    },
+                    {
+                      "name": "segmentspeaker",
+                      "type": "varchar"
+                    },
+                    {
+                      "name": "sentimentispositive",
+                      "type": "integer"
+                    },
+                    {
+                      "name": "sentimentisnegative",
+                      "type": "integer"
+                    },
+                    {
+                      "name": "sentimentscore",
+                      "type": "double"
+                    },
+                    {
+                      "name": "displaytext",
+                      "type": "varchar"
+                    },
+                    {
+                      "name": "textedited",
+                      "type": "integer"
+                    },
+                    {
+                      "name": "entitiesdetected",
+                      "type": "array(row(score double,type varchar,text varchar,beginoffset int,endoffset int))"
+                    },
+                    {
+                      "name": "speaker",
+                      "type": "varchar"
+                    }
+                  ]
+                  }
+              - ' */'
+        ViewExpandedText: '/* Presto View */'
+
+  ExtractedEntitiesView:
+    Type: AWS::Glue::Table
+    Properties: 
+      CatalogId: !Ref AWS::AccountId
+      DatabaseName: !Ref Database
+      TableInput: 
+        Name: v_extracted_entities
+        Owner: !Ref 'AWS::StackName'
+        StorageDescriptor:
+          SerdeInfo: {}
+          Columns: 
+            - Name: filename
+              Type: string
+            - Name: languagecode
+              Type: string
+            - Name: duration
+              Type: string
+            - Name: conversationtime
+              Type: string
+            - Name: formatedconversationtime
+              Type: string
+            - Name: segmentstarttime
+              Type: double
+            - Name: segmentendtime
+              Type: double
+            - Name: segmentspeaker
+              Type: string
+            - Name: speaker
+              Type: varchar(6)
+            - Name: sentimentispositive
+              Type: int
+            - Name: sentimentisnegative
+              Type: int
+            - Name: sentimentscore
+              Type: double
+            - Name: displaytext
+              Type: string
+            - Name: textedited
+              Type: int
+            - Name: beginoffset
+              Type: int
+            - Name: endoffset
+              Type: int
+            - Name: score
+              Type: double
+            - Name: text
+              Type: string
+            - Name: type
+              Type: string
+        TableType: VIRTUAL_VIEW
+        Parameters:
+          presto_view: true
+        ViewOriginalText: 
+          Fn::Join:
+            - ''
+            - - '/* Presto View: '
+              - Fn::Base64: !Sub |
+                  {
+                  "originalSql": "SELECT filename, languagecode, duration, conversationtime, formatedconversationtime, segmentstarttime, segmentendtime, segmentspeaker, speaker, sentimentispositive, sentimentisnegative, sentimentscore, displaytext, textedited, entity.beginoffset, entity.endoffset, entity.score, entity.text, entity.type FROM(${Database}.${ConversationSegmentsView} CROSS JOIN UNNEST(entitiesdetected) t (entity))",
+                  "catalog": "awsdatacatalog",
+                  "schema": "${Database}",
+                  "columns": [
+                    {
+                      "name": "filename",
+                      "type": "varchar"
+                    },
+                    {
+                      "name": "languagecode",
+                      "type": "varchar"
+                    },
+                    {
+                      "name": "duration",
+                      "type": "varchar"
+                    },
+                    {
+                      "name": "conversationtime",
+                      "type": "varchar"
+                    },
+                    {
+                      "name": "formatedconversationtime",
+                      "type": "varchar"
+                    },
+                    {
+                      "name": "segmentstarttime",
+                      "type": "double"
+                    },
+                    {
+                      "name": "segmentendtime",
+                      "type": "double"
+                    },
+                    {
+                      "name": "segmentspeaker",
+                      "type": "varchar"
+                    },
+                    {
+                      "name": "speaker",
+                      "type": "varchar"
+                    },
+                    {
+                      "name": "sentimentispositive",
+                      "type": "integer"
+                    },
+                    {
+                      "name": "sentimentisnegative",
+                      "type": "integer"
+                    },
+                    {
+                      "name": "sentimentscore",
+                      "type": "double"
+                    },
+                    {
+                      "name": "displaytext",
+                      "type": "varchar"
+                    },
+                    {
+                      "name": "textedited",
+                      "type": "integer"
+                    },
+                    {
+                      "name": "beginoffset",
+                      "type": "integer"
+                    },
+                    {
+                      "name": "endoffset",
+                      "type": "integer"
+                    },
+                    {
+                      "name": "score",
+                      "type": "double"
+                    },
+                    {
+                      "name": "text",
+                      "type": "varchar"
+                    },
+                    {
+                      "name": "type",
+                      "type": "varchar"
+                    }
+                  ]
+                  }
+              - ' */'
+        ViewExpandedText: '/* Presto View */'

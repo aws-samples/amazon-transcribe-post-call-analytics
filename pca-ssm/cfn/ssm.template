@@ -220,6 +220,11 @@ Parameters:
   WebUri:
     Type: String
     Description: PCA Web Application URI
+    
+  DatabaseName:
+    Type: String
+    Default: 'pca'
+    Description: Glue catalog database name used to contain tables/views for SQL integration.
       
 Resources:
   BulkUploadBucketParameter:
@@ -546,3 +551,11 @@ Resources:
       Type: String
       Value: !Ref WebUri
       Description: PCA Web Application URI
+
+  DatabaseNameParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: DatabaseName
+      Type: String
+      Value: !Ref DatabaseName
+      Description: PCA Glue catalog database name
