@@ -21,7 +21,7 @@ const routes = [
   { path: "/", name: "Home", Component: Home },
 ];
 
-function Navigation({ userId }) {
+function Navigation({ userName }) {
   return (
     <Navbar bg="light" expand="lg">
       <Container>
@@ -45,7 +45,7 @@ function Navigation({ userId }) {
               ))}
           </Nav>
           <Navbar.Text>
-            Signed in as: { userId }
+            Signed in as: { userName }
           </Navbar.Text>
         </Navbar.Collapse>
       </Container>
@@ -64,13 +64,13 @@ function App() {
   let idToken = userToken.split(".");
   let idTokenDecoded = atob(idToken[1]);
   let idTokenJsonArray= JSON.parse(idTokenDecoded);
-  const userName = idTokenJsonArray['cognito:username'];
+  const cognitoUserName = idTokenJsonArray['cognito:username'];
 
   return (
     <Router>
       <>
         <Navigation
-          userId = { userName }
+          userName = { cognitoUserName }
         />
         {alert && (
           <Alert variant={alert.variant} dismissible onDismiss={onDismiss}>
