@@ -9,6 +9,7 @@ import Home from "./routes/Home";
 import Search from "./routes/Search";
 import Dashboard from "./routes/Dashboard/index";
 import { useState } from "react";
+import { payloadFromToken } from "./api/auth";
 
 const routes = [
   { path: "/search", name: "Search", Component: Search },
@@ -61,10 +62,8 @@ function App() {
   };
 
   const userToken = localStorage.getItem('id_token');
-  let idToken = userToken.split(".");
-  let idTokenDecoded = atob(idToken[1]);
-  let idTokenJsonArray= JSON.parse(idTokenDecoded);
-  const cognitoUserName = idTokenJsonArray['cognito:username'];
+  const parsedToken = payloadFromToken(userToken);
+  const cognitoUserName = parsedToken['cognito:username'] || "Unknown"
 
   return (
     <Router>

@@ -93,7 +93,7 @@ export async function getToken() {
   }
 }
 
-function payloadFromToken(token) {
+export function payloadFromToken(token) {
   const parts = token.split(".");
 
   if (parts.length !== 3) throw new Error("Invalid token");
