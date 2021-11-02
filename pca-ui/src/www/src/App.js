@@ -4,12 +4,12 @@ import {
   Route,
   NavLink,
 } from "react-router-dom";
-import { Navbar, Nav, Container, Alert } from "react-bootstrap";
+import { Navbar, Nav, Container, Alert, Button } from "react-bootstrap";
 import Home from "./routes/Home";
 import Search from "./routes/Search";
 import Dashboard from "./routes/Dashboard/index";
 import { useState } from "react";
-import { payloadFromToken } from "./api/auth";
+import { payloadFromToken, redirectToLogin } from "./api/auth";
 
 const routes = [
   { path: "/search", name: "Search", Component: Search },
@@ -21,6 +21,14 @@ const routes = [
   },
   { path: "/", name: "Home", Component: Home },
 ];
+
+function logOut() {
+  console.log("Hello from the button");
+  localStorage.removeItem("id_token");
+  localStorage.removeItem("access_token");
+  localStorage.removeItem("refresh_token");
+  redirectToLogin("Logout");
+}
 
 function Navigation({ userName }) {
   return (
@@ -45,8 +53,11 @@ function Navigation({ userName }) {
                 </Nav.Link>
               ))}
           </Nav>
-          <Navbar.Text>
-            Signed in as: { userName }
+          <Navbar.Text>Signed in as: {userName}</Navbar.Text>
+          <Navbar.Text className="justify-content-end ">
+            <Button className="pe-0 text-dark" variant="link" onClick={logOut}>
+              Logout
+            </Button>
           </Navbar.Text>
         </Navbar.Collapse>
       </Container>
@@ -61,16 +72,14 @@ function App() {
     setAlert(null);
   };
 
-  const userToken = localStorage.getItem('id_token');
+  const userToken = localStorage.getItem("id_token");
   const parsedToken = payloadFromToken(userToken);
-  const cognitoUserName = parsedToken['cognito:username'] || "Unknown"
+  const cognitoUserName = parsedToken["cognito:username"] || "Unknown";
 
   return (
     <Router>
       <>
-        <Navigation
-          userName = { cognitoUserName }
-        />
+        <Navigation userName={cognitoUserName} />
         {alert && (
           <Alert variant={alert.variant} dismissible onDismiss={onDismiss}>
             <Container className="py-3 ps-4">
