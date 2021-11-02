@@ -9,7 +9,7 @@ import Home from "./routes/Home";
 import Search from "./routes/Search";
 import Dashboard from "./routes/Dashboard/index";
 import { useState } from "react";
-import { payloadFromToken, redirectToLogin } from "./api/auth";
+import { payloadFromToken, logOut } from "./api/auth";
 
 const routes = [
   { path: "/search", name: "Search", Component: Search },
@@ -21,14 +21,6 @@ const routes = [
   },
   { path: "/", name: "Home", Component: Home },
 ];
-
-function logOut() {
-  console.log("Hello from the button");
-  localStorage.removeItem("id_token");
-  localStorage.removeItem("access_token");
-  localStorage.removeItem("refresh_token");
-  redirectToLogin("Logout");
-}
 
 function Navigation({ userName }) {
   return (
