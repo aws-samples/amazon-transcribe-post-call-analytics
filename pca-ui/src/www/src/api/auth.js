@@ -35,13 +35,9 @@ export async function handleCode(code) {
   store(data);
 
   // Remove code from URL
-  const params = new URLSearchParams(window.location.search);
-  params.delete("code");
-  let queryString = params.toString();
-  if (queryString.length > 0) {
-    queryString = "?" + queryString;
-  }
-  window.location.search = queryString;
+  const url = new URL(window.location);
+  url.searchParams.delete("code");
+  window.history.pushState({}, "", url);
 }
 
 async function authRequest(grant_type, data) {
