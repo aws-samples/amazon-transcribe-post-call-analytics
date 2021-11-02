@@ -1,7 +1,8 @@
-import React, { useEffect } from "react";
+import React from "react";
 import useSWR from "swr";
 import { list } from "../api/api";
 import { ContactTable } from "../components/ContactTable";
+import { useDangerAlert } from "../hooks/useAlert";
 
 const config = window.pcaSettings;
 
@@ -9,15 +10,7 @@ function Home({ setAlert }) {
   const fetcher = () => list({ count: config.api.pageSize });
   const { data, error } = useSWR(`/list`, fetcher);
 
-  useEffect(() => {
-    if (error) {
-      setAlert({
-        heading: "Something went wrong",
-        variant: "danger",
-        text: `Unable to load data. ${error}`,
-      });
-    }
-  }, [error, setAlert]);
+  useDangerAlert(error, setAlert);
 
   return (
     <div>

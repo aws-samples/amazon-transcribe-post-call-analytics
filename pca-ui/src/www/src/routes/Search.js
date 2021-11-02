@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import useSWR from "swr";
 import { Button, Form } from "react-bootstrap";
 import DatePicker from "react-datepicker";
@@ -8,6 +8,7 @@ import {
   search,
 } from "../api/api";
 import { ContactTable } from "../components/ContactTable";
+import { useDangerAlert } from "../hooks/useAlert";
 
 function Search({ setAlert }) {
   const [editing, setEditing] = useState(true);
@@ -41,21 +42,7 @@ function Search({ setAlert }) {
     setEditing(false);
   };
 
-  useEffect(() => {
-    if (errorLanguageCodes || errorEntities || errorResults) {
-      setAlert({
-        heading: "Something went wrong",
-        variant: "danger",
-        text: `Unable to load search data. ${[
-          errorLanguageCodes,
-          errorEntities,
-          errorResults,
-        ]
-          .filter((e) => !!e)
-          .join(", ")}`,
-      });
-    }
-  }, [errorLanguageCodes, errorEntities, errorResults, setAlert]);
+  useDangerAlert(errorEntities || errorLanguageCodes || errorResults, setAlert);
 
   return (
     <>

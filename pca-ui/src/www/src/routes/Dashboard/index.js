@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams } from "react-router";
 import useSWR from "swr";
 import { get, swap } from "../../api/api";
@@ -10,6 +10,7 @@ import { SentimentIcon } from "../../components/SentimentIcon";
 import { Placeholder } from "../../components/Placeholder";
 import { Button, Card, Col, Row, Stack } from "react-bootstrap";
 import { SentimentChart } from "./SentimentChart";
+import { useDangerAlert } from "../../hooks/useAlert";
 
 const Sentiment = ({ score }) => {
   return (
@@ -25,15 +26,7 @@ function Dashboard({ setAlert }) {
 
   const { data, error } = useSWR(`/get/${key}`, () => get(key));
 
-  useEffect(() => {
-    if (error) {
-      console.error(error);
-      setAlert({
-        variant: "danger",
-        text: "Unable to load data. Please try again later",
-      });
-    }
-  }, [error, setAlert]);
+  useDangerAlert(error, setAlert);
 
   const [speakerOrder, setSpeakerOrder] = useState({
     spk_0: "Agent",
