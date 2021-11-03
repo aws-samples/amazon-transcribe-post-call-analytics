@@ -10,28 +10,7 @@ import { SentimentIcon } from "../../components/SentimentIcon";
 import { Placeholder } from "../../components/Placeholder";
 import { Button, Card, Col, Row, Stack } from "react-bootstrap";
 import { SentimentChart } from "./SentimentChart";
-
-// TODO
-// * Display type
-// * Add graph
-
-// highlightAt takes a string to highlight and an array of location objects that
-// describe the startOffset, endOffset and highlight style for that span
-// Assumes location array is in ascending offset order.
-const highlightAt = (text, locations) => {
-  console.log(locations);
-  return locations.reverse().reduce((t, loc) => {
-    const ret = `${t.slice(
-      0,
-      loc.start
-    )}<span style="border: solid red">${t.slice(
-      loc.start,
-      loc.end + 1
-    )}</span>${t.slice(loc.end)}`;
-    console.log(ret);
-    return ret;
-  }, text);
-};
+import { useDangerAlert } from "../../hooks/useAlert";
 
 const Sentiment = ({ score }) => {
   return (
@@ -47,13 +26,7 @@ function Dashboard({ setAlert }) {
 
   const { data, error } = useSWR(`/get/${key}`, () => get(key));
 
-  if (error) {
-    console.error(error);
-    setAlert({
-      variant: "danger",
-      text: "Unable to load data. Please try again later",
-    });
-  }
+  useDangerAlert(error, setAlert);
 
   const [speakerOrder, setSpeakerOrder] = useState({
     spk_0: "Agent",

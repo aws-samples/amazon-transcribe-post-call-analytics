@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { Line } from "react-chartjs-2";
 
 export const SentimentChart = ({ data = [], speakerOrder = {} }) => {

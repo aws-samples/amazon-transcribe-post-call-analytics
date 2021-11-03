@@ -73,7 +73,7 @@ function App() {
       <>
         <Navigation userName={cognitoUserName} />
         {alert && (
-          <Alert variant={alert.variant} dismissible onDismiss={onDismiss}>
+          <Alert variant={alert.variant} dismissible onClose={onDismiss}>
             <Container className="py-3 ps-4">
               <Alert.Heading>{alert.heading}</Alert.Heading>
               {alert.text}
