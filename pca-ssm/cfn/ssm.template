@@ -84,13 +84,13 @@ Parameters:
 
   MinSentimentNegative:
     Type: String
-    Default: "0.4"
-    Description: Minimum sentiment level required to declare a phrase as having negative sentiment
+    Default: "2.0"
+    Description: Minimum sentiment level required to declare a phrase as having negative sentiment, in the range 0.0-5.0
 
   MinSentimentPositive:
     Type: String
-    Default: "0.4"
-    Description: Minimum sentiment level required to declare a phrase as having positive sentiment
+    Default: "2.0"
+    Description: Minimum sentiment level required to declare a phrase as having positive sentiment, in the range 0.0-5.0
 
   OutputBucketName:
     Type: String
