@@ -2,21 +2,6 @@ AWSTemplateFormatVersion: "2010-09-09"
 
 Description: Amazon Transcribe Post Call Analytics - PCA UI - Web
 
-Parameters:
-  DomainName:
-    Type: String
-    Default: ""
-
-  HostedZoneId:
-    Type: String
-    Default: ""
-
-Conditions:
-  HasDomainName: !Not
-    - !Or
-      - !Equals [!Ref DomainName, ""]
-      - !Equals [!Ref HostedZoneId, ""]
-
 Resources:
   WebBucket:
     Type: "AWS::S3::Bucket"
@@ -70,30 +55,10 @@ Resources:
             Action: "s3:GetObject"
             Resource: !Sub arn:aws:s3:::${WebBucket}/*
 
-  Certificate:
-    Type: "AWS::CertificateManager::Certificate"
-    Condition: HasDomainName
-    Properties:
-      DomainName: !Ref DomainName
-      ValidationMethod: DNS
-      DomainValidationOptions:
-        - DomainName: !Ref DomainName
-          HostedZoneId: !Ref HostedZoneId
-
   Distribution:
     Type: "AWS::CloudFront::Distribution"
     Properties:
       DistributionConfig:
-        Aliases: !If
-          - HasDomainName
-          - - !Ref DomainName
-          - !Ref AWS::NoValue
-        ViewerCertificate: !If
-          - HasDomainName
-          - AcmCertificateArn: !Ref Certificate
-            MinimumProtocolVersion: TLSv1.2_2018
-            SslSupportMethod: sni-only
-          - !Ref AWS::NoValue
         DefaultCacheBehavior:
           AllowedMethods:
             - GET
@@ -122,23 +87,9 @@ Resources:
             ResponseCode: 200
             ResponsePagePath: /index.html
 
-  RecordSet:
-    Type: "AWS::Route53::RecordSet"
-    Condition: HasDomainName
-    Properties:
-      AliasTarget:
-        DNSName: !GetAtt Distribution.DomainName
-        HostedZoneId: Z2FDTNDATAQYW2
-      HostedZoneId: !Ref HostedZoneId
-      Name: !Ref DomainName
-      Type: A
-
 Outputs:
   Uri:
-    Value: !If
-      - HasDomainName
-      - !Sub "https://${DomainName}/"
-      - !Sub "https://${Distribution.DomainName}/"
+    Value: !Sub "https://${Distribution.DomainName}/"
 
   Bucket:
     Value: !Ref WebBucket

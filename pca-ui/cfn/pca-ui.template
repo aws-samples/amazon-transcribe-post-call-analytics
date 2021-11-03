@@ -31,14 +31,6 @@ Parameters:
     Default: OutputBucketParsedResults
     Description: Prefix that parsed transcription output is stored under in DataBucket
 
-  DomainName:
-    Type: String
-    Default: ""
-
-  HostedZoneId:
-    Type: String
-    Default: ""
-
   MainStackName:
     Type: String
     Default: ""
@@ -61,9 +53,6 @@ Resources:
     Properties:
       TemplateURL: lib/web.template
       TimeoutInMinutes: 20
-      Parameters:
-        DomainName: !Ref DomainName
-        HostedZoneId: !Ref HostedZoneId
 
   Cognito:
     Type: AWS::CloudFormation::Stack
