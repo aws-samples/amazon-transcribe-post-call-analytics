@@ -47,13 +47,10 @@ function Dashboard({ setAlert }) {
     }
   };
 
-  const getAverageSentiment = (d, target) => {
-    const id = Object.entries(speakerOrder).find(([_, v]) => v === target);
-    const targetObj = d?.ConversationAnalytics?.SentimentTrends.find(
-      (s) => s.Speaker === id[0]
-    );
-
-    return targetObj?.AverageSentiment;
+  const getSentimentScore = (d, target) => {
+    const id = Object.entries(speakerOrder).find(([_, v]) => v === target)[0];
+    const targetObj = d?.ConversationAnalytics?.SentimentTrends[id]
+    return targetObj?.SentimentScore;
   };
 
   const setAudioCurrentTime = (e) => {
@@ -77,11 +74,11 @@ function Dashboard({ setAlert }) {
     },
     {
       label: "Agent Sentiment",
-      value: (d) => <Sentiment score={getAverageSentiment(d, "Agent")} />,
+      value: (d) => <Sentiment score={getSentimentScore(d, "Agent")} />,
     },
     {
       label: "Customer Sentiment",
-      value: (d) => <Sentiment score={getAverageSentiment(d, "Caller")} />,
+      value: (d) => <Sentiment score={getSentimentScore(d, "Caller")} />,
     },
   ];
 
