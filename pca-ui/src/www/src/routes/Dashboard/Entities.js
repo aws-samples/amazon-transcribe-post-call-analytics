@@ -14,7 +14,7 @@ export const Entities = ({ data }) => (
           <span>
             {e.Name}{" "}
             <Badge bg="secondary" pill={true}>
-              {e.Count}
+              {e.Instances}
             </Badge>
           </span>
         }
