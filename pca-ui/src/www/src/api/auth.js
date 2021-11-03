@@ -93,7 +93,7 @@ export async function getToken() {
   }
 }
 
-function payloadFromToken(token) {
+export function payloadFromToken(token) {
   const parts = token.split(".");
 
   if (parts.length !== 3) throw new Error("Invalid token");
@@ -120,4 +120,11 @@ function store(data) {
   window.localStorage.setItem("id_token", data.id_token);
   window.localStorage.setItem("access_token", data.access_token);
   window.localStorage.setItem("refresh_token", data.refresh_token);
+}
+
+export function logOut() {
+  localStorage.removeItem("id_token");
+  localStorage.removeItem("access_token");
+  localStorage.removeItem("refresh_token");
+  redirectToLogin("user logged out");
 }
