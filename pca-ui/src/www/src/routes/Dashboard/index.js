@@ -246,6 +246,7 @@ function Dashboard({ setAlert }) {
                   ),
                 }))}
                 score={s.SentimentIsPositive - s.SentimentIsNegative}
+                interruption={s.SegmentInterruption}
               />
             ))
           )}

@@ -1,6 +1,6 @@
 import { SentimentIcon } from "../../components/SentimentIcon";
 import { Formatter } from "../../format";
-import { Col, Row } from "react-bootstrap";
+import { Badge, Col, Row } from "react-bootstrap";
 
 export const TranscriptSegment = ({
   name,
@@ -9,9 +9,10 @@ export const TranscriptSegment = ({
   onClick,
   highlightLocations,
   score,
+  interruption,
 }) => (
-  <Row>
-    <Col sm={1} className="pt-2">
+  <Row className="pt-3">
+    <Col sm={1}>
       <SentimentIcon score={score} />
     </Col>
     <Col>
@@ -25,6 +26,11 @@ export const TranscriptSegment = ({
           {Formatter.Time(segmentStart)}
         </span>
       </span>
+      {interruption && (
+        <Badge bg="warning" text="dark" className="ms-2">
+          Interruption
+        </Badge>
+      )}
       <div>{applyReplacements(text, highlightLocations)}</div>
     </Col>
   </Row>
