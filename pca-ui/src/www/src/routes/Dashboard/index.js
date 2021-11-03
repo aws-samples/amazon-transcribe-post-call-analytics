@@ -8,7 +8,7 @@ import { Entities } from "./Entities";
 import { ValueWithLabel } from "../../components/ValueWithLabel";
 import { SentimentIcon } from "../../components/SentimentIcon";
 import { Placeholder } from "../../components/Placeholder";
-import { Button, Card, Col, Row, Stack } from "react-bootstrap";
+import { Button, Card, Col, ListGroup, Row, Stack } from "react-bootstrap";
 import { SentimentChart } from "./SentimentChart";
 import { useDangerAlert } from "../../hooks/useAlert";
 
@@ -18,6 +18,19 @@ const Sentiment = ({ score }) => {
       <SentimentIcon score={score} />
       {Formatter.Percentage(score)}
     </span>
+  );
+};
+
+const Categories = ({ data }) => {
+  if (!data.length) return <p>No categories detected</p>;
+  return (
+    <ListGroup variant="flush">
+      {data.map((v, i) => (
+        <ListGroup.Item key={i}>
+          <p>{v}</p>
+        </ListGroup.Item>
+      ))}
+    </ListGroup>
   );
 };
 
@@ -49,7 +62,7 @@ function Dashboard({ setAlert }) {
 
   const getSentimentScore = (d, target) => {
     const id = Object.entries(speakerOrder).find(([_, v]) => v === target)[0];
-    const targetObj = d?.ConversationAnalytics?.SentimentTrends[id]
+    const targetObj = d?.ConversationAnalytics?.SentimentTrends[id];
     return targetObj?.SentimentScore;
   };
 
@@ -179,6 +192,18 @@ function Dashboard({ setAlert }) {
             <Placeholder />
           ) : (
             <Entities data={data?.ConversationAnalytics?.CustomEntities} />
+          )}
+        </Card.Body>
+      </Card>
+      <Card>
+        <Card.Body>
+          <Card.Title>Categories</Card.Title>
+          {!data && !error ? (
+            <Placeholder />
+          ) : (
+            <Categories
+              data={data?.ConversationAnalytics?.CategoriesDetected}
+            />
           )}
         </Card.Body>
       </Card>
