@@ -132,7 +132,7 @@ function Dashboard({ setAlert }) {
       value: (d) =>
         Formatter.Percentage(
           d.ConversationAnalytics.SourceInformation[0]?.TranscribeJobInfo
-            ?.AverageAccuracy
+            ?.AverageWordConfidence
         ),
     },
   ];
