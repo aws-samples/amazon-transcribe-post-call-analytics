@@ -251,14 +251,14 @@ function Dashboard({ setAlert }) {
                   s.CategoriesDetected.length ? (
                     <span className="text-muted">
                       {" "}
-                      Issues: {s.CategoriesDetected}
+                      Categories Detetected: {s.CategoriesDetected}
                     </span>
                   ) : null
                 }
                 belowText={
                   s.FollowOnCategories.length ? (
                     <span className="text-muted">
-                      Follow on Issues {s.FollowOnCategories}
+                      Follow on Categories {s.FollowOnCategories}
                     </span>
                   ) : null
                 }
