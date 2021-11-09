@@ -27,7 +27,7 @@ const Categories = ({ data }) => {
     <ListGroup variant="flush">
       {data.map((v, i) => (
         <ListGroup.Item key={i}>
-          <p>{v}</p>
+          <p>{v.Name}</p>
         </ListGroup.Item>
       ))}
     </ListGroup>
@@ -246,6 +246,7 @@ function Dashboard({ setAlert }) {
                   ),
                 }))}
                 score={s.SentimentIsPositive - s.SentimentIsNegative}
+                interruption={s.SegmentInterruption}
               />
             ))
           )}
