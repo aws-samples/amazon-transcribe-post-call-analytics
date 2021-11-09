@@ -11,6 +11,7 @@ from pcakendrasearch import prepare_transcript, put_kendra_document
 import subprocess
 import copy
 import re
+import os
 import json
 import csv
 import boto3
@@ -1116,9 +1117,16 @@ class TranscribeParser:
                     origTerm = row.pop("Text")
                     checkTerm = origTerm.lower()
                     if not (checkTerm in self.simpleEntityMap):
-                        self.simpleEntityMap[checkTerm] = { "Type": row.pop("Type"), "Original": origTerm }
+                        self.simpleEntityMap[checkTerm] = {"Type": row.pop("Type"), "Original": origTerm}
             except Exception as e:
+                # Something went wrong loading in the spreadsheet - disable the entities
+                self.simpleEntityMatchingUsed = False
+                self.simpleEntityMap = {}
+                print(f"Failed to load in entity file {cf.appConfig[cf.CONF_ENTITY_FILE]}")
                 print(e)
+            finally:
+                # Remove our temporary in case of Lambda container re-use
+                self.remove_temp_file(mapFilepath)
 
     def create_playback_mp3_audio(self, audio_uri):
         """
@@ -1156,6 +1164,20 @@ class TranscribeParser:
             except Exception as e:
                 print(e)
                 print("Unable to create MP3 version of original audio file - could not find FFMPEG libraries")
+            finally:
+                # Remove our temporary files in case of Lambda container re-use
+                self.remove_temp_file(inputFilename)
+                self.remove_temp_file(outputFilename)
+
+    def remove_temp_file(self, file_path):
+        """
+        Checks if the specified file exists and deletes it if it does
+
+        @param file_path: Path to the file to be deleted
+        """
+        # Delete the file if it exists
+        if os.path.exists(file_path):
+            os.remove(file_path)
 
     def load_transcribe_job_info(self, sf_event):
         """
@@ -1256,12 +1278,13 @@ class TranscribeParser:
         # generate JSON results
         output = self.create_json_results()
 
-        # Write out the JSON data to our S3 location
+        # Write out the JSON data to our S3 location and delete the local source
         s3Resource = boto3.resource('s3')
         s3Object = s3Resource.Object(outputS3Bucket, outputS3Key + '/' + self.jsonOutputFilename)
         s3Object.put(
             Body=(bytes(json.dumps(output).encode('UTF-8')))
         )
+        self.remove_temp_file(json_filepath)
 
         # Index transcript in Kendra, if transcript search is enabled
         kendraIndexId = cf.appConfig[cf.CONF_KENDRA_INDEX_ID]
