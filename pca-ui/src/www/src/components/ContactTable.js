@@ -8,7 +8,7 @@ const columns = [
   { label: "Job Name", value: (d) => d.jobName },
   { label: "Timestamp", value: (d) => Formatter.Timestamp(d.timestamp) },
   {
-    label: "Average Word Accuracy",
+    label: "Average Word Confidence",
     value: (d) => Formatter.Percentage(d.confidence),
   },
   { label: "Language Code", value: (d) => d.lang },

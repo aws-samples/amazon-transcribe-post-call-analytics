@@ -126,7 +126,7 @@ function Dashboard({ setAlert }) {
           ?.VocabularyFilter,
     },
     {
-      label: "Word Accuracy",
+      label: "Average Word Confidence",
       value: (d) =>
         Formatter.Percentage(
           d.ConversationAnalytics.SourceInformation[0]?.TranscribeJobInfo
