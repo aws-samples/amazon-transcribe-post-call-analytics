@@ -8,8 +8,9 @@ import { Entities } from "./Entities";
 import { ValueWithLabel } from "../../components/ValueWithLabel";
 import { SentimentIcon } from "../../components/SentimentIcon";
 import { Placeholder } from "../../components/Placeholder";
-import { Button, Card, Col, ListGroup, Row, Stack } from "react-bootstrap";
+import { Button, Card, Col, Row, Stack } from "react-bootstrap";
 import { SentimentChart } from "./SentimentChart";
+import { ListItems } from "./ListItems";
 import { useDangerAlert } from "../../hooks/useAlert";
 
 const Sentiment = ({ score }) => {
@@ -18,19 +19,6 @@ const Sentiment = ({ score }) => {
       <SentimentIcon score={score} />
       {Formatter.Percentage(score)}
     </span>
-  );
-};
-
-const Categories = ({ data }) => {
-  if (!data.length) return <p>No categories detected</p>;
-  return (
-    <ListGroup variant="flush">
-      {data.map((v, i) => (
-        <ListGroup.Item key={i}>
-          <p>{v.Name}</p>
-        </ListGroup.Item>
-      ))}
-    </ListGroup>
   );
 };
 
@@ -201,8 +189,24 @@ function Dashboard({ setAlert }) {
           {!data && !error ? (
             <Placeholder />
           ) : (
-            <Categories
-              data={data?.ConversationAnalytics?.CategoriesDetected}
+            <ListItems
+              data={data?.ConversationAnalytics?.CategoriesDetected.map(
+                (category) => category.Name
+              )}
+            />
+          )}
+        </Card.Body>
+      </Card>
+      <Card>
+        <Card.Body>
+          <Card.Title>Issues</Card.Title>
+          {!data && !error ? (
+            <Placeholder />
+          ) : (
+            <ListItems
+              data={data?.ConversationAnalytics?.IssuesDetected.map(
+                (issue) => issue.Text
+              )}
             />
           )}
         </Card.Body>
