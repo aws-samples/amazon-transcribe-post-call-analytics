@@ -255,13 +255,6 @@ function Dashboard({ setAlert }) {
                     </span>
                   ) : null
                 }
-                belowText={
-                  s.FollowOnCategories.length ? (
-                    <span className="text-muted">
-                      Follow on Categories {s.FollowOnCategories}
-                    </span>
-                  ) : null
-                }
               />
             ))
           )}

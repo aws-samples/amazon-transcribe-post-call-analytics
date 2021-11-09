@@ -11,7 +11,6 @@ export const TranscriptSegment = ({
   score,
   interruption,
   aboveText,
-  belowText,
 }) => (
   <Row className="mb-4">
     <Col sm={1} className="pt-3">
@@ -35,7 +34,6 @@ export const TranscriptSegment = ({
       )}
       {aboveText && <div>{aboveText}</div>}
       <div>{applyReplacements(text, highlightLocations)}</div>
-      {belowText && <div>{belowText}</div>}
     </Col>
   </Row>
 );
