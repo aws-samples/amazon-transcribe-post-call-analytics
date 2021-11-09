@@ -147,8 +147,8 @@ function Dashboard({ setAlert }) {
         </Button>
       </div>
       <Card>
+        <Card.Header>Overview</Card.Header>
         <Card.Body>
-          <Card.Title>Overview</Card.Title>
           <Row>
             <Col>
               {firstCol.map((entry, i) => (
@@ -177,8 +177,8 @@ function Dashboard({ setAlert }) {
         </Card.Body>
       </Card>
       <Card>
+        <Card.Header>Entities</Card.Header>
         <Card.Body>
-          <Card.Title>Entities</Card.Title>
           {!data && !error ? (
             <Placeholder />
           ) : (
@@ -187,8 +187,8 @@ function Dashboard({ setAlert }) {
         </Card.Body>
       </Card>
       <Card>
+        <Card.Header>Categories</Card.Header>
         <Card.Body>
-          <Card.Title>Categories</Card.Title>
           {!data && !error ? (
             <Placeholder />
           ) : (
@@ -201,8 +201,8 @@ function Dashboard({ setAlert }) {
         </Card.Body>
       </Card>
       <Card>
+        <Card.Header>Issues</Card.Header>
         <Card.Body>
-          <Card.Title>Issues</Card.Title>
           {!data && !error ? (
             <Placeholder />
           ) : (
@@ -215,24 +215,23 @@ function Dashboard({ setAlert }) {
         </Card.Body>
       </Card>
       <Card>
-        <Card.Body className="pt-0">
-          <Card.Title className="sticky-top pt-3 pb-3 bg-white">
-            <div className="d-inline-flex pb-3">Transcript</div>
-            {data && (
-              <audio
-                className="float-end"
-                controls
-                src={
-                  data?.ConversationAnalytics?.SourceInformation[0]
-                    ?.TranscribeJobInfo?.MediaFileUri
-                }
-              >
-                Your browser does not support the
-                <code>audio</code> element.
-              </audio>
-            )}
-          </Card.Title>
-
+        <Card.Header className="sticky-top pt-3 bg-light">
+          <div className="d-inline-flex pb-3">Transcript</div>
+          {data && (
+            <audio
+              className="float-end"
+              controls
+              src={
+                data?.ConversationAnalytics?.SourceInformation[0]
+                  ?.TranscribeJobInfo?.MediaFileUri
+              }
+            >
+              Your browser does not support the
+              <code>audio</code> element.
+            </audio>
+          )}
+        </Card.Header>
+        <Card.Body className="pt-4">
           {!data && !error ? (
             <Placeholder />
           ) : (
