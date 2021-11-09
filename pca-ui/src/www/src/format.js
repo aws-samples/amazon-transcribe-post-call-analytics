@@ -26,7 +26,7 @@ function Number(input) {
 
 function Timestamp(input) {
   const dt = DateTime.fromMillis(input);
-  return dt.toISO();
+  return dt.toISO().slice(0, 19).replace("T", " ");
 }
 
 export const Formatter = { Percentage, Number, Time, Timestamp };
