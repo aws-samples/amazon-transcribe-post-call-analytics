@@ -10,9 +10,10 @@ export const TranscriptSegment = ({
   highlightLocations,
   score,
   interruption,
+  aboveText,
 }) => (
-  <Row className="pt-3">
-    <Col sm={1}>
+  <Row className="mb-4">
+    <Col sm={1} className="pt-3">
       <SentimentIcon score={score} />
     </Col>
     <Col>
@@ -31,6 +32,7 @@ export const TranscriptSegment = ({
           Interruption
         </Badge>
       )}
+      {aboveText && <div>{aboveText}</div>}
       <div>{applyReplacements(text, highlightLocations)}</div>
     </Col>
   </Row>
@@ -62,11 +64,18 @@ const wrapper = (input, ...opts) => {
 // applyReplacements applies a series of string replacements to the input.
 // each replacement should consist of a start offset, end offset and
 // function that transforms the target string
-// replacements should be ordered from lowest start offset to highest.
 // Substrings identified by start and end offsets cannot overlap
 export const applyReplacements = (input, replacements) =>
-  replacements.reduceRight(
-    (accumulator, { start, end, fn }, i) =>
-      wrapper(accumulator, start, end, fn, i),
-    input
-  );
+  replacements
+    .sort(sortFn)
+    .reduceRight(
+      (accumulator, { start, end, fn }, i) =>
+        wrapper(accumulator, start, end, fn, i),
+      input
+    );
+
+const sortFn = (a, b) => {
+  if (a.start > b.start) return 1;
+  if (a.start < b.start) return -1;
+  return 0;
+};

@@ -247,6 +247,14 @@ function Dashboard({ setAlert }) {
                 }))}
                 score={s.SentimentIsPositive - s.SentimentIsNegative}
                 interruption={s.SegmentInterruption}
+                aboveText={
+                  s.CategoriesDetected.length ? (
+                    <span className="text-muted">
+                      {" "}
+                      Categories Detetected: {s.CategoriesDetected}
+                    </span>
+                  ) : null
+                }
               />
             ))
           )}
