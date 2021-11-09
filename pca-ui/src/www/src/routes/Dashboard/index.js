@@ -13,6 +13,9 @@ import { SentimentChart } from "./SentimentChart";
 import { ListItems } from "./ListItems";
 import { useDangerAlert } from "../../hooks/useAlert";
 
+import "./dashboard.css";
+import { VisuallyHidden } from "../../components/VisuallyHidden";
+
 const Sentiment = ({ score }) => {
   return (
     <span>
@@ -244,7 +247,11 @@ function Dashboard({ setAlert }) {
                   start: e.BeginOffset,
                   end: e.EndOffset,
                   fn: (match, key) => (
-                    <span key={key} style={{ backgroundColor: "red" }}>
+                    <span
+                      key={key}
+                      className={`highlight ${e.Type.toLowerCase()}`}
+                    >
+                      <VisuallyHidden>Entity - {e.Type}</VisuallyHidden>
                       {match}
                     </span>
                   ),

@@ -1,0 +1,44 @@
+:root {
+  --entity-commercial_item: hsla(216, 98%, 52%, 0.294);
+  --entity-date: hsla(263, 78%, 58%, 0.294);
+  --entity-event: hsla(261, 51%, 51%, 0.294);
+  --entity-location: hsla(354, 70%, 54%, 0.294);
+  --entity-organization: hsla(27, 98%, 54%, 0.294);
+  --entity-other: hsla(45, 100%, 51%, 0.294);
+  --entity-person: hsla(152, 69%, 31%, 0.294);
+  --entity-quantity: hsla(162, 73%, 46%, 0.294);
+  --entity-title: hsla(190, 90%, 50%, 0.294);
+
+  --highlight-colour: var(--entity-commercial_item);
+}
+
+.highlight {
+  background-color: var(--highlight-colour);
+}
+
+.highlight.commercial_item {
+  --highlight-colour: var(--entity-commercial_item);
+}
+
+.highlight.date {
+  --highlight-colour: var(--entity-date);
+}
+
+.highlight.location {
+  --highlight-colour: var(--entity-location);
+}
+.highlight.organization {
+  --highlight-colour: var(--entity-organization);
+}
+.highlight.other {
+  --highlight-colour: var(--entity-other);
+}
+.highlight.person {
+  --highlight-colour: var(--entity-person);
+}
+.highlight.quantity {
+  --highlight-colour: var(--entity-quantity);
+}
+.highlight.title {
+  --highlight-colour: var(--entity-title);
+}
