@@ -33,6 +33,10 @@ def createFileClip(bucket, key):
     # Upload file to the S3 bucket and return the key
     uploadKey = pcacommon.generateClipFileKey(baseClipFilename)
     s3Client.upload_file(ffmpegOutputFilename, bucket, uploadKey)
+
+    # Delete our two temp files
+    pcacommon.remove_temp_file(ffmpegInputFilename)
+    pcacommon.remove_temp_file(ffmpegOutputFilename)
     return uploadKey
 
 

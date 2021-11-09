@@ -2,6 +2,7 @@ import copy
 import boto3
 import subprocess
 import pcaconfiguration as cf
+import pcacommon
 import os
 
 # Local temporary folder for file-based operations
@@ -73,6 +74,9 @@ def count_audio_channels(bucket, key):
     except Exception as e:
         print('Failed to get number of audio streams from input file: ' + e)
         channels_found = 1
+    finally:
+        # Delete our downloaded audio
+        pcacommon.remove_temp_file(ffmpegInputFilename)
 
     return channels_found
 

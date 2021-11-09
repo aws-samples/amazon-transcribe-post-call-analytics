@@ -7,6 +7,7 @@ from pathlib import Path
 from datetime import datetime
 from urllib.parse import urlparse
 import pcaconfiguration as cf
+import pcacommon
 from pcakendrasearch import prepare_transcript, put_kendra_document
 import subprocess
 import copy
@@ -1128,7 +1129,7 @@ class TranscribeParser:
                 print(e)
             finally:
                 # Remove our temporary in case of Lambda container re-use
-                self.remove_temp_file(mapFilepath)
+                pcacommon.remove_temp_file(mapFilepath)
 
     def create_playback_mp3_audio(self, audio_uri):
         """
@@ -1168,18 +1169,8 @@ class TranscribeParser:
                 print("Unable to create MP3 version of original audio file - could not find FFMPEG libraries")
             finally:
                 # Remove our temporary files in case of Lambda container re-use
-                self.remove_temp_file(inputFilename)
-                self.remove_temp_file(outputFilename)
-
-    def remove_temp_file(self, file_path):
-        """
-        Checks if the specified file exists and deletes it if it does
-
-        @param file_path: Path to the file to be deleted
-        """
-        # Delete the file if it exists
-        if os.path.exists(file_path):
-            os.remove(file_path)
+                pcacommon.remove_temp_file(inputFilename)
+                pcacommon.remove_temp_file(outputFilename)
 
     def load_transcribe_job_info(self, sf_event):
         """
@@ -1286,7 +1277,7 @@ class TranscribeParser:
         s3Object.put(
             Body=(bytes(json.dumps(output).encode('UTF-8')))
         )
-        self.remove_temp_file(json_filepath)
+        pcacommon.remove_temp_file(json_filepath)
 
         # Index transcript in Kendra, if transcript search is enabled
         kendraIndexId = cf.appConfig[cf.CONF_KENDRA_INDEX_ID]
