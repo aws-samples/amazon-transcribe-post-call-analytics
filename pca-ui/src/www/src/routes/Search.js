@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import useSWR from "swr";
 import { Button, Form } from "react-bootstrap";
 import DatePicker from "react-datepicker";
@@ -13,6 +13,15 @@ import { useDangerAlert } from "../hooks/useAlert";
 function Search({ setAlert }) {
   const [editing, setEditing] = useState(true);
   const [query, setQuery] = useState({});
+  const [shouldSearch, setShouldSearch] = useState(true);
+
+  useEffect(() => {
+    (query.timestampTo && query.timestampTo) ||
+    (!query.timestampTo && !query.timestampFrom)
+      ? setShouldSearch(true)
+      : setShouldSearch(false);
+  }, [query.timestampTo, query.timestampFrom]);
+
   const { data: entities, error: errorEntities } = useSWR(
     `/entities`,
     getEntities
@@ -22,7 +31,7 @@ function Search({ setAlert }) {
     getLanguages
   );
   const { data: results, error: errorResults } = useSWR(
-    [`/search`, query],
+    shouldSearch ? [`/search`, query] : null,
     () => search(query)
   );
 
