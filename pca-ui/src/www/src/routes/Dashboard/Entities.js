@@ -1,4 +1,5 @@
-import { Badge, ListGroup, Tab, Tabs } from "react-bootstrap";
+import { Badge, Tab, Tabs } from "react-bootstrap";
+import { ListItems } from "./ListItems";
 
 export const Entities = ({ data }) =>
   data.length ? (
@@ -20,13 +21,7 @@ export const Entities = ({ data }) =>
             </span>
           }
         >
-          <ListGroup variant="flush">
-            {e.Values.map((v, i) => (
-              <ListGroup.Item key={i}>
-                <p>{v}</p>
-              </ListGroup.Item>
-            ))}
-          </ListGroup>
+          <ListItems data={e.Values} />
         </Tab>
       ))}
     </Tabs>
