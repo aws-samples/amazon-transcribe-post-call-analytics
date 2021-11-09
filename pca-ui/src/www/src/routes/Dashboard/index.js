@@ -33,6 +33,18 @@ const Categories = ({ data }) => {
     </ListGroup>
   );
 };
+const Issues = ({ data }) => {
+  if (!data.length) return <p>No Issues detected</p>;
+  return (
+    <ListGroup variant="flush">
+      {data.map((issue, i) => (
+        <ListGroup.Item key={i}>
+          <p>{issue.Text}</p>
+        </ListGroup.Item>
+      ))}
+    </ListGroup>
+  );
+};
 
 function Dashboard({ setAlert }) {
   const { key } = useParams();
@@ -204,6 +216,16 @@ function Dashboard({ setAlert }) {
             <Categories
               data={data?.ConversationAnalytics?.CategoriesDetected}
             />
+          )}
+        </Card.Body>
+      </Card>
+      <Card>
+        <Card.Body>
+          <Card.Title>Issues</Card.Title>
+          {!data && !error ? (
+            <Placeholder />
+          ) : (
+            <Issues data={data?.ConversationAnalytics?.IssuesDetected} />
           )}
         </Card.Body>
       </Card>
