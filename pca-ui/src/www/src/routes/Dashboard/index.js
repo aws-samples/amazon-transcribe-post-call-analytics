@@ -68,17 +68,18 @@ function Dashboard({ setAlert }) {
         label: "Timestamp",
         value: (d) => d?.ConversationAnalytics?.ConversationTime,
       },
+      { label: "Guid", value: (d) => d?.ConversationAnalytics?.GUID },
       { label: "Agent", value: (d) => d?.ConversationAnalytics?.Agent },
       {
         label: "Call Duration",
         value: (d) => Formatter.Time(d.ConversationAnalytics.Duration),
       },
+    ],
+    [
       {
         label: "Entity Recognizer Name",
         value: (d) => d?.ConversationAnalytics?.EntityRecognizerName,
       },
-    ],
-    [
       {
         label: "Language Code",
         value: (d) => d?.ConversationAnalytics?.LanguageCode,
@@ -104,8 +105,12 @@ function Dashboard({ setAlert }) {
             ? "Transcribe Call Analytics"
             : "Transcribe",
       },
-      { label: "Guid", value: (d) => d?.ConversationAnalytics?.GUID },
-      { label: "Job Id", value: (d) => key },
+      {
+        label: "Job Id",
+        value: (d) =>
+          d?.ConversationAnalytics?.SourceInformation[0]?.TranscribeJobInfo
+            ?.TranscriptionJobName,
+      },
       {
         label: "File Format",
         value: (d) =>
@@ -189,13 +194,14 @@ function Dashboard({ setAlert }) {
                 ))}
               </Col>
             ))}
-
-            <ValueWithLabel label="Sentiment Chart">
-              <SentimentChart
-                data={data?.SpeechSegments}
-                speakerOrder={speakerOrder}
-              />
-            </ValueWithLabel>
+            <Col>
+              <ValueWithLabel label="Sentiment Chart">
+                <SentimentChart
+                  data={data?.SpeechSegments}
+                  speakerOrder={speakerOrder}
+                />
+              </ValueWithLabel>
+            </Col>
           </Row>
         </Card.Body>
       </Card>
