@@ -1,0 +1,6 @@
+.box {
+  display: inline-block;
+  width: 1.7em;
+  border-radius: 8px;
+  color: var(--bs-dark);
+}

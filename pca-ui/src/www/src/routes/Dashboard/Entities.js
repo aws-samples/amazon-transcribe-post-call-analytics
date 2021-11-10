@@ -1,5 +1,10 @@
-import { Badge, Tab, Tabs } from "react-bootstrap";
+import { Tab, Tabs } from "react-bootstrap";
 import { ListItems } from "./ListItems";
+import "./Entities.css";
+
+const Box = ({ children, className }) => (
+  <div className={`box ${className}`}>{children}</div>
+);
 
 export const Entities = ({ data }) =>
   data.length ? (
@@ -15,9 +20,9 @@ export const Entities = ({ data }) =>
           title={
             <span>
               {e.Name}{" "}
-              <Badge bg="secondary" pill={true}>
+              <Box className={`ms-1 highlight ${e.Name.toLowerCase()}`}>
                 {e.Instances}
-              </Badge>
+              </Box>
             </span>
           }
         >
