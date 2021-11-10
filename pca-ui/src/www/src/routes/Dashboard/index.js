@@ -62,80 +62,86 @@ function Dashboard({ setAlert }) {
     a.currentTime = e.target.dataset.currenttime;
   };
 
-  const firstCol = [
-    {
-      label: "Timestamp",
-      value: (d) => d?.ConversationAnalytics?.ConversationTime,
-    },
-    { label: "Agent", value: (d) => d?.ConversationAnalytics?.Agent },
-    {
-      label: "Entity Recognizer Name",
-      value: (d) => d?.ConversationAnalytics?.EntityRecognizerName,
-    },
-    {
-      label: "Language Code",
-      value: (d) => d?.ConversationAnalytics?.LanguageCode,
-    },
-    {
-      label: "Agent Sentiment",
-      value: (d) => <Sentiment score={getSentimentScore(d, "Agent")} />,
-    },
-    {
-      label: "Customer Sentiment",
-      value: (d) => <Sentiment score={getSentimentScore(d, "Caller")} />,
-    },
+  const callDetails = [
+    [
+      {
+        label: "Timestamp",
+        value: (d) => d?.ConversationAnalytics?.ConversationTime,
+      },
+      { label: "Agent", value: (d) => d?.ConversationAnalytics?.Agent },
+      {
+        label: "Call Duration",
+        value: (d) => Formatter.Time(d.ConversationAnalytics.Duration),
+      },
+      {
+        label: "Entity Recognizer Name",
+        value: (d) => d?.ConversationAnalytics?.EntityRecognizerName,
+      },
+    ],
+    [
+      {
+        label: "Language Code",
+        value: (d) => d?.ConversationAnalytics?.LanguageCode,
+      },
+      {
+        label: "Agent Sentiment",
+        value: (d) => <Sentiment score={getSentimentScore(d, "Agent")} />,
+      },
+      {
+        label: "Customer Sentiment",
+        value: (d) => <Sentiment score={getSentimentScore(d, "Caller")} />,
+      },
+    ],
   ];
 
-  const secondCol = [
-    {
-      label: "Type",
-      value: (d) =>
-        d?.ConversationAnalytics?.SourceInformation[0]?.TranscribeJobInfo
-          ?.TranscribeApiType === "analytics"
-          ? "Transcribe Call Analytics"
-          : "Transcribe",
-    },
-    { label: "Guid", value: (d) => d?.ConversationAnalytics?.GUID },
-    { label: "Job Id", value: (d) => key },
-    {
-      label: "File Format",
-      value: (d) =>
-        d?.ConversationAnalytics?.SourceInformation[0]?.TranscribeJobInfo
-          ?.MediaFormat,
-    },
+  const transcribeDetails = [
+    [
+      {
+        label: "Type",
+        value: (d) =>
+          d?.ConversationAnalytics?.SourceInformation[0]?.TranscribeJobInfo
+            ?.TranscribeApiType === "analytics"
+            ? "Transcribe Call Analytics"
+            : "Transcribe",
+      },
+      { label: "Guid", value: (d) => d?.ConversationAnalytics?.GUID },
+      { label: "Job Id", value: (d) => key },
+      {
+        label: "File Format",
+        value: (d) =>
+          d?.ConversationAnalytics?.SourceInformation[0]?.TranscribeJobInfo
+            ?.MediaFormat,
+      },
+    ],
+    [
+      {
+        label: "Sample Rate",
+        value: (d) =>
+          d?.ConversationAnalytics?.SourceInformation[0]?.TranscribeJobInfo
+            ?.MediaSampleRateHertz,
+      },
 
-    {
-      label: "Call Duration",
-      value: (d) => Formatter.Time(d.ConversationAnalytics.Duration),
-    },
-
-    {
-      label: "Sample Rate",
-      value: (d) =>
-        d?.ConversationAnalytics?.SourceInformation[0]?.TranscribeJobInfo
-          ?.MediaSampleRateHertz,
-    },
-
-    {
-      label: "Custom Vocabulary",
-      value: (d) =>
-        d?.ConversationAnalytics?.SourceInformation[0]?.TranscribeJobInfo
-          ?.VocabularyName,
-    },
-    {
-      label: "Vocabulary Filter",
-      value: (d) =>
-        d.ConversationAnalytics.SourceInformation[0]?.TranscribeJobInfo
-          ?.VocabularyFilter,
-    },
-    {
-      label: "Average Word Confidence",
-      value: (d) =>
-        Formatter.Percentage(
+      {
+        label: "Custom Vocabulary",
+        value: (d) =>
+          d?.ConversationAnalytics?.SourceInformation[0]?.TranscribeJobInfo
+            ?.VocabularyName,
+      },
+      {
+        label: "Vocabulary Filter",
+        value: (d) =>
           d.ConversationAnalytics.SourceInformation[0]?.TranscribeJobInfo
-            ?.AverageWordConfidence
-        ),
-    },
+            ?.VocabularyFilter,
+      },
+      {
+        label: "Average Word Confidence",
+        value: (d) =>
+          Formatter.Percentage(
+            d.ConversationAnalytics.SourceInformation[0]?.TranscribeJobInfo
+              ?.AverageWordConfidence
+          ),
+      },
+    ],
   ];
 
   return (
@@ -150,29 +156,46 @@ function Dashboard({ setAlert }) {
         <Card.Header>Overview</Card.Header>
         <Card.Body>
           <Row>
-            <Col>
-              {firstCol.map((entry, i) => (
-                <ValueWithLabel key={i} label={entry.label}>
-                  {!data && !error ? <Placeholder /> : entry.value(data) || "-"}
-                </ValueWithLabel>
-              ))}
-            </Col>
+            {callDetails.map((col, i) => (
+              <Col>
+                {col.map((entry) => (
+                  <ValueWithLabel key={i} label={entry.label}>
+                    {!data && !error ? (
+                      <Placeholder />
+                    ) : (
+                      entry.value(data) || "-"
+                    )}
+                  </ValueWithLabel>
+                ))}
+              </Col>
+            ))}
+          </Row>
+        </Card.Body>
+      </Card>
+      <Card>
+        <Card.Header>Transcribe Details</Card.Header>
+        <Card.Body>
+          <Row>
+            {transcribeDetails.map((col, i) => (
+              <Col>
+                {col.map((entry) => (
+                  <ValueWithLabel key={i} label={entry.label}>
+                    {!data && !error ? (
+                      <Placeholder />
+                    ) : (
+                      entry.value(data) || "-"
+                    )}
+                  </ValueWithLabel>
+                ))}
+              </Col>
+            ))}
 
-            <Col>
-              {secondCol.map((entry, i) => (
-                <ValueWithLabel key={i} label={entry.label}>
-                  {!data && !error ? <Placeholder /> : entry.value(data) || "-"}
-                </ValueWithLabel>
-              ))}
-            </Col>
-            <Col>
-              <ValueWithLabel label="Sentiment Chart">
-                <SentimentChart
-                  data={data?.SpeechSegments}
-                  speakerOrder={speakerOrder}
-                />
-              </ValueWithLabel>
-            </Col>
+            <ValueWithLabel label="Sentiment Chart">
+              <SentimentChart
+                data={data?.SpeechSegments}
+                speakerOrder={speakerOrder}
+              />
+            </ValueWithLabel>
           </Row>
         </Card.Body>
       </Card>
