@@ -13,6 +13,9 @@ import { SentimentChart } from "./SentimentChart";
 import { ListItems } from "./ListItems";
 import { useDangerAlert } from "../../hooks/useAlert";
 
+import "./dashboard.css";
+import { VisuallyHidden } from "../../components/VisuallyHidden";
+
 const Sentiment = ({ score }) => {
   return (
     <span>
@@ -59,80 +62,91 @@ function Dashboard({ setAlert }) {
     a.currentTime = e.target.dataset.currenttime;
   };
 
-  const firstCol = [
-    {
-      label: "Timestamp",
-      value: (d) => d?.ConversationAnalytics?.ConversationTime,
-    },
-    { label: "Agent", value: (d) => d?.ConversationAnalytics?.Agent },
-    {
-      label: "Entity Recognizer Name",
-      value: (d) => d?.ConversationAnalytics?.EntityRecognizerName,
-    },
-    {
-      label: "Language Code",
-      value: (d) => d?.ConversationAnalytics?.LanguageCode,
-    },
-    {
-      label: "Agent Sentiment",
-      value: (d) => <Sentiment score={getSentimentScore(d, "Agent")} />,
-    },
-    {
-      label: "Customer Sentiment",
-      value: (d) => <Sentiment score={getSentimentScore(d, "Caller")} />,
-    },
+  const callDetailColumns = [
+    [
+      {
+        label: "Timestamp",
+        value: (d) => d?.ConversationAnalytics?.ConversationTime,
+      },
+      { label: "Guid", value: (d) => d?.ConversationAnalytics?.GUID },
+      { label: "Agent", value: (d) => d?.ConversationAnalytics?.Agent },
+      {
+        label: "Call Duration",
+        value: (d) => Formatter.Time(d.ConversationAnalytics.Duration),
+      },
+    ],
+    [
+      {
+        label: "Entity Recognizer Name",
+        value: (d) => d?.ConversationAnalytics?.EntityRecognizerName,
+      },
+      {
+        label: "Language Code",
+        value: (d) => d?.ConversationAnalytics?.LanguageCode,
+      },
+      {
+        label: "Agent Sentiment",
+        value: (d) => <Sentiment score={getSentimentScore(d, "Agent")} />,
+      },
+      {
+        label: "Customer Sentiment",
+        value: (d) => <Sentiment score={getSentimentScore(d, "Caller")} />,
+      },
+    ],
   ];
 
-  const secondCol = [
-    {
-      label: "Type",
-      value: (d) =>
-        d?.ConversationAnalytics?.SourceInformation[0]?.TranscribeJobInfo
-          ?.TranscribeApiType === "analytics"
-          ? "Transcribe Call Analytics"
-          : "Transcribe",
-    },
-    { label: "Guid", value: (d) => d?.ConversationAnalytics?.GUID },
-    { label: "Job Id", value: (d) => key },
-    {
-      label: "File Format",
-      value: (d) =>
-        d?.ConversationAnalytics?.SourceInformation[0]?.TranscribeJobInfo
-          ?.MediaFormat,
-    },
+  const transcribeDetailColumns = [
+    [
+      {
+        label: "Type",
+        value: (d) =>
+          d?.ConversationAnalytics?.SourceInformation[0]?.TranscribeJobInfo
+            ?.TranscribeApiType === "analytics"
+            ? "Transcribe Call Analytics"
+            : "Transcribe",
+      },
+      {
+        label: "Job Id",
+        value: (d) =>
+          d?.ConversationAnalytics?.SourceInformation[0]?.TranscribeJobInfo
+            ?.TranscriptionJobName,
+      },
+      {
+        label: "File Format",
+        value: (d) =>
+          d?.ConversationAnalytics?.SourceInformation[0]?.TranscribeJobInfo
+            ?.MediaFormat,
+      },
+    ],
+    [
+      {
+        label: "Sample Rate",
+        value: (d) =>
+          d?.ConversationAnalytics?.SourceInformation[0]?.TranscribeJobInfo
+            ?.MediaSampleRateHertz,
+      },
 
-    {
-      label: "Call Duration",
-      value: (d) => Formatter.Time(d.ConversationAnalytics.Duration),
-    },
-
-    {
-      label: "Sample Rate",
-      value: (d) =>
-        d?.ConversationAnalytics?.SourceInformation[0]?.TranscribeJobInfo
-          ?.MediaSampleRateHertz,
-    },
-
-    {
-      label: "Custom Vocabulary",
-      value: (d) =>
-        d?.ConversationAnalytics?.SourceInformation[0]?.TranscribeJobInfo
-          ?.VocabularyName,
-    },
-    {
-      label: "Vocabulary Filter",
-      value: (d) =>
-        d.ConversationAnalytics.SourceInformation[0]?.TranscribeJobInfo
-          ?.VocabularyFilter,
-    },
-    {
-      label: "Word Accuracy",
-      value: (d) =>
-        Formatter.Percentage(
+      {
+        label: "Custom Vocabulary",
+        value: (d) =>
+          d?.ConversationAnalytics?.SourceInformation[0]?.TranscribeJobInfo
+            ?.VocabularyName,
+      },
+      {
+        label: "Vocabulary Filter",
+        value: (d) =>
           d.ConversationAnalytics.SourceInformation[0]?.TranscribeJobInfo
-            ?.AverageWordConfidence
-        ),
-    },
+            ?.VocabularyFilter,
+      },
+      {
+        label: "Average Word Confidence",
+        value: (d) =>
+          Formatter.Percentage(
+            d.ConversationAnalytics.SourceInformation[0]?.TranscribeJobInfo
+              ?.AverageWordConfidence
+          ),
+      },
+    ],
   ];
 
   return (
@@ -144,24 +158,42 @@ function Dashboard({ setAlert }) {
         </Button>
       </div>
       <Card>
+        <Card.Header>Call Details</Card.Header>
         <Card.Body>
-          <Card.Title>Overview</Card.Title>
           <Row>
-            <Col>
-              {firstCol.map((entry, i) => (
-                <ValueWithLabel key={i} label={entry.label}>
-                  {!data && !error ? <Placeholder /> : entry.value(data) || "-"}
-                </ValueWithLabel>
-              ))}
-            </Col>
-
-            <Col>
-              {secondCol.map((entry, i) => (
-                <ValueWithLabel key={i} label={entry.label}>
-                  {!data && !error ? <Placeholder /> : entry.value(data) || "-"}
-                </ValueWithLabel>
-              ))}
-            </Col>
+            {callDetailColumns.map((col) => (
+              <Col>
+                {col.map((entry, i) => (
+                  <ValueWithLabel key={i} label={entry.label}>
+                    {!data && !error ? (
+                      <Placeholder />
+                    ) : (
+                      entry.value(data) || "-"
+                    )}
+                  </ValueWithLabel>
+                ))}
+              </Col>
+            ))}
+          </Row>
+        </Card.Body>
+      </Card>
+      <Card>
+        <Card.Header>Transcribe Details</Card.Header>
+        <Card.Body>
+          <Row>
+            {transcribeDetailColumns.map((col) => (
+              <Col>
+                {col.map((entry, i) => (
+                  <ValueWithLabel key={i} label={entry.label}>
+                    {!data && !error ? (
+                      <Placeholder />
+                    ) : (
+                      entry.value(data) || "-"
+                    )}
+                  </ValueWithLabel>
+                ))}
+              </Col>
+            ))}
             <Col>
               <ValueWithLabel label="Sentiment Chart">
                 <SentimentChart
@@ -174,8 +206,8 @@ function Dashboard({ setAlert }) {
         </Card.Body>
       </Card>
       <Card>
+        <Card.Header>Entities</Card.Header>
         <Card.Body>
-          <Card.Title>Entities</Card.Title>
           {!data && !error ? (
             <Placeholder />
           ) : (
@@ -184,8 +216,8 @@ function Dashboard({ setAlert }) {
         </Card.Body>
       </Card>
       <Card>
+        <Card.Header>Categories</Card.Header>
         <Card.Body>
-          <Card.Title>Categories</Card.Title>
           {!data && !error ? (
             <Placeholder />
           ) : (
@@ -198,8 +230,8 @@ function Dashboard({ setAlert }) {
         </Card.Body>
       </Card>
       <Card>
+        <Card.Header>Issues</Card.Header>
         <Card.Body>
-          <Card.Title>Issues</Card.Title>
           {!data && !error ? (
             <Placeholder />
           ) : (
@@ -212,24 +244,23 @@ function Dashboard({ setAlert }) {
         </Card.Body>
       </Card>
       <Card>
-        <Card.Body className="pt-0">
-          <Card.Title className="sticky-top pt-3 pb-3 bg-white">
-            <div className="d-inline-flex pb-3">Transcript</div>
-            {data && (
-              <audio
-                className="float-end"
-                controls
-                src={
-                  data?.ConversationAnalytics?.SourceInformation[0]
-                    ?.TranscribeJobInfo?.MediaFileUri
-                }
-              >
-                Your browser does not support the
-                <code>audio</code> element.
-              </audio>
-            )}
-          </Card.Title>
-
+        <Card.Header className="sticky-top pt-3 bg-light">
+          <div className="d-inline-flex pb-3">Transcript</div>
+          {data && (
+            <audio
+              className="float-end"
+              controls
+              src={
+                data?.ConversationAnalytics?.SourceInformation[0]
+                  ?.TranscribeJobInfo?.MediaFileUri
+              }
+            >
+              Your browser does not support the
+              <code>audio</code> element.
+            </audio>
+          )}
+        </Card.Header>
+        <Card.Body className="pt-4">
           {!data && !error ? (
             <Placeholder />
           ) : (
@@ -244,7 +275,11 @@ function Dashboard({ setAlert }) {
                   start: e.BeginOffset,
                   end: e.EndOffset,
                   fn: (match, key) => (
-                    <span key={key} style={{ backgroundColor: "red" }}>
+                    <span
+                      key={key}
+                      className={`highlight ${e.Type.toLowerCase()}`}
+                    >
+                      <VisuallyHidden>Entity - {e.Type}</VisuallyHidden>
                       {match}
                     </span>
                   ),
