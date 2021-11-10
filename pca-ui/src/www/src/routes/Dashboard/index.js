@@ -62,7 +62,7 @@ function Dashboard({ setAlert }) {
     a.currentTime = e.target.dataset.currenttime;
   };
 
-  const callDetails = [
+  const callDetailColumns = [
     [
       {
         label: "Timestamp",
@@ -95,7 +95,7 @@ function Dashboard({ setAlert }) {
     ],
   ];
 
-  const transcribeDetails = [
+  const transcribeDetailColumns = [
     [
       {
         label: "Type",
@@ -158,7 +158,7 @@ function Dashboard({ setAlert }) {
         </Button>
       </div>
       <Card>
-        <Card.Header>Overview</Card.Header>
+        <Card.Header>Call Details</Card.Header>
         <Card.Body>
           <Row>
             {callDetails.map((col, i) => (
