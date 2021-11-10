@@ -1,7 +1,12 @@
-import { Badge, Tab, Tabs } from "react-bootstrap";
+import { Tab, Tabs } from "react-bootstrap";
 import { ListItems } from "./ListItems";
+import "./Entities.css";
 
-export const Entities = ({ data }) =>
+const Box = ({ children, className }) => (
+  <div className={`box ${className}`}>{children}</div>
+);
+
+export const Entities = ({ data, colors }) =>
   data.length ? (
     <Tabs
       defaultActiveKey={data[0].Name}
@@ -15,9 +20,9 @@ export const Entities = ({ data }) =>
           title={
             <span>
               {e.Name}{" "}
-              <Badge bg="secondary" pill={true}>
+              <Box className={`ms-1 highlight ${e.Name.toLowerCase()}`}>
                 {e.Instances}
-              </Badge>
+              </Box>
             </span>
           }
         >
