@@ -6,7 +6,7 @@ const Box = ({ children, className }) => (
   <div className={`box ${className}`}>{children}</div>
 );
 
-export const Entities = ({ data, colors }) =>
+export const Entities = ({ data }) =>
   data.length ? (
     <Tabs
       defaultActiveKey={data[0].Name}
