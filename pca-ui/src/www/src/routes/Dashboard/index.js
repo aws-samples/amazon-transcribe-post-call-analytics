@@ -161,9 +161,9 @@ function Dashboard({ setAlert }) {
         <Card.Header>Call Details</Card.Header>
         <Card.Body>
           <Row>
-            {callDetails.map((col, i) => (
+            {callDetailColumns.map((col) => (
               <Col>
-                {col.map((entry) => (
+                {col.map((entry, i) => (
                   <ValueWithLabel key={i} label={entry.label}>
                     {!data && !error ? (
                       <Placeholder />
@@ -181,9 +181,9 @@ function Dashboard({ setAlert }) {
         <Card.Header>Transcribe Details</Card.Header>
         <Card.Body>
           <Row>
-            {transcribeDetails.map((col, i) => (
+            {transcribeDetailColumns.map((col) => (
               <Col>
-                {col.map((entry) => (
+                {col.map((entry, i) => (
                   <ValueWithLabel key={i} label={entry.label}>
                     {!data && !error ? (
                       <Placeholder />
