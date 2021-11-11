@@ -26,7 +26,7 @@ export const SpeakerTimeChart = ({ data = {}, speakerOrder = {} }) => {
   return (
     <Bar
       data={{
-        labels: ["Test"],
+        labels: ["placeholder"],
         datasets: Object.keys(data).map((speakerId) => ({
           label: speakerOrder[speakerId],
           data: [data[speakerId].TotalTimeSecs / totalTime],
