@@ -197,7 +197,7 @@ function Dashboard({ setAlert }) {
             <Col>
               <ValueWithLabel label="Sentiment Chart">
                 <SentimentChart
-                  data={data?.SpeechSegments}
+                  data={data?.ConversationAnalytics?.SentimentTrends}
                   speakerOrder={speakerOrder}
                 />
               </ValueWithLabel>
