@@ -15,6 +15,7 @@ import { useDangerAlert } from "../../hooks/useAlert";
 
 import "./dashboard.css";
 import { VisuallyHidden } from "../../components/VisuallyHidden";
+import { SpeakerTimeChart } from "./SpeakerTimeChart";
 
 const Sentiment = ({ score }) => {
   return (
@@ -24,6 +25,11 @@ const Sentiment = ({ score }) => {
     </span>
   );
 };
+
+const filterKey = (obj = {}, keyToRemove) =>
+  Object.fromEntries(
+    Object.entries(obj).filter(([key]) => key !== keyToRemove)
+  );
 
 function Dashboard({ setAlert }) {
   const { key } = useParams();
@@ -198,6 +204,16 @@ function Dashboard({ setAlert }) {
               <ValueWithLabel label="Sentiment Chart">
                 <SentimentChart
                   data={data?.ConversationAnalytics?.SentimentTrends}
+                  speakerOrder={speakerOrder}
+                />
+              </ValueWithLabel>
+
+              <ValueWithLabel label="Speaker Time Chart">
+                <SpeakerTimeChart
+                  data={filterKey(
+                    data?.ConversationAnalytics?.SpeakerTime,
+                    "NonTalkTime"
+                  )}
                   speakerOrder={speakerOrder}
                 />
               </ValueWithLabel>
