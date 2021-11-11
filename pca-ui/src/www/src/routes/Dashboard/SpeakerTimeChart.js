@@ -1,5 +1,7 @@
 import { Bar } from "react-chartjs-2";
 import { colours } from "./colours";
+import { Formatter } from "../../format";
+
 export const SpeakerTimeChart = ({ data = {}, speakerOrder = {} }) => {
   const options = {
     scales: {
@@ -7,11 +9,22 @@ export const SpeakerTimeChart = ({ data = {}, speakerOrder = {} }) => {
         stacked: true,
         ticks: {
           beginAtZero: true,
+          callback: (value, index) => `${Formatter.Percentage(value)}`,
         },
       },
       x: {
         stacked: true,
         display: false,
+      },
+    },
+    plugins: {
+      tooltip: {
+        callbacks: {
+          label: (context) =>
+            `${context.dataset.label} ${Formatter.Percentage(
+              context.parsed.y
+            )}`,
+        },
       },
     },
   };
@@ -21,12 +34,10 @@ export const SpeakerTimeChart = ({ data = {}, speakerOrder = {} }) => {
     0
   );
 
-  console.log(totalTime);
-
   return (
     <Bar
       data={{
-        labels: ["placeholder"],
+        labels: ["Proportion speaking"],
         datasets: Object.keys(data).map((speakerId) => ({
           label: speakerOrder[speakerId],
           data: [data[speakerId].TotalTimeSecs / totalTime],
