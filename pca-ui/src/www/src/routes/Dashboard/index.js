@@ -20,7 +20,7 @@ const Sentiment = ({ score }) => {
   return (
     <span>
       <SentimentIcon score={score} />
-      {Formatter.Percentage(score)}
+      {score}
     </span>
   );
 };
