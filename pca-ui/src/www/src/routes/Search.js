@@ -9,6 +9,8 @@ import {
 } from "../api/api";
 import { ContactTable } from "../components/ContactTable";
 import { useDangerAlert } from "../hooks/useAlert";
+import { MultiSelect } from "../components/MultiSelect";
+import { Select } from "../components/Select";
 
 function Search({ setAlert }) {
   const [editing, setEditing] = useState(true);
@@ -61,14 +63,13 @@ function Search({ setAlert }) {
           <Form.Label>
             <h5>Language Code</h5>
           </Form.Label>
-          <Form.Select
-            onChange={(e) => handleQueryInput(e.target.value, "language")}
-          >
-            {(languageCodes || []).map((code, i) => (
-              <option key={i}>{code}</option>
-            ))}
-            <option value="">-</option>
-          </Form.Select>
+          <Select
+            onChange={(event) => handleQueryInput(event.value, "language")}
+            options={(languageCodes || []).map((code, i) => ({
+              label: code,
+              value: code,
+            }))}
+          />
         </Form.Group>
 
         <Form.Group className="mb-3">
@@ -121,17 +122,13 @@ function Search({ setAlert }) {
           <Form.Label>
             <h5>Entities</h5>
           </Form.Label>
-          <Form.Select
-            onChange={(e) => handleQueryInput(e.target.value, "entity")}
-          >
-            <option value="">-</option>
-            {(entities || []).map((entity, i) => (
-              <option key={i} value={entity}>
-                {entity}
-              </option>
-            ))}
-          </Form.Select>
-          <Form.Text></Form.Text>
+          <MultiSelect
+            options={(entities || []).map((entity) => ({
+              value: entity,
+              label: entity,
+            }))}
+            onChange={(value) => handleQueryInput(value, "entity")}
+          />
         </Form.Group>
         <Button bg={"primary"} onClick={onClick}>
           Search
