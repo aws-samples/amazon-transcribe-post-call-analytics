@@ -15,6 +15,7 @@ import { useDangerAlert } from "../../hooks/useAlert";
 
 import "./dashboard.css";
 import { VisuallyHidden } from "../../components/VisuallyHidden";
+import { SpeakerTimeChart } from "./SpeakerTimeChart";
 
 const Sentiment = ({ score }) => {
   return (
@@ -25,6 +26,11 @@ const Sentiment = ({ score }) => {
   );
 };
 
+const filterKey = (obj = {}, keyToRemove) =>
+  Object.fromEntries(
+    Object.entries(obj).filter(([key]) => key !== keyToRemove)
+  );
+
 function Dashboard({ setAlert }) {
   const { key } = useParams();
 
@@ -32,9 +38,10 @@ function Dashboard({ setAlert }) {
 
   useDangerAlert(error, setAlert);
 
-  const [speakerOrder, setSpeakerOrder] = useState({
+  const [speakerLabels, setSpeakerLabels] = useState({
     spk_0: "Agent",
     spk_1: "Caller",
+    NonTalkTime: "Silence",
   });
 
   const swapAgent = async () => {
@@ -52,7 +59,7 @@ function Dashboard({ setAlert }) {
   };
 
   const getSentimentScore = (d, target) => {
-    const id = Object.entries(speakerOrder).find(([_, v]) => v === target)[0];
+    const id = Object.entries(speakerLabels).find(([_, v]) => v === target)[0];
     const targetObj = d?.ConversationAnalytics?.SentimentTrends[id];
     return targetObj?.SentimentScore;
   };
@@ -198,7 +205,19 @@ function Dashboard({ setAlert }) {
               <ValueWithLabel label="Sentiment Chart">
                 <SentimentChart
                   data={data?.ConversationAnalytics?.SentimentTrends}
-                  speakerOrder={speakerOrder}
+                  speakerOrder={speakerLabels}
+                />
+              </ValueWithLabel>
+
+              <ValueWithLabel label="Speaker Time Chart">
+                <SpeakerTimeChart
+                  data={Object.entries(
+                    data?.ConversationAnalytics?.SpeakerTime || {}
+                  ).map(([key, value]) => ({
+                    value: value.TotalTimeSecs,
+                    label: speakerLabels[key],
+                  }))}
+                  speakerOrder={speakerLabels}
                 />
               </ValueWithLabel>
             </Col>
@@ -267,7 +286,7 @@ function Dashboard({ setAlert }) {
             (data?.SpeechSegments || []).map((s, i) => (
               <TranscriptSegment
                 key={i}
-                name={speakerOrder[s.SegmentSpeaker]}
+                name={speakerLabels[s.SegmentSpeaker]}
                 segmentStart={s.SegmentStartTime}
                 text={s.DisplayText}
                 onClick={setAudioCurrentTime}

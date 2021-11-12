@@ -1,11 +1,6 @@
 import { Line } from "react-chartjs-2";
-
+import { colours } from "./colours";
 export const SentimentChart = ({ data = {}, speakerOrder = {} }) => {
-  const colours = {
-    Agent: "hsl(45, 100%, 50%)",
-    Caller: "hsl(202, 100%, 50%)",
-  };
-
   return (
     <Line
       data={{
