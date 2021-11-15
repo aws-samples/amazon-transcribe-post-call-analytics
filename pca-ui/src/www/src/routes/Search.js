@@ -93,37 +93,41 @@ function Search({ setAlert }) {
           />
         </Form.Group>
 
-        <RadioInput
-          label="Sentiment of"
-          onChange={(e) => handleQueryInput(e.target.value, "sentimentWho")}
-          choices={[
-            { value: "agent", label: "Agent" },
-            { value: "caller", label: "Caller" },
-          ]}
-          name="sentimentWho"
-        />
+        <Form.Group className="mb-4">
+          <Form.Label>
+            <h5>Sentiment</h5>
+          </Form.Label>
+          <h6>Sentiment of</h6>
+          <RadioInput
+            onChange={(e) => handleQueryInput(e.target.value, "sentimentWho")}
+            choices={[
+              { value: "agent", label: "Agent" },
+              { value: "caller", label: "Caller" },
+            ]}
+            name="sentimentWho"
+          />
 
-        <RadioInput
-          label="Statistic"
-          onChange={(e) => handleQueryInput(e.target.value, "sentimentWhat")}
-          name="sentimentWhat"
-          choices={[
-            { value: "average", label: "Average" },
-            { value: "trend", label: "Trend" },
-          ]}
-        />
-
-        <RadioInput
-          label="Direction"
-          onChange={(e) =>
-            handleQueryInput(e.target.value, "sentimentDirection")
-          }
-          choices={[
-            { value: "positive", label: "Positive" },
-            { value: "negative", label: "Negative" },
-          ]}
-          name="sentimentDirection"
-        />
+          <h6>Statistic</h6>
+          <RadioInput
+            onChange={(e) => handleQueryInput(e.target.value, "sentimentWhat")}
+            name="sentimentWhat"
+            choices={[
+              { value: "average", label: "Average" },
+              { value: "trend", label: "Trend" },
+            ]}
+          />
+          <h6>Trend</h6>
+          <RadioInput
+            onChange={(e) =>
+              handleQueryInput(e.target.value, "sentimentDirection")
+            }
+            choices={[
+              { value: "positive", label: "Positive" },
+              { value: "negative", label: "Negative" },
+            ]}
+            name="sentimentDirection"
+          />
+        </Form.Group>
 
         <Form.Group className="mb-3">
           <Form.Label>
