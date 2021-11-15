@@ -44,10 +44,16 @@ function Search({ setAlert }) {
     handleQueryInput(new Date(end).getTime(), "timestampTo");
   };
 
-  const handleQueryInput = (input, field) => {
-    console.debug({ input });
-    setQuery((q) => ({ ...q, [field]: input }));
+  const filterEmptyKeys = (obj) => {
+    const shouldKeep = (k, v) => (Array.isArray(v) ? v.length > 0 : v !== null);
+
+    return Object.fromEntries(
+      Object.entries(obj).filter(([_, v]) => shouldKeep(v))
+    );
   };
+
+  const handleQueryInput = (input, field) =>
+    setQuery((q) => filterEmptyKeys({ ...q, [field]: input }));
 
   const onClick = () => {
     setEditing(false);
@@ -83,40 +89,45 @@ function Search({ setAlert }) {
             dateFormat="yyyy-MM-dd"
             onChange={handleDates}
             maxDate={new Date()}
+            placeholderText="Select a start and end date"
           />
         </Form.Group>
 
-        <RadioInput
-          label="Sentiment of"
-          onChange={(e) => handleQueryInput(e.target.value, "sentimentWho")}
-          choices={[
-            { value: "agent", label: "Agent" },
-            { value: "caller", label: "Caller" },
-          ]}
-          name="sentimentWho"
-        />
+        <Form.Group className="mb-4">
+          <Form.Label>
+            <h5>Sentiment</h5>
+          </Form.Label>
+          <h6>Sentiment of</h6>
+          <RadioInput
+            onChange={(e) => handleQueryInput(e.target.value, "sentimentWho")}
+            choices={[
+              { value: "agent", label: "Agent" },
+              { value: "caller", label: "Caller" },
+            ]}
+            name="sentimentWho"
+          />
 
-        <RadioInput
-          label="Statistic"
-          onChange={(e) => handleQueryInput(e.target.value, "sentimentWhat")}
-          name="sentimentWhat"
-          choices={[
-            { value: "average", label: "Average" },
-            { value: "trend", label: "Trend" },
-          ]}
-        />
-
-        <RadioInput
-          label="Direction"
-          onChange={(e) =>
-            handleQueryInput(e.target.value, "sentimentDirection")
-          }
-          choices={[
-            { value: "positive", label: "Positive" },
-            { value: "negative", label: "Negative" },
-          ]}
-          name="sentimentDirection"
-        />
+          <h6>Statistic</h6>
+          <RadioInput
+            onChange={(e) => handleQueryInput(e.target.value, "sentimentWhat")}
+            name="sentimentWhat"
+            choices={[
+              { value: "average", label: "Average" },
+              { value: "trend", label: "Trend" },
+            ]}
+          />
+          <h6>Trend</h6>
+          <RadioInput
+            onChange={(e) =>
+              handleQueryInput(e.target.value, "sentimentDirection")
+            }
+            choices={[
+              { value: "positive", label: "Positive" },
+              { value: "negative", label: "Negative" },
+            ]}
+            name="sentimentDirection"
+          />
+        </Form.Group>
 
         <Form.Group className="mb-3">
           <Form.Label>

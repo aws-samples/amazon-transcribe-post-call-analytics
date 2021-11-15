@@ -24,7 +24,7 @@ const Loading = () =>
 
 const NoMatches = ({ children }) => (
   <tr>
-    <td colspan={columns.length}>
+    <td colSpan={columns.length}>
       <div className="d-flex justify-content-center py-4">{children}</div>
     </td>
   </tr>
