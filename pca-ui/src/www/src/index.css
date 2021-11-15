@@ -1,5 +1,18 @@
 @import "react-datepicker/dist/react-datepicker.css";
 
+.react-datepicker__input-container > input {
+  background-color: hsl(0, 0%, 100%);
+  border-color: hsl(0, 0%, 80%);
+  border-radius: 4px;
+  border-style: solid;
+  border-width: 1px;
+  padding: 7px 8px;
+  width: 100%;
+}
+.react-datepicker__input-container > input:focus {
+  outline: 1px solid var(--bs-blue);
+}
+
 img.sentiment {
   display: inline;
   width: 2rem;
