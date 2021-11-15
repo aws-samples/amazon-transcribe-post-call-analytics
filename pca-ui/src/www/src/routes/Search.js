@@ -45,17 +45,15 @@ function Search({ setAlert }) {
   };
 
   const filterEmptyKeys = (obj) => {
-    const shouldKeep = (v) => (Array.isArray(v) ? v.length > 0 : v !== null);
+    const shouldKeep = (k, v) => (Array.isArray(v) ? v.length > 0 : v !== null);
 
     return Object.fromEntries(
       Object.entries(obj).filter(([_, v]) => shouldKeep(v))
     );
   };
 
-  const handleQueryInput = (input, field) => {
-    const newObj = filterEmptyKeys({ ...query, [field]: input });
-    setQuery(newObj);
-  };
+  const handleQueryInput = (input, field) =>
+    setQuery((q) => filterEmptyKeys({ ...q, [field]: input }));
 
   const onClick = () => {
     setEditing(false);
@@ -91,6 +89,7 @@ function Search({ setAlert }) {
             dateFormat="yyyy-MM-dd"
             onChange={handleDates}
             maxDate={new Date()}
+            // placeholderText="Select a start and end date"
           />
         </Form.Group>
 
