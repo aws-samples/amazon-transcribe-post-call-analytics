@@ -89,7 +89,7 @@ function Search({ setAlert }) {
             dateFormat="yyyy-MM-dd"
             onChange={handleDates}
             maxDate={new Date()}
-            // placeholderText="Select a start and end date"
+            placeholderText="Select a start and end date"
           />
         </Form.Group>
 
