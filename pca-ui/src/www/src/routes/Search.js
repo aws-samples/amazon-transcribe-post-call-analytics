@@ -44,9 +44,17 @@ function Search({ setAlert }) {
     handleQueryInput(new Date(end).getTime(), "timestampTo");
   };
 
+  const filterEmptyKeys = (obj) => {
+    const shouldKeep = (v) => (Array.isArray(v) ? v.length > 0 : v !== null);
+
+    return Object.fromEntries(
+      Object.entries(obj).filter(([_, v]) => shouldKeep(v))
+    );
+  };
+
   const handleQueryInput = (input, field) => {
-    console.debug({ input });
-    setQuery((q) => ({ ...q, [field]: input }));
+    const newObj = filterEmptyKeys({ ...query, [field]: input });
+    setQuery(newObj);
   };
 
   const onClick = () => {
