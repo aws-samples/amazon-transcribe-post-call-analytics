@@ -6,8 +6,9 @@ export const Entities = ({ data }) => {
   return data.length ? (
     data.map((e, i) => (
       <ValueWithLabel key={i} label={<span>{toSentenceCase(e.Name)}</span>}>
-        {e.Values.map((x) => (
+        {e.Values.map((x, j) => (
           <Tag
+            key={j}
             className="me-2 mb-1"
             color={`var(--entity-${e.Name.toLowerCase()}`}
           >
