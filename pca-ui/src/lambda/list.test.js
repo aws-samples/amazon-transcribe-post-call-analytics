@@ -37,19 +37,19 @@ describe("list handler", () => {
     });
 
     expect(resp.statusCode).toEqual(200);
-    expect(resp.body.Records).toEqual(
-      JSON.stringify([
-        {
-          key: "parsedFiles/stero_std_295.mp3.json",
-          jobName: "stero_std_295.mp3",
-          confidence: 0.8886063829787236,
-          lang: "en-US",
-          duration: 28.96,
-          timestamp: 1637060698245,
-          location: "America/New_York",
-        },
-      ])
-    );
+
+    const body = JSON.parse(resp.body);
+    expect(body.Records).toEqual([
+      {
+        key: "parsedFiles/stero_std_295.mp3.json",
+        jobName: "stero_std_295.mp3",
+        confidence: 0.8886063829787236,
+        lang: "en-US",
+        duration: 28.96,
+        timestamp: 1637060698245,
+        location: "America/New_York",
+      },
+    ]);
   });
 
   test("it paginates results", async () => {
@@ -104,8 +104,10 @@ describe("list handler", () => {
     const resp = await handler({ queryStringParameters: { count: 2 } });
 
     expect(resp.statusCode).toEqual(200);
-    expect(resp.body.PaginationToken).toEqual(
-      "call#parsedFiles/AutoRepairs2_GUID_2a602c1a-4ca3-4d37-a933-444d575c0222_AGENT_SteveE_DATETIME_08.02.20.342-09-16-2021.wav.json"
+
+    const body = JSON.parse(resp.body);
+    expect(body.PaginationToken).toEqual(
+      "call#parsedFiles/AutoRepairs2_GUID_2a602c1a-4ca3-4d37-a933-444d575c0222_AGENT_SteveE_DATETIME_08.02.20.342-09-16-2021.wav.json#1631779340342"
     );
   });
 });

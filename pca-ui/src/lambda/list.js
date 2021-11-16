@@ -77,20 +77,19 @@ exports.handler = async function (event, context) {
       "access-control-allow-headers": "Content-Type,Authorization",
       "access-control-allow-methods": "OPTIONS,GET",
     },
-    body: {
-      Records: JSON.stringify(
-        res.Items.map((item) => {
-          return JSON.parse(item.Data.S);
-        })
-      ),
-    },
+  };
+
+  const body = {
+    Records: res.Items.map((item) => {
+      return JSON.parse(item.Data.S);
+    }),
   };
 
   if (res.LastEvaluatedKey) {
-    resp.body.PaginationToken = res.LastEvaluatedKey.PK.S;
+    body.PaginationToken = `${res.LastEvaluatedKey.PK.S}#${res.LastEvaluatedKey.TK.N}`;
   }
 
   console.log({ resp });
 
-  return resp;
+  return { ...resp, body: JSON.stringify(body) };
 };

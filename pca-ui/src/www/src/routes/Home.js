@@ -7,7 +7,8 @@ import { useDangerAlert } from "../hooks/useAlert";
 const config = window.pcaSettings;
 
 function Home({ setAlert }) {
-  const fetcher = () => list({ count: config.api.pageSize });
+  const fetcher = () =>
+    list({ count: config.api.pageSize }).then((d) => d.Records);
   const { data, error } = useSWR(`/list`, fetcher);
 
   useDangerAlert(error, setAlert);
