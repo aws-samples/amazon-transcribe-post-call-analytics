@@ -86,7 +86,8 @@ exports.handler = async function (event, context) {
   };
 
   if (res.LastEvaluatedKey) {
-    body.PaginationToken = `${res.LastEvaluatedKey.PK.S}#${res.LastEvaluatedKey.TK.N}`;
+    body.StartKey = res.LastEvaluatedKey.PK.S;
+    body.StartTimestamp = res.LastEvaluatedKey.TK.N;
   }
 
   console.log({ resp });

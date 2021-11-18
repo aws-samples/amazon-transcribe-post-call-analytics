@@ -106,8 +106,9 @@ describe("list handler", () => {
     expect(resp.statusCode).toEqual(200);
 
     const body = JSON.parse(resp.body);
-    expect(body.PaginationToken).toEqual(
-      "call#parsedFiles/AutoRepairs2_GUID_2a602c1a-4ca3-4d37-a933-444d575c0222_AGENT_SteveE_DATETIME_08.02.20.342-09-16-2021.wav.json#1631779340342"
+    expect(body.StartKey).toEqual(
+      "call#parsedFiles/AutoRepairs2_GUID_2a602c1a-4ca3-4d37-a933-444d575c0222_AGENT_SteveE_DATETIME_08.02.20.342-09-16-2021.wav.json"
     );
+    expect(body.StartTimestamp).toEqual("1631779340342");
   });
 });
