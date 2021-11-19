@@ -79,11 +79,11 @@ Resources:
             - Name: speaker_0
               Type: string
             - Name: duration
-              Type: string
+              Type: double
             - Name: conversationtime
               Type: string
             - Name: formatedconversationtime
-              Type: string
+              Type: timestamp
         TableType: VIRTUAL_VIEW
         Parameters:
           presto_view: true
@@ -93,7 +93,7 @@ Resources:
             - - '/* Presto View: '
               - Fn::Base64: !Sub |
                   {
-                  "originalSql": "SELECT regexp_extract(\"$path\", '[^/]+$') filename, conversationanalytics.languagecode, conversationanalytics.speakerlabels[1].displaytext speaker_0, conversationanalytics.duration, conversationanalytics.conversationtime, substr(conversationanalytics.conversationtime, 1, 19) formatedconversationtime FROM ${Database}.${ParsedResultsTable}",
+                  "originalSql": "SELECT regexp_extract(\"$path\", '[^/]+$') filename, conversationanalytics.languagecode, conversationanalytics.speakerlabels[1].displaytext speaker_0, CAST(conversationanalytics.duration AS double) duration, conversationanalytics.conversationtime, date_parse(substr(conversationanalytics.conversationtime, 1, 19), '%Y-%m-%d %H:%i:%s') formatedconversationtime FROM ${Database}.${ParsedResultsTable}",
                   "catalog": "awsdatacatalog",
                   "schema": "${Database}",
                   "columns": [
@@ -111,7 +111,7 @@ Resources:
                     },
                     {
                       "name": "duration",
-                      "type": "varchar"
+                      "type": "double"
                     },
                     {
                       "name": "conversationtime",
@@ -119,7 +119,7 @@ Resources:
                     },
                     {
                       "name": "formatedconversationtime",
-                      "type": "varchar"
+                      "type": "timestamp"
                     }
                   ]
                   }
@@ -146,9 +146,9 @@ Resources:
             - Name: conversationtime
               Type: string
             - Name: duration
-              Type: string
+              Type: double
             - Name: formatedconversationtime
-              Type: string
+              Type: timestamp
             - Name: segmentstarttime
               Type: double
             - Name: segmentendtime
@@ -159,6 +159,8 @@ Resources:
               Type: int
             - Name: sentimentisnegative
               Type: int
+            - Name: sentiment
+              Type: varchar(8)
             - Name: sentimentscore
               Type: double
             - Name: displaytext
@@ -178,7 +180,7 @@ Resources:
             - - '/* Presto View: '
               - Fn::Base64: !Sub |
                   {
-                  "originalSql": "SELECT regexp_extract(\"$path\", '[^/]+$') filename, conversationanalytics.languagecode, conversationanalytics.speakerlabels[1].displaytext speaker_0, conversationanalytics.conversationtime, conversationanalytics.duration, substr(conversationanalytics.conversationtime, 1, 19) formatedconversationtime, segment.segmentstarttime, segment.segmentendtime, segment.segmentspeaker, segment.sentimentispositive, segment.sentimentisnegative, segment.sentimentscore, segment.displaytext, segment.textedited, segment.entitiesdetected, (CASE WHEN ((conversationanalytics.speakerlabels[1].displaytext = 'Agent') AND (segment.segmentspeaker = 'spk_0')) THEN 'Agent' WHEN ((conversationanalytics.speakerlabels[1].displaytext = 'Agent') AND (segment.segmentspeaker = 'spk_1')) THEN 'Caller' END) Speaker FROM (${Database}.${ParsedResultsTable} CROSS JOIN UNNEST(speechsegments) t (segment))",
+                  "originalSql": "SELECT regexp_extract(\"$path\", '[^/]+$') filename, conversationanalytics.languagecode, conversationanalytics.speakerlabels[1].displaytext speaker_0, conversationanalytics.conversationtime, CAST(conversationanalytics.duration AS double) duration, date_parse(substr(conversationanalytics.conversationtime, 1, 19), '%Y-%m-%d %H:%i:%s') formatedconversationtime, segment.segmentstarttime, segment.segmentendtime, segment.segmentspeaker, segment.sentimentispositive, segment.sentimentisnegative, (CASE WHEN (segment.sentimentispositive = 1) THEN 'Positive' WHEN (segment.sentimentisnegative = 1) THEN 'Negative' ELSE 'Neutral' END) sentiment, segment.sentimentscore, segment.displaytext, segment.textedited, segment.entitiesdetected, (CASE WHEN ((conversationanalytics.speakerlabels[1].displaytext = 'Agent') AND (segment.segmentspeaker = 'spk_0')) THEN 'Agent' WHEN ((conversationanalytics.speakerlabels[1].displaytext = 'Agent') AND (segment.segmentspeaker = 'spk_1')) THEN 'Caller' END) Speaker FROM (${Database}.${ParsedResultsTable} CROSS JOIN UNNEST(speechsegments) t (segment))",
                   "catalog": "awsdatacatalog",
                   "schema": "${Database}",
                   "columns": [
@@ -200,11 +202,11 @@ Resources:
                     },
                     {
                       "name": "duration",
-                      "type": "varchar"
+                      "type": "double"
                     },
                     {
                       "name": "formatedconversationtime",
-                      "type": "varchar"
+                      "type": "timestamp"
                     },
                     {
                       "name": "segmentstarttime",
@@ -225,6 +227,10 @@ Resources:
                     {
                       "name": "sentimentisnegative",
                       "type": "integer"
+                    },
+                    {
+                      "name": "sentiment",
+                      "type": "varchar"
                     },
                     {
                       "name": "sentimentscore",
@@ -267,11 +273,11 @@ Resources:
             - Name: languagecode
               Type: string
             - Name: duration
-              Type: string
+              Type: double
             - Name: conversationtime
               Type: string
             - Name: formatedconversationtime
-              Type: string
+              Type: timestamp
             - Name: segmentstarttime
               Type: double
             - Name: segmentendtime
@@ -284,6 +290,8 @@ Resources:
               Type: int
             - Name: sentimentisnegative
               Type: int
+            - Name: sentiment
+              Type: string
             - Name: sentimentscore
               Type: double
             - Name: displaytext
@@ -309,7 +317,7 @@ Resources:
             - - '/* Presto View: '
               - Fn::Base64: !Sub |
                   {
-                  "originalSql": "SELECT filename, languagecode, duration, conversationtime, formatedconversationtime, segmentstarttime, segmentendtime, segmentspeaker, speaker, sentimentispositive, sentimentisnegative, sentimentscore, displaytext, textedited, entity.beginoffset, entity.endoffset, entity.score, entity.text, entity.type FROM(${Database}.${ConversationSegmentsView} CROSS JOIN UNNEST(entitiesdetected) t (entity))",
+                  "originalSql": "SELECT filename, languagecode, duration, conversationtime, formatedconversationtime, segmentstarttime, segmentendtime, segmentspeaker, speaker, sentimentispositive, sentimentisnegative, (CASE WHEN (sentimentispositive = 1) THEN 'Positive' WHEN (sentimentisnegative = 1) THEN 'Negative' ELSE 'Neutral' END) sentiment, sentimentscore, displaytext, textedited, entity.beginoffset, entity.endoffset, entity.score, entity.text, entity.type FROM(${Database}.${ConversationSegmentsView} CROSS JOIN UNNEST(entitiesdetected) t (entity))",
                   "catalog": "awsdatacatalog",
                   "schema": "${Database}",
                   "columns": [
@@ -323,7 +331,7 @@ Resources:
                     },
                     {
                       "name": "duration",
-                      "type": "varchar"
+                      "type": "double"
                     },
                     {
                       "name": "conversationtime",
@@ -331,7 +339,7 @@ Resources:
                     },
                     {
                       "name": "formatedconversationtime",
-                      "type": "varchar"
+                      "type": "timestamp"
                     },
                     {
                       "name": "segmentstarttime",
@@ -356,6 +364,10 @@ Resources:
                     {
                       "name": "sentimentisnegative",
                       "type": "integer"
+                    },
+                    {
+                      "name": "sentiment",
+                      "type": "varchar"
                     },
                     {
                       "name": "sentimentscore",
