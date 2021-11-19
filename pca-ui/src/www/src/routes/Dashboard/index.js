@@ -35,6 +35,9 @@ function Dashboard({ setAlert }) {
   const { key } = useParams();
 
   const { data, error } = useSWR(`/get/${key}`, () => get(key));
+  const isTranscribeCallAnalyticsMode =
+    data?.ConversationAnalytics?.SourceInformation[0]?.TranscribeJobInfo
+      ?.TranscribeApiType === "analytics";
 
   useDangerAlert(error, setAlert);
 
@@ -107,8 +110,7 @@ function Dashboard({ setAlert }) {
       {
         label: "Type",
         value: (d) =>
-          d?.ConversationAnalytics?.SourceInformation[0]?.TranscribeJobInfo
-            ?.TranscribeApiType === "analytics"
+          isTranscribeCallAnalyticsMode
             ? "Transcribe Call Analytics"
             : "Transcribe",
       },
@@ -234,7 +236,7 @@ function Dashboard({ setAlert }) {
           )}
         </Card.Body>
       </Card>
-      {data?.ConversationAnalytics?.CategoriesDetected && (
+      {isTranscribeCallAnalyticsMode && (
         <Card>
           <Card.Header>Categories</Card.Header>
           <Card.Body>
@@ -250,7 +252,7 @@ function Dashboard({ setAlert }) {
           </Card.Body>
         </Card>
       )}
-      {data?.ConversationAnalytics?.IssuesDetected && (
+      {isTranscribeCallAnalyticsMode && (
         <Card>
           <Card.Header>Issues</Card.Header>
           <Card.Body>
