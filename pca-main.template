@@ -131,7 +131,7 @@ Parameters:
 
   SpeakerSeparationType:
     Type: String
-    Default: speaker
+    Default: channel
     AllowedValues:
         - speaker
         - channel
@@ -179,7 +179,7 @@ Parameters:
 
   TranscribeApiMode:
     Type: String
-    Default: standard
+    Default: analytics
     AllowedValues:
         - standard
         - analytics
