@@ -45,7 +45,7 @@ function Search({ setAlert }) {
   };
 
   const filterEmptyKeys = (obj) => {
-    const shouldKeep = (k, v) => (Array.isArray(v) ? v.length > 0 : v !== null);
+    const shouldKeep = (v) => (Array.isArray(v) ? v.length > 0 : v !== null);
 
     return Object.fromEntries(
       Object.entries(obj).filter(([_, v]) => shouldKeep(v))
@@ -168,8 +168,9 @@ const RadioInput = ({ label, onChange, name, choices = [] }) => (
     <Form.Label className="me-3">
       <h5>{label}</h5>
     </Form.Label>
-    {choices.map((c) => (
+    {choices.map((c, i) => (
       <Form.Check
+        key={i}
         onChange={onChange}
         name={name}
         label={c.label}
