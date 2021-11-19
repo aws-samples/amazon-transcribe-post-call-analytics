@@ -234,34 +234,38 @@ function Dashboard({ setAlert }) {
           )}
         </Card.Body>
       </Card>
-      <Card>
-        <Card.Header>Categories</Card.Header>
-        <Card.Body>
-          {!data && !error ? (
-            <Placeholder />
-          ) : (
-            <ListItems
-              data={data?.ConversationAnalytics?.CategoriesDetected.map(
-                (category) => category.Name
-              )}
-            />
-          )}
-        </Card.Body>
-      </Card>
-      <Card>
-        <Card.Header>Issues</Card.Header>
-        <Card.Body>
-          {!data && !error ? (
-            <Placeholder />
-          ) : (
-            <ListItems
-              data={data?.ConversationAnalytics?.IssuesDetected.map(
-                (issue) => issue.Text
-              )}
-            />
-          )}
-        </Card.Body>
-      </Card>
+      {data?.ConversationAnalytics?.CategoriesDetected && (
+        <Card>
+          <Card.Header>Categories</Card.Header>
+          <Card.Body>
+            {!data && !error ? (
+              <Placeholder />
+            ) : (
+              <ListItems
+                data={data?.ConversationAnalytics?.CategoriesDetected.map(
+                  (category) => category.Name
+                )}
+              />
+            )}
+          </Card.Body>
+        </Card>
+      )}
+      {data?.ConversationAnalytics?.IssuesDetected && (
+        <Card>
+          <Card.Header>Issues</Card.Header>
+          <Card.Body>
+            {!data && !error ? (
+              <Placeholder />
+            ) : (
+              <ListItems
+                data={data?.ConversationAnalytics?.IssuesDetected.map(
+                  (issue) => issue.Text
+                )}
+              />
+            )}
+          </Card.Body>
+        </Card>
+      )}
       <Card>
         <Card.Header className="sticky-top pt-3 bg-light">
           <div className="d-inline-flex pb-3">Transcript</div>

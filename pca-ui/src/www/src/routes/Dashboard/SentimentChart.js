@@ -11,9 +11,11 @@ export const SentimentChart = ({ data = {}, speakerOrder = {} }) => {
             borderColor: colours[speakerOrder[speakerId]],
             fill: false,
             spanGaps: true,
-            data: data[speakerId]?.SentimentPerQuarter.map((part, i) => {
-              return part.Score;
-            }),
+            data: (data?.[speakerId]?.SentimentPerQuarter || []).map(
+              (part, i) => {
+                return part.Score;
+              }
+            ),
           };
         }),
       }}
