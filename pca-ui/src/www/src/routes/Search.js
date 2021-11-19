@@ -48,7 +48,7 @@ function Search({ setAlert }) {
     const shouldKeep = (v) => (Array.isArray(v) ? v.length > 0 : v !== null);
 
     return Object.fromEntries(
-      Object.entries(obj).filter(([k, v]) => shouldKeep(v))
+      Object.entries(obj).filter(([_, v]) => shouldKeep(v))
     );
   };
 
