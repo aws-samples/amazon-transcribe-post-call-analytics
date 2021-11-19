@@ -1,6 +1,5 @@
 import React from "react";
 import useSWRInfinite from "swr/infinite";
-import { useSWRConfig } from "swr";
 import { list } from "../api/api";
 import { ContactTable } from "../components/ContactTable";
 import { useDangerAlert } from "../hooks/useAlert";
