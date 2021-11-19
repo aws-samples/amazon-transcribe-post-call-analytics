@@ -139,7 +139,7 @@ Parameters:
 
   TranscribeApiMode:
     Type: String
-    Default: standard
+    Default: analytics
     Description: Specifies which Transcribe API to use for new jobs - must be standard or analytics
 
   CallRedactionTranscript:
