@@ -1271,13 +1271,12 @@ class TranscribeParser:
         # generate JSON results
         output = self.create_json_results()
 
-        # Write out the JSON data to our S3 location and delete the local source
+        # Write out the JSON data to our S3 location
         s3Resource = boto3.resource('s3')
         s3Object = s3Resource.Object(outputS3Bucket, outputS3Key + '/' + self.jsonOutputFilename)
         s3Object.put(
             Body=(bytes(json.dumps(output).encode('UTF-8')))
         )
-        pcacommon.remove_temp_file(json_filepath)
 
         # Index transcript in Kendra, if transcript search is enabled
         kendraIndexId = cf.appConfig[cf.CONF_KENDRA_INDEX_ID]
@@ -1286,7 +1285,10 @@ class TranscribeParser:
             transcript_with_markers = prepare_transcript(json_filepath)
             conversationAnalytics = output["ConversationAnalytics"]
             put_kendra_document(kendraIndexId, analysisUri, conversationAnalytics, transcript_with_markers)
-            
+
+        # delete the local file
+        pcacommon.remove_temp_file(json_filepath)
+
         # Return our filename for re-use later
         return self.jsonOutputFilename
 
