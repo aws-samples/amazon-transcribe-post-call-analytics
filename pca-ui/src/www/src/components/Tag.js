@@ -1,10 +1,7 @@
 import "./Tag.css";
 
-export const Tag = ({ children, className, color }) => (
-  <div
-    style={{ backgroundColor: color }}
-    className={`highlight tag ${className}`}
-  >
+export const Tag = ({ children, className, ...props }) => (
+  <div {...props} className={`highlight tag ${className}`}>
     {children}
   </div>
 );

@@ -1,6 +1,7 @@
 import { Tag } from "../../components/Tag";
 import { Tabs, Tab } from "react-bootstrap";
 import "./Entities.css";
+import { getEntityColor } from "./colours";
 
 export const Entities = ({ data }) => {
   return data.length ? (
@@ -11,7 +12,7 @@ export const Entities = ({ data }) => {
             <Tag
               key={j}
               className="me-2 mb-1"
-              color={`var(--entity-${e.Name.toLowerCase()}`}
+              style={{ "--highlight-colour": getEntityColor(e.Name) }}
             >
               {x}
             </Tag>
