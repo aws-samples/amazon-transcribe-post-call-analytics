@@ -14,6 +14,7 @@ const Entities = {
   PERSON: "hsla(152, 69%, 31%, 0.294)",
   QUANTITY: "hsla(162, 73%, 46%, 0.294)",
   TITLE: "hsla(190, 90%, 50%, 0.294)",
+  DEFAULT: "hsla(300, 90%, 51%, 0.294)",
 };
 
 export const getEntityColor = (type) => {
@@ -22,7 +23,5 @@ export const getEntityColor = (type) => {
     return Entities[type];
   }
 
-  // Custom Colour, what do we do? ¯\_(ツ)_/¯
-
-  return "hsla(255,51%, 51%, 0.294)";
+  return Entities.DEFAULT;
 };
