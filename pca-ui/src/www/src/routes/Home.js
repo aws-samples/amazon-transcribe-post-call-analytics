@@ -19,7 +19,6 @@ function Home({ setAlert }) {
   };
 
   const getKey = (pageIndex, previousPageData) => {
-    console.log({ pageIndex, previousPageData });
     if (previousPageData && !previousPageData.StartKey) return null;
     if (pageIndex === 0) return `/list`;
 
@@ -40,7 +39,8 @@ function Home({ setAlert }) {
     (size > 0 && data && typeof data[size - 1] === "undefined");
   const isEmpty = data?.[0]?.length === 0;
   const isReachingEnd =
-    isEmpty || (data && data[data.length - 1]?.length < config.api.pageSize);
+    isEmpty ||
+    (data && data[data.length - 1].Records?.length < config.api.pageSize);
 
   const details = (data || []).map((d) => d.Records).flat();
   useDangerAlert(error, setAlert);
