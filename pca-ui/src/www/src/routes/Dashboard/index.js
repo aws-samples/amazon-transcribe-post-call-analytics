@@ -16,6 +16,7 @@ import { useDangerAlert } from "../../hooks/useAlert";
 import "./dashboard.css";
 import { VisuallyHidden } from "../../components/VisuallyHidden";
 import { SpeakerTimeChart } from "./SpeakerTimeChart";
+import { getEntityColor } from "./colours";
 
 const Sentiment = ({ score }) => {
   return (
@@ -302,7 +303,10 @@ function Dashboard({ setAlert }) {
                   fn: (match, key) => (
                     <span
                       key={key}
-                      className={`highlight ${e.Type.toLowerCase()}`}
+                      className={`highlight`}
+                      style={{
+                        "--highlight-colour": getEntityColor(e.Type),
+                      }}
                     >
                       <VisuallyHidden>Entity - {e.Type}</VisuallyHidden>
                       {match}
