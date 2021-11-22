@@ -1,22 +1,24 @@
-import { ValueWithLabel } from "../../components/ValueWithLabel";
 import { Tag } from "../../components/Tag";
+import { Tabs, Tab } from "react-bootstrap";
 import "./Entities.css";
 
 export const Entities = ({ data }) => {
   return data.length ? (
-    data.map((e, i) => (
-      <ValueWithLabel key={i} label={<span>{toSentenceCase(e.Name)}</span>}>
-        {e.Values.map((x, j) => (
-          <Tag
-            key={j}
-            className="me-2 mb-1"
-            color={`var(--entity-${e.Name.toLowerCase()}`}
-          >
-            {x}
-          </Tag>
-        ))}
-      </ValueWithLabel>
-    ))
+    <Tabs defaultActiveKey={data[0].Name}>
+      {data.map((e, i) => (
+        <Tab title={toSentenceCase(e.Name)} eventKey={e.Name} className="pt-2">
+          {e.Values.map((x, j) => (
+            <Tag
+              key={j}
+              className="me-2 mb-1"
+              color={`var(--entity-${e.Name.toLowerCase()}`}
+            >
+              {x}
+            </Tag>
+          ))}
+        </Tab>
+      ))}
+    </Tabs>
   ) : (
     <p>No entities detected</p>
   );
