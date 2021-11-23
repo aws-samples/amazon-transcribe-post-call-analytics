@@ -181,10 +181,10 @@ function Dashboard({ setAlert }) {
         <Card.Header>Call Details</Card.Header>
         <Card.Body>
           <Row>
-            {callDetailColumns.map((col) => (
-              <Col>
-                {col.map((entry, i) => (
-                  <ValueWithLabel key={i} label={entry.label}>
+            {callDetailColumns.map((col, i) => (
+              <Col key={i}>
+                {col.map((entry, j) => (
+                  <ValueWithLabel key={j} label={entry.label}>
                     {!data && !error ? (
                       <Placeholder />
                     ) : (

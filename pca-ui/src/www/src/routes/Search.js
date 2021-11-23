@@ -75,6 +75,8 @@ function Search({ setAlert }) {
               label: code,
               value: code,
             }))}
+            isLoading={!languageCodes && !errorLanguageCodes}
+            isClearable={true}
           />
         </Form.Group>
 
@@ -91,42 +93,68 @@ function Search({ setAlert }) {
             maxDate={new Date()}
             placeholderText="Select a start and end date"
           />
+          <Button
+            className="mt-2"
+            variant="outline-secondary"
+            onClick={() => {
+              handleQueryInput(null, "timestampTo");
+              handleQueryInput(null, "timestampFrom");
+            }}
+          >
+            Clear
+          </Button>
         </Form.Group>
 
         <Form.Group className="mb-4">
           <Form.Label>
             <h5>Sentiment</h5>
           </Form.Label>
-          <h6>Sentiment of</h6>
-          <RadioInput
-            onChange={(e) => handleQueryInput(e.target.value, "sentimentWho")}
-            choices={[
-              { value: "agent", label: "Agent" },
-              { value: "caller", label: "Caller" },
-            ]}
-            name="sentimentWho"
-          />
-
-          <h6>Statistic</h6>
-          <RadioInput
-            onChange={(e) => handleQueryInput(e.target.value, "sentimentWhat")}
-            name="sentimentWhat"
-            choices={[
-              { value: "average", label: "Average" },
-              { value: "trend", label: "Trend" },
-            ]}
-          />
-          <h6>Trend</h6>
-          <RadioInput
-            onChange={(e) =>
-              handleQueryInput(e.target.value, "sentimentDirection")
-            }
-            choices={[
-              { value: "positive", label: "Positive" },
-              { value: "negative", label: "Negative" },
-            ]}
-            name="sentimentDirection"
-          />
+          <div className="d-flex  gap-2 mb-3 ">
+            <p>The sentiment</p>
+            <Select
+              className="flex-grow-1"
+              options={["Average", "Trend"].map((o) => ({
+                label: o,
+                value: o.toLowerCase(),
+              }))}
+              onChange={(value) => handleQueryInput(value, "sentimentWhat")}
+              value={query.sentimentWhat}
+              isClearable={true}
+            />
+            <p>of the</p>
+            <Select
+              className="flex-grow-1"
+              options={["Agent", "Caller"].map((o) => ({
+                label: o,
+                value: o.toLowerCase(),
+              }))}
+              onChange={(value) => handleQueryInput(value, "sentimentWho")}
+              value={query.sentimentWho}
+              isClearable={true}
+            />
+            <p>is</p>
+            <Select
+              className="flex-grow-1"
+              options={["Positive", "Negative"].map((o) => ({
+                label: o,
+                value: o.toLowerCase(),
+              }))}
+              onChange={(value) =>
+                handleQueryInput(value, "sentimentDirection")
+              }
+              value={query.sentimentDirection}
+            />
+          </div>
+          <Button
+            variant="outline-secondary"
+            onClick={() => {
+              handleQueryInput(null, "sentimentWhat");
+              handleQueryInput(null, "sentimentWho");
+              handleQueryInput(null, "sentimentDirection");
+            }}
+          >
+            Clear
+          </Button>
         </Form.Group>
 
         <Form.Group className="mb-3">
@@ -139,6 +167,7 @@ function Search({ setAlert }) {
               label: entity,
             }))}
             onChange={(value) => handleQueryInput(value, "entity")}
+            isLoading={!entities && !errorEntities}
           />
         </Form.Group>
         <Button bg={"primary"} onClick={onClick}>
