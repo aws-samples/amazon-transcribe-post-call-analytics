@@ -2,7 +2,6 @@
 Parses the output from an Amazon Transcribe job into turn-by-turn
 speech segments with sentiment analysis scores from Amazon Comprehend
 """
-
 from pathlib import Path
 from datetime import datetime
 from urllib.parse import urlparse
@@ -236,6 +235,14 @@ class TranscribeParser:
             resultsHeaderInfo["SpeakerTime"] = self.extract_analytics_speaker_time(self.asr_output["ConversationCharacteristics"])
             resultsHeaderInfo["CategoriesDetected"] = self.extract_analytics_categories(self.asr_output["Categories"])
             resultsHeaderInfo["IssuesDetected"] = self.issues_detected
+        # For non-analytics mode, we can simulate some analytics data
+        elif self.api_mode == cf.API_STANDARD:
+            # Calculate the speaker time from the speech segments, once per speaker (can't do silent time like this)
+            resultsHeaderInfo["SpeakerTime"] = {}
+            for speaker in resultsHeaderInfo["SpeakerLabels"]:
+                speaker_label = speaker["Speaker"]
+                speaker_time = sum((segment.segmentEndTime - segment.segmentStartTime) for segment in self.speechSegmentList if segment.segmentSpeaker == speaker_label)
+                resultsHeaderInfo["SpeakerTime"][speaker_label] = {"TotalTimeSecs": speaker_time}
 
         # Detected custom entity summaries next
         customEntityList = []
@@ -942,9 +949,6 @@ class TranscribeParser:
                     nextSpeechSegment.segmentNegative = 1.0
                     nextSpeechSegment.segmentSentimentScore = COMPREHEND_SENTIMENT_SCALER
 
-            # Extract other Analytics-only metadata from the file
-            self.extract_analytics_speaker_time(self.asr_output["ConversationCharacteristics"])
-
         # Inject sentiments into the segment list
         self.extract_nlp(speechSegmentList)
 
@@ -1314,6 +1318,9 @@ if __name__ == "__main__":
     # Standard test event
     event = {
         "bucket": "ak-cci-input",
+        "key": "originalAudio/0a.93.a0.3e.00.00-16.22.53.402-09-05-2019.wav",
+        "apiMode": "standard",
+        "jobName": "0a.93.a0.3e.00.00-16.22.53.402-09-05-2019.wav",
         # "key": "originalAudio/mono.wav",
         # "apiMode": "standard",
         # "jobName": "mono.wav",
@@ -1323,9 +1330,9 @@ if __name__ == "__main__":
         # "key": "originalAudio/stereo.mp3",
         # "apiMode": "analytics",
         # "jobName": "stereo.mp3",
-        "key": "originalAudio/example-call.wav",
-        "apiMode": "analytics",
-        "jobName": "example-call.wav",
+        # "key": "originalAudio/example-call.wav",
+        # "apiMode": "analytics",
+        # "jobName": "example-call.wav",
         "langCode": "en-US",
         "transcribeStatus": "COMPLETED"
     }
