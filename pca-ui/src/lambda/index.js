@@ -55,7 +55,7 @@ async function createRecord(record) {
     const callerId =
       parsed.ConversationAnalytics.SpeakerLabels.find(
         (labelObj) => labelObj.DisplayText === "Customer"
-      )?.Speaker || defaultId;
+      ).Speaker || defaultId;
 
     let data = JSON.stringify({
       key: key,

@@ -4,12 +4,13 @@ import { Formatter } from "../format";
 import { Placeholder } from "./Placeholder";
 
 const columns = [
-  { label: "#", value: (d, i) => <a href={`/dashboard/${d.key}`}>{i}</a> },
+  // { label: "#", value: (d, i) => <a href={`/dashboard/${d.key}`}>{i}</a> },
   { label: "Job Name", value: (d) => d.jobName },
   { label: "Timestamp", value: (d) => Formatter.Timestamp(d.timestamp) },
+  { label: "Caller Sentiment", value: (d) => d?.callerSentimentScore },
   {
-    label: "Average Word Confidence",
-    value: (d) => Formatter.Percentage(d.confidence),
+    label: "Caller Sentiment Trend",
+    value: (d) => d?.callerSentimentChange,
   },
   { label: "Language Code", value: (d) => d.lang },
   { label: "Call Duration", value: (d) => Formatter.Time(d.duration) },
@@ -57,7 +58,7 @@ export const ContactTable = ({ data = [], loading = false, empty }) => {
           data.map((row, i) => (
             <tr className="contact-table" key={i} onClick={(e) => onClick(row)}>
               {columns.map((c, j) => (
-                <td key={j}>{c.value(row, i)}</td>
+                <td key={j}>{c.value(row, i) || "-"}</td>
               ))}
             </tr>
           ))
