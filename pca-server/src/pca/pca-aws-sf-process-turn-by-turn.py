@@ -5,6 +5,7 @@ speech segments with sentiment analysis scores from Amazon Comprehend
 from pathlib import Path
 from datetime import datetime
 from urllib.parse import urlparse
+from math import floor
 import pcaconfiguration as cf
 import pcacommon
 from pcakendrasearch import prepare_transcript, put_kendra_document
@@ -138,44 +139,59 @@ class TranscribeParser:
                                               speaker_trend["SentimentPerQuarter"][0]["Score"]
         else:
             # Speaker scores / trends using aggregated data from Comprehend
+            # Start by initialising data structures for the sentiment total and change
             speakerTurns = 0
             sumSentiment = 0.0
-            firstSentiment = 0.0
-            finalSentiment = 0.0
+
+            # Initialise data for the per-quarter scores
+            quarter_scores = []
+            for quarter in range(1,5):
+                quarter_block = {
+                    "Quarter": quarter,
+                    "Score": 0.0,
+                    "BeginOffsetSecs": 0.0,
+                    "EndOffsetSecs": 0.0,
+                    "datapoints": 0
+                }
+                quarter_scores.append(quarter_block)
+
+            # Loop through each speech segment for this speaker
             for segment in self.speechSegmentList:
                 if segment.segmentSpeaker == speaker:
-                    # Increment our counter for number of speaker turns and update the last turn score
+                    # Increment our counter for number of speaker turns and work out our call quarter offset,
+                    # and we decide which quarter a segment is in by where middle of the segment lies
                     speakerTurns += 1
+                    segment_midpoint = segment.segmentStartTime + \
+                                       (segment.segmentEndTime - segment.segmentStartTime) / 2
+                    quarter_offset = min(floor((segment_midpoint * 4) / self.duration), 3)
 
+                    # Update some quarter-based values that are separate from sentiment
+                    quarter_scores[quarter_offset]["datapoints"] += 1
+                    if quarter_scores[quarter_offset]["BeginOffsetSecs"] == 0.0:
+                        quarter_scores[quarter_offset]["BeginOffsetSecs"] = segment.segmentStartTime
+                    quarter_scores[quarter_offset]["EndOffsetSecs"] = segment.segmentEndTime
+
+                    # Only really interested in Positive/Negative turns for the sentiment scores
                     if segment.segmentIsPositive or segment.segmentIsNegative:
-                        # Only really interested in Positive/Negative turns for the stats.  We need to
-                        # average out the calls between +/- 5, so we sum each turn as follows:
-                        # ([sentiment] - [sentimentBase]) / (5 - [sentimentBase])
-                        # with the answer positive/negative based on the sentiment.  We rebase as we have
-                        # thresholds to declare turns as pos/neg, so might be in the range 1.5-5.00. but
-                        # Need this changed to 0.00-5.00
-                        if segment.segmentIsPositive:
-                            sentimentBase = self.min_sentiment_positive
-                            signModifier = 1.0
-                        else:
-                            sentimentBase = self.min_sentiment_negative
-                            signModifier = -1.0
+                        # Calculate score and add it to (-ve) or subtract it from (-ve) our total
+                        turn_score = segment.segmentSentimentScore
+                        if segment.segmentIsNegative:
+                            turn_score *= -1
+                        sumSentiment += turn_score
 
-                        # Calculate score and add it to our total
-                        turnScore = signModifier * ((segment.segmentSentimentScore - sentimentBase) / (COMPREHEND_SENTIMENT_SCALER - sentimentBase))
-                        sumSentiment += turnScore
+                        # Update our quarter tracker
+                        quarter_scores[quarter_offset]["Score"] += turn_score
 
-                        # Assist to first-turn score if this is us, and update the last-turn
-                        # score, as we dont' know if this is the last turn for this speaker
-                        if speakerTurns == 1:
-                            firstSentiment = turnScore
-                        finalSentiment = turnScore
-                    else:
-                        finalSentiment = 0.0
+            # Create the average score per quarter, and drop the datapoints field (as it's o longer needed)
+            for quarter in quarter_scores:
+                points = max(quarter["datapoints"], 1)
+                quarter["Score"] /= points
+                quarter.pop("datapoints", None)
 
             # Log our trends for this speaker
-            speaker_trend["SentimentChange"] = finalSentiment - firstSentiment
+            speaker_trend["SentimentChange"] = quarter_scores[-1]["Score"] - quarter_scores[0]["Score"]
             speaker_trend["SentimentScore"] = sumSentiment / max(speakerTurns, 1)
+            speaker_trend["SentimentPerQuarter"] = quarter_scores
 
         return speaker_trend
 
