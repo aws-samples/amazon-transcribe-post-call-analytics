@@ -21,13 +21,13 @@ import { FiTrendingDown, FiTrendingUp } from "react-icons/fi";
 import { MdTrendingFlat } from "react-icons/md";
 
 const Sentiment = ({ score, trend }) => {
-  let trendLabel
+  let trendLabel;
   if (trend >= 0.4) {
-    trendLabel = <FiTrendingUp color="green" size="2.5em"/>;
+    trendLabel = <FiTrendingUp color="green" size="2.5em" />;
   } else if (trend <= -0.4) {
-    trendLabel = <FiTrendingDown color="red" size="2.5em"/>;
+    trendLabel = <FiTrendingDown color="red" size="2.5em" />;
   } else {
-    trendLabel = < MdTrendingFlat color="grey" size="2.5em"/>;
+    trendLabel = <MdTrendingFlat color="grey" size="2.5em" />;
   }
   return (
     <span className="d-flex gap-2 align-items-center">
