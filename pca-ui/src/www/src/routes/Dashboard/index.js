@@ -17,21 +17,22 @@ import "./dashboard.css";
 import { VisuallyHidden } from "../../components/VisuallyHidden";
 import { SpeakerTimeChart } from "./SpeakerTimeChart";
 import { getEntityColor } from "./colours";
+import { FiTrendingDown, FiTrendingUp } from "react-icons/fi";
+import { MdTrendingFlat } from "react-icons/md";
 
 const Sentiment = ({ score, trend }) => {
-  let trendLabel = "";
+  let trendLabel
   if (trend >= 0.4) {
-    trendLabel = "positive";
+    trendLabel = <FiTrendingUp color="green" size="2.5em"/>;
   } else if (trend <= -0.4) {
-    trendLabel = "negative";
+    trendLabel = <FiTrendingDown color="red" size="2.5em"/>;
   } else {
-    trendLabel = "neutral";
+    trendLabel = < MdTrendingFlat color="grey" size="2.5em"/>;
   }
   return (
     <span className="d-flex gap-2 align-items-center">
-      <SentimentIcon score={score} />
-      {score}
-      <label>Trend is: {trendLabel}</label>
+      Sentiment: <SentimentIcon score={score} />
+      Trend: {trendLabel}
     </span>
   );
 };
