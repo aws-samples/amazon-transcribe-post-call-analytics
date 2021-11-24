@@ -17,12 +17,22 @@ import "./dashboard.css";
 import { VisuallyHidden } from "../../components/VisuallyHidden";
 import { SpeakerTimeChart } from "./SpeakerTimeChart";
 import { getEntityColor } from "./colours";
+import { FiTrendingDown, FiTrendingUp } from "react-icons/fi";
+import { MdTrendingFlat } from "react-icons/md";
 
-const Sentiment = ({ score }) => {
+const Sentiment = ({ score, trend }) => {
+  let trendLabel;
+  if (trend >= 0.4) {
+    trendLabel = <FiTrendingUp color="green" size="2.5em" />;
+  } else if (trend <= -0.4) {
+    trendLabel = <FiTrendingDown color="red" size="2.5em" />;
+  } else {
+    trendLabel = <MdTrendingFlat color="grey" size="2.5em" />;
+  }
   return (
-    <span>
-      <SentimentIcon score={score} />
-      {score}
+    <span className="d-flex gap-2 align-items-center">
+      Sentiment: <SentimentIcon score={score} />
+      Trend: {trendLabel}
     </span>
   );
 };
@@ -62,10 +72,9 @@ function Dashboard({ setAlert }) {
     }
   };
 
-  const getSentimentScore = (d, target) => {
+  const getSentimentTrends = (d, target) => {
     const id = Object.entries(speakerLabels).find(([_, v]) => v === target)[0];
-    const targetObj = d?.ConversationAnalytics?.SentimentTrends[id];
-    return targetObj?.SentimentScore;
+    return d?.ConversationAnalytics?.SentimentTrends[id];
   };
 
   const setAudioCurrentTime = (e) => {
@@ -97,11 +106,21 @@ function Dashboard({ setAlert }) {
       },
       {
         label: "Agent Sentiment",
-        value: (d) => <Sentiment score={getSentimentScore(d, "Agent")} />,
+        value: (d) => (
+          <Sentiment
+            score={getSentimentTrends(d, "Agent")?.SentimentScore}
+            trend={getSentimentTrends(d, "Agent")?.SentimentChange}
+          />
+        ),
       },
       {
         label: "Customer Sentiment",
-        value: (d) => <Sentiment score={getSentimentScore(d, "Caller")} />,
+        value: (d) => (
+          <Sentiment
+            score={getSentimentTrends(d, "Caller")?.SentimentScore}
+            trend={getSentimentTrends(d, "Caller")?.SentimentChange}
+          />
+        ),
       },
     ],
   ];

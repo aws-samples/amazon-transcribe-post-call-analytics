@@ -15,5 +15,5 @@ export const SentimentIcon = ({ score }) => {
     alt = "neutral sentiment";
     icon = Neutral;
   }
-  return <img className="me-2 sentiment-icon" src={icon} alt={alt} />;
+  return <img className="sentiment-icon" src={icon} alt={alt} />;
 };
