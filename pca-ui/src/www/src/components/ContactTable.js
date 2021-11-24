@@ -4,7 +4,6 @@ import { Formatter } from "../format";
 import { Placeholder } from "./Placeholder";
 
 const columns = [
-  // { label: "#", value: (d, i) => <a href={`/dashboard/${d.key}`}>{i}</a> },
   { label: "Job Name", value: (d) => d.jobName },
   { label: "Timestamp", value: (d) => Formatter.Timestamp(d.timestamp) },
   { label: "Caller Sentiment", value: (d) => d?.callerSentimentScore },
