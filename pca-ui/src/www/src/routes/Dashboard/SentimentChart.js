@@ -9,8 +9,10 @@ export const SentimentChart = ({ data = {}, speakerOrder = {} }) => {
           return {
             label: speakerOrder[speakerId],
             backgroundColor: colours[speakerOrder[speakerId]],
+            borderColor: colours[speakerOrder[speakerId]],
             fill: false,
             spanGaps: true,
+            tension: 0.5,
             data: (data?.[speakerId]?.SentimentPerQuarter || []).map(
               (part, i) => {
                 return part.Score;
@@ -45,5 +47,10 @@ const options = {
     text: "Call Sentiment over time",
     display: true,
     position: "bottom",
+  },
+  plugins: {
+    legend: {
+      onClick: null,
+    },
   },
 };
