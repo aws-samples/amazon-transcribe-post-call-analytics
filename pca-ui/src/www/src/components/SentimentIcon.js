@@ -1,19 +1,13 @@
-import Smile from "../images/smile.png";
-import Frown from "../images/frown.png";
-import Neutral from "../images/neutral.png";
+import { FiSmile, FiMeh, FiFrown } from "react-icons/fi";
 
-export const SentimentIcon = ({ score }) => {
-  let icon;
-  let alt;
+export const SentimentIcon = ({ score, size = "1.5em" }) => {
   if (score > 0) {
-    icon = Smile;
-    alt = "positive sentiment";
-  } else if (score < 0) {
-    icon = Frown;
-    alt = "negative sentiment";
-  } else {
-    alt = "neutral sentiment";
-    icon = Neutral;
+    return <FiSmile color="green" size={size} />;
   }
-  return <img className="sentiment-icon" src={icon} alt={alt} />;
+
+  if (score < 0) {
+    return <FiFrown color="red" size={size} />;
+  }
+
+  return <FiMeh color="grey" size={size} />;
 };

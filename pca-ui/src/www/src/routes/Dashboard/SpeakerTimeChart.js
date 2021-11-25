@@ -26,6 +26,9 @@ export const SpeakerTimeChart = ({ data = [] }) => {
             )}`,
         },
       },
+      legend: {
+        onClick: null,
+      },
     },
   };
 

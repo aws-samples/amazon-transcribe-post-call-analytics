@@ -28,10 +28,6 @@ const Sentiment = ({ score, trend }) => {
   );
 };
 
-const filterKey = (obj = {}, keyToRemove) =>
-  Object.fromEntries(
-    Object.entries(obj).filter(([key]) => key !== keyToRemove)
-  );
 
 function Dashboard({ setAlert }) {
   const { key } = useParams();
@@ -43,7 +39,7 @@ function Dashboard({ setAlert }) {
 
   useDangerAlert(error, setAlert);
 
-  const [speakerLabels, setSpeakerLabels] = useState({
+  const [speakerLabels, _] = useState({
     spk_0: "Agent",
     spk_1: "Caller",
     NonTalkTime: "Silence",
@@ -73,100 +69,92 @@ function Dashboard({ setAlert }) {
     a.currentTime = e.target.dataset.currenttime;
   };
 
-  const callDetailColumns = [
-    [
-      {
-        label: "Timestamp",
-        value: (d) => d?.ConversationAnalytics?.ConversationTime,
-      },
-      { label: "Guid", value: (d) => d?.ConversationAnalytics?.GUID },
-      { label: "Agent", value: (d) => d?.ConversationAnalytics?.Agent },
-      {
-        label: "Call Duration",
-        value: (d) => Formatter.Time(d.ConversationAnalytics.Duration),
-      },
-    ],
-    [
-      {
-        label: "Entity Recognizer Name",
-        value: (d) => d?.ConversationAnalytics?.EntityRecognizerName,
-      },
-      {
-        label: "Language Code",
-        value: (d) => d?.ConversationAnalytics?.LanguageCode,
-      },
-      {
-        label: "Agent Sentiment",
-        value: (d) => (
-          <Sentiment
-            score={getSentimentTrends(d, "Agent")?.SentimentScore}
-            trend={getSentimentTrends(d, "Agent")?.SentimentChange}
-          />
-        ),
-      },
-      {
-        label: "Customer Sentiment",
-        value: (d) => (
-          <Sentiment
-            score={getSentimentTrends(d, "Caller")?.SentimentScore}
-            trend={getSentimentTrends(d, "Caller")?.SentimentChange}
-          />
-        ),
-      },
-    ],
+  const callDetailColumn = [
+    {
+      label: "Timestamp",
+      value: (d) => d?.ConversationAnalytics?.ConversationTime.substring(0, 19),
+    },
+    { label: "Guid", value: (d) => d?.ConversationAnalytics?.GUID },
+    { label: "Agent", value: (d) => d?.ConversationAnalytics?.Agent },
+    {
+      label: "Call Duration",
+      value: (d) => Formatter.Time(d.ConversationAnalytics.Duration),
+    },
+    {
+      label: "Entity Recognizer Name",
+      value: (d) => d?.ConversationAnalytics?.EntityRecognizerName,
+    },
+    {
+      label: "Language Code",
+      value: (d) => d?.ConversationAnalytics?.LanguageCode,
+    },
+    {
+      label: "Agent Sentiment",
+      value: (d) => (
+        <Sentiment
+          score={getSentimentTrends(d, "Agent")?.SentimentScore}
+          trend={getSentimentTrends(d, "Agent")?.SentimentChange}
+        />
+      ),
+    },
+    {
+      label: "Customer Sentiment",
+      value: (d) => (
+        <Sentiment
+          score={getSentimentTrends(d, "Caller")?.SentimentScore}
+          trend={getSentimentTrends(d, "Caller")?.SentimentChange}
+        />
+      ),
+    },
   ];
 
-  const transcribeDetailColumns = [
-    [
-      {
-        label: "Type",
-        value: (d) =>
-          isTranscribeCallAnalyticsMode
-            ? "Transcribe Call Analytics"
-            : "Transcribe",
-      },
-      {
-        label: "Job Id",
-        value: (d) =>
-          d?.ConversationAnalytics?.SourceInformation[0]?.TranscribeJobInfo
-            ?.TranscriptionJobName,
-      },
-      {
-        label: "File Format",
-        value: (d) =>
-          d?.ConversationAnalytics?.SourceInformation[0]?.TranscribeJobInfo
-            ?.MediaFormat,
-      },
-    ],
-    [
-      {
-        label: "Sample Rate",
-        value: (d) =>
-          d?.ConversationAnalytics?.SourceInformation[0]?.TranscribeJobInfo
-            ?.MediaSampleRateHertz,
-      },
+  const transcribeDetailColumn = [
+    {
+      label: "Type",
+      value: (d) =>
+        isTranscribeCallAnalyticsMode
+          ? "Transcribe Call Analytics"
+          : "Transcribe",
+    },
+    {
+      label: "Job Id",
+      value: (d) =>
+        d?.ConversationAnalytics?.SourceInformation[0]?.TranscribeJobInfo
+          ?.TranscriptionJobName,
+    },
+    {
+      label: "File Format",
+      value: (d) =>
+        d?.ConversationAnalytics?.SourceInformation[0]?.TranscribeJobInfo
+          ?.MediaFormat,
+    },
+    {
+      label: "Sample Rate",
+      value: (d) =>
+        d?.ConversationAnalytics?.SourceInformation[0]?.TranscribeJobInfo
+          ?.MediaSampleRateHertz,
+    },
 
-      {
-        label: "Custom Vocabulary",
-        value: (d) =>
-          d?.ConversationAnalytics?.SourceInformation[0]?.TranscribeJobInfo
-            ?.VocabularyName,
-      },
-      {
-        label: "Vocabulary Filter",
-        value: (d) =>
+    {
+      label: "Custom Vocabulary",
+      value: (d) =>
+        d?.ConversationAnalytics?.SourceInformation[0]?.TranscribeJobInfo
+          ?.VocabularyName,
+    },
+    {
+      label: "Vocabulary Filter",
+      value: (d) =>
+        d.ConversationAnalytics.SourceInformation[0]?.TranscribeJobInfo
+          ?.VocabularyFilter,
+    },
+    {
+      label: "Average Word Confidence",
+      value: (d) =>
+        Formatter.Percentage(
           d.ConversationAnalytics.SourceInformation[0]?.TranscribeJobInfo
-            ?.VocabularyFilter,
-      },
-      {
-        label: "Average Word Confidence",
-        value: (d) =>
-          Formatter.Percentage(
-            d.ConversationAnalytics.SourceInformation[0]?.TranscribeJobInfo
-              ?.AverageWordConfidence
-          ),
-      },
-    ],
+            ?.AverageWordConfidence
+        ),
+    },
   ];
 
   return (
@@ -177,13 +165,13 @@ function Dashboard({ setAlert }) {
           Swap Agent/Caller
         </Button>
       </div>
-      <Card>
-        <Card.Header>Call Details</Card.Header>
-        <Card.Body>
-          <Row>
-            {callDetailColumns.map((col, i) => (
-              <Col key={i}>
-                {col.map((entry, j) => (
+      <div className="d-flex flex-nowrap gap-2">
+        <Card className="flex-grow-1">
+          <Card.Header>Call Details</Card.Header>
+          <Card.Body>
+            <Row>
+              <Col>
+                {callDetailColumn.map((entry, j) => (
                   <ValueWithLabel key={j} label={entry.label}>
                     {!data && !error ? (
                       <Placeholder />
@@ -193,17 +181,15 @@ function Dashboard({ setAlert }) {
                   </ValueWithLabel>
                 ))}
               </Col>
-            ))}
-          </Row>
-        </Card.Body>
-      </Card>
-      <Card>
-        <Card.Header>Transcribe Details</Card.Header>
-        <Card.Body>
-          <Row>
-            {transcribeDetailColumns.map((col) => (
+            </Row>
+          </Card.Body>
+        </Card>
+        <Card>
+          <Card.Header>Transcribe Details</Card.Header>
+          <Card.Body>
+            <Row>
               <Col>
-                {col.map((entry, i) => (
+                {transcribeDetailColumn.map((entry, i) => (
                   <ValueWithLabel key={i} label={entry.label}>
                     {!data && !error ? (
                       <Placeholder />
@@ -213,30 +199,37 @@ function Dashboard({ setAlert }) {
                   </ValueWithLabel>
                 ))}
               </Col>
-            ))}
-            <Col>
-              <ValueWithLabel label="Sentiment Chart">
-                <SentimentChart
-                  data={data?.ConversationAnalytics?.SentimentTrends}
-                  speakerOrder={speakerLabels}
-                />
-              </ValueWithLabel>
-
-              <ValueWithLabel label="Speaker Time Chart">
-                <SpeakerTimeChart
-                  data={Object.entries(
-                    data?.ConversationAnalytics?.SpeakerTime || {}
-                  ).map(([key, value]) => ({
-                    value: value.TotalTimeSecs,
-                    label: speakerLabels[key],
-                  }))}
-                  speakerOrder={speakerLabels}
-                />
-              </ValueWithLabel>
-            </Col>
-          </Row>
-        </Card.Body>
-      </Card>
+            </Row>
+          </Card.Body>
+        </Card>
+        <Card className="flex-grow-1">
+          <Card.Body>
+            <Row>
+              <Col>
+                <div>
+                  <h5 className="text-muted">Sentiment</h5>
+                  <SentimentChart
+                    data={data?.ConversationAnalytics?.SentimentTrends}
+                    speakerOrder={speakerLabels}
+                  />
+                </div>
+                <div>
+                  <h5 className="text-muted">Speaker Time</h5>
+                  <SpeakerTimeChart
+                    data={Object.entries(
+                      data?.ConversationAnalytics?.SpeakerTime || {}
+                    ).map(([key, value]) => ({
+                      value: value.TotalTimeSecs,
+                      label: speakerLabels[key],
+                    }))}
+                    speakerOrder={speakerLabels}
+                  />
+                </div>
+              </Col>
+            </Row>
+          </Card.Body>
+        </Card>
+      </div>
       <Card>
         <Card.Header>Entities</Card.Header>
         <Card.Body>
