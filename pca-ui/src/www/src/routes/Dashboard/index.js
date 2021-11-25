@@ -8,6 +8,7 @@ import { Entities } from "./Entities";
 import { ValueWithLabel } from "../../components/ValueWithLabel";
 import { SentimentIcon } from "../../components/SentimentIcon";
 import { Placeholder } from "../../components/Placeholder";
+import { TrendIcon } from "../../components/TrendIcon";
 import { Button, Card, Col, Row, Stack } from "react-bootstrap";
 import { SentimentChart } from "./SentimentChart";
 import { ListItems } from "./ListItems";
@@ -17,22 +18,12 @@ import "./dashboard.css";
 import { VisuallyHidden } from "../../components/VisuallyHidden";
 import { SpeakerTimeChart } from "./SpeakerTimeChart";
 import { getEntityColor } from "./colours";
-import { FiTrendingDown, FiTrendingUp } from "react-icons/fi";
-import { MdTrendingFlat } from "react-icons/md";
 
 const Sentiment = ({ score, trend }) => {
-  let trendLabel;
-  if (trend >= 0.4) {
-    trendLabel = <FiTrendingUp color="green" size="2.5em" />;
-  } else if (trend <= -0.4) {
-    trendLabel = <FiTrendingDown color="red" size="2.5em" />;
-  } else {
-    trendLabel = <MdTrendingFlat color="grey" size="2.5em" />;
-  }
   return (
     <span className="d-flex gap-2 align-items-center">
       Sentiment: <SentimentIcon score={score} />
-      Trend: {trendLabel}
+      Trend: <TrendIcon trend={trend} />
     </span>
   );
 };

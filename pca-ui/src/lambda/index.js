@@ -51,16 +51,26 @@ async function createRecord(record) {
     ).getTime();
     console.log("Timestamp:", timestamp);
 
-  let data = JSON.stringify({
-    key: key,
-    jobName: jobInfo.TranscriptionJobName,
-    confidence: jobInfo.AverageWordConfidence,
-    lang: parsed.ConversationAnalytics.LanguageCode,
-    duration:
-      parsed.SpeechSegments[parsed.SpeechSegments.length - 1].SegmentEndTime,
-    timestamp: timestamp,
-    location: parsed.ConversationAnalytics.ConversationLocation,
-  });
+    const defaultId = "spk_1";
+    const callerId =
+      parsed.ConversationAnalytics.SpeakerLabels.find(
+        (labelObj) => labelObj.DisplayText === "Customer"
+      ).Speaker || defaultId;
+
+    let data = JSON.stringify({
+      key: key,
+      jobName: jobInfo.TranscriptionJobName,
+      confidence: jobInfo.AverageWordConfidence,
+      lang: parsed.ConversationAnalytics.LanguageCode,
+      duration:
+        parsed.SpeechSegments[parsed.SpeechSegments.length - 1].SegmentEndTime,
+      timestamp: timestamp,
+      location: parsed.ConversationAnalytics.ConversationLocation,
+      callerSentimentScore:
+        parsed.ConversationAnalytics.SentimentTrends[callerId].SentimentScore,
+      callerSentimentChange:
+        parsed.ConversationAnalytics.SentimentTrends[callerId].SentimentChange,
+    });
   console.log("Data:", data);
 
     const callId = `call#${key}`;

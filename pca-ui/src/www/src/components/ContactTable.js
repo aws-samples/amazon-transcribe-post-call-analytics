@@ -2,14 +2,19 @@ import { Table } from "react-bootstrap";
 import { useHistory } from "react-router-dom";
 import { Formatter } from "../format";
 import { Placeholder } from "./Placeholder";
+import { SentimentIcon } from "./SentimentIcon";
+import { TrendIcon } from "./TrendIcon";
 
 const columns = [
-  { label: "#", value: (d, i) => <a href={`/dashboard/${d.key}`}>{i}</a> },
   { label: "Job Name", value: (d) => d.jobName },
   { label: "Timestamp", value: (d) => Formatter.Timestamp(d.timestamp) },
   {
-    label: "Average Word Confidence",
-    value: (d) => Formatter.Percentage(d.confidence),
+    label: "Caller Sentiment",
+    value: (d) => <SentimentIcon score={d?.callerSentimentScore} />,
+  },
+  {
+    label: "Caller Sentiment Trend",
+    value: (d) => <TrendIcon trend={d.callerSentimentChange} />,
   },
   { label: "Language Code", value: (d) => d.lang },
   { label: "Call Duration", value: (d) => Formatter.Time(d.duration) },
@@ -57,7 +62,7 @@ export const ContactTable = ({ data = [], loading = false, empty }) => {
           data.map((row, i) => (
             <tr className="contact-table" key={i} onClick={(e) => onClick(row)}>
               {columns.map((c, j) => (
-                <td key={j}>{c.value(row, i)}</td>
+                <td key={j}>{c.value(row, i) || "-"}</td>
               ))}
             </tr>
           ))
