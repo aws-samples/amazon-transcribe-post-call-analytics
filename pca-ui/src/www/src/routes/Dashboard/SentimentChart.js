@@ -8,7 +8,7 @@ export const SentimentChart = ({ data = {}, speakerOrder = {} }) => {
         datasets: Object.keys(data).map((speakerId) => {
           return {
             label: speakerOrder[speakerId],
-            borderColor: colours[speakerOrder[speakerId]],
+            backgroundColor: colours[speakerOrder[speakerId]],
             fill: false,
             spanGaps: true,
             data: (data?.[speakerId]?.SentimentPerQuarter || []).map(
