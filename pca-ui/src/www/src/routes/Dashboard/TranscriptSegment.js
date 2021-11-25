@@ -1,6 +1,6 @@
 import { SentimentIcon } from "../../components/SentimentIcon";
 import { Formatter } from "../../format";
-import { Badge, Col, Row } from "react-bootstrap";
+import { Badge } from "react-bootstrap";
 
 export const TranscriptSegment = ({
   name,
@@ -12,11 +12,11 @@ export const TranscriptSegment = ({
   interruption,
   aboveText,
 }) => (
-  <Row className="mb-4">
-    <Col sm={1} className="pt-3">
-      <SentimentIcon score={score} />
-    </Col>
-    <Col>
+  <div className="mb-4 d-flex flex-row flex-nowrap gap-3">
+    <div className="d-flex align-items-center">
+      <SentimentIcon score={score} size="2em" />
+    </div>
+    <div className="flex-grow-1">
       <span className={"text-muted segment"}>
         {name} -{" "}
         <span
@@ -34,8 +34,8 @@ export const TranscriptSegment = ({
       )}
       {aboveText && <div>{aboveText}</div>}
       <div>{applyReplacements(text, highlightLocations)}</div>
-    </Col>
-  </Row>
+    </div>
+  </div>
 );
 
 // substituteAt replaces a subset of a string with the value of the fn provided.
