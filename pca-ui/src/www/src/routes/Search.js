@@ -92,8 +92,21 @@ function Search({ setAlert }) {
               value: code,
             }))}
             isLoading={!languageCodes && !errorLanguageCodes}
-            isClearable={true}
+            value={
+              query.language
+                ? { label: query.language, value: query.language }
+                : null
+            }
           />
+          <Button
+            className="mt-2"
+            variant="outline-secondary"
+            onClick={() => {
+              handleQueryInput(null, "language");
+            }}
+          >
+            Clear
+          </Button>
         </Form.Group>
 
         <Form.Group className="mb-3">
