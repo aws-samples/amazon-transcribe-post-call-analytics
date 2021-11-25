@@ -81,7 +81,7 @@ function Search({ setAlert }) {
     <>
       <h3>Search</h3>
       <Form className="mb-5">
-        <Form.Group className="mb-3">
+        <Form.Group className="mb-4">
           <Form.Label>
             <h5>Language Code</h5>
           </Form.Label>
@@ -109,7 +109,7 @@ function Search({ setAlert }) {
           </Button>
         </Form.Group>
 
-        <Form.Group className="mb-3">
+        <Form.Group className="mb-4">
           <Form.Label>
             <h5>Date Range</h5>
           </Form.Label>
@@ -189,7 +189,7 @@ function Search({ setAlert }) {
           </Button>
         </Form.Group>
 
-        <Form.Group className="mb-3">
+        <Form.Group className="mb-4">
           <Form.Label>
             <h5>Entities</h5>
           </Form.Label>
@@ -222,26 +222,6 @@ const NoMatches = () => (
     <h2>No Matches</h2>
     <p>Please try a different query</p>
   </div>
-);
-
-const RadioInput = ({ label, onChange, name, choices = [] }) => (
-  <Form.Group className="mb-3">
-    <Form.Label className="me-3">
-      <h5>{label}</h5>
-    </Form.Label>
-    {choices.map((c, i) => (
-      <Form.Check
-        key={i}
-        onChange={onChange}
-        name={name}
-        label={c.label}
-        type="radio"
-        value={c.value}
-        inline
-      />
-    ))}
-    <Form.Text></Form.Text>
-  </Form.Group>
 );
 
 export default Search;
