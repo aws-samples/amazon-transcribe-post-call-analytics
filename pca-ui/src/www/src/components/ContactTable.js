@@ -2,14 +2,19 @@ import { Table } from "react-bootstrap";
 import { useHistory } from "react-router-dom";
 import { Formatter } from "../format";
 import { Placeholder } from "./Placeholder";
+import { SentimentIcon } from "./SentimentIcon";
+import { TrendIcon } from "./TrendIcon";
 
 const columns = [
   { label: "Job Name", value: (d) => d.jobName },
   { label: "Timestamp", value: (d) => Formatter.Timestamp(d.timestamp) },
-  { label: "Caller Sentiment", value: (d) => d?.callerSentimentScore },
+  {
+    label: "Caller Sentiment",
+    value: (d) => <SentimentIcon score={d?.callerSentimentScore} />,
+  },
   {
     label: "Caller Sentiment Trend",
-    value: (d) => d?.callerSentimentChange,
+    value: (d) => <TrendIcon trend={d.callerSentimentChange} />,
   },
   { label: "Language Code", value: (d) => d.lang },
   { label: "Call Duration", value: (d) => Formatter.Time(d.duration) },
