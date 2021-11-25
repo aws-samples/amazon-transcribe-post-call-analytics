@@ -18,7 +18,6 @@ const Entities = {
 };
 
 export const getEntityColor = (type) => {
-  console.log({ type, present: type in Entities });
   if (type in Entities) {
     return Entities[type];
   }

@@ -44,10 +44,10 @@ async function createRecord(record) {
     console.log("Parsed:", parsed);
 
     const jobInfo =
-        parsed.ConversationAnalytics.SourceInformation[0].TranscribeJobInfo;
+      parsed.ConversationAnalytics.SourceInformation[0].TranscribeJobInfo;
 
     let timestamp = new Date(
-        parsed.ConversationAnalytics.ConversationTime
+      parsed.ConversationAnalytics.ConversationTime
     ).getTime();
     console.log("Timestamp:", timestamp);
 
@@ -71,7 +71,7 @@ async function createRecord(record) {
       callerSentimentChange:
         parsed.ConversationAnalytics.SentimentTrends[callerId].SentimentChange,
     });
-  console.log("Data:", data);
+    console.log("Data:", data);
 
     const callId = `call#${key}`;
 
@@ -81,43 +81,23 @@ async function createRecord(record) {
     // Sentiment entries
     const sentiments = parsed.ConversationAnalytics.SentimentTrends;
 
-    if(sentiments.length > 0) {
-        items.push(
-            makeItem(
-                callId,
-                `sentiment#caller#average`,
-                sentiments[0].AverageSentiment,
-                data
-            )
-        );
-        items.push(
-            makeItem(
-                callId,
-                `sentiment#caller#trend`,
-                sentiments[0].SentimentChange,
-                data
-            )
-        );
-    }
+    Object.entries(sentiments).map(([k, v]) => {
+      items.push(
+        makeItem(
+          callId,
+          `sentiment#${k === callerId ? "caller" : "agent"}#average`,
+          v.SentimentScore,
+          data
+        ),
+        makeItem(
+          callId,
+          `sentiment#${k === callerId ? "caller" : "agent"}#trend`,
+          v.SentimentChange,
+          data
+        )
+      );
+    });
 
-    if(sentiments.length > 1) {
-        items.push(
-            makeItem(
-                callId,
-                `sentiment#agent#average`,
-                sentiments[1].AverageSentiment,
-                data
-            )
-        );
-        items.push(
-            makeItem(
-                callId,
-                `sentiment#agent#trend`,
-                sentiments[1].SentimentChange,
-                data
-            )
-        );
-    }
 
     // Entities
     parsed.ConversationAnalytics.CustomEntities.forEach((entity) => {
