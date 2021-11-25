@@ -1,5 +1,6 @@
 import { Line } from "react-chartjs-2";
 import { colours } from "./colours";
+
 export const SentimentChart = ({ data = {}, speakerOrder = {} }) => {
   return (
     <Line
@@ -38,6 +39,9 @@ const options = {
       min: -5,
       max: 5,
       title: { text: "Score", display: true },
+      ticks: {
+        callback: (value) => (value % 5 === 0 ? value : null),
+      },
     },
   },
   legend: {
