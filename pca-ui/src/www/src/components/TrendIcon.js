@@ -1,7 +1,7 @@
 import { FiTrendingDown, FiTrendingUp } from "react-icons/fi";
 import { MdTrendingFlat } from "react-icons/md";
 
-export const TrendIcon = ({ trend, size = "2.5em" }) => {
+export const TrendIcon = ({ trend, size = "1.5em" }) => {
   if (trend >= 0.4) {
     return <FiTrendingUp color="green" size={size} />;
   }
