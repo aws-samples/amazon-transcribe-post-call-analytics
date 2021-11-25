@@ -12,6 +12,22 @@ import { useDangerAlert } from "../hooks/useAlert";
 import { MultiSelect } from "../components/MultiSelect";
 import { Select } from "../components/Select";
 
+
+const sentimentWhat = [
+  { value: "average", label: "Average" },
+  { value: "trend", label: "Trend" },
+];
+
+const sentimentWho = [
+  { value: "caller", label: "Caller" },
+  { value: "agent", label: "Agent" },
+];
+
+const sentimentDirection = [
+  { value: "positive", label: "Positive" },
+  { value: "negative", label: "Negative" },
+];
+
 function Search({ setAlert }) {
   const [editing, setEditing] = useState(true);
   const [query, setQuery] = useState({});
@@ -109,43 +125,46 @@ function Search({ setAlert }) {
           <Form.Label>
             <h5>Sentiment</h5>
           </Form.Label>
-          <div className="d-flex  gap-2 mb-3 ">
-            <p>The sentiment</p>
+          <div className="d-flex  gap-3">
+            <p className="align-self-end mb-0">The sentiment</p>
             <Select
               className="flex-grow-1"
-              options={["Average", "Trend"].map((o) => ({
-                label: o,
-                value: o.toLowerCase(),
-              }))}
-              onChange={(value) => handleQueryInput(value, "sentimentWhat")}
-              value={query.sentimentWhat}
-              isClearable={true}
-            />
-            <p>of the</p>
-            <Select
-              className="flex-grow-1"
-              options={["Agent", "Caller"].map((o) => ({
-                label: o,
-                value: o.toLowerCase(),
-              }))}
-              onChange={(value) => handleQueryInput(value, "sentimentWho")}
-              value={query.sentimentWho}
-              isClearable={true}
-            />
-            <p>is</p>
-            <Select
-              className="flex-grow-1"
-              options={["Positive", "Negative"].map((o) => ({
-                label: o,
-                value: o.toLowerCase(),
-              }))}
-              onChange={(value) =>
-                handleQueryInput(value, "sentimentDirection")
+              options={sentimentWhat}
+              onChange={(event) =>
+                handleQueryInput(event.value, "sentimentWhat")
               }
-              value={query.sentimentDirection}
+              value={
+                sentimentWhat.find((o) => o.value === query.sentimentWhat) ||
+                null
+              }
+            />
+            <p className="align-self-end mb-0">of the</p>
+            <Select
+              className="flex-grow-1"
+              options={sentimentWho}
+              onChange={(event) =>
+                handleQueryInput(event.value, "sentimentWho")
+              }
+              value={
+                sentimentWho.find((o) => o.value === query.sentimentWho) || null
+              }
+            />
+            <p className="align-self-end mb-0">is</p>
+            <Select
+              className="flex-grow-1"
+              options={sentimentDirection}
+              onChange={(event) =>
+                handleQueryInput(event.value, "sentimentDirection")
+              }
+              value={
+                sentimentDirection.find(
+                  (o) => o.value === query.sentimentDirection
+                ) || null
+              }
             />
           </div>
           <Button
+            className="mt-2"
             variant="outline-secondary"
             onClick={() => {
               handleQueryInput(null, "sentimentWhat");
