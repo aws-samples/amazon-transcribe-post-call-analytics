@@ -110,7 +110,7 @@ Parameters:
 
   SpeakerNames:
     Type: String
-    Default: Agent | Caller
+    Default: Caller | Agent
     Description: >-
         Tags used for speaker names in transcripts, in channel/speaker order, separated by " | ".
         For Call Analytics the name Agent must exist in either the first or second posision
