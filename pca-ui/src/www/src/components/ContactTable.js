@@ -4,9 +4,12 @@ import { Formatter } from "../format";
 import { Placeholder } from "./Placeholder";
 import { SentimentIcon } from "./SentimentIcon";
 import { TrendIcon } from "./TrendIcon";
-
+import "./ContactTable.css";
 const columns = [
-  { label: "Job Name", value: (d) => d.jobName },
+  {
+    label: "Job Name",
+    value: (d) => d.jobName,
+  },
   { label: "Timestamp", value: (d) => Formatter.Timestamp(d.timestamp) },
   {
     label: "Customer Sentiment",
@@ -47,7 +50,9 @@ export const ContactTable = ({ data = [], loading = false, empty }) => {
       <thead>
         <tr>
           {columns.map((c, i) => (
-            <th key={i}>{c.label}</th>
+            <th className="text-muted text-uppercase" key={i}>
+              {c.label}
+            </th>
           ))}
         </tr>
       </thead>
@@ -62,7 +67,9 @@ export const ContactTable = ({ data = [], loading = false, empty }) => {
           data.map((row, i) => (
             <tr className="contact-table" key={i} onClick={(e) => onClick(row)}>
               {columns.map((c, j) => (
-                <td key={j}>{c.value(row, i) || "-"}</td>
+                <td className="fs-5 col" key={j}>
+                  {c.value(row, i) || "-"}
+                </td>
               ))}
             </tr>
           ))
