@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "react-router";
 import useSWR from "swr";
 import { get, swap } from "../../api/api";
@@ -28,6 +28,11 @@ const Sentiment = ({ score, trend }) => {
   );
 };
 
+const getSentimentTrends = (d, target, labels) => {
+  const id = Object.entries(labels).find(([_, v]) => v === target)?.[0];
+  if (!id) return {};
+  return d?.ConversationAnalytics?.SentimentTrends[id];
+};
 
 function Dashboard({ setAlert }) {
   const { key } = useParams();
@@ -39,11 +44,17 @@ function Dashboard({ setAlert }) {
 
   useDangerAlert(error, setAlert);
 
-  const [speakerLabels, _] = useState({
-    spk_0: "Agent",
-    spk_1: "Caller",
+  const [speakerLabels, setSpeakerLabels] = useState({
     NonTalkTime: "Silence",
   });
+
+  useEffect(() => {
+    const labels = data?.ConversationAnalytics?.SpeakerLabels || [];
+    labels.map(({ Speaker, DisplayText }) => {
+      console.log({ Speaker, DisplayText });
+      return setSpeakerLabels((s) => ({ ...s, [Speaker]: DisplayText }));
+    });
+  }, [data]);
 
   const swapAgent = async () => {
     try {
@@ -57,11 +68,6 @@ function Dashboard({ setAlert }) {
         text: "Unable to swap agent. Please try again later",
       });
     }
-  };
-
-  const getSentimentTrends = (d, target) => {
-    const id = Object.entries(speakerLabels).find(([_, v]) => v === target)[0];
-    return d?.ConversationAnalytics?.SentimentTrends[id];
   };
 
   const setAudioCurrentTime = (e) => {
@@ -92,8 +98,8 @@ function Dashboard({ setAlert }) {
       label: "Agent Sentiment",
       value: (d) => (
         <Sentiment
-          score={getSentimentTrends(d, "Agent")?.SentimentScore}
-          trend={getSentimentTrends(d, "Agent")?.SentimentChange}
+          score={getSentimentTrends(d, "Agent", speakerLabels)?.SentimentScore}
+          trend={getSentimentTrends(d, "Agent", speakerLabels)?.SentimentChange}
         />
       ),
     },
@@ -101,8 +107,12 @@ function Dashboard({ setAlert }) {
       label: "Customer Sentiment",
       value: (d) => (
         <Sentiment
-          score={getSentimentTrends(d, "Caller")?.SentimentScore}
-          trend={getSentimentTrends(d, "Caller")?.SentimentChange}
+          score={
+            getSentimentTrends(d, "Customer", speakerLabels)?.SentimentScore
+          }
+          trend={
+            getSentimentTrends(d, "Customer", speakerLabels)?.SentimentChange
+          }
         />
       ),
     },

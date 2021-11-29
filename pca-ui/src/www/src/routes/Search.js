@@ -19,7 +19,7 @@ const sentimentWhat = [
 ];
 
 const sentimentWho = [
-  { value: "caller", label: "Caller" },
+  { value: "caller", label: "Customer" },
   { value: "agent", label: "Agent" },
 ];
 
@@ -81,7 +81,7 @@ function Search({ setAlert }) {
     <>
       <h3>Search</h3>
       <Form className="mb-5">
-        <Form.Group className="mb-4">
+        <Form.Group className="mb-5">
           <Form.Label>
             <h5>Language Code</h5>
           </Form.Label>
@@ -109,7 +109,7 @@ function Search({ setAlert }) {
           </Button>
         </Form.Group>
 
-        <Form.Group className="mb-4">
+        <Form.Group className="mb-5">
           <Form.Label>
             <h5>Date Range</h5>
           </Form.Label>
@@ -134,7 +134,7 @@ function Search({ setAlert }) {
           </Button>
         </Form.Group>
 
-        <Form.Group className="mb-4">
+        <Form.Group className="mb-5">
           <Form.Label>
             <h5>Sentiment</h5>
           </Form.Label>
@@ -189,7 +189,7 @@ function Search({ setAlert }) {
           </Button>
         </Form.Group>
 
-        <Form.Group className="mb-4">
+        <Form.Group className="mb-5">
           <Form.Label>
             <h5>Entities</h5>
           </Form.Label>
