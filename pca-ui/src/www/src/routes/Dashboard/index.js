@@ -180,8 +180,8 @@ function Dashboard({ setAlert }) {
           Swap Agent/Caller
         </Button>
       </div>
-      <div className="d-flex  gap-2 flex-wrap flex-lg-nowrap">
-        <Card className="call-details-col flex-fill flex-lg-nofill">
+      <div className="d-flex gap-2 flex-wrap flex-lg-nowrap">
+        <Card className="call-details-col">
           <Card.Header>Call Details</Card.Header>
           <Card.Body>
             <Row>
@@ -199,7 +199,7 @@ function Dashboard({ setAlert }) {
             </Row>
           </Card.Body>
         </Card>
-        <Card className="transcribe-col flex-lg-nofill ">
+        <Card className="transcribe-col">
           <Card.Header>Transcribe Details</Card.Header>
           <Card.Body>
             <Row>
@@ -217,7 +217,7 @@ function Dashboard({ setAlert }) {
             </Row>
           </Card.Body>
         </Card>
-        <Card className="charts flex-lg-nofill">
+        <Card className="charts">
           <Card.Body>
             <Row>
               <Col>
