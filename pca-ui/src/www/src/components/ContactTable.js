@@ -10,6 +10,7 @@ const columns = [
   { label: "Timestamp", value: (d) => Formatter.Timestamp(d.timestamp) },
   {
     label: "Customer Sentiment",
+    value: (d) => <SentimentIcon score={d?.callerSentimentScore} />,
   },
   {
     label: "Customer Sentiment Trend",
