@@ -28,6 +28,7 @@ export const SentimentChart = ({ data = {}, speakerOrder = {} }) => {
 };
 
 const options = {
+  aspectRatio: 1.7,
   scales: {
     xAxes: {
       display: true,
