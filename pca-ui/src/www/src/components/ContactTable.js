@@ -9,11 +9,10 @@ const columns = [
   { label: "Job Name", value: (d) => d.jobName },
   { label: "Timestamp", value: (d) => Formatter.Timestamp(d.timestamp) },
   {
-    label: "Caller Sentiment",
-    value: (d) => <SentimentIcon score={d?.callerSentimentScore} />,
+    label: "Customer Sentiment",
   },
   {
-    label: "Caller Sentiment Trend",
+    label: "Customer Sentiment Trend",
     value: (d) => <TrendIcon trend={d.callerSentimentChange} />,
   },
   { label: "Language Code", value: (d) => d.lang },
