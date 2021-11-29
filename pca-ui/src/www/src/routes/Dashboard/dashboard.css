@@ -3,14 +3,13 @@
 }
 
 .charts {
-  min-width: clamp(400px, 50% ,600px);
-  flex: 2 2 500px;
+  flex: 2 0 300px;
 }
 
 .transcribe-col {
-  flex: 1 1 250px;
+  flex: 1 1 550px;
 
 }
 .call-details-col {
-  flex: 1 1 250px;
+  flex: 1 1 550px;
 }
