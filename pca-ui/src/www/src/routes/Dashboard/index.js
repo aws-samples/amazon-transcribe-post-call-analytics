@@ -18,6 +18,7 @@ import "./dashboard.css";
 import { VisuallyHidden } from "../../components/VisuallyHidden";
 import { SpeakerTimeChart } from "./SpeakerTimeChart";
 import { getEntityColor } from "./colours";
+import { TranscriptOverlay } from "./TranscriptOverlay";
 import { Tag } from "../../components/Tag";
 
 const Sentiment = ({ score, trend }) => {
@@ -329,30 +330,23 @@ function Dashboard({ setAlert }) {
                     start: e.BeginOffset,
                     end: e.EndOffset,
                     fn: (match, key) => (
-                      <span
+                      <TranscriptOverlay
                         key={key}
-                        className={`highlight`}
-                        style={{
-                          "--highlight-colour": getEntityColor(e.Type),
-                        }}
+                        colour={getEntityColor(e.Type)}
                       >
                         <VisuallyHidden>Entity - {e.Type}</VisuallyHidden>
                         {match}
-                      </span>
+                      </TranscriptOverlay>
                     ),
                   })),
                   ...s.IssuesDetected.map((issue) => ({
                     start: issue.BeginOffset,
                     end: issue.EndOffset,
                     fn: (match, key) => (
-                      <span
-                        key={key}
-                        className="highlight"
-                        style={{ "--highlight-colour": "yellow" }}
-                      >
-                        <VisuallyHidden>Issue - {i}</VisuallyHidden>
+                      <TranscriptOverlay key={key} colour="yellow">
+                        <VisuallyHidden>Issue</VisuallyHidden>
                         {match}
-                      </span>
+                      </TranscriptOverlay>
                     ),
                   })),
                 ]}
