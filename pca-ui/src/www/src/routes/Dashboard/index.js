@@ -128,9 +128,14 @@ function Dashboard({ setAlert }) {
     },
     {
       label: "Job Id",
-      value: (d) =>
-        d?.ConversationAnalytics?.SourceInformation[0]?.TranscribeJobInfo
-          ?.TranscriptionJobName,
+      value: (d) => (
+        <div className="text-break">
+          {
+            d?.ConversationAnalytics?.SourceInformation[0]?.TranscribeJobInfo
+              ?.TranscriptionJobName
+          }
+        </div>
+      ),
     },
     {
       label: "File Format",
@@ -175,8 +180,8 @@ function Dashboard({ setAlert }) {
           Swap Agent/Caller
         </Button>
       </div>
-      <div className="d-flex flex-nowrap gap-2">
-        <Card className="flex-grow-1">
+      <div className="d-flex gap-2 flex-wrap flex-lg-nowrap">
+        <Card className="call-details-col">
           <Card.Header>Call Details</Card.Header>
           <Card.Body>
             <Row>
@@ -194,7 +199,7 @@ function Dashboard({ setAlert }) {
             </Row>
           </Card.Body>
         </Card>
-        <Card>
+        <Card className="transcribe-col">
           <Card.Header>Transcribe Details</Card.Header>
           <Card.Body>
             <Row>
@@ -212,7 +217,7 @@ function Dashboard({ setAlert }) {
             </Row>
           </Card.Body>
         </Card>
-        <Card className="flex-grow-1">
+        <Card className="charts">
           <Card.Body>
             <Row>
               <Col>

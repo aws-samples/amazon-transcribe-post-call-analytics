@@ -2,3 +2,15 @@
   background-color: var(--highlight-colour);
 }
 
+.charts {
+  min-width: clamp(400px, 50% ,600px);
+  flex: 2 2 500px;
+}
+
+.transcribe-col {
+  flex: 1 1 250px;
+
+}
+.call-details-col {
+  flex: 1 1 250px;
+}
