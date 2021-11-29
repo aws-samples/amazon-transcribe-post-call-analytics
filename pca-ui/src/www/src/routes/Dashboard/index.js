@@ -199,7 +199,7 @@ function Dashboard({ setAlert }) {
             </Row>
           </Card.Body>
         </Card>
-        <Card className="transcribe-col flex-fill flex-lg-nofill flex-grow-1">
+        <Card className="transcribe-col flex-lg-nofill ">
           <Card.Header>Transcribe Details</Card.Header>
           <Card.Body>
             <Row>
@@ -217,7 +217,7 @@ function Dashboard({ setAlert }) {
             </Row>
           </Card.Body>
         </Card>
-        <Card className="flex-grow-1 charts flex-fill flex-lg-nofill">
+        <Card className="charts flex-lg-nofill">
           <Card.Body>
             <Row>
               <Col>
