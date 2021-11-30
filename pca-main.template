@@ -126,7 +126,7 @@ Parameters:
 
   SpeakerNames:
     Type: String
-    Default: Agent | Caller
+    Default: Caller | Agent
     Description: Default tags used for speaker names, separated by " | "
 
   SpeakerSeparationType:
@@ -698,7 +698,7 @@ Outputs:
     Description: S3 Bucket prefix/folder for uploading input audio files
     Value: !Ref InputBucketRawAudio
 
-  OutPutBucket:
+  OutputBucket:
     Description: S3 Bucket where Transcribe output files are delivered
     Value:
       !If
@@ -706,7 +706,7 @@ Outputs:
       - !Ref OutputBucket
       - !Ref OutputBucketName  
     
-  OutPutBucketPrefix:
+  OutputBucketPrefix:
     Description: S3 Bucket path where Transcribe output files are delivered
     Value: !Ref OutputBucketParsedResults
 
