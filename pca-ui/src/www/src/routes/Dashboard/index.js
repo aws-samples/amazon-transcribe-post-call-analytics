@@ -333,8 +333,8 @@ function Dashboard({ setAlert }) {
                       <TranscriptOverlay
                         key={key}
                         colour={getEntityColor(e.Type)}
+                        visuallyHidden={`Entity - ${e.Type}`}
                       >
-                        <VisuallyHidden>Entity - {e.Type}</VisuallyHidden>
                         {match}
                       </TranscriptOverlay>
                     ),
@@ -343,9 +343,13 @@ function Dashboard({ setAlert }) {
                     start: issue.BeginOffset,
                     end: issue.EndOffset,
                     fn: (match, key) => (
-                      <TranscriptOverlay key={key} colour="yellow">
-                        <VisuallyHidden>Issue</VisuallyHidden>
-                        {match}
+                      <TranscriptOverlay
+                        key={key}
+                        colour="yellow"
+                        visuallyHidden="Issue: "
+                        tooltip="Issue"
+                      >
+                        ISSUE: {match}
                       </TranscriptOverlay>
                     ),
                   })),
