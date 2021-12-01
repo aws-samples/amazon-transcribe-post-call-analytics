@@ -18,6 +18,8 @@ import "./dashboard.css";
 import { VisuallyHidden } from "../../components/VisuallyHidden";
 import { SpeakerTimeChart } from "./SpeakerTimeChart";
 import { getEntityColor } from "./colours";
+import { TranscriptOverlay } from "./TranscriptOverlay";
+import { Tag } from "../../components/Tag";
 
 const Sentiment = ({ score, trend }) => {
   return (
@@ -280,7 +282,15 @@ function Dashboard({ setAlert }) {
             ) : (
               <ListItems
                 data={data?.ConversationAnalytics?.IssuesDetected.map(
-                  (issue) => issue.Text
+                  (issue) => (
+                    <Tag
+                      style={{
+                        "--highlight-colour": "yellow",
+                      }}
+                    >
+                      {issue.Text}
+                    </Tag>
+                  )
                 )}
               />
             )}
@@ -315,22 +325,35 @@ function Dashboard({ setAlert }) {
                 segmentStart={s.SegmentStartTime}
                 text={s.DisplayText}
                 onClick={setAudioCurrentTime}
-                highlightLocations={s.EntitiesDetected.map((e) => ({
-                  start: e.BeginOffset,
-                  end: e.EndOffset,
-                  fn: (match, key) => (
-                    <span
-                      key={key}
-                      className={`highlight`}
-                      style={{
-                        "--highlight-colour": getEntityColor(e.Type),
-                      }}
-                    >
-                      <VisuallyHidden>Entity - {e.Type}</VisuallyHidden>
-                      {match}
-                    </span>
-                  ),
-                }))}
+                highlightLocations={[
+                  ...s.EntitiesDetected.map((e) => ({
+                    start: e.BeginOffset,
+                    end: e.EndOffset,
+                    fn: (match, key) => (
+                      <TranscriptOverlay
+                        key={key}
+                        colour={getEntityColor(e.Type)}
+                        visuallyHidden={`Entity - ${e.Type}`}
+                      >
+                        {match}
+                      </TranscriptOverlay>
+                    ),
+                  })),
+                  ...s.IssuesDetected.map((issue) => ({
+                    start: issue.BeginOffset,
+                    end: issue.EndOffset,
+                    fn: (match, key) => (
+                      <TranscriptOverlay
+                        key={key}
+                        colour="yellow"
+                        visuallyHidden="Issue: "
+                        tooltip="Issue"
+                      >
+                        ISSUE: {match}
+                      </TranscriptOverlay>
+                    ),
+                  })),
+                ]}
                 score={s.SentimentIsPositive - s.SentimentIsNegative}
                 interruption={s.SegmentInterruption}
                 aboveText={
