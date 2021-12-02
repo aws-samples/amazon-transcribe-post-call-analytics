@@ -30,7 +30,11 @@ const createLoudnessData = (segment) => {
   const start = Math.floor(segment.SegmentStartTime);
   const end = Math.floor(segment.SegmentEndTime);
   const r = range(start, end);
-  return r.map((item, i) => ({ x: item, y: segment.LoudnessScores[i] }));
+  return r.map((item, i) => ({
+    x: item,
+    y: segment.LoudnessScores[i],
+    interruption: segment.SegmentInterruption && item === start ? 100 : null,
+  }));
 };
 
 function Dashboard({ setAlert }) {
