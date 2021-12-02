@@ -6,34 +6,31 @@ import { Formatter } from "../../format";
 import { TranscriptSegment } from "./TranscriptSegment";
 import { Entities } from "./Entities";
 import { ValueWithLabel } from "../../components/ValueWithLabel";
-import { SentimentIcon } from "../../components/SentimentIcon";
 import { Placeholder } from "../../components/Placeholder";
-import { TrendIcon } from "../../components/TrendIcon";
+import { Tag } from "../../components/Tag";
 import { Button, Card, Col, Row, Stack } from "react-bootstrap";
 import { SentimentChart } from "./SentimentChart";
+import { LoudnessChart } from "./LoudnessChart";
+import { SpeakerTimeChart } from "./SpeakerTimeChart";
 import { ListItems } from "./ListItems";
 import { useDangerAlert } from "../../hooks/useAlert";
-
 import "./dashboard.css";
-import { VisuallyHidden } from "../../components/VisuallyHidden";
-import { SpeakerTimeChart } from "./SpeakerTimeChart";
 import { getEntityColor } from "./colours";
 import { TranscriptOverlay } from "./TranscriptOverlay";
-import { Tag } from "../../components/Tag";
-
-const Sentiment = ({ score, trend }) => {
-  return (
-    <span className="d-flex gap-2 align-items-center">
-      Sentiment: <SentimentIcon score={score} />
-      Trend: <TrendIcon trend={trend} />
-    </span>
-  );
-};
+import { range } from "../../util";
+import { Sentiment } from "../../components/Sentiment";
 
 const getSentimentTrends = (d, target, labels) => {
   const id = Object.entries(labels).find(([_, v]) => v === target)?.[0];
   if (!id) return {};
   return d?.ConversationAnalytics?.SentimentTrends[id];
+};
+
+const createLoudnessData = (segment) => {
+  const start = Math.floor(segment.SegmentStartTime);
+  const end = Math.floor(segment.SegmentEndTime);
+  const r = range(start, end);
+  return r.map((item, i) => ({ x: item, y: segment.LoudnessScores[i] }));
 };
 
 function Dashboard({ setAlert }) {
@@ -50,13 +47,25 @@ function Dashboard({ setAlert }) {
     NonTalkTime: "Silence",
   });
 
+  const getValueFor = (input) =>
+    Object.entries(speakerLabels).find(([_, label]) => label === input)?.[0];
+
   useEffect(() => {
     const labels = data?.ConversationAnalytics?.SpeakerLabels || [];
     labels.map(({ Speaker, DisplayText }) => {
-      console.log({ Speaker, DisplayText });
       return setSpeakerLabels((s) => ({ ...s, [Speaker]: DisplayText }));
     });
   }, [data]);
+
+  const agentLoudness = (data?.SpeechSegments || [])
+    .filter((segment) => segment.SegmentSpeaker === getValueFor("Agent"))
+    .map(createLoudnessData)
+    .flat();
+
+  const customerLoudness = (data?.SpeechSegments || [])
+    .filter((segment) => segment.SegmentSpeaker === getValueFor("Customer"))
+    .map(createLoudnessData)
+    .flat();
 
   const swapAgent = async () => {
     try {
@@ -241,6 +250,14 @@ function Dashboard({ setAlert }) {
                     }))}
                     speakerOrder={speakerLabels}
                   />
+                </div>
+                <div>
+                  <h5 className="text-muted">Customer Loudness</h5>
+                  <LoudnessChart data={customerLoudness} caller="Customer" />
+                </div>
+                <div>
+                  <h5 className="text-muted">Agent Loudness</h5>
+                  <LoudnessChart data={agentLoudness} caller="Agent" />
                 </div>
               </Col>
             </Row>
