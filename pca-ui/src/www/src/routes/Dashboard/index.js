@@ -370,7 +370,7 @@ function Dashboard({ setAlert }) {
                         visuallyHidden="Issue: "
                         tooltip="Issue"
                       >
-                        ISSUE: {match}
+                        <span className="text-danger">[ISSUE]</span>: {match}
                       </TranscriptOverlay>
                     ),
                   })),
