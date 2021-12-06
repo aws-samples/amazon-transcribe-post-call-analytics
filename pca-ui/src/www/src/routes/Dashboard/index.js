@@ -190,14 +190,14 @@ function Dashboard({ setAlert }) {
   return (
     <Stack direction="vertical" gap={4}>
       <div>
-        <h3 className="d-inline">Contact Summary</h3>
+        <h3 className="d-inline">Call Details </h3>
         <Button onClick={swapAgent} className="float-end">
           Swap Agent/Caller
         </Button>
       </div>
       <div className="d-flex gap-2 flex-wrap flex-lg-nowrap">
         <Card className="call-details-col">
-          <Card.Header>Call Details</Card.Header>
+          <Card.Header>Record Details</Card.Header>
           <Card.Body>
             <Row>
               <Col>
@@ -367,7 +367,6 @@ function Dashboard({ setAlert }) {
                       <TranscriptOverlay
                         key={key}
                         colour="yellow"
-                        visuallyHidden="Issue: "
                         tooltip="Issue"
                       >
                         <span className="text-danger">[ISSUE]</span>: {match}
