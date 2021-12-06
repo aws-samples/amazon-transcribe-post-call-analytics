@@ -56,8 +56,11 @@ function Search({ setAlert }) {
   const handleDates = (dates) => {
     const [start, end] = dates;
 
-    handleQueryInput(new Date(start).getTime(), "timestampFrom");
-    handleQueryInput(new Date(end).getTime(), "timestampTo");
+    const timestampFrom = new Date(start).getTime();
+    const timestampTo = end ? new Date(end).setUTCHours(23, 59, 59, 999) : null;
+
+    handleQueryInput(timestampFrom, "timestampFrom");
+    handleQueryInput(timestampTo, "timestampTo");
   };
 
   const filterEmptyKeys = (obj) => {
