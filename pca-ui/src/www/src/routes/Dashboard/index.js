@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router";
-import useSWR from "swr";
+import useSWR, { useSWRConfig } from "swr";
 import { get, swap } from "../../api/api";
 import { Formatter } from "../../format";
 import { TranscriptSegment } from "./TranscriptSegment";
@@ -39,6 +39,7 @@ const createLoudnessData = (segment) => {
 
 function Dashboard({ setAlert }) {
   const { key } = useParams();
+  const { mutate } = useSWRConfig();
 
   const { data, error } = useSWR(`/get/${key}`, () => get(key));
   const isTranscribeCallAnalyticsMode =
@@ -50,6 +51,8 @@ function Dashboard({ setAlert }) {
   const [speakerLabels, setSpeakerLabels] = useState({
     NonTalkTime: "Silence",
   });
+
+  const [isSwapping, setIsSwapping] = useState(false);
 
   const getValueFor = (input) =>
     Object.entries(speakerLabels).find(([_, label]) => label === input)?.[0];
@@ -73,8 +76,9 @@ function Dashboard({ setAlert }) {
 
   const swapAgent = async () => {
     try {
+      setIsSwapping(true);
       await swap(key);
-      window.location.reload(false);
+      mutate(`/get/${key}`);
     } catch (err) {
       console.error(err);
       setAlert({
@@ -82,6 +86,8 @@ function Dashboard({ setAlert }) {
         variant: "danger",
         text: "Unable to swap agent. Please try again later",
       });
+    } finally {
+      setIsSwapping(false);
     }
   };
 
@@ -191,8 +197,8 @@ function Dashboard({ setAlert }) {
     <Stack direction="vertical" gap={4}>
       <div>
         <h3 className="d-inline">Call Details </h3>
-        <Button onClick={swapAgent} className="float-end">
-          Swap Agent/Caller
+        <Button onClick={swapAgent} disabled={isSwapping} className="float-end">
+          {isSwapping ? "Swapping..." : "Swap Agent/Caller"}
         </Button>
       </div>
       <div className="d-flex gap-2 flex-wrap flex-lg-nowrap">
