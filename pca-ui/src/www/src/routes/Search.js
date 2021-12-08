@@ -15,7 +15,7 @@ import { Select } from "../components/Select";
 
 const sentimentWhat = [
   { value: "average", label: "Average" },
-  { value: "trend", label: "Trend" },
+  { value: "trend", label: "Trending" },
 ];
 
 const sentimentWho = [
@@ -142,7 +142,7 @@ function Search({ setAlert }) {
             <h5>Sentiment</h5>
           </Form.Label>
           <div className="d-flex  gap-3">
-            <p className="align-self-end mb-0">The sentiment</p>
+            <p className="align-self-end mb-0">The</p>
             <Select
               className="flex-grow-1"
               options={sentimentWhat}
@@ -154,7 +154,7 @@ function Search({ setAlert }) {
                 null
               }
             />
-            <p className="align-self-end mb-0">of the</p>
+            <p className="align-self-end mb-0"> sentiment of the</p>
             <Select
               className="flex-grow-1"
               options={sentimentWho}
