@@ -1,4 +1,10 @@
 .col {
     word-wrap: break-word;
-    max-width: 500px;
+    max-width: 750px;
+}
+
+.col-header-wrapper {
+    word-wrap: break-word;
+    max-width: 10ch;
+    display: flex;
 }
