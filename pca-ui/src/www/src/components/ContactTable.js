@@ -5,6 +5,7 @@ import { Placeholder } from "./Placeholder";
 import { SentimentIcon } from "./SentimentIcon";
 import { TrendIcon } from "./TrendIcon";
 import "./ContactTable.css";
+
 const columns = [
   {
     label: "Job Name",
@@ -12,15 +13,25 @@ const columns = [
   },
   { label: "Timestamp", value: (d) => Formatter.Timestamp(d.timestamp) },
   {
-    label: "Customer Sentiment",
-    value: (d) => <SentimentIcon score={d?.callerSentimentScore} />,
+    label: (
+      <div className="col-header-wrapper text-center">Customer Sentiment</div>
+    ),
+    value: (d) => (
+      <div className="d-flex justify-content-evenly">
+        <SentimentIcon score={d?.callerSentimentScore} />
+        <TrendIcon trend={d.callerSentimentChange} />
+      </div>
+    ),
+  },
+
+  {
+    label: <div className="col-header-wrapper text-left">Language Code</div>,
+    value: (d) => d.lang,
   },
   {
-    label: "Customer Sentiment Trend",
-    value: (d) => <TrendIcon trend={d.callerSentimentChange} />,
+    label: <div className="col-header-wrapper text-left">Call Duration</div>,
+    value: (d) => Formatter.Time(d.duration),
   },
-  { label: "Language Code", value: (d) => d.lang },
-  { label: "Call Duration", value: (d) => Formatter.Time(d.duration) },
 ];
 
 const Loading = () =>
@@ -68,7 +79,7 @@ export const ContactTable = ({ data = [], loading = false, empty }) => {
             <tr className="contact-table" key={i} onClick={(e) => onClick(row)}>
               {columns.map((c, j) => (
                 <td className="fs-5 col" key={j}>
-                  {c.value(row, i) || "-"}
+                  {c.value(row) || "-"}
                 </td>
               ))}
             </tr>
