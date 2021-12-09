@@ -72,6 +72,7 @@ Resources:
           TargetOriginId: S3
           ViewerProtocolPolicy: redirect-to-https
           DefaultTTL: 60
+          ResponseHeadersPolicyId: !Ref ResponseHeaders
         DefaultRootObject: index.html
         Enabled: true
         Logging:
@@ -86,6 +87,34 @@ Resources:
           - ErrorCode: 403
             ResponseCode: 200
             ResponsePagePath: /index.html
+
+  ResponseHeaders:
+    Type: AWS::CloudFront::ResponseHeadersPolicy
+    Properties:
+      ResponseHeadersPolicyConfig: 
+        Name: !Sub "${AWS::StackName}-SecurityHeaders"
+        SecurityHeadersConfig:
+            ContentSecurityPolicy: 
+              ContentSecurityPolicy: !Sub "default-src 'none'; img-src 'self' data:; script-src 'self'; style-src 'self'; object-src 'none'; connect-src 'self' https://*.execute-api.${AWS::Region}.amazonaws.com https://*.auth.${AWS::Region}.amazoncognito.com; font-src data:;"
+              Override: True
+            ContentTypeOptions:               
+              Override: True
+            FrameOptions: 
+              FrameOption: DENY
+              Override: True
+            ReferrerPolicy: 
+              ReferrerPolicy: same-origin
+              Override: True
+            StrictTransportSecurity: 
+              AccessControlMaxAgeSec: 63072000
+              IncludeSubdomains: True
+              Override: True
+              Preload: True
+            XSSProtection: 
+              ModeBlock: True
+              Override: True
+              Protection: True
+
 
 Outputs:
   Uri:
