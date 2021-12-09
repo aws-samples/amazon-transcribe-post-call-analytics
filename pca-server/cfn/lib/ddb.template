@@ -17,6 +17,8 @@ Resources:
         - AttributeName: SKApiMode      
           AttributeType: S
       BillingMode: PAY_PER_REQUEST
+      SSESpecification:
+        SSEEnabled: True
 
 Outputs:
   TableName:

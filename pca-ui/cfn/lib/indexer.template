@@ -100,6 +100,8 @@ Resources:
           Projection:
             ProjectionType: ALL
       BillingMode: PAY_PER_REQUEST
+      SSESpecification:
+        SSEEnabled: True
 
   IndexFunction:
     Type: "AWS::Serverless::Function"
