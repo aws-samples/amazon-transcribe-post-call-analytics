@@ -6,13 +6,14 @@ from pathlib import Path
 from datetime import datetime
 from urllib.parse import urlparse
 from math import floor
-import pcaconfiguration as cf
-import pcacommon
 from pcakendrasearch import prepare_transcript, put_kendra_document
+import pcaconfiguration as cf
+import matplotlib.pyplot as plt
+import numpy as np
+import pcacommon
 import subprocess
 import copy
 import re
-import os
 import json
 import csv
 import boto3
@@ -23,12 +24,13 @@ MIN_SENTIMENT_LENGTH = 8
 NLP_THROTTLE_RETRIES = 1
 COMPREHEND_SENTIMENT_SCALER = 5.0
 
-# PII and other Markers
+# Other Markers and helpers
 PII_PLACEHOLDER = "[PII]"
 PII_PLACEHOLDER_MASK = "*" * len(PII_PLACEHOLDER)
 KNOWN_SPEAKER_PREFIX = "spk_"
 UNKNOWN_SPEAKER_PREFIX = "Unknown_"
 TMP_DIR = "/tmp"
+BAR_CHART_WIDTH = 1.0
 
 
 class SpeechSegment:
@@ -251,6 +253,7 @@ class TranscribeParser:
             resultsHeaderInfo["SpeakerTime"] = self.extract_analytics_speaker_time(self.asr_output["ConversationCharacteristics"])
             resultsHeaderInfo["CategoriesDetected"] = self.extract_analytics_categories(self.asr_output["Categories"])
             resultsHeaderInfo["IssuesDetected"] = self.issues_detected
+            resultsHeaderInfo["CombinedAnalyticsGraph"] = self.create_combined_tca_graphic()
         # For non-analytics mode, we can simulate some analytics data
         elif self.api_mode == cf.API_STANDARD:
             # Calculate the speaker time from the speech segments, once per speaker (can't do silent time like this)
@@ -284,6 +287,201 @@ class TranscribeParser:
             resultsHeaderInfo["EntityRecognizerName"] = self.customEntityEndpointName
 
         return resultsHeaderInfo
+
+    def create_combined_tca_graphic(self):
+        """
+        Creates a combined graphic representing the following pieces of metadata:
+        - Multiple stacked charts, one per speaker that exists in the call
+        - Decibel level per second of the call
+        - Sentiment markers across the call
+        - Indication of interruptions across the call
+        - Indication of non-talk time across the call
+
+        :return: URL to the combined chart graphic
+        """
+        image_url = ""
+
+        # Initialise our loudness structures
+        secsLoudAgent = []
+        dbLoudAgent = []
+        secsLoudCaller = []
+        dbLoudCaller = []
+
+        # Work out which channel our agent is on
+        agent_channel = "spk_" + str(self.analytics_channel_map["AGENT"])
+        caller_channel = "spk_" + str(self.analytics_channel_map["CUSTOMER"])
+
+        # Work through each conversation turn, extracting timestamp/decibel values as we go
+        for segment in self.speechSegmentList:
+            this_second = int(segment.segmentStartTime)
+            # Each segment has a loudness score per second or part second
+            for score in segment.segmentLoudnessScores:
+                # This can be set to NONE, which causes errors later
+                if score is None:
+                    score = 0.0
+                # Track the Agent loudness
+                if segment.segmentSpeaker == agent_channel:
+                    secsLoudAgent.append(this_second)
+                    dbLoudAgent.append(score)
+                # Track the Caller loudness
+                else:
+                    secsLoudCaller.append(this_second)
+                    dbLoudCaller.append(score)
+                this_second += 1
+        agentLoudness = {"Seconds": secsLoudAgent, "dB": dbLoudAgent}
+        callerLoudness = {"Seconds": secsLoudCaller, "dB": dbLoudCaller}
+
+        # Get some pointers into our transcription blocks
+        talk_time = self.asr_output["ConversationCharacteristics"]["TalkTime"]
+        interruptions = self.asr_output["ConversationCharacteristics"]["Interruptions"]
+        quiet_times = self.asr_output["ConversationCharacteristics"]["NonTalkTime"]
+
+        # Work out our final talk "second", as we need both charts to line up, but
+        # be careful as there may just be one speaker in the Call Analytics output
+        if talk_time["DetailsByParticipant"]["AGENT"]["TotalTimeMillis"] == 0:
+            final_second = max(secsLoudCaller)
+            max_decibel = max(dbLoudCaller)
+            haveAgent = False
+            haveCaller = True
+            plotRows = 1
+        elif talk_time["DetailsByParticipant"]["CUSTOMER"]["TotalTimeMillis"] == 0:
+            final_second = max(secsLoudAgent)
+            max_decibel = max(dbLoudAgent)
+            haveAgent = True
+            haveCaller = False
+            plotRows = 1
+        else:
+            final_second = max(max(secsLoudAgent), max(secsLoudCaller))
+            max_decibel = max(max(dbLoudAgent), max(dbLoudCaller))
+            haveAgent = True
+            haveCaller = True
+            plotRows = 2
+
+        # Add some headroom to our decibel limit to give space for "interruption" markers
+        max_decibel_headroom = (int(max_decibel / 10) + 2) * 10
+
+        # Create a dataset for interruptions, which needs to be in the background on both charts
+        intSecs = []
+        intDb = []
+        for speaker in interruptions["InterruptionsByInterrupter"]:
+            for entry in interruptions["InterruptionsByInterrupter"][speaker]:
+                start = int(entry["BeginOffsetMillis"] / 1000)
+                end = int(entry["EndOffsetMillis"] / 1000)
+                for second in range(start, end + 1):
+                    intSecs.append(second)
+                    intDb.append(max_decibel_headroom)
+        intSegments = {"Seconds": intSecs, "dB": intDb}
+
+        # Create a dataset for non-talk time, which needs to be in the background on both charts
+        quietSecs = []
+        quietdB = []
+        for quiet_period in quiet_times["Instances"]:
+            start = int(quiet_period["BeginOffsetMillis"] / 1000)
+            end = int(quiet_period["EndOffsetMillis"] / 1000)
+            for second in range(start, end + 1):
+                quietSecs.append(second)
+                quietdB.append(max_decibel_headroom)
+        quietSegments = {"Seconds": quietSecs, "dB": quietdB}
+
+        # Either speaker may be missing, so we cannot assume this is a 2-row or 1-row plot
+        # We want a 2-row figure, one row per speaker, but with the interruptions on the background
+        fig, ax = plt.subplots(nrows=plotRows, ncols=1, figsize=(12, 2.5 * plotRows))
+        if haveAgent:
+            if haveCaller:
+                self.build_single_loudness_chart(ax[0], agentLoudness, intSegments, quietSegments,
+                                                 self.speechSegmentList, final_second, max_decibel_headroom, "Agent",
+                                                 agent_channel, False, True)
+                self.build_single_loudness_chart(ax[1], callerLoudness, intSegments, quietSegments,
+                                                 self.speechSegmentList, final_second, max_decibel_headroom, "Customer",
+                                                 caller_channel, True, False)
+            else:
+                self.build_single_loudness_chart(ax, agentLoudness, intSegments, quietSegments, self.speechSegmentList,
+                                                 final_second, max_decibel_headroom, "Agent", agent_channel, True, True)
+        elif haveCaller:
+            self.build_single_loudness_chart(ax, callerLoudness, intSegments, quietSegments, self.speechSegmentList,
+                                             final_second, max_decibel_headroom, "Customer", caller_channel, True, True)
+
+        # Generate and store the chart locally
+        base_filename = f"{self.jsonOutputFilename.split('.json')[0]}.png"
+        chart_filename = f"{TMP_DIR}/{base_filename}"
+        fig.savefig(chart_filename, facecolor="aliceblue")
+
+        # Upload the graphic to S3
+        s3Client = boto3.client('s3')
+        object_key = cf.appConfig[cf.CONF_PREFIX_PARSED_RESULTS] + "/tcaImagery/" + base_filename
+        s3Client.upload_file(chart_filename, cf.appConfig[cf.CONF_S3BUCKET_OUTPUT], object_key)
+
+        # Remove the local file and return our S3 URL so that the UI can create signed URLs for browser rendering
+        pcacommon.remove_temp_file(chart_filename)
+        image_url = f"s3://{cf.appConfig[cf.CONF_S3BUCKET_OUTPUT]}/{object_key}"
+        return image_url
+
+    def build_single_loudness_chart(self, axes, loudness, interrupts, quiet_time, speech_segments, xaxis_max, yaxis_max,
+                                    speaker_tag, speaker_channel, show_x_legend, show_chart_legend):
+        """
+        Builds a single loundness/sentiment chart using the given data
+
+        :param axes: Axis to use for the chart in our larger table
+        :param loudness: Data series for the speakers loudness levels
+        :param interrupts: Data series for marking interrupts on the chart
+        :param quiet_time: Data series for marking non-talk time on the chart
+        :param speech_segments: Call transcript structures
+        :param xaxis_max: Second for the last speech entry in the call, which may not have been this speaker
+        :param yaxis_max: Max decibel level in the call, which may not have been this speaker
+        :param speaker_tag: Name of the caller to check for in the transcript
+        :param speaker_channel: Channel tags that mark speech segment as belonging to this speaker
+        :param show_x_legend: Flag to show/hide the x-axis legend
+        :param show_chart_legend: Flag to show/hide the top-right graph legend
+        """
+
+        # Draw the main loudness data bar-chart
+        seconds = loudness["Seconds"]
+        decibels = loudness["dB"]
+        axes.bar(seconds, decibels, label="Speaker volume", width=BAR_CHART_WIDTH)
+        axes.set_xlim(xmin=0, xmax=xaxis_max)
+        axes.set_ylim(ymax=yaxis_max)
+        if show_x_legend:
+            axes.set_xlabel("Time (in seconds)")
+        axes.set_ylabel("decibels")
+
+        # Build up sentiment data series for positive and negative, plotting it at the bottom
+        x = np.linspace(0, max(seconds), endpoint=True, num=(max(seconds) + 1))
+        ypos = np.linspace(0, 0, endpoint=True, num=(max(seconds) + 1))
+        yneg = np.linspace(0, 0, endpoint=True, num=(max(seconds) + 1))
+        yneut = np.linspace(0, 0, endpoint=True, num=(max(seconds) + 1))
+        for segment in speech_segments:
+            this_second = int(segment.segmentStartTime)
+            if segment.segmentSpeaker == speaker_channel:
+                if segment.segmentIsPositive:
+                    for score in segment.segmentLoudnessScores:
+                        ypos[this_second] = 10
+                        this_second += 1
+                elif segment.segmentNegative:
+                    for score in segment.segmentLoudnessScores:
+                        yneg[this_second] = 10
+                        this_second += 1
+                else:
+                    for score in segment.segmentLoudnessScores:
+                        yneut[this_second] = 10
+                        this_second += 1
+        axes.bar(x, ypos, label="Positive sentiment", color="limegreen", width=BAR_CHART_WIDTH)
+        axes.bar(x, yneg, label="Negative sentiment", color="orangered", width=BAR_CHART_WIDTH)
+        axes.bar(x, yneut, label="Neutral sentiment", color="cadetblue", width=BAR_CHART_WIDTH)
+
+        # Finish with the non-talk and interrupt overlays (if there are any)
+        if len(quiet_time["Seconds"]) > 0:
+            axes.bar(quiet_time["Seconds"], quiet_time["dB"], label="Non-talk time", color="lightcyan",
+                     width=BAR_CHART_WIDTH)
+        if len(interrupts["Seconds"]) > 0:
+            axes.bar(interrupts["Seconds"], interrupts["dB"], label="Interruptions", color="goldenrod",
+                     width=BAR_CHART_WIDTH, alpha=0.5, bottom=10)
+
+        # Only show the legend for the top graph if requested
+        box = axes.get_position()
+        axes.set_position([0.055, box.y0, box.width, box.height])
+        axes.text(5, yaxis_max - 5, speaker_tag, style='normal', color='black', bbox={'facecolor': 'white', 'pad': 5})
+        if show_chart_legend:
+            axes.legend(loc="upper right", bbox_to_anchor=(1.21, 1.0), ncol=1, borderaxespad=0)
 
     def create_output_transcribe_job_info(self):
         """
@@ -1334,9 +1532,9 @@ if __name__ == "__main__":
     # Standard test event
     event = {
         "bucket": "ak-cci-input",
-        "key": "originalAudio/0a.93.a0.3e.00.00-16.22.53.402-09-05-2019.wav",
-        "apiMode": "standard",
-        "jobName": "0a.93.a0.3e.00.00-16.22.53.402-09-05-2019.wav",
+        # "key": "originalAudio/0a.93.a0.3e.00.00-16.22.53.402-09-05-2019.wav",
+        # "apiMode": "standard",
+        # "jobName": "0a.93.a0.3e.00.00-16.22.53.402-09-05-2019.wav",
         # "key": "originalAudio/mono.wav",
         # "apiMode": "standard",
         # "jobName": "mono.wav",
@@ -1346,9 +1544,9 @@ if __name__ == "__main__":
         # "key": "originalAudio/stereo.mp3",
         # "apiMode": "analytics",
         # "jobName": "stereo.mp3",
-        # "key": "originalAudio/example-call.wav",
-        # "apiMode": "analytics",
-        # "jobName": "example-call.wav",
+        "key": "originalAudio/example-call.wav",
+        "apiMode": "analytics",
+        "jobName": "example-call.wav",
         "langCode": "en-US",
         "transcribeStatus": "COMPLETED"
     }

@@ -44,6 +44,10 @@ exports.handler = function (event, context) {
                                     Name: "prefix",
                                     Value: `${prefix}/`,
                                 },
+                                {
+                                    Name: "suffix",
+                                    Value: `.json`,
+                                },
                             ],
                         },
                     },

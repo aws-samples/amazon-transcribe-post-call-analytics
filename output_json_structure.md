@@ -252,25 +252,27 @@ Present when the source of the conversation is Amazon Transcribe.  A mixture of 
       "MediaFileUri": "string",
       "MediaOriginalUri": "string",
       "ChannelIdentification": "boolean",
-      "AverageWordConfidence": "float"
+      "AverageWordConfidence": "float",
+      "CombinedAnalyticsGraph": "string"
     }
   }
 ]
 ```
 
-| Field                 | Type   | Description                                                  |
-| --------------------- | ------ | ------------------------------------------------------------ |
-| TranscriptionJobName  | string | The name of the transcription job                            |
-| TranscribeApiType     | string | The Transcribe API used, must be one of:  `standard`, `analytics` |
-| CompletionTime        | string | A timestamp that shows when the job was completed            |
-| VocabularyName        | string | The name of the vocabulary used in the transcription job     |
-| VocabularyFilter      | string | The name and mask method of the vocabulary filter used in the transcription job |
-| MediaFormat           | string | The format of the input media file, as determined by Amazon Transribe |
-| MediaSampleRateHertz  | Int    | The sample rate, in Hertz, of the audio track in the input audio |
-| MediaFileUri          | string | The S3 object location of the media file to use during playback, as we may playback an audio-redacted version or a version that has a format unplayable in all browsers with the HTML5 audio control |
-| MediaOriginalUri      | string | The S3 object location of the original input audio file      |
-| ChannelIdentifcation  | bool   | Indicates whether the transcription job used channel- (true) or speaker-separation (false) |
-| AverageWordConfidence | float  | Percentage value between 0.00 and 1.00 indicating overall word confidence score for this job |
+| Field                  | Type   | Description                                                  |
+| ---------------------- | ------ | ------------------------------------------------------------ |
+| TranscriptionJobName   | string | The name of the transcription job                            |
+| TranscribeApiType      | string | The Transcribe API used, must be one of:  `standard`, `analytics` |
+| CompletionTime         | string | A timestamp that shows when the job was completed            |
+| VocabularyName         | string | The name of the vocabulary used in the transcription job     |
+| VocabularyFilter       | string | The name and mask method of the vocabulary filter used in the transcription job |
+| MediaFormat            | string | The format of the input media file, as determined by Amazon Transribe |
+| MediaSampleRateHertz   | Int    | The sample rate, in Hertz, of the audio track in the input audio |
+| MediaFileUri           | string | The S3 object location of the media file to use during playback, as we may playback an audio-redacted version or a version that has a format unplayable in all browsers with the HTML5 audio control |
+| MediaOriginalUri       | string | The S3 object location of the original input audio file      |
+| ChannelIdentifcation   | bool   | Indicates whether the transcription job used channel- (true) or speaker-separation (false) |
+| AverageWordConfidence  | float  | Percentage value between 0.00 and 1.00 indicating overall word confidence score for this job |
+| CombinedAnalyticsGraph | string | S3 URL for the pre-generated combined Call Analytics chart |
 
 ### SpeechSegments
 
