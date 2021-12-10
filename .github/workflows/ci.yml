@@ -20,4 +20,4 @@ jobs:
       - name: Print the Cloud Formation Linter Version & run Linter.
         run: |
           cfn-lint --version
-          cfn-lint pca-server/cfn/**/*.template pca-ssm/cfn/**/*.template cfn-lint pca-ui/cfn/**/*.template
+          cfn-lint 
