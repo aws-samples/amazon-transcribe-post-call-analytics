@@ -11,6 +11,9 @@ jobs:
   cfn-linter:
     runs-on: ubuntu-latest
     steps:
+       - name: Checkout
+        uses: actions/checkout@v2
+        
       - name: Setup Cloud Formation Linter with Latest Version
         uses: scottbrenner/cfn-lint-action@v2
 
