@@ -1,0 +1,20 @@
+name: Run CI Tests
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  cfn-linter:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Cloud Formation Linter with Latest Version
+        uses: scottbrenner/cfn-lint-action@v2
+
+      - name: Print the Cloud Formation Linter Version & run Linter.
+        run: |
+          cfn-lint --version
+          cfn-lint pca-server/cfn/**/*.template pca-ssm/cfn/**/*.template cfn-lint pca-ui/cfn/**/*.template
