@@ -8,7 +8,15 @@ Parameters:
   BulkUploadStepFunctionName:
     Type: AWS::SSM::Parameter::Value<String>
     Default: BulkUploadStepFunctionName
+
+  BulkUploadBucketName:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: BulkUploadBucket
     
+  InputBucketName:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: InputBucketName
+
 Globals:
   Function:
     Runtime: python3.8
@@ -22,8 +30,21 @@ Resources:
       CodeUri:  ../../src/pca
       Handler: pca-aws-sf-bulk-files-count.lambda_handler
       Policies:
-        - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
-        - arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess
+      - Statement:
+        - Sid: S3BucketReadPolicy    
+          Effect: Allow
+          Action:
+          - s3:ListBucket
+          - s3:GetObject
+          Resource:
+          - !Sub arn:aws:s3:::${BulkUploadBucketName}
+          - !Sub arn:aws:s3:::${BulkUploadBucketName}/*
+      - Statement:
+        - Sid: SSMGetParameterPolicy    
+          Effect: Allow
+          Action:
+            - ssm:GetParameter
+          Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*
 
   BulkMoveFiles:
     Type: "AWS::Serverless::Function"
@@ -32,7 +53,19 @@ Resources:
       Handler: pca-aws-sf-bulk-move-files.lambda_handler
       Timeout: 300
       Policies:
-        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+      - Statement:
+        - Sid: S3BucketReadWritePolicy    
+          Effect: Allow
+          Action:
+            - s3:ListBucket
+            - s3:GetObject
+            - s3:PutObject
+            - s3:DeleteObject
+          Resource:
+            - !Sub arn:aws:s3:::${BulkUploadBucketName}
+            - !Sub arn:aws:s3:::${BulkUploadBucketName}/*
+            - !Sub arn:aws:s3:::${InputBucketName}
+            - !Sub arn:aws:s3:::${InputBucketName}/*
 
   BulkQueueSpace:
     Type: "AWS::Serverless::Function"
@@ -58,18 +91,30 @@ Resources:
             Principal:
               Service: states.amazonaws.com
             Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/CloudWatchLogsFullAccess
       Policies:
         - PolicyName: AllowInvokeFunctions
           PolicyDocument:
             Statement:
-              - Effect: Allow
-                Action: lambda:InvokeFunction
-                Resource:
-                  - !GetAtt BulkFilesCount.Arn
-                  - !GetAtt BulkQueueSpace.Arn
-                  - !GetAtt BulkMoveFiles.Arn
+            - Effect: Allow
+              Action: lambda:InvokeFunction
+              Resource:
+              - !GetAtt BulkFilesCount.Arn
+              - !GetAtt BulkQueueSpace.Arn
+              - !GetAtt BulkMoveFiles.Arn
+        - PolicyName: CloudWatchLogs
+          PolicyDocument:
+            Statement:
+            - Effect: Allow
+              Action:
+              - logs:CreateLogDelivery
+              - logs:GetLogDelivery
+              - logs:UpdateLogDelivery
+              - logs:DeleteLogDelivery
+              - logs:ListLogDeliveries
+              - logs:PutResourcePolicy
+              - logs:DescribeResourcePolicies
+              - logs:DescribeLogGroups
+              Resource: "*"
 
   StateMachine:
     Type: "AWS::StepFunctions::StateMachine"

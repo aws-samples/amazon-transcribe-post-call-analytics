@@ -26,6 +26,10 @@ Parameters:
   StepFunctionName:
     Type: AWS::SSM::Parameter::Value<String>
     Default: StepFunctionName
+    
+  InputBucketName:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: InputBucketName
 
 Globals:
   Function:
@@ -82,10 +86,7 @@ Resources:
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-        - arn:aws:iam::aws:policy/AmazonS3FullAccess
         - arn:aws:iam::aws:policy/AmazonTranscribeFullAccess
-        - arn:aws:iam::aws:policy/AWSLambda_ReadOnlyAccess
-        - arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess
       Policies:
         - PolicyName: PassRoleToTranscribe
           PolicyDocument:
@@ -95,6 +96,27 @@ Resources:
                   - iam:PassRole
                 Resource:
                   - !GetAtt TranscribeRole.Arn
+        - PolicyName: S3BucketReadWritePolicy
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:DeleteObject
+                Resource:
+                  - !Sub arn:aws:s3:::${InputBucketName}
+                  - !Sub arn:aws:s3:::${InputBucketName}/*
+        - PolicyName: SSMGetParameterPolicy
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                  - ssm:GetParameters
+                Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*
+
 
   SFLanguageDetection:
     Type: "AWS::Serverless::Function"
@@ -194,8 +216,6 @@ Resources:
             Principal:
               Service: states.amazonaws.com
             Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/CloudWatchLogsFullAccess
       Policies:
         - PolicyName: AllowInvokeFunctions
           PolicyDocument:
@@ -209,6 +229,20 @@ Resources:
                   - !GetAtt SFAwaitNotification.Arn
                   - !GetAtt SFTranscribeFailed.Arn
                   - !GetAtt SFGetDetectedLanguage.Arn
+        - PolicyName: CloudWatchLogs
+          PolicyDocument:
+            Statement:
+            - Effect: Allow
+              Action:
+              - logs:CreateLogDelivery
+              - logs:GetLogDelivery
+              - logs:UpdateLogDelivery
+              - logs:DeleteLogDelivery
+              - logs:ListLogDeliveries
+              - logs:PutResourcePolicy
+              - logs:DescribeResourcePolicies
+              - logs:DescribeLogGroups
+              Resource: "*"
 
   StateMachine:
     Type: "AWS::StepFunctions::StateMachine"

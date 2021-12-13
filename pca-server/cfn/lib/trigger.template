@@ -18,6 +18,10 @@ Parameters:
   InputBucketRawAudio:
     Type: AWS::SSM::Parameter::Value<String>
     Default: InputBucketRawAudio
+    
+  StepFunctionName:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: StepFunctionName
 
 Globals:
   Function:
@@ -32,10 +36,33 @@ Resources:
       CodeUri:  ../../src/pca
       Handler: pca-aws-file-drop-trigger.lambda_handler
       Policies:
-        - arn:aws:iam::aws:policy/AmazonTranscribeReadOnlyAccess
-        - arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess
-        - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
-        - arn:aws:iam::aws:policy/AWSStepFunctionsFullAccess
+      - arn:aws:iam::aws:policy/AmazonTranscribeReadOnlyAccess
+      - Statement:
+        - Sid: S3BucketReadPolicy    
+          Effect: Allow
+          Action:
+          - s3:ListBucket
+          - s3:GetObject
+          Resource:
+          - !Sub arn:aws:s3:::${InputBucketName}
+          - !Sub arn:aws:s3:::${InputBucketName}/*
+      - Statement:
+        - Sid: SSMGetParameterPolicy    
+          Effect: Allow
+          Action:
+            - ssm:GetParameter
+            - ssm:GetParameters
+          Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*
+      - Statement:
+        - Sid: ListStatemachinesPolicy
+          Effect: Allow
+          Action: states:ListStateMachines
+          Resource: "*"
+        - Sid: StartExecutionPolicy
+          Effect: Allow
+          Action: states:StartExecution
+          Resource: !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${StepFunctionName}
+
     
   FileDropTriggerPermission:
     Type: AWS::Lambda::Permission
@@ -124,6 +151,16 @@ Resources:
           TableName: !Ref TableName
           AWS_DATA_PATH: "/opt/models"
       Policies:
-        - arn:aws:iam::aws:policy/AmazonTranscribeReadOnlyAccess
-        - arn:aws:iam::aws:policy/AWSStepFunctionsFullAccess
-        - arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess
+      - arn:aws:iam::aws:policy/AmazonTranscribeReadOnlyAccess
+      - Statement:
+        - Sid: SendTaskSuccessPolicy
+          Effect: Allow
+          Action: states:SendTaskSuccess
+          Resource: "*"
+      - Statement:
+        - Sid: DynamoDBReadWriteAccess
+          Effect: Allow
+          Action:
+          - dynamodb:DeleteItem
+          - dynamodb:GetItem
+          Resource: !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TableName}
