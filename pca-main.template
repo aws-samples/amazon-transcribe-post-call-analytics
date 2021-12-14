@@ -368,7 +368,6 @@ Conditions:
   ShouldCreateSupportFilesBucket: !Equals [!Ref SupportFilesBucketName, '']
   ShouldEnableKendraSearch: !Not [!Equals [!Ref EnableTranscriptKendraSearch, 'No']]
   ShouldCreateKendraIndexDeveloperEdition: !Equals [!Ref EnableTranscriptKendraSearch, 'Yes, create new Kendra Index (Developer Edition)']
-  ShouldCreateKendraIndexEnterpriseEdition: !Equals [!Ref EnableTranscriptKendraSearch, 'Yes, create new Kendra Index (Enterprise Edition)']
 
 Resources:
   ########################################################
@@ -380,6 +379,7 @@ Resources:
     Condition: ShouldCreateBulkUploadBucket
     Type: 'AWS::S3::Bucket'
     DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain 
     Properties:
       BucketEncryption:
         ServerSideEncryptionConfiguration:
@@ -390,6 +390,8 @@ Resources:
     Condition: ShouldCreateInputBucket
     Type: 'AWS::S3::Bucket'
     DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain 
+    
     Properties:
       BucketEncryption:
         ServerSideEncryptionConfiguration:
@@ -408,6 +410,7 @@ Resources:
     Condition: ShouldCreateOutputBucket
     Type: 'AWS::S3::Bucket'
     DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain 
     Properties:
       BucketEncryption:
         ServerSideEncryptionConfiguration:
@@ -426,6 +429,7 @@ Resources:
     Condition: ShouldCreateSupportFilesBucket
     Type: 'AWS::S3::Bucket'
     DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain 
     Properties:
       BucketEncryption:
         ServerSideEncryptionConfiguration:
@@ -481,8 +485,8 @@ Resources:
   KendraIndex:
     Type: 'AWS::Kendra::Index'
     Condition: ShouldEnableKendraSearch
-    Description: PCA transcript index
     Properties:
+      Description: PCA transcript index
       Edition:
           !If
           - ShouldCreateKendraIndexDeveloperEdition

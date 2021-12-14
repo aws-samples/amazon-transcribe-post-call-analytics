@@ -2,6 +2,7 @@ templates:
   - pca-server/cfn/**/*.template 
   - pca-ssm/cfn/**/*.template 
   - pca-ui/cfn/**/*.template
+  - pca-main.template
 
 ignore_checks:
   - W3002
