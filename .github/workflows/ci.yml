@@ -33,11 +33,10 @@ jobs:
         with:
           node-version: 12
 
-      - name: cd
-        run: cd ./pca-ui/src/lambda
-        
       - name: Install dependencies
         run: npm i
+        working-directory: ./pca-ui/src/lambda
 
       - name: Run unit tests
         run: npm t
+        working-directory: ./pca-ui/src/lambda
