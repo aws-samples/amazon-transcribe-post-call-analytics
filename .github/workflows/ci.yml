@@ -32,6 +32,10 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: 12
+
+      - name: cd
+        run: cd ./pca-ui/src/lambda
+        
       - name: Install dependencies
         run: npm i
 
