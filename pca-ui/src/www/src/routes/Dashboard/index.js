@@ -261,19 +261,21 @@ function Dashboard({ setAlert }) {
                     speakerOrder={speakerLabels}
                   />
                 </div>
-                <div>
-                  <h5 className="text-muted">Customer Loudness</h5>
-                  <LoudnessChart data={customerLoudness} caller="Customer" />
-                </div>
-                <div>
-                  <h5 className="text-muted">Agent Loudness</h5>
-                  <LoudnessChart data={agentLoudness} caller="Agent" />
-                </div>
               </Col>
             </Row>
           </Card.Body>
         </Card>
       </div>
+      <Card>
+        {!data && !error ? (
+          <Placeholder />
+        ) : (
+          <img
+            src={data?.ConversationAnalytics.CombinedAnalyticsGraph}
+            alt="a chart displaying the loudness of the agent and customer over time"
+          ></img>
+        )}
+      </Card>
       <Card>
         <Card.Header>Entities</Card.Header>
         <Card.Body>
