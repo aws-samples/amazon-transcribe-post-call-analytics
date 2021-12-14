@@ -30,6 +30,8 @@ const response = (statusCode, body, headers = {}) => {
       "Access-Control-Allow-Headers":
         "Content-Type,X-Amz-Date,Authorization,X-Api-Key",
       "Content-Type": "application/json",
+      "access-control-allow-origin": "*",
+
       ...headers,
     },
     multiValueHeaders: {},
@@ -39,9 +41,9 @@ const response = (statusCode, body, headers = {}) => {
 };
 
 const searchSchema = {
-  type: "object",
+  type: ["object", "null"],
   properties: {
-    timestampFron: { type: "string" },
+    timestampFrom: { type: "string" },
     timestampTo: { type: "string" },
     sentimentWho: { type: "string", enum: ["agent", "caller"] },
     sentimentWhat: { type: "string", enum: ["average", "trend"] },
@@ -52,7 +54,20 @@ const searchSchema = {
   additionalProperties: false,
 };
 
+const listSchema = {
+  type: ["object", "null"],
+  properties: {
+    timestampFrom: { type: "string" },
+    timestampTo: { type: "string" },
+    startKey: { type: "string" },
+    count: { type: "string" },
+  },
+  additionalProperties: false,
+};
+
 module.exports = {
   withMVQSValidation,
+  response,
   searchSchema,
+  listSchema,
 };

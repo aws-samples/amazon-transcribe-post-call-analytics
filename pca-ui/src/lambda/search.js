@@ -1,6 +1,6 @@
 const AWS = require("aws-sdk");
 const ddb = new AWS.DynamoDB();
-const { withMVQSValidation, searchSchema } = require("./validation");
+const { withMVQSValidation, searchSchema, response } = require("./validation");
 
 const tableName = process.env.TableName;
 
@@ -26,18 +26,6 @@ function makeQuery(key, filter, filter_values) {
     ScanIndexForward: false,
     KeyConditionExpression: expression,
     ExpressionAttributeValues: values,
-  };
-}
-
-function makeResponse(body) {
-  return {
-    statusCode: 200,
-    headers: {
-      "access-control-allow-origin": "*",
-      "access-control-allow-headers": "Content-Type,Authorization",
-      "access-control-allow-methods": "OPTIONS,GET",
-    },
-    body: JSON.stringify(body),
   };
 }
 
@@ -118,7 +106,7 @@ const handler = async function (event, context) {
   }
 
   if (queries.length == 0) {
-    return makeResponse([]);
+    return response(200, [], { "access-control-allow-methods": "OPTIONS,GET" });
   }
 
   console.log("Queries:", JSON.stringify(queries, null, 4));
@@ -152,11 +140,13 @@ const handler = async function (event, context) {
   });
   console.log("Filtered:", output);
 
-  return makeResponse(
-    output.map((item) => {
-      return JSON.parse(item.Data.S);
-    })
-  );
+  const body = output.map((item) => {
+    return JSON.parse(item.Data.S);
+  });
+
+  return response(200, body, {
+    "access-control-allow-methods": "OPTIONS,GET",
+  });
 };
 
 exports.handler = withMVQSValidation(handler, searchSchema);
