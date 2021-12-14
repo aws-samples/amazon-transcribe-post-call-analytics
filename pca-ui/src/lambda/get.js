@@ -33,6 +33,18 @@ async function getData(key) {
         Expires: 12 * 60 * 60,
     });
 
+    data.ConversationAnalytics.CombinedAnalyticsGraph = s3.getSignedUrl(
+      "getObject",
+      {
+        Bucket: dataBucket,
+        Key: data.ConversationAnalytics.CombinedAnalyticsGraph.replace(
+          /^s3:\/\/[^\/]+\//,
+          ""
+        ),
+        Expires: 12 * 60 * 60,
+      }
+    );
+
     return JSON.stringify(data);
 }
 
