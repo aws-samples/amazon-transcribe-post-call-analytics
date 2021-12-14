@@ -36,8 +36,7 @@ describe("S3 Object Index Handler", () => {
           body: '{"Records":[{"eventVersion":"2.1","eventSource":"aws:s3","awsRegion":"us-east-1","eventTime":"2021-11-25T12:58:37.771Z","eventName":"ObjectCreated:Put","userIdentity":{"principalId":"example-arn"},"s3":{"s3SchemaVersion":"1.0","configurationId":"example::example-bucket/parsedFiles","bucket":{"name":"example-bucket","ownerIdentity":{"principalId":"example"},"arn":"arn:aws:s3:::example-bucket"},"object":{"key":"test-key","size":16314}}}]}',
 
           eventSource: "aws:sqs",
-          eventSourceARN:
-            "arn:aws:sqs:us-east-1:801530346538:PostCallAnalytics-PCAUI-1N40GZVERB41W-Indexer-184DUDA9Y96E9-Queue-D0XUACDCYERN",
+          eventSourceARN: "arn:aws:sqs:us-east-1:999999999:test-arn",
           awsRegion: "us-east-1",
         },
       ],
