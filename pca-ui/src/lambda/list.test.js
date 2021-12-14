@@ -32,7 +32,7 @@ describe("list handler", () => {
 
     const resp = await handler({
       queryStringParameters: {
-        count: 1,
+        count: "1",
       },
     });
 
@@ -101,7 +101,7 @@ describe("list handler", () => {
       },
     });
 
-    const resp = await handler({ queryStringParameters: { count: 2 } });
+    const resp = await handler({ queryStringParameters: { count: "2" } });
 
     expect(resp.statusCode).toEqual(200);
 

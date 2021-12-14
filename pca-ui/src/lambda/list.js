@@ -1,11 +1,16 @@
 const AWS = require("aws-sdk");
+const {
+  listSchema,
+  withQueryStringValidation,
+  response,
+} = require("./validation");
 const ddb = new AWS.DynamoDB();
 
 const tableName = process.env.TableName;
 
 const DEFAULT_COUNT = 100;
 
-exports.handler = async function (event, context) {
+async function handler(event, context) {
   console.log(
     JSON.stringify(
       {
@@ -46,7 +51,7 @@ exports.handler = async function (event, context) {
   let query = {
     TableName: tableName,
     IndexName: "GSI1",
-    ScanIndexForward: "reverse" in event.queryStringParameters,
+    ScanIndexForward: "reverse" in (event?.queryStringParameters || {}),
     Limit: count,
     KeyConditionExpression: "SK = :sk",
     ExpressionAttributeValues: {
@@ -70,15 +75,6 @@ exports.handler = async function (event, context) {
   }
   console.log(res);
 
-  const resp = {
-    statusCode: 200,
-    headers: {
-      "access-control-allow-origin": "*",
-      "access-control-allow-headers": "Content-Type,Authorization",
-      "access-control-allow-methods": "OPTIONS,GET",
-    },
-  };
-
   const body = {
     Records: res.Items.map((item) => {
       return JSON.parse(item.Data.S);
@@ -90,7 +86,9 @@ exports.handler = async function (event, context) {
     body.StartTimestamp = res.LastEvaluatedKey.TK.N;
   }
 
-  console.log({ resp });
+  return response(200, body, {
+    "access-control-allow-methods": "OPTIONS,GET",
+  });
+}
 
-  return { ...resp, body: JSON.stringify(body) };
-};
+exports.handler = withQueryStringValidation(handler, listSchema);

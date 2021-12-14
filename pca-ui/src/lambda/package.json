@@ -4,11 +4,18 @@
   "description": "",
   "main": "index.js",
   "dependencies": {
+    "ajv": "^8.8.2",
     "aws-sdk": "^2.692.0",
     "cfn-response": "^1.0.1"
   },
   "devDependencies": {
     "jest": "^25.1.0"
+  },
+  "jest": {
+    "clearMocks": true,
+    "setupFiles": [
+      "<rootDir>/jest/setEnvVars.js"
+    ]
   },
   "scripts": {
     "test": "jest --runInBand --detectOpenHandles --verbose --colors"
