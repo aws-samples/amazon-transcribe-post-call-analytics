@@ -7,9 +7,11 @@
     "aws-sdk": "^2.692.0",
     "cfn-response": "^1.0.1"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "jest": "^25.1.0"
+  },
   "scripts": {
-    "test": "jest --watchAll --runInBand --detectOpenHandles --verbose --colors"
+    "test": "jest --runInBand --detectOpenHandles --verbose --colors"
   },
   "author": "",
   "license": "Apache-2.0"
