@@ -1,0 +1,976 @@
+{
+  "ConversationAnalytics": {
+    "GUID": "None",
+    "Agent": "None",
+    "ConversationTime": "2021-11-25 13:35:14.215558",
+    "ConversationLocation": "America/New_York",
+    "ProcessTime": "2021-11-25 13:35:14.215558",
+    "LanguageCode": "en-US",
+    "Duration": "28.67",
+    "SpeakerLabels": [
+      { "Speaker": "spk_0", "DisplayText": "Agent" },
+      { "Speaker": "spk_1", "DisplayText": "Customer" }
+    ],
+    "SentimentTrends": {
+      "spk_0": {
+        "SentimentScore": 1.7,
+        "SentimentPerQuarter": [
+          {
+            "Quarter": 1,
+            "Score": 2.5,
+            "BeginOffsetSecs": 0.0,
+            "EndOffsetSecs": 6.337
+          },
+          {
+            "Quarter": 2,
+            "Score": 2.5,
+            "BeginOffsetSecs": 6.337,
+            "EndOffsetSecs": 12.675
+          },
+          {
+            "Quarter": 3,
+            "Score": 0.0,
+            "BeginOffsetSecs": 12.675,
+            "EndOffsetSecs": 19.012
+          },
+          {
+            "Quarter": 4,
+            "Score": 0.0,
+            "BeginOffsetSecs": 19.012,
+            "EndOffsetSecs": 25.35
+          }
+        ],
+        "SentimentChange": -2.5
+      },
+      "spk_1": {
+        "SentimentScore": 1.7,
+        "SentimentPerQuarter": [
+          {
+            "Quarter": 1,
+            "Score": 2.5,
+            "BeginOffsetSecs": 0.0,
+            "EndOffsetSecs": 7.24
+          },
+          {
+            "Quarter": 2,
+            "Score": 2.5,
+            "BeginOffsetSecs": 7.24,
+            "EndOffsetSecs": 14.48
+          },
+          {
+            "Quarter": 3,
+            "Score": 0.0,
+            "BeginOffsetSecs": 14.48,
+            "EndOffsetSecs": 21.72
+          },
+          {
+            "Quarter": 4,
+            "Score": 0.0,
+            "BeginOffsetSecs": 21.72,
+            "EndOffsetSecs": 28.96
+          }
+        ],
+        "SentimentChange": -2.5
+      }
+    },
+    "SpeakerTime": {
+      "spk_0": { "TotalTimeSecs": 9.879 },
+      "spk_1": { "TotalTimeSecs": 19.56 },
+      "NonTalkTime": { "Instances": [], "TotalTimeSecs": 0.0 }
+    },
+    "CategoriesDetected": [
+      { "Name": "Dummy_Missing", "Instances": 0, "Timestamps": [] }
+    ],
+    "IssuesDetected": [],
+    "CustomEntities": [
+      { "Name": "ORGANIZATION", "Instances": 1, "Values": ["Networks abc"] },
+      { "Name": "DATE", "Instances": 1, "Values": ["today"] },
+      { "Name": "QUANTITY", "Instances": 1, "Values": ["two meeting"] }
+    ],
+    "SourceInformation": [
+      {
+        "TranscribeJobInfo": {
+          "TranscribeApiType": "analytics",
+          "CompletionTime": "2021-11-25 13:35:06.366000+00:00",
+          "MediaFormat": "mp3",
+          "MediaSampleRateHertz": 48000,
+          "MediaOriginalUri": "s3://postcallanalytics-inputbucket-8saekjhaymfy/originalAudio/stereo_std_1.mp3",
+          "AverageWordConfidence": 0.8886063829787236,
+          "MediaFileUri": "s3://postcallanalytics-inputbucket-8saekjhaymfy/mp3/stereo_std_1.mp3.wav",
+          "TranscriptionJobName": "stereo_std_1.mp3",
+          "ChannelIdentification": 1
+        }
+      }
+    ]
+  },
+  "SpeechSegments": [
+    {
+      "SegmentStartTime": 0.04,
+      "SegmentEndTime": 0.25,
+      "SegmentSpeaker": "spk_0",
+      "SegmentInterruption": false,
+      "OriginalText": "MM.",
+      "DisplayText": "MM.",
+      "TextEdited": 0,
+      "LoudnessScores": [75.37],
+      "SentimentIsPositive": 0,
+      "SentimentIsNegative": 0,
+      "SentimentScore": 0.0,
+      "BaseSentimentScores": [],
+      "EntitiesDetected": [],
+      "CategoriesDetected": ["Dummy_Missing"],
+      "FollowOnCategories": [],
+      "IssuesDetected": [],
+      "WordConfidence": [
+        {
+          "Text": "MM.",
+          "Confidence": 0.5748,
+          "StartTime": 0.04,
+          "EndTime": 0.04
+        }
+      ]
+    },
+    {
+      "SegmentStartTime": 0.64,
+      "SegmentEndTime": 3.7,
+      "SegmentSpeaker": "spk_1",
+      "SegmentInterruption": false,
+      "OriginalText": "Thank you for calling Networks abc technical Support.",
+      "DisplayText": "Thank you for calling Networks abc technical Support.",
+      "TextEdited": 0,
+      "LoudnessScores": [72.07, 78.68, 57.96, 35.78],
+      "SentimentIsPositive": 1,
+      "SentimentIsNegative": 0,
+      "SentimentScore": 5.0,
+      "BaseSentimentScores": {
+        "Positive": 1.0,
+        "Negative": 0.0,
+        "Neutral": 0.0
+      },
+      "EntitiesDetected": [
+        {
+          "Score": 0.7608851790428162,
+          "Type": "ORGANIZATION",
+          "Text": "Networks abc",
+          "BeginOffset": 22,
+          "EndOffset": 34
+        }
+      ],
+      "CategoriesDetected": [],
+      "FollowOnCategories": [],
+      "IssuesDetected": [],
+      "WordConfidence": [
+        {
+          "Text": "Thank",
+          "Confidence": 1.0,
+          "StartTime": 0.64,
+          "EndTime": 0.64
+        },
+        {
+          "Text": " you",
+          "Confidence": 1.0,
+          "StartTime": 1.34,
+          "EndTime": 1.34
+        },
+        {
+          "Text": " for",
+          "Confidence": 1.0,
+          "StartTime": 1.43,
+          "EndTime": 1.43
+        },
+        {
+          "Text": " calling",
+          "Confidence": 1.0,
+          "StartTime": 1.55,
+          "EndTime": 1.55
+        },
+        {
+          "Text": " Networks",
+          "Confidence": 0.2122,
+          "StartTime": 1.97,
+          "EndTime": 1.97
+        },
+        {
+          "Text": " abc",
+          "Confidence": 0.7598,
+          "StartTime": 2.35,
+          "EndTime": 2.35
+        },
+        {
+          "Text": " technical",
+          "Confidence": 1.0,
+          "StartTime": 2.74,
+          "EndTime": 2.74
+        },
+        {
+          "Text": " Support.",
+          "Confidence": 1.0,
+          "StartTime": 3.23,
+          "EndTime": 3.23
+        }
+      ]
+    },
+    {
+      "SegmentStartTime": 0.74,
+      "SegmentEndTime": 5.84,
+      "SegmentSpeaker": "spk_0",
+      "SegmentInterruption": true,
+      "OriginalText": "Now called, so All right, yeah.",
+      "DisplayText": "Now called, so All right, yeah.",
+      "TextEdited": 0,
+      "LoudnessScores": [75.37, 87.91, 83.98, 81.3, 81.6, 83.96],
+      "SentimentIsPositive": 1,
+      "SentimentIsNegative": 0,
+      "SentimentScore": 5.0,
+      "BaseSentimentScores": {
+        "Positive": 1.0,
+        "Negative": 0.0,
+        "Neutral": 0.0
+      },
+      "EntitiesDetected": [],
+      "CategoriesDetected": [],
+      "FollowOnCategories": [],
+      "IssuesDetected": [],
+      "WordConfidence": [
+        {
+          "Text": "Now",
+          "Confidence": 0.8927,
+          "StartTime": 0.74,
+          "EndTime": 0.74
+        },
+        {
+          "Text": " called,",
+          "Confidence": 0.8246,
+          "StartTime": 1.2,
+          "EndTime": 1.2
+        },
+        {
+          "Text": " so",
+          "Confidence": 0.6892,
+          "StartTime": 1.71,
+          "EndTime": 1.71
+        },
+        {
+          "Text": " All",
+          "Confidence": 0.4961,
+          "StartTime": 4.34,
+          "EndTime": 4.34
+        },
+        {
+          "Text": " right,",
+          "Confidence": 0.8063,
+          "StartTime": 4.43,
+          "EndTime": 4.43
+        },
+        {
+          "Text": " yeah.",
+          "Confidence": 0.8561,
+          "StartTime": 5.64,
+          "EndTime": 5.64
+        }
+      ]
+    },
+    {
+      "SegmentStartTime": 3.71,
+      "SegmentEndTime": 6.16,
+      "SegmentSpeaker": "spk_1",
+      "SegmentInterruption": false,
+      "OriginalText": "This is [PII] speaking. Am I speaking to [PII]?",
+      "DisplayText": "This is [PII] speaking. Am I speaking to [PII]?",
+      "TextEdited": 0,
+      "LoudnessScores": [35.78, 77.93, 76.36, 72.23],
+      "SentimentIsPositive": 0,
+      "SentimentIsNegative": 0,
+      "SentimentScore": 0.0,
+      "BaseSentimentScores": {
+        "Positive": 0.0,
+        "Negative": 0.0,
+        "Neutral": 1.0
+      },
+      "EntitiesDetected": [],
+      "CategoriesDetected": [],
+      "FollowOnCategories": [],
+      "IssuesDetected": [],
+      "WordConfidence": [
+        {
+          "Text": "This",
+          "Confidence": 1.0,
+          "StartTime": 3.71,
+          "EndTime": 3.71
+        },
+        {
+          "Text": " is",
+          "Confidence": 1.0,
+          "StartTime": 3.93,
+          "EndTime": 3.93
+        },
+        {
+          "Text": " [PII]",
+          "Confidence": 0.9999,
+          "StartTime": 4.18,
+          "EndTime": 4.18
+        },
+        {
+          "Text": " speaking.",
+          "Confidence": 1.0,
+          "StartTime": 4.43,
+          "EndTime": 4.43
+        },
+        {
+          "Text": " Am",
+          "Confidence": 0.9947,
+          "StartTime": 4.98,
+          "EndTime": 4.98
+        },
+        {
+          "Text": " I",
+          "Confidence": 0.9947,
+          "StartTime": 5.15,
+          "EndTime": 5.15
+        },
+        {
+          "Text": " speaking",
+          "Confidence": 1.0,
+          "StartTime": 5.26,
+          "EndTime": 5.26
+        },
+        {
+          "Text": " to",
+          "Confidence": 0.9828,
+          "StartTime": 5.62,
+          "EndTime": 5.62
+        },
+        {
+          "Text": " [PII]?",
+          "Confidence": 1.0,
+          "StartTime": 5.72,
+          "EndTime": 5.72
+        }
+      ]
+    },
+    {
+      "SegmentStartTime": 7.74,
+      "SegmentEndTime": 9.25,
+      "SegmentSpeaker": "spk_0",
+      "SegmentInterruption": false,
+      "OriginalText": "Yes. Mhm.",
+      "DisplayText": "Yes. Mhm.",
+      "TextEdited": 0,
+      "LoudnessScores": [54.44, 61.49, 86.1],
+      "SentimentIsPositive": 0,
+      "SentimentIsNegative": 0,
+      "SentimentScore": 0.0,
+      "BaseSentimentScores": {
+        "Positive": 0.0,
+        "Negative": 0.0,
+        "Neutral": 1.0
+      },
+      "EntitiesDetected": [],
+      "CategoriesDetected": [],
+      "FollowOnCategories": [],
+      "IssuesDetected": [],
+      "WordConfidence": [
+        {
+          "Text": "Yes.",
+          "Confidence": 1.0,
+          "StartTime": 7.74,
+          "EndTime": 7.74
+        },
+        {
+          "Text": " Mhm.",
+          "Confidence": 0.3157,
+          "StartTime": 9.04,
+          "EndTime": 9.04
+        }
+      ]
+    },
+    {
+      "SegmentStartTime": 9.04,
+      "SegmentEndTime": 10.56,
+      "SegmentSpeaker": "spk_1",
+      "SegmentInterruption": false,
+      "OriginalText": "Hey, how you doing today?",
+      "DisplayText": "Hey, how you doing today?",
+      "TextEdited": 0,
+      "LoudnessScores": [72.47, 50.05],
+      "SentimentIsPositive": 0,
+      "SentimentIsNegative": 0,
+      "SentimentScore": 0.0,
+      "BaseSentimentScores": {
+        "Positive": 0.0,
+        "Negative": 0.0,
+        "Neutral": 1.0
+      },
+      "EntitiesDetected": [
+        {
+          "Score": 0.9844713807106018,
+          "Type": "DATE",
+          "Text": "today",
+          "BeginOffset": 19,
+          "EndOffset": 24
+        }
+      ],
+      "CategoriesDetected": [],
+      "FollowOnCategories": [],
+      "IssuesDetected": [],
+      "WordConfidence": [
+        {
+          "Text": "Hey,",
+          "Confidence": 1.0,
+          "StartTime": 9.04,
+          "EndTime": 9.04
+        },
+        {
+          "Text": " how",
+          "Confidence": 0.9829,
+          "StartTime": 9.64,
+          "EndTime": 9.64
+        },
+        {
+          "Text": " you",
+          "Confidence": 1.0,
+          "StartTime": 9.76,
+          "EndTime": 9.76
+        },
+        {
+          "Text": " doing",
+          "Confidence": 0.9999,
+          "StartTime": 9.89,
+          "EndTime": 9.89
+        },
+        {
+          "Text": " today?",
+          "Confidence": 1.0,
+          "StartTime": 10.13,
+          "EndTime": 10.13
+        }
+      ]
+    },
+    {
+      "SegmentStartTime": 11.34,
+      "SegmentEndTime": 12.75,
+      "SegmentSpeaker": "spk_0",
+      "SegmentInterruption": false,
+      "OriginalText": "No, I'm doing just fine thank you.",
+      "DisplayText": "No, I'm doing just fine thank you.",
+      "TextEdited": 0,
+      "LoudnessScores": [36.34, 36.61],
+      "SentimentIsPositive": 1,
+      "SentimentIsNegative": 0,
+      "SentimentScore": 5.0,
+      "BaseSentimentScores": {
+        "Positive": 1.0,
+        "Negative": 0.0,
+        "Neutral": 0.0
+      },
+      "EntitiesDetected": [],
+      "CategoriesDetected": [],
+      "FollowOnCategories": [],
+      "IssuesDetected": [],
+      "WordConfidence": [
+        {
+          "Text": "No,",
+          "Confidence": 0.9304,
+          "StartTime": 11.34,
+          "EndTime": 11.34
+        },
+        {
+          "Text": " I'm",
+          "Confidence": 0.9978,
+          "StartTime": 11.54,
+          "EndTime": 11.54
+        },
+        {
+          "Text": " doing",
+          "Confidence": 1.0,
+          "StartTime": 11.66,
+          "EndTime": 11.66
+        },
+        {
+          "Text": " just",
+          "Confidence": 1.0,
+          "StartTime": 11.87,
+          "EndTime": 11.87
+        },
+        {
+          "Text": " fine",
+          "Confidence": 1.0,
+          "StartTime": 12.07,
+          "EndTime": 12.07
+        },
+        {
+          "Text": " thank",
+          "Confidence": 1.0,
+          "StartTime": 12.29,
+          "EndTime": 12.29
+        },
+        {
+          "Text": " you.",
+          "Confidence": 0.9999,
+          "StartTime": 12.51,
+          "EndTime": 12.51
+        }
+      ]
+    },
+    {
+      "SegmentStartTime": 13.64,
+      "SegmentEndTime": 19.25,
+      "SegmentSpeaker": "spk_1",
+      "SegmentInterruption": false,
+      "OriginalText": "Great to hear it and says here that you're experiencing, highlight and see on your SD WAN.",
+      "DisplayText": "Great to hear it and says here that you're experiencing, highlight and see on your SD WAN.",
+      "TextEdited": 0,
+      "LoudnessScores": [48.72, 54.22, 62.74, 65.98, 56.21, 65.96, 80.78],
+      "SentimentIsPositive": 1,
+      "SentimentIsNegative": 0,
+      "SentimentScore": 5.0,
+      "BaseSentimentScores": {
+        "Positive": 1.0,
+        "Negative": 0.0,
+        "Neutral": 0.0
+      },
+      "EntitiesDetected": [],
+      "CategoriesDetected": [],
+      "FollowOnCategories": [],
+      "IssuesDetected": [],
+      "WordConfidence": [
+        {
+          "Text": "Great",
+          "Confidence": 0.8301,
+          "StartTime": 13.64,
+          "EndTime": 13.64
+        },
+        {
+          "Text": " to",
+          "Confidence": 1.0,
+          "StartTime": 13.8,
+          "EndTime": 13.8
+        },
+        {
+          "Text": " hear",
+          "Confidence": 1.0,
+          "StartTime": 13.89,
+          "EndTime": 13.89
+        },
+        {
+          "Text": " it",
+          "Confidence": 1.0,
+          "StartTime": 14.13,
+          "EndTime": 14.13
+        },
+        {
+          "Text": " and",
+          "Confidence": 1.0,
+          "StartTime": 14.51,
+          "EndTime": 14.51
+        },
+        {
+          "Text": " says",
+          "Confidence": 0.9758,
+          "StartTime": 15.0,
+          "EndTime": 15.0
+        },
+        {
+          "Text": " here",
+          "Confidence": 0.9981,
+          "StartTime": 15.23,
+          "EndTime": 15.23
+        },
+        {
+          "Text": " that",
+          "Confidence": 0.999,
+          "StartTime": 15.43,
+          "EndTime": 15.43
+        },
+        {
+          "Text": " you're",
+          "Confidence": 0.9917,
+          "StartTime": 15.57,
+          "EndTime": 15.57
+        },
+        {
+          "Text": " experiencing,",
+          "Confidence": 1.0,
+          "StartTime": 16.14,
+          "EndTime": 16.14
+        },
+        {
+          "Text": " highlight",
+          "Confidence": 0.408,
+          "StartTime": 16.8,
+          "EndTime": 16.8
+        },
+        {
+          "Text": " and",
+          "Confidence": 0.3828,
+          "StartTime": 17.23,
+          "EndTime": 17.23
+        },
+        {
+          "Text": " see",
+          "Confidence": 0.6371,
+          "StartTime": 17.37,
+          "EndTime": 17.37
+        },
+        {
+          "Text": " on",
+          "Confidence": 0.9916,
+          "StartTime": 17.62,
+          "EndTime": 17.62
+        },
+        {
+          "Text": " your",
+          "Confidence": 0.9993,
+          "StartTime": 17.77,
+          "EndTime": 17.77
+        },
+        {
+          "Text": " SD",
+          "Confidence": 0.8125,
+          "StartTime": 17.91,
+          "EndTime": 17.91
+        },
+        {
+          "Text": " WAN.",
+          "Confidence": 0.8316,
+          "StartTime": 18.15,
+          "EndTime": 18.15
+        }
+      ]
+    },
+    {
+      "SegmentStartTime": 18.04,
+      "SegmentEndTime": 20.46,
+      "SegmentSpeaker": "spk_0",
+      "SegmentInterruption": false,
+      "OriginalText": "Uh huh. Yes, correct.",
+      "DisplayText": "Uh huh. Yes, correct.",
+      "TextEdited": 0,
+      "LoudnessScores": [77.8, 51.41, 47.95],
+      "SentimentIsPositive": 0,
+      "SentimentIsNegative": 0,
+      "SentimentScore": 0.0,
+      "BaseSentimentScores": {
+        "Positive": 0.0,
+        "Negative": 0.0,
+        "Neutral": 1.0
+      },
+      "EntitiesDetected": [],
+      "CategoriesDetected": [],
+      "FollowOnCategories": [],
+      "IssuesDetected": [],
+      "WordConfidence": [
+        {
+          "Text": "Uh",
+          "Confidence": 0.5438,
+          "StartTime": 18.04,
+          "EndTime": 18.04
+        },
+        {
+          "Text": " huh.",
+          "Confidence": 0.4191,
+          "StartTime": 18.09,
+          "EndTime": 18.09
+        },
+        {
+          "Text": " Yes,",
+          "Confidence": 1.0,
+          "StartTime": 19.14,
+          "EndTime": 19.14
+        },
+        {
+          "Text": " correct.",
+          "Confidence": 1.0,
+          "StartTime": 19.93,
+          "EndTime": 19.93
+        }
+      ]
+    },
+    {
+      "SegmentStartTime": 21.44,
+      "SegmentEndTime": 27.04,
+      "SegmentSpeaker": "spk_1",
+      "SegmentInterruption": false,
+      "OriginalText": "Read me, go ahead and get my goat two meeting started. Um, do you want me to email you the joint liquor?",
+      "DisplayText": "Read me, go ahead and get my goat two meeting started. Um, do you want me to email you the joint liquor?",
+      "TextEdited": 0,
+      "LoudnessScores": [73.24, 72.04, 35.41, 73.08, 81.03, 35.68, 35.83],
+      "SentimentIsPositive": 0,
+      "SentimentIsNegative": 0,
+      "SentimentScore": 0.0,
+      "BaseSentimentScores": {
+        "Positive": 0.0,
+        "Negative": 0.0,
+        "Neutral": 1.0
+      },
+      "EntitiesDetected": [
+        {
+          "Score": 0.7264672517776489,
+          "Type": "QUANTITY",
+          "Text": "two meeting",
+          "BeginOffset": 34,
+          "EndOffset": 45
+        }
+      ],
+      "CategoriesDetected": [],
+      "FollowOnCategories": [],
+      "IssuesDetected": [],
+      "WordConfidence": [
+        {
+          "Text": "Read",
+          "Confidence": 0.1936,
+          "StartTime": 21.44,
+          "EndTime": 21.44
+        },
+        {
+          "Text": " me,",
+          "Confidence": 0.8196,
+          "StartTime": 21.78,
+          "EndTime": 21.78
+        },
+        {
+          "Text": " go",
+          "Confidence": 1.0,
+          "StartTime": 22.05,
+          "EndTime": 22.05
+        },
+        {
+          "Text": " ahead",
+          "Confidence": 1.0,
+          "StartTime": 22.19,
+          "EndTime": 22.19
+        },
+        {
+          "Text": " and",
+          "Confidence": 1.0,
+          "StartTime": 22.4,
+          "EndTime": 22.4
+        },
+        {
+          "Text": " get",
+          "Confidence": 0.9999,
+          "StartTime": 22.5,
+          "EndTime": 22.5
+        },
+        {
+          "Text": " my",
+          "Confidence": 1.0,
+          "StartTime": 22.62,
+          "EndTime": 22.62
+        },
+        {
+          "Text": " goat",
+          "Confidence": 0.7877,
+          "StartTime": 22.74,
+          "EndTime": 22.74
+        },
+        {
+          "Text": " two",
+          "Confidence": 0.752,
+          "StartTime": 22.99,
+          "EndTime": 22.99
+        },
+        {
+          "Text": " meeting",
+          "Confidence": 0.5031,
+          "StartTime": 23.11,
+          "EndTime": 23.11
+        },
+        {
+          "Text": " started.",
+          "Confidence": 1.0,
+          "StartTime": 23.45,
+          "EndTime": 23.45
+        },
+        {
+          "Text": " Um,",
+          "Confidence": 0.7367,
+          "StartTime": 24.64,
+          "EndTime": 24.64
+        },
+        {
+          "Text": " do",
+          "Confidence": 0.9986,
+          "StartTime": 24.97,
+          "EndTime": 24.97
+        },
+        {
+          "Text": " you",
+          "Confidence": 1.0,
+          "StartTime": 25.07,
+          "EndTime": 25.07
+        },
+        {
+          "Text": " want",
+          "Confidence": 0.996,
+          "StartTime": 25.13,
+          "EndTime": 25.13
+        },
+        {
+          "Text": " me",
+          "Confidence": 1.0,
+          "StartTime": 25.26,
+          "EndTime": 25.26
+        },
+        {
+          "Text": " to",
+          "Confidence": 1.0,
+          "StartTime": 25.38,
+          "EndTime": 25.38
+        },
+        {
+          "Text": " email",
+          "Confidence": 1.0,
+          "StartTime": 25.68,
+          "EndTime": 25.68
+        },
+        {
+          "Text": " you",
+          "Confidence": 1.0,
+          "StartTime": 26.1,
+          "EndTime": 26.1
+        },
+        {
+          "Text": " the",
+          "Confidence": 1.0,
+          "StartTime": 26.32,
+          "EndTime": 26.32
+        },
+        {
+          "Text": " joint",
+          "Confidence": 0.9888,
+          "StartTime": 26.45,
+          "EndTime": 26.45
+        },
+        {
+          "Text": " liquor?",
+          "Confidence": 0.6923,
+          "StartTime": 26.75,
+          "EndTime": 26.75
+        }
+      ]
+    },
+    {
+      "SegmentStartTime": 24.84,
+      "SegmentEndTime": 25.35,
+      "SegmentSpeaker": "spk_0",
+      "SegmentInterruption": false,
+      "OriginalText": "Okay.",
+      "DisplayText": "Okay.",
+      "TextEdited": 0,
+      "LoudnessScores": [86.78, 85.3],
+      "SentimentIsPositive": 0,
+      "SentimentIsNegative": 0,
+      "SentimentScore": 0.0,
+      "BaseSentimentScores": [],
+      "EntitiesDetected": [],
+      "CategoriesDetected": [],
+      "FollowOnCategories": [],
+      "IssuesDetected": [],
+      "WordConfidence": [
+        {
+          "Text": "Okay.",
+          "Confidence": 0.905,
+          "StartTime": 24.84,
+          "EndTime": 24.84
+        }
+      ]
+    },
+    {
+      "SegmentStartTime": 27.04,
+      "SegmentEndTime": 28.96,
+      "SegmentSpeaker": "spk_1",
+      "SegmentInterruption": false,
+      "OriginalText": "Do you want me to just tell you the meeting I'd be?",
+      "DisplayText": "Do you want me to just tell you the meeting I'd be?",
+      "TextEdited": 0,
+      "LoudnessScores": [35.83, 35.65],
+      "SentimentIsPositive": 0,
+      "SentimentIsNegative": 0,
+      "SentimentScore": 0.0,
+      "BaseSentimentScores": {
+        "Positive": 0.0,
+        "Negative": 0.0,
+        "Neutral": 1.0
+      },
+      "EntitiesDetected": [],
+      "CategoriesDetected": [],
+      "FollowOnCategories": [],
+      "IssuesDetected": [],
+      "WordConfidence": [
+        {
+          "Text": "Do",
+          "Confidence": 0.9997,
+          "StartTime": 27.04,
+          "EndTime": 27.04
+        },
+        {
+          "Text": " you",
+          "Confidence": 0.9995,
+          "StartTime": 27.14,
+          "EndTime": 27.14
+        },
+        {
+          "Text": " want",
+          "Confidence": 0.9971,
+          "StartTime": 27.23,
+          "EndTime": 27.23
+        },
+        {
+          "Text": " me",
+          "Confidence": 1.0,
+          "StartTime": 27.37,
+          "EndTime": 27.37
+        },
+        {
+          "Text": " to",
+          "Confidence": 1.0,
+          "StartTime": 27.45,
+          "EndTime": 27.45
+        },
+        {
+          "Text": " just",
+          "Confidence": 1.0,
+          "StartTime": 27.59,
+          "EndTime": 27.59
+        },
+        {
+          "Text": " tell",
+          "Confidence": 1.0,
+          "StartTime": 27.85,
+          "EndTime": 27.85
+        },
+        {
+          "Text": " you",
+          "Confidence": 1.0,
+          "StartTime": 28.05,
+          "EndTime": 28.05
+        },
+        {
+          "Text": " the",
+          "Confidence": 0.9993,
+          "StartTime": 28.18,
+          "EndTime": 28.18
+        },
+        {
+          "Text": " meeting",
+          "Confidence": 1.0,
+          "StartTime": 28.27,
+          "EndTime": 28.27
+        },
+        {
+          "Text": " I'd",
+          "Confidence": 0.3188,
+          "StartTime": 28.58,
+          "EndTime": 28.58
+        },
+        {
+          "Text": " be?",
+          "Confidence": 0.7103,
+          "StartTime": 28.67,
+          "EndTime": 28.67
+        }
+      ]
+    }
+  ]
+}
