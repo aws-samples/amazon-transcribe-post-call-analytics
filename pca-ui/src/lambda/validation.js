@@ -1,7 +1,7 @@
 const Ajv = require("ajv");
 const ajv = new Ajv({ allErrors: true });
 
-const withMVQSValidation =
+const withQueryStringValidation =
   (handler, schema) => async (event, context, callback) => {
     try {
       const mvqs = event.queryStringParameters;
@@ -66,7 +66,7 @@ const listSchema = {
 };
 
 module.exports = {
-  withMVQSValidation,
+  withQueryStringValidation: withQueryStringValidation,
   response,
   searchSchema,
   listSchema,

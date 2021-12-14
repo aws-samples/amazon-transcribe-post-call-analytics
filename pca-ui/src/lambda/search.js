@@ -1,6 +1,10 @@
 const AWS = require("aws-sdk");
 const ddb = new AWS.DynamoDB();
-const { withMVQSValidation, searchSchema, response } = require("./validation");
+const {
+  withQueryStringValidation,
+  searchSchema,
+  response,
+} = require("./validation");
 
 const tableName = process.env.TableName;
 
@@ -149,4 +153,4 @@ const handler = async function (event, context) {
   });
 };
 
-exports.handler = withMVQSValidation(handler, searchSchema);
+exports.handler = withQueryStringValidation(handler, searchSchema);
