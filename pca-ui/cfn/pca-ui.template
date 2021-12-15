@@ -53,6 +53,9 @@ Resources:
     Properties:
       TemplateURL: lib/web.template
       TimeoutInMinutes: 20
+      Parameters:
+        AudioBucket: !Ref AudioBucket
+        DataBucket: !Ref DataBucket
 
   Cognito:
     Type: AWS::CloudFormation::Stack
