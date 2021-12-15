@@ -1,5 +1,7 @@
 # Amazon Transcribe Post Call Analytics (PCA) Solution
 
+*Companion AWS blog post: [Post call analytics for your contact center with Amazon language AI services](www.amazon.com/post-call-analytics)*
+
 ## Overview
 
 Your contact center connects your business to your community, enabling customers to order products, callers to request support, clients to make appointments, and much more. Each conversation with a caller is an opportunity to learn more about that caller’s needs, and how well those needs were addressed during the call. You can uncover insights from these conversations that help you manage script compliance and find new opportunities to satisfy your customers, perhaps by expanding your services to address reported gaps, improving the quality of reported problem areas, or by elevating the customer experience delivered by your contact center agents.
@@ -94,7 +96,7 @@ To get PCA up and running in your own AWS account, follow these steps (if you do
 
 Region name | Region code | Launch
 --- | --- | ---
-US East (N. Virginia) | us-east-1 | [![Launch Stack](https://cdn.rawgit.com/buildkite/cloudformation-launch-stack-button-svg/master/launch-stack.svg)](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=PostCallAnalyticsStack&templateURL=https://s3.amazonaws.com/aws-fullstack-template/master-fullstack.yaml) **TODO**-CHANGE
+US East (N. Virginia) | us-east-1 | [![Launch Stack](https://cdn.rawgit.com/buildkite/cloudformation-launch-stack-button-svg/master/launch-stack.svg)](https://us-east-1.console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/create/review?templateURL=https://s3.us-east-1.amazonaws.com/aws-ml-blog-us-east-1/artifacts/pca/pca-main.yaml&stackName=PostCallAnalytics)
 
 OR, if you opted to follow the steps above to Build and Publish PCA CloudFormation artifacts, use your own published CloudFormation template instead.
 
