@@ -27,6 +27,10 @@ PREFIX=$2
 # Remove trailing slash from prefix if needed
 [[ "${PREFIX}" == */ ]] && PREFIX="${PREFIX%?}"
 
+# Append VERSION
+VERSION=$(cat ./VERSION)
+PREFIX_AND_VERSION=${PREFIX}/${VERSION}
+
 ACL=$3
 if [ "$ACL" == "public" ]; then
   echo "Published S3 artifacts will be acessible by public (read-only)"
@@ -72,17 +76,17 @@ popd
 # Build and deploy embedded MediaSearch project
 pushd aws-kendra-transcribe-media-search
 if $PUBLIC; then
-  ./publish.sh ${BUCKET} ${PREFIX}/mediasearch | tee /tmp/mediasearch.out
+  ./publish.sh ${BUCKET} ${PREFIX_AND_VERSION}/mediasearch | tee /tmp/mediasearch.out
 else
-   ./publish-privatebucket.sh ${BUCKET} ${PREFIX}/mediasearch | tee /tmp/mediasearch.out
+   ./publish-privatebucket.sh ${BUCKET} ${PREFIX_AND_VERSION}/mediasearch | tee /tmp/mediasearch.out
 fi
 popd
-mediasearch_template="s3://${BUCKET}/${PREFIX}/mediasearch/msfinder.yaml"
+mediasearch_template="s3://${BUCKET}/${PREFIX_AND_VERSION}/mediasearch/msfinder.yaml"
 aws s3 cp $mediasearch_template build/pca-mediasearch-finder.yaml
 
 
 echo "Packaging Cfn artifacts"
-aws cloudformation package --template-file pca-main.template --output-template-file build/packaged.template --s3-bucket ${BUCKET} --s3-prefix ${PREFIX} --region ${region}|| exit 1
+aws cloudformation package --template-file pca-main.template --output-template-file build/packaged.template --s3-bucket ${BUCKET} --s3-prefix ${PREFIX_AND_VERSION} --region ${region}|| exit 1
 aws s3 cp build/packaged.template s3://${BUCKET}/${PREFIX}/pca-main.yaml || exit 1
 
 if $PUBLIC; then
