@@ -1,6 +1,9 @@
 """
-Parses the output from an Amazon Transcribe job into turn-by-turn
-speech segments with sentiment analysis scores from Amazon Comprehend
+This python function is part of the main processing workflow.  Parses the output from an Amazon Transcribe job into
+turn-by-turn speech segments with sentiment analysis scores from Amazon Comprehend
+
+Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+SPDX-License-Identifier: Apache-2.0
 """
 from pathlib import Path
 from datetime import datetime

@@ -1,3 +1,10 @@
+"""
+This python function is part of the main processing workflow.  It contains a number of common functions that other
+python functions in this application need to share.
+
+Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+SPDX-License-Identifier: Apache-2.0
+"""
 import os
 import boto3
 import pcaconfiguration as cf

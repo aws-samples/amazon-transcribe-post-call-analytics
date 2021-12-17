@@ -1,3 +1,7 @@
+"""
+Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+SPDX-License-Identifier: Apache-2.0
+"""
 import os
 import json
 import boto3
@@ -8,6 +12,7 @@ import pcaconfiguration as cf
 
 KENDRA = boto3.client('kendra')
 S3 = boto3.client('s3')
+
 
 def prepare_transcript_standard(transcript):
     print(f"prepare_transcript_callanalytics(...)")
@@ -29,6 +34,7 @@ def prepare_transcript_standard(transcript):
         txt = txt + " " + sentence + " "
     out = textwrap.fill(txt, width=70)
     return out
+
 
 def prepare_transcript_callanalytics(transcript):
     print(f"prepare_transcript_callanalytics(...)")
@@ -53,6 +59,7 @@ def prepare_transcript_callanalytics(transcript):
         txt = txt + " " + sentence + " "
     out = textwrap.fill(txt, width=70)
     return out    
+
 
 def prepare_transcript(transcript_file):
     """
@@ -137,6 +144,7 @@ def durationBucket(durationStr):
         return "5 min to 10 min"
     else:
         return "over 10 min"
+
 
 def put_kendra_document(indexId, analysisUri, conversationAnalytics, text):
     """

@@ -1,5 +1,15 @@
+"""
+This python function is part of the bulk files workflow.  Checks the current state of the Transcribe job queue,
+taking into account running and queued jobs.  It then returns the calculated head-space in the queue that the
+Bulk process is able to use.  If any of the API calls to Transcribe or S3 get throttled then we say the queue
+is full this cycle and carry on
+
+Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+SPDX-License-Identifier: Apache-2.0
+"""
 import copy
 import boto3
+
 
 def countTranscribeJobsInState(status, client, filesLimit):
     """
@@ -15,12 +25,9 @@ def countTranscribeJobsInState(status, client, filesLimit):
 
     return found
 
+
 def lambda_handler(event, context):
-    """
-    Checks the current state of the Transcribe job queue, taking into account running and queued jobs.
-    It then returns the calculated head-space in the queue that the Bulk process is able to use.  If any
-    of the API calls to Transcribe or S3 get throttled then we say the queue is full this cycle and carry on
-    """
+
     # Load our event, but we no longer need "filesToMove"
     sfData = copy.deepcopy(event)
     filesLimit = sfData["filesLimit"]
@@ -40,6 +47,7 @@ def lambda_handler(event, context):
     # Return current event data with the headroom left in our queue limit
     sfData["queueSpace"] = max(0, (filesLimit - found))
     return sfData
+
 
 if __name__ == "__main__":
     event = {

@@ -1,15 +1,18 @@
+"""
+This python function is part of the bulk files workflow.  The system will load the Bulk configuration values
+once, and re-use them throughout the run, so the config values at the start of the run will remain valid.
+There is not quick way to count the files in an S3 bucket, so rather than track what's left in the bucket
+we just care about having any left to process and instead count how far we've gotten instead.
+
+Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+SPDX-License-Identifier: Apache-2.0
+"""
 import pcaconfiguration as cf
 import copy
 import boto3
 
+
 def lambda_handler(event, context):
-    """
-    Entrypoint for bulk loading audio files.  The system will load the Bulk configuration values
-    once, and re-use them throughout the run, so the config values at the start of the run will
-    remain valid.  There is not quick way to count the files in an S3 bucket, so rather than track
-    what's left in the bucket we just care about having any left to process and instead count
-    how far we've gotten instead.
-    """
 
     # Get our params, looking them up if we haven't got them
     if "sourceBucket" in event:
@@ -45,6 +48,7 @@ def lambda_handler(event, context):
 
     # Return current event data
     return sfData
+
 
 if __name__ == "__main__":
     event = {}

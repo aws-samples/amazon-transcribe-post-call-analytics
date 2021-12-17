@@ -1,3 +1,11 @@
+"""
+This python function is part of the main processing workflow.  It is called by Event Bridge once a Transcribe job
+has completed.  It will look up that job record in DynamoDB, including the Step Functions task token associated with
+that job, extract the job-status from the relevant Transcribe API and then resume the Step Function execution
+
+Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+SPDX-License-Identifier: Apache-2.0
+"""
 import json
 import boto3
 import time
@@ -6,6 +14,7 @@ import pcaconfiguration as cf
 
 # Total number of retry attempts to make
 RETRY_LIMIT = 2
+
 
 def lambda_handler(event, context):
     # Our tracking table name is an environment variable

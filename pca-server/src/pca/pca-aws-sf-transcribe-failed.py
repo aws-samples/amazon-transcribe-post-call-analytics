@@ -1,6 +1,15 @@
+"""
+This python function is part of the main processing workflow.  It handles the clean-up for when the workflow fails
+for expected reasons, such as being unable to perform Language Identification, and clears up or moves any resources
+associated with this execution.
+
+Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+SPDX-License-Identifier: Apache-2.0
+"""
 import boto3
 import pcaconfiguration as cf
 import pcacommon
+
 
 def lambda_handler(event, context):
     """
@@ -34,6 +43,7 @@ def lambda_handler(event, context):
 
     # Return our input data as the final result
     return event
+
 
 if __name__ == "__main__":
     event = {

@@ -1,3 +1,11 @@
+"""
+This python function is part of the main processing workflow.  It loads in all of the configuration parameters
+from the SSM Parameter Store and makes them available to all other python functions.  It also includes some helper
+functions to check some logical conditions of some of these configuration parameters.
+
+Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+SPDX-License-Identifier: Apache-2.0
+"""
 import boto3
 
 # Parameter Store Field Names used by main workflow
@@ -57,6 +65,7 @@ VOCAB_FILTER_MODES = {"remove", "mask", "tag"}
 # Configuration data
 appConfig = {}
 
+
 def generateJobName(key):
     """
     Transcribe job names cannot contains spaces.  This takes in an S3
@@ -71,6 +80,7 @@ def generateJobName(key):
     response = response.replace(" ", "-")
 
     return response
+
 
 def extractParameters(ssmResponse, useTagName):
     """
@@ -90,6 +100,7 @@ def extractParameters(ssmResponse, useTagName):
             appConfig[paramName] = paramName
         else:
             appConfig[paramName] = ""
+
 
 def loadConfiguration():
     """

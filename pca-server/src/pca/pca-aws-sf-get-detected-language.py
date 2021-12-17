@@ -1,3 +1,11 @@
+"""
+This python function is part of the main processing workflow.  It picks out the result of a transcription job
+and extracts the languag code.  This is only used on jobs that were started on a short audio clip with the
+sole purpose of language identification.
+
+Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+SPDX-License-Identifier: Apache-2.0
+"""
 from urllib.parse import urlparse
 import boto3
 import copy
@@ -38,6 +46,7 @@ def lambda_handler(event, context):
     # Pick the language code and return our data
     sfData["langCode"] = transcribeJobInfo["LanguageCode"]
     return sfData
+
 
 # Main entrypoint for testing
 if __name__ == "__main__":

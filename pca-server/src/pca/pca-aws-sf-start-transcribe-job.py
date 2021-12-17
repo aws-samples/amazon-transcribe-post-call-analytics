@@ -1,3 +1,12 @@
+"""
+This python function is part of the main processing workflow.  It will start a job in the Amazon Transcribe service,
+using whatever configuration parameters are set.  It handles all of the cross-validation of parameters, and takes
+into account the audio format - it will then degrade certain feature requests; e.g. if you have configured the app
+to do channel-separated audio jobs but the audio file is mono then it switch to speaker-separation mode.
+
+Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+SPDX-License-Identifier: Apache-2.0
+"""
 import copy
 import boto3
 import subprocess
@@ -49,6 +58,7 @@ def delete_existing_job(job_name, transcribe, api_mode):
     except Exception as e:
         # If the job has already been deleted then we don't need to take any action
         pass
+
 
 def count_audio_channels(bucket, key):
     '''
