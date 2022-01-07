@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 
-Description: Amazon Transcribe Post Call Analytics - PCA (v0.1)
+Description: Amazon Transcribe Post Call Analytics - PCA (v0.1.1)
 
 Parameters:
 
@@ -122,12 +122,15 @@ Parameters:
   OutputBucketParsedResults:
     Type: String
     Default: parsedFiles
-    Description: Folder within the output S3 bucket where parsed results are written to
+    Description: Folder within the output S3 bucket where parsed results are written
 
   SpeakerNames:
     Type: String
-    Default: Caller | Agent
-    Description: Default tags used for speaker names, separated by " | "
+    Default: Customer | Agent
+    AllowedValues:
+        - Customer | Agent
+        - Agent | Customer
+    Description: Speaker label assignment order
 
   SpeakerSeparationType:
     Type: String
