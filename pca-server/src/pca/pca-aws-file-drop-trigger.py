@@ -1,3 +1,11 @@
+"""
+This python function is triggered when a new audio file is dropped into the S3 bucket that has
+been configured for audio ingestion.  It will ensure that no Transcribe job already exists for this
+filename, and will then trigger the main Step Functions workflow to process this file.
+
+Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+SPDX-License-Identifier: Apache-2.0
+"""
 import json
 import urllib.parse
 import boto3
@@ -7,7 +15,6 @@ import pcaconfiguration as cf
 def lambda_handler(event, context):
     # Load our configuration
     cf.loadConfiguration()
-    print("S3 Event: " + str(event["Records"][0]))
 
     # Get the object from the event and validate it exists
     s3 = boto3.client("s3")

@@ -1,11 +1,17 @@
+"""
+This python function is part of the bulk files workflow.  Based upon the queueSpace parameter, this will
+move up to that many files into the PCA audio bucket, but only up to a maximum number as specified by
+the dripRate - this ensures that we don't overload they system
+
+Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+SPDX-License-Identifier: Apache-2.0
+"""
 import copy
 import boto3
 
+
 def lambda_handler(event, context):
-    """
-    Based upon the queueSpace parameter, this will move up to that many file into the PCA audio bucket, but
-    only up to a maximum number as specified by the dripRate - this ensures that we don't overload they system
-    """
+
     # Load our event
     sfData = copy.deepcopy(event)
     filesLimit = sfData["filesLimit"]
@@ -41,6 +47,7 @@ def lambda_handler(event, context):
     sfData["filesProcessed"] += movedFiles
     sfData.pop("queueSpace", None)
     return sfData
+
 
 if __name__ == "__main__":
     event = {

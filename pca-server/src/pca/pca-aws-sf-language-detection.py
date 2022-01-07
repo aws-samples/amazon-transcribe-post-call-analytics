@@ -1,3 +1,11 @@
+"""
+This python function is part of the main processing workflow.  It will create a 30-second clip of our original
+audio file and submit it to standard Amazon Transcribe, on the understanding that the next workflow step
+is interested in the detected language code that this job generates and not the transcript of the clip
+
+Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+SPDX-License-Identifier: Apache-2.0
+"""
 import copy
 import boto3
 import pcaconfiguration as cf

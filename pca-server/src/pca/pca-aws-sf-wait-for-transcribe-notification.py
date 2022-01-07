@@ -1,3 +1,11 @@
+"""
+This python function is part of the main processing workflow.  It is called when a Transcribe job is started, and it
+will create an entry in a DynamoDB table that holds some job information and the Step Functions task token.  The Step
+Function should then wait for another task to read this task token from DynamoDB and resume the execution.
+
+Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+SPDX-License-Identifier: Apache-2.0
+"""
 import json
 import boto3
 import os
