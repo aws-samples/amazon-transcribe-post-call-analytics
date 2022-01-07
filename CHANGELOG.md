@@ -6,9 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2022-01-07
+### Fixed
+- Athena queries broken due to image storage path
+- Recordings processed by Transcribe standard (not Call Analytics) fail to show up in the UI 
+
 ## [0.1.0] - 2021-12-17
 ### Added
 - Initial release
 
-[Unreleased]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/compare/v0.1.0...develop
+[Unreleased]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/compare/v0.1.1...develop
+[0.1.1]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.1.1
 [0.1.0]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.1.0

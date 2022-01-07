@@ -265,6 +265,7 @@ class TranscribeParser:
                 speaker_label = speaker["Speaker"]
                 speaker_time = sum((segment.segmentEndTime - segment.segmentStartTime) for segment in self.speechSegmentList if segment.segmentSpeaker == speaker_label)
                 resultsHeaderInfo["SpeakerTime"][speaker_label] = {"TotalTimeSecs": speaker_time}
+                resultsHeaderInfo["CombinedAnalyticsGraph"] = "no_chart_standard_mode"
 
         # Detected custom entity summaries next
         customEntityList = []
