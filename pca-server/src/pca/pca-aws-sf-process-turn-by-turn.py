@@ -411,7 +411,7 @@ class TranscribeParser:
 
         # Upload the graphic to S3
         s3Client = boto3.client('s3')
-        object_key = cf.appConfig[cf.CONF_PREFIX_PARSED_RESULTS] + "/tcaImagery/" + base_filename
+        object_key = "tcaImagery/" + base_filename
         s3Client.upload_file(chart_filename, cf.appConfig[cf.CONF_S3BUCKET_OUTPUT], object_key)
 
         # Remove the local file and return our S3 URL so that the UI can create signed URLs for browser rendering
@@ -1547,9 +1547,9 @@ if __name__ == "__main__":
         # "key": "originalAudio/stereo.mp3",
         # "apiMode": "analytics",
         # "jobName": "stereo.mp3",
-        "key": "originalAudio/example-call.wav",
+        "key": "originalAudio/Auto1_GUID_001_AGENT_AndrewK_DT_2021-12-01T07-55-51.wav",
         "apiMode": "analytics",
-        "jobName": "example-call.wav",
+        "jobName": "Auto1_GUID_001_AGENT_AndrewK_DT_2021-12-01T07-55-51.wav",
         "langCode": "en-US",
         "transcribeStatus": "COMPLETED"
     }
