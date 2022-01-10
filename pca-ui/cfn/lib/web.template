@@ -102,7 +102,7 @@ Resources:
         Name: !Sub "${AWS::StackName}-SecurityHeaders"
         SecurityHeadersConfig:
             ContentSecurityPolicy: 
-              ContentSecurityPolicy: !Sub "default-src 'none'; img-src 'self' https://${DataBucket}.s3.amazonaws.com data:; script-src 'self'; style-src 'self' 'unsafe-inline'; object-src 'none'; connect-src 'self' https://*.execute-api.${AWS::Region}.amazonaws.com https://*.auth.${AWS::Region}.amazoncognito.com; font-src data:;  media-src https://${AudioBucket}.s3.amazonaws.com;"
+              ContentSecurityPolicy: !Sub "default-src 'none'; img-src 'self' https://${DataBucket}.s3.amazonaws.com data:; script-src 'self'; style-src 'self' 'unsafe-inline'; object-src 'none'; connect-src 'self' https://*.execute-api.${AWS::Region}.amazonaws.com https://*.auth.${AWS::Region}.amazoncognito.com; font-src data:;  media-src https://${AudioBucket}.s3.amazonaws.com; manifest-src 'self';"
               Override: True
             ContentTypeOptions:               
               Override: True
