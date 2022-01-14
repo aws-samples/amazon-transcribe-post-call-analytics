@@ -266,16 +266,18 @@ function Dashboard({ setAlert }) {
           </Card.Body>
         </Card>
       </div>
-      <Card>
-        {!data && !error ? (
-          <Placeholder />
-        ) : (
-          <img
-            src={data?.ConversationAnalytics.CombinedAnalyticsGraph}
-            alt="Chart displaying the loudness of the agent and customer over time (available with Transcribe Call Analytics only)"
-          ></img>
-        )}
-      </Card>
+      {data?.ConversationAnalytics?.CombinedAnalyticsGraph ? (
+        <Card>
+          {!data && !error ? (
+            <Placeholder />
+          ) : (
+            <img
+              src={data?.ConversationAnalytics.CombinedAnalyticsGraph}
+              alt="Chart displaying the loudness of the agent and customer over time (available with Transcribe Call Analytics only)"
+            ></img>
+          )}
+        </Card>
+      ) : null}
       <Card>
         <Card.Header>Entities</Card.Header>
         <Card.Body>
