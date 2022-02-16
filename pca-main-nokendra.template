@@ -1,0 +1,597 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: Amazon Transcribe Post Call Analytics - PCA (v0.1.2)
+
+Parameters:
+
+  AdminUsername:
+    Type: String
+    Default: "admin"
+    Description: (Required) Username for admin user
+    
+  AdminEmail:
+      Type: String
+      Description: >-
+        (Required) Email address for the admin user. Will be used for logging in and for setting the admin password. 
+        This email will receive the temporary password for the admin user.
+      AllowedPattern: ".+\\@.+\\..+"
+      ConstraintDescription: Must be valid email address eg. johndoe@example.com
+
+  BulkUploadBucketName:
+    Type: String
+    Default: ""
+    Description: >-
+      (Optional) Existing bucket where files can be dropped, and a secondary Step Function can be 
+      manually enabled to drip feed them into the system. 
+      Leave blank to automatically create new bucket.
+
+  BulkUploadMaxDripRate:
+    Type: String
+    Default: "25"
+    Description: Maximum number of files that the bulk uploader will move to the PCA source bucket in one pass
+
+  BulkUploadMaxTranscribeJobs:
+    Type: String
+    Default: "50"
+    Description: Number of concurrent Transcribe jobs (executing or queuing) where bulk upload will pause
+
+  ComprehendLanguages:
+    Type: String
+    Default: en | es | fr | de | it | pt | ar | hi | ja | ko | zh | zh-TW
+    Description: Languages supported by Comprehend's standard calls, separated by " | "
+
+  ContentRedactionLanguages:
+    Type: String
+    Default: en-US
+    Description: Languages supported by Transcribe's Content Redaction feature, separated by " | "
+
+  ConversationLocation:
+    Type: String
+    Default: America/New_York
+    Description: Name of the timezone location for the call source - this is the TZ database name from https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+
+  EntityRecognizerEndpoint:
+    Type: String
+    Default: undefined
+    Description: Name of the custom entity recognizer for Amazon Comprehend (not including language suffix, e.g. -en). If one cannot be found then simple entity string matching is attempted instead
+
+  EntityStringMap:
+    Type: String
+    Default: sample-entities.csv
+    Description: Basename of a CSV file containing item/Entity maps for when we don't have data for Comprehend Custom Entities (not including language suffix, e.g. -en)
+
+  EntityThreshold:
+    Type: String
+    Default: "0.5"
+    Description: Confidence threshold where we accept the custom entity detection result
+
+  EntityTypes:
+    Type: String
+    Default: PERSON | LOCATION | ORGANIZATION | COMMERCIAL_ITEM | EVENT | DATE | QUANTITY | TITLE
+    Description: Entity types supported by Comprehend's standard entity detection, separated by " | "
+
+  InputBucketAudioPlayback:
+    Type: String
+    Default: mp3
+    Description: Folder that holds the audio files to playback in the browser when original audio cannot be used
+
+  InputBucketFailedTranscriptions:
+    Type: String
+    Default: failedAudio
+    Description: Folder that holds the audio files that for some reason failed transcription
+
+  InputBucketName:
+    Type: String
+    Default: ""
+    Description: >-
+      (Optional) Existing bucket holding all audio files for the system. 
+      Leave blank to automatically create new bucket with intelligent tiering storage and automated retention policy.
+
+  InputBucketRawAudio:
+    Type: String
+    Default: originalAudio
+    Description: Prefix/Folder that holds the audio files to be ingested into the system
+
+  MaxSpeakers:
+    Type: String
+    Default: "2"
+    Description: Maximum number of speakers that are expected on a call
+
+  MinSentimentNegative:
+    Type: String
+    Default: "2.0"
+    Description: Minimum sentiment level required to declare a phrase as having negative sentiment, in the range 0.0-5.0
+
+  MinSentimentPositive:
+    Type: String
+    Default: "2.0"
+    Description: Minimum sentiment level required to declare a phrase as having positive sentiment, in the range 0.0-5.0
+
+  OutputBucketName:
+    Type: String
+    Default: ""
+    Description: >-
+      (Optional) Existing bucket where Transcribe output files are delivered. 
+      Leave blank to automatically create new bucket with intelligent tiering storage and automated retention policy.
+
+  OutputBucketTranscribeResults:
+    Type: String
+    Default: transcribeResults
+    Description: Folder within the output S3 bucket where Transcribe results are written
+
+  OutputBucketParsedResults:
+    Type: String
+    Default: parsedFiles
+    Description: Folder within the output S3 bucket where parsed results are written
+
+  SpeakerNames:
+    Type: String
+    Default: Customer | Agent
+    AllowedValues:
+        - Customer | Agent
+        - Agent | Customer
+    Description: Speaker label assignment order
+
+  SpeakerSeparationType:
+    Type: String
+    Default: channel
+    AllowedValues:
+        - speaker
+        - channel
+    Description: Separation mode diarization - typically speaker for mono files, channel for stereo files
+
+  StepFunctionName:
+    Type: String
+    Default: PostCallAnalyticsWorkflow
+    Description: Name of Step Functions workflow that orchestrates this process
+    
+  BulkUploadStepFunctionName:
+    Type: String
+    Default: BulkUploadWorkflow
+    Description: Name of Step Functions workflow that orchestrates the bulk import process
+    
+  SupportFilesBucketName:
+    Type: String
+    Default: ''
+    Description: >-
+      (Optional) Existing bucket that hold supporting files, such as the  file-based
+      entity recognition mapping files.  Leave blank to automatically create new bucket.
+
+  TranscribeLanguages:
+    Type: String
+    Default: en-US
+    Description: Language to be used for Transcription - multiple entries separated by " | " will trigger Language Detection
+
+  VocabFilterMode:
+    Type: String
+    Default: mask
+    AllowedValues:
+        - mask
+        - remove
+    Description: The mode to use for vocabulary filtering - must be one of mask or remove (tag is not supported)
+
+  VocabFilterName:
+    Type: String
+    Default: undefined
+    Description: Name of the vocabulary filter to use for Transcribe (not including language suffix, e.g. -en)
+
+  VocabularyName:
+    Type: String
+    Default: undefined
+    Description: Name of the custom vocabulary to use for Transcribe (omit the language suffix, e.g. -en-US)
+
+  TranscribeApiMode:
+    Type: String
+    Default: analytics
+    AllowedValues:
+        - standard
+        - analytics
+    Description: Set the default operational mode for Transcribe
+
+  CallRedactionTranscript:
+    Type: String
+    Default: true
+    AllowedValues:
+        - true
+        - false
+    Description: Enable or disable Transcribe's redaction feature
+
+  CallRedactionAudio:
+    Type: String
+    Default: true
+    AllowedValues:
+        - true
+        - false
+    Description: When transcript redaction is enabled in Call Analytics, only allow playback of the redacted audio
+
+  ffmpegDownloadUrl:
+    Type: String
+    Default: https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz
+    Description: URL for ffmpeg binary distribution tar file download - see https://www.johnvansickle.com/ffmpeg/
+
+  loadSampleAudioFiles:
+    Type: String
+    Default: false
+    AllowedValues:
+        - true
+        - false
+    Description: Set to true to automatically ingest sample audio files.
+    
+  FilenameDatetimeRegex:
+    Type: String
+    Default: '(\d{4})-(\d{2})-(\d{2})T(\d{2})-(\d{2})-(\d{2})'
+    Description: >
+      Regular Expression (regex) used to parse call Date/Time from audio filenames. 
+      Each datetime field (year, month, etc.) must be matched using a separate parenthesized group in the regex. 
+      Example: the regex '(\d{4})-(\d{2})-(\d{2})T(\d{2})-(\d{2})-(\d{2})' parses
+      the filename: CallAudioFile-2021-12-01T07-55-51.wav into a value list: [2021, 12, 01, 07, 55, 51]
+      The next parameter, FilenameDatetimeFieldMap, maps the values to datetime field codes.
+      If the filename doesn't match the regex pattern, the current time is used as the call timestamp.
+
+  FilenameDatetimeFieldMap:
+    Type: String
+    Default: '%Y %m %d %H %M %S'
+    Description: >
+      Space separated ordered sequence of time field codes as used by Python's datetime.strptime() function. 
+      Each field code refers to a corresponding value parsed by the regex parameter filenameTimestampRegex. 
+      Example: the mapping '%Y %m %d %H %M %S' assembles the regex output values [2021, 12, 01, 07, 55, 51]
+      into the full datetime: '2021-12-01 07:55:51'.  
+      If the field map doesn't match the value list parsed by the regex, then the current time is used as the call timestamp.
+
+  FilenameGUIDRegex:
+    Type: String
+    Default: '_GUID_(.*?)_'
+    Description: >
+      Regular Expression (regex) used to parse call GUID from audio filenames. 
+      The GUID value must be matched using one or more parenthesized groups in the regex. 
+      Example: the regex '_GUID_(.*?)_' parses
+      the filename: AutoRepairs1_GUID_2a602c1a-4ca3-4d37-a933-444d575c0222_AGENT_BobS_DATETIME_07.55.51.067-09-16-2021.wav 
+      to extract the GUID value '2a602c1a-4ca3-4d37-a933-444d575c0222'.
+
+  FilenameAgentRegex:
+    Type: String
+    Default: '_AGENT_(.*?)_'
+    Description: >
+      Regular Expression (regex) used to parse call AGENT from audio filenames. 
+      The AGENT value must be matched using one or more parenthesized groups in the regex. 
+      Example: the regex '_AGENT_(.*?)_' parses
+      the filename: AutoRepairs1_GUID_2a602c1a-4ca3-4d37-a933-444d575c0222_AGENT_BobS_DATETIME_07.55.51.067-09-16-2021.wav 
+      to extract the AGENT value 'BobS'. 
+      
+  EnableTranscriptKendraSearch:
+    Type: String
+    Default: 'No'
+    AllowedValues:
+        - 'No'
+    Description: (NOT AVAILABLE) Optionally make call transcripts searchable, using Amazon Kendra.
+
+  RetentionDays:
+    Type: Number
+    Default: 365
+    AllowedValues:
+      - 30
+      - 60
+      - 90
+      - 180
+      - 365
+      - 730
+      - 1460
+    Description: >
+      When using auto-provisioned S3 buckets, your audio files and associated call analysis data will be 
+      automatically and permanently deleted after the specified number of retention days. The application
+      does not currently archive recordings or call data.
+
+  Environment:
+    Description: The type of environment to tag your infrastructure with. You can specify DEV (development), TEST (test), or PROD (production).
+    Type: String
+    AllowedValues:
+      - DEV
+      - TEST
+      - PROD
+    Default: PROD
+    
+  DatabaseName:
+    Type: String
+    Default: 'pca'
+    Description: Glue catalog database name used to contain tables/views for SQL integration.
+
+Metadata:
+    AWS::CloudFormation::Interface:
+        ParameterGroups:
+            - Label:
+                default: Admin User
+              Parameters:
+                  - AdminUsername
+                  - AdminEmail
+            - Label:
+                default: Sample Data
+              Parameters:
+                  - loadSampleAudioFiles
+            - Label:
+                default: Enable Call Transcript Search
+              Parameters:
+                  - EnableTranscriptKendraSearch
+            - Label:
+                default: S3 Bucket Names and Retention Policy
+              Parameters:
+                  - InputBucketName
+                  - BulkUploadBucketName
+                  - OutputBucketName
+                  - SupportFilesBucketName
+                  - RetentionDays
+            - Label:
+                default: S3 bucket prefixes
+              Parameters:
+                  - InputBucketFailedTranscriptions
+                  - InputBucketRawAudio
+                  - InputBucketAudioPlayback
+                  - OutputBucketParsedResults
+                  - OutputBucketTranscribeResults
+            - Label:
+                default: Filename metadata parsing
+              Parameters:
+                  - FilenameDatetimeRegex
+                  - FilenameDatetimeFieldMap
+                  - FilenameGUIDRegex
+                  - FilenameAgentRegex
+            - Label:
+                default: Transcription
+              Parameters:
+                  - TranscribeApiMode
+                  - TranscribeLanguages
+                  - VocabFilterMode
+                  - VocabFilterName
+                  - VocabularyName
+                  - SpeakerSeparationType
+                  - SpeakerNames
+                  - MaxSpeakers
+                  - CallRedactionTranscript
+                  - CallRedactionAudio
+                  - ContentRedactionLanguages
+            - Label:
+                default: Entity detection
+              Parameters:
+                  - ComprehendLanguages
+                  - EntityThreshold
+                  - EntityTypes
+                  - EntityRecognizerEndpoint
+                  - EntityStringMap
+            - Label:
+                default: Sentiment detection
+              Parameters:
+                  - MinSentimentNegative
+                  - MinSentimentPositive
+
+Conditions:
+  ShouldCreateBulkUploadBucket: !Equals [!Ref BulkUploadBucketName, '']
+  ShouldCreateInputBucket: !Equals [!Ref InputBucketName, '']
+  ShouldCreateOutputBucket: !Equals [!Ref OutputBucketName, '']
+  ShouldCreateSupportFilesBucket: !Equals [!Ref SupportFilesBucketName, '']
+  ShouldEnableKendraSearch: !Not [!Equals [!Ref EnableTranscriptKendraSearch, 'No']]
+  ShouldCreateKendraIndexDeveloperEdition: !Equals [!Ref EnableTranscriptKendraSearch, 'Yes, create new Kendra Index (Developer Edition)']
+
+Resources:
+  ########################################################
+  # S3 buckets
+  # TODO: Versioning? Lifecycle Policies? Access Logging?
+  ########################################################
+
+  BulkUploadBucket:
+    Condition: ShouldCreateBulkUploadBucket
+    Type: 'AWS::S3::Bucket'
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain 
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
+  InputBucket:
+    Condition: ShouldCreateInputBucket
+    Type: 'AWS::S3::Bucket'
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain 
+    
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      LifecycleConfiguration:
+        Rules:
+          - Id: StorageClassAndRetention
+            Status: Enabled
+            ExpirationInDays: !Ref RetentionDays
+            Transitions:
+              - TransitionInDays: 1
+                StorageClass: INTELLIGENT_TIERING
+
+  OutputBucket:
+    Condition: ShouldCreateOutputBucket
+    Type: 'AWS::S3::Bucket'
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain 
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      LifecycleConfiguration:
+        Rules:
+          - Id: LifecycleRule
+            Status: Enabled
+            ExpirationInDays: !Ref RetentionDays
+            Transitions:
+              - TransitionInDays: 1
+                StorageClass: INTELLIGENT_TIERING
+
+  SupportFilesBucket:
+    Condition: ShouldCreateSupportFilesBucket
+    Type: 'AWS::S3::Bucket'
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain 
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
+
+  ########################################################
+  # SSM Stack
+  ########################################################
+  SSM:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: pca-ssm/cfn/ssm.template
+      Parameters:
+        BulkUploadBucketName:
+          !If
+          - ShouldCreateBulkUploadBucket
+          - !Ref BulkUploadBucket
+          - !Ref BulkUploadBucketName
+        BulkUploadMaxDripRate: !Ref BulkUploadMaxDripRate
+        BulkUploadMaxTranscribeJobs: !Ref BulkUploadMaxTranscribeJobs
+        ComprehendLanguages: !Ref ComprehendLanguages
+        ContentRedactionLanguages: !Ref ContentRedactionLanguages
+        ConversationLocation: !Ref ConversationLocation
+        EntityRecognizerEndpoint: !Ref EntityRecognizerEndpoint
+        EntityStringMap: !Ref EntityStringMap
+        EntityThreshold: !Ref EntityThreshold
+        EntityTypes: !Ref EntityTypes
+        InputBucketAudioPlayback: !Ref InputBucketAudioPlayback
+        InputBucketFailedTranscriptions: !Ref InputBucketFailedTranscriptions
+        InputBucketName: 
+          !If
+          - ShouldCreateInputBucket
+          - !Ref InputBucket
+          - !Ref InputBucketName        
+        InputBucketRawAudio: !Ref InputBucketRawAudio
+        MaxSpeakers: !Ref MaxSpeakers
+        MinSentimentNegative: !Ref MinSentimentNegative
+        MinSentimentPositive: !Ref MinSentimentPositive
+        OutputBucketName: 
+          !If
+          - ShouldCreateOutputBucket
+          - !Ref OutputBucket
+          - !Ref OutputBucketName 
+        OutputBucketTranscribeResults: !Ref OutputBucketTranscribeResults
+        OutputBucketParsedResults: !Ref OutputBucketParsedResults
+        SpeakerNames: !Ref SpeakerNames
+        SpeakerSeparationType: !Ref SpeakerSeparationType
+        StepFunctionName: !Ref StepFunctionName
+        BulkUploadStepFunctionName: !Ref BulkUploadStepFunctionName
+        SupportFilesBucketName: 
+          !If
+          - ShouldCreateSupportFilesBucket
+          - !Ref SupportFilesBucket
+          - !Ref SupportFilesBucketName
+        TranscribeLanguages: !Ref TranscribeLanguages
+        TranscribeApiMode: !Ref TranscribeApiMode
+        CallRedactionTranscript: !Ref CallRedactionTranscript
+        CallRedactionAudio: !Ref CallRedactionAudio
+        VocabFilterName: !Ref VocabFilterName
+        VocabFilterMode: !Ref VocabFilterMode
+        VocabularyName: !Ref VocabularyName
+        FilenameDatetimeRegex: !Ref FilenameDatetimeRegex
+        FilenameDatetimeFieldMap: !Ref FilenameDatetimeFieldMap
+        FilenameGUIDRegex: !Ref FilenameGUIDRegex
+        FilenameAgentRegex: !Ref FilenameAgentRegex
+        KendraIndexId:
+          !If
+          - ShouldEnableKendraSearch
+          - 'None'
+          - 'None'
+        WebUri: !GetAtt PCAUI.Outputs.WebUri
+        DatabaseName: !Ref DatabaseName
+
+
+  PCAServer:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: SSM
+    Properties:
+      TemplateURL: pca-server/cfn/pca-server.template
+      Parameters:
+        ffmpegDownloadUrl: !Ref ffmpegDownloadUrl
+        loadSampleAudioFiles: !Ref loadSampleAudioFiles
+      
+  PCAUI:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: pca-ui/cfn/pca-ui.template
+      Parameters:
+        AdminUsername: !Ref AdminUsername
+        AdminEmail: !Ref AdminEmail
+        MainStackName: !Ref AWS::StackName
+        AudioBucket:
+          !If
+          - ShouldCreateInputBucket
+          - !Ref InputBucket
+          - !Ref InputBucketName 
+        DataBucket:
+          !If
+          - ShouldCreateOutputBucket
+          - !Ref OutputBucket
+          - !Ref OutputBucketName
+        DataPrefix: !Ref OutputBucketParsedResults
+        Environment: !Ref Environment
+
+Outputs:
+
+  BulkUploadBucket:
+    Description: S3 Bucket for uploading input audio files for alternate bulk upload workflow
+    Value:
+          !If
+          - ShouldCreateBulkUploadBucket
+          - !Ref BulkUploadBucket
+          - !Ref BulkUploadBucketName
+
+  InputBucket:
+    Description: S3 Bucket for uploading input audio files
+    Value:
+      !If
+      - ShouldCreateInputBucket
+      - !Ref InputBucket
+      - !Ref InputBucketName  
+    
+  InputBucketPrefix:
+    Description: S3 Bucket prefix/folder for uploading input audio files
+    Value: !Ref InputBucketRawAudio
+
+  OutputBucket:
+    Description: S3 Bucket where Transcribe output files are delivered
+    Value:
+      !If
+      - ShouldCreateOutputBucket
+      - !Ref OutputBucket
+      - !Ref OutputBucketName  
+    
+  OutputBucketPrefix:
+    Description: S3 Bucket path where Transcribe output files are delivered
+    Value: !Ref OutputBucketParsedResults
+
+  SupportFilesBucket:
+    Description: S3 Bucket bucket that hold supporting files, such as the file-based entity recognition mapping files
+    Value:
+      !If
+      - ShouldCreateSupportFilesBucket
+      - !Ref SupportFilesBucket
+      - !Ref SupportFilesBucketName  
+    
+  TranscriptionMediaSearchFinderURL:
+    Description: Transcript Search Application link
+    Value:
+      !If
+      - ShouldEnableKendraSearch
+      - "Not enabled"
+      - "Not enabled"
+ 
+  WebAppURL:
+    Description: PCA Web Application link
+    Value: !GetAtt PCAUI.Outputs.WebUri  
+    
+  WebAdminUsername:
+    Description: PCA admin user
+    Value: !Ref AdminUsername
+
