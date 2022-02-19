@@ -534,6 +534,8 @@ Resources:
           - ShouldCreateOutputBucket
           - !Ref OutputBucket
           - !Ref OutputBucketName
+        ArtifactBucket: <ARTIFACT_BUCKET_TOKEN>
+        WitchKey: <WITCHKEY_TOKEN>
         DataPrefix: !Ref OutputBucketParsedResults
         Environment: !Ref Environment
 
