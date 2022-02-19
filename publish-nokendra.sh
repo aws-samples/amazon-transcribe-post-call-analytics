@@ -72,17 +72,6 @@ npm install
 npm run build
 popd
 
-# Build and deploy embedded MediaSearch project
-pushd aws-kendra-transcribe-media-search
-if $PUBLIC; then
-  ./publish.sh ${BUCKET} ${PREFIX_AND_VERSION}/mediasearch | tee /tmp/mediasearch.out
-else
-   ./publish-privatebucket.sh ${BUCKET} ${PREFIX_AND_VERSION}/mediasearch | tee /tmp/mediasearch.out
-fi
-popd
-mediasearch_template="s3://${BUCKET}/${PREFIX_AND_VERSION}/mediasearch/msfinder.yaml"
-aws s3 cp $mediasearch_template build/pca-mediasearch-finder.yaml
-
 
 echo "Downloading witch file and upload into artifacts bucket"
 curl https://saes-prod-us-east-1.s3.us-east-1.amazonaws.com/witch-0eabcaf.zip -o /tmp/witch-0eabcaf.zip
@@ -90,7 +79,7 @@ WITCHKEY=${PREFIX_AND_VERSION}/witch-0eabcaf.zip
 aws s3 cp /tmp/witch-0eabcaf.zip s3://${BUCKET}/${WITCHKEY} || exit 1
 
 echo "Packaging Cfn artifacts"
-aws cloudformation package --template-file pca-main.template --output-template-file /tmp/packaged.template --s3-bucket ${BUCKET} --s3-prefix ${PREFIX_AND_VERSION} --region ${region}|| exit 1
+aws cloudformation package --template-file pca-main-nokendra.template --output-template-file /tmp/packaged.template --s3-bucket ${BUCKET} --s3-prefix ${PREFIX_AND_VERSION} --region ${region}|| exit 1
 
 echo "Inline edit tmp/packaged.template to replace "
 echo "   <ARTIFACT_BUCKET_TOKEN> with bucket name: $BUCKET"

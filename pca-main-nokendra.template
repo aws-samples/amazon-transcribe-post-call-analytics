@@ -263,9 +263,7 @@ Parameters:
     Default: 'No'
     AllowedValues:
         - 'No'
-        - 'Yes, create new Kendra Index (Developer Edition)'
-        - 'Yes, create new Kendra Index (Enterprise Edition)'
-    Description: Optionally make call transcripts searchable, using Amazon Kendra.
+    Description: (NOT AVAILABLE) Optionally make call transcripts searchable, using Amazon Kendra.
 
   RetentionDays:
     Type: Number
@@ -439,137 +437,7 @@ Resources:
           - ServerSideEncryptionByDefault:
               SSEAlgorithm: AES256
 
-  ########################################################
-  # Kendra Index
-  ########################################################
-  KendraIndexRole:
-    Type: 'AWS::IAM::Role'
-    Condition: ShouldEnableKendraSearch
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Sid: ''
-            Effect: Allow
-            Principal:
-              Service: kendra.amazonaws.com
-            Action: 'sts:AssumeRole'
-      Policies:
-        - PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Resource: '*'
-                Condition:
-                  StringEquals:
-                    'cloudwatch:namespace': 'Kendra'
-                Action:
-                  - 'cloudwatch:PutMetricData'
-              - Effect: Allow
-                Resource: '*'
-                Action: 'logs:DescribeLogGroups'
-              - Effect: Allow
-                Resource: !Sub
-                  - 'arn:aws:logs:${region}:${account}:log-group:/aws/kendra/*'
-                  - region: !Ref 'AWS::Region'
-                    account: !Ref 'AWS::AccountId'
-                Action: 'logs:CreateLogGroup'
-              - Effect: Allow
-                Resource: !Sub
-                  - 'arn:aws:logs:${region}:${account}:log-group:/aws/kendra/*:log-stream:*'
-                  - region: !Ref 'AWS::Region'
-                    account: !Ref 'AWS::AccountId'
-                Action: 
-                  - 'logs:DescribeLogStreams'
-                  - 'logs:CreateLogStream'
-                  - 'logs:PutLogEvents'
-          PolicyName: KendraMediaIndexPolicy
 
-  KendraIndex:
-    Type: 'AWS::Kendra::Index'
-    Condition: ShouldEnableKendraSearch
-    Properties:
-      Description: PCA transcript index
-      Edition:
-          !If
-          - ShouldCreateKendraIndexDeveloperEdition
-          - 'DEVELOPER_EDITION'
-          - 'ENTERPRISE_EDITION'
-      Name: !Join
-        - ''
-        - - !Ref 'AWS::StackName'
-          - '-Index'
-      RoleArn: !GetAtt KendraIndexRole.Arn
-      DocumentMetadataConfigurations:
-        - Name: ANALYSIS_URI
-          Search: 
-            Displayable: true
-          Type: 'STRING_VALUE'
-        - Name: DATETIME
-          Search: 
-            Displayable: true
-            Facetable: true
-          Relevance:
-            Freshness: true
-          Type: 'DATE_VALUE'
-        - Name: GUID
-          Search: 
-            Displayable: true
-            Searchable: true
-          Type: 'STRING_VALUE'
-        - Name: AGENT
-          Search:
-            Displayable: true
-            Facetable: true
-          Type: 'STRING_VALUE'
-        - Name: DURATION
-          Search: 
-            Displayable: true
-            Facetable: true
-          Type: 'STRING_VALUE'
-        - Name: ENTITY_PERSON
-          Search: 
-            Displayable: true
-            Facetable: true
-          Type: 'STRING_LIST_VALUE'        
-        - Name: ENTITY_LOCATION
-          Search: 
-            Displayable: true
-            Facetable: true
-          Type: 'STRING_LIST_VALUE'
-        - Name: ENTITY_ORGANIZATION
-          Search: 
-            Displayable: true
-            Facetable: true
-          Type: 'STRING_LIST_VALUE'
-        - Name: ENTITY_COMMERCIAL_ITEM
-          Search: 
-            Displayable: true
-            Facetable: true
-          Type: 'STRING_LIST_VALUE'
-        - Name: ENTITY_EVENT
-          Search: 
-            Displayable: true
-            Facetable: true
-          Type: 'STRING_LIST_VALUE'
-        - Name: ENTITY_DATE
-          Search:
-            Displayable: true
-            Facetable: true
-          Type: 'STRING_LIST_VALUE'
-        - Name: ENTITY_QUANTITY
-          Search:
-            Displayable: true
-            Facetable: true
-          Type: 'STRING_LIST_VALUE'
-        - Name: ENTITY_TITLE
-          Search:
-            Displayable: true
-            Facetable: true
-          Type: 'STRING_LIST_VALUE'
-
-
-  
   ########################################################
   # SSM Stack
   ########################################################
@@ -633,7 +501,7 @@ Resources:
         KendraIndexId:
           !If
           - ShouldEnableKendraSearch
-          - !Ref KendraIndex
+          - 'None'
           - 'None'
         WebUri: !GetAtt PCAUI.Outputs.WebUri
         DatabaseName: !Ref DatabaseName
@@ -671,20 +539,6 @@ Resources:
         DataPrefix: !Ref OutputBucketParsedResults
         Environment: !Ref Environment
 
-  MediaSearchFinder:
-    Type: AWS::CloudFormation::Stack
-    Condition: ShouldEnableKendraSearch
-    Properties:
-      TemplateURL: build/pca-mediasearch-finder.yaml
-      Parameters:
-        AdminEmail: !Ref AdminEmail
-        KendraIndexId: !Ref KendraIndex
-        MediaBucketNames:
-          !If
-          - ShouldCreateInputBucket
-          - !Ref InputBucket
-          - !Ref InputBucketName
-        
 Outputs:
 
   BulkUploadBucket:
@@ -732,7 +586,7 @@ Outputs:
     Value:
       !If
       - ShouldEnableKendraSearch
-      - !GetAtt MediaSearchFinder.Outputs.MediaSearchFinderURL
+      - "Not enabled"
       - "Not enabled"
  
   WebAppURL:
