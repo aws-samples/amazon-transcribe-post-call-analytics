@@ -245,7 +245,7 @@ Parameters:
       Regular Expression (regex) used to parse call GUID from audio filenames. 
       The GUID value must be matched using one or more parenthesized groups in the regex. 
       Example: the regex '_GUID_(.*?)_' parses
-      the filename: AutoRepairs1_GUID_2a602c1a-4ca3-4d37-a933-444d575c0222_AGENT_BobS_DATETIME_07.55.51.067-09-16-2021.wav 
+      the filename: AutoRepairs1_CUST_12345_GUID_2a602c1a-4ca3-4d37-a933-444d575c0222_AGENT_BobS_DATETIME_07.55.51.067-09-16-2021.wav 
       to extract the GUID value '2a602c1a-4ca3-4d37-a933-444d575c0222'.
 
   FilenameAgentRegex:
@@ -255,9 +255,19 @@ Parameters:
       Regular Expression (regex) used to parse call AGENT from audio filenames. 
       The AGENT value must be matched using one or more parenthesized groups in the regex. 
       Example: the regex '_AGENT_(.*?)_' parses
-      the filename: AutoRepairs1_GUID_2a602c1a-4ca3-4d37-a933-444d575c0222_AGENT_BobS_DATETIME_07.55.51.067-09-16-2021.wav 
+      the filename: AutoRepairs1_CUST_12345_GUID_2a602c1a-4ca3-4d37-a933-444d575c0222_AGENT_BobS_DATETIME_07.55.51.067-09-16-2021.wav 
       to extract the AGENT value 'BobS'. 
-      
+  
+  FilenameCustRegex:
+    Type: String
+    Default: '_CUST_(.*?)_'
+    Description: >
+      Regular Expression (regex) used to parse Customer from audio filenames. 
+      The customer id value must be matched using one or more parenthesized groups in the regex. 
+      Example: the regex '_CUST_(.*?)_' parses
+      the filename: AutoRepairs1_CUST_12345_GUID_2a602c1a-4ca3-4d37-a933-444d575c0222_AGENT_BobS_DATETIME_07.55.51.067-09-16-2021.wav 
+      to extract the Customer value '12345'.
+
   EnableTranscriptKendraSearch:
     Type: String
     Default: 'No'
@@ -336,6 +346,7 @@ Metadata:
                   - FilenameDatetimeFieldMap
                   - FilenameGUIDRegex
                   - FilenameAgentRegex
+                  - FilenameCustRegex
             - Label:
                 default: Transcription
               Parameters:
@@ -630,6 +641,7 @@ Resources:
         FilenameDatetimeFieldMap: !Ref FilenameDatetimeFieldMap
         FilenameGUIDRegex: !Ref FilenameGUIDRegex
         FilenameAgentRegex: !Ref FilenameAgentRegex
+        FilenameCustRegex: !Ref FilenameCustRegex
         KendraIndexId:
           !If
           - ShouldEnableKendraSearch
