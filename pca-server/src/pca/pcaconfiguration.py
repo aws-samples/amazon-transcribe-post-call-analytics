@@ -36,6 +36,7 @@ CONF_FILENAME_DATETIME_REGEX = "FilenameDatetimeRegex"
 CONF_FILENAME_DATETIME_FIELDMAP = "FilenameDatetimeFieldMap"
 CONF_FILENAME_GUID_REGEX = "FilenameGUIDRegex"
 CONF_FILENAME_AGENT_REGEX = "FilenameAgentRegex"
+CONF_FILENAME_CUST_REGEX = "FilenameCustRegex"
 CONF_FILTER_MODE = "VocabFilterMode"
 CONF_FILTER_NAME = "VocabFilterName"
 CONF_KENDRA_INDEX_ID = "KendraIndexId"
@@ -122,8 +123,8 @@ def loadConfiguration():
                                                CONF_FILTER_MODE, CONF_FILTER_NAME, 
                                                CONF_FILENAME_DATETIME_REGEX, CONF_FILENAME_DATETIME_FIELDMAP,
                                                CONF_FILENAME_GUID_REGEX, CONF_FILENAME_AGENT_REGEX,
-                                               CONF_KENDRA_INDEX_ID])
-    fullParamList4 = ssm.get_parameters(Names=[CONF_WEB_URI, CONF_TRANSCRIBE_API, CONF_REDACTION_TRANSCRIPT,
+                                               CONF_FILENAME_CUST_REGEX])
+    fullParamList4 = ssm.get_parameters(Names=[CONF_KENDRA_INDEX_ID, CONF_WEB_URI, CONF_TRANSCRIBE_API, CONF_REDACTION_TRANSCRIPT,
                                                CONF_REDACTION_AUDIO])
 
     # Extract our parameters into our config
