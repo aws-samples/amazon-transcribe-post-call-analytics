@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 
-Description: Amazon Transcribe Post Call Analytics - PCA (v0.1.4) (uksb-1sn29lk73)
+Description: Amazon Transcribe Post Call Analytics - PCA (v0.1.5b) (uksb-1sn29lk73)
 
 Parameters:
 
