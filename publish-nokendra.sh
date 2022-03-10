@@ -75,6 +75,10 @@ npm install
 npm run build
 popd
 
+pushd pca-ui/src/witch
+npm run build
+popd
+
 
 echo "Downloading witch file and upload into artifacts bucket"
 curl https://saes-prod-us-east-1.s3.us-east-1.amazonaws.com/witch-0eabcaf.zip -o /tmp/witch-0eabcaf.zip

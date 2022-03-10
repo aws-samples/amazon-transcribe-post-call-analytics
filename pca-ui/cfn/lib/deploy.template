@@ -36,9 +36,7 @@ Resources:
     Properties:
       CompatibleRuntimes:
         - nodejs12.x
-      Content:
-        S3Bucket: !Ref WitchBucket
-        S3Key: !Ref WitchKey
+      Content: ../../src/witch/witch.zip
 
   Role:
     Type: "AWS::IAM::Role"

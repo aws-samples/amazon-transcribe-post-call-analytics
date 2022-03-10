@@ -75,6 +75,10 @@ npm install
 npm run build
 popd
 
+pushd pca-ui/src/witch
+npm run build
+popd
+
 # Build and deploy embedded MediaSearch project
 pushd aws-kendra-transcribe-media-search
 if $PUBLIC; then
