@@ -5,6 +5,9 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "npm install --prefix nodejs mime-types && cp witch.js nodejs/node_modules/ && zip -r ./witch.zip nodejs"
+    "build": "mkdir -p build/nodejs/node_modules/witch && cp -R node_modules package.json witch.js build/nodejs/node_modules/witch && cd build &&  zip -r ../witch.zip nodejs"
+  },
+  "dependencies": {
+    "mime-types": "^2.1.34"
   }
 }
