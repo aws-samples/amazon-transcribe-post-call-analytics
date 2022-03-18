@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, Fragment } from "react";
 import { useParams } from "react-router";
 import useSWR, { useSWRConfig } from "swr";
 import { get, swap } from "../../api/api";
@@ -316,10 +316,9 @@ function Dashboard({ setAlert }) {
               <Tabs>
                   { data?.ConversationAnalytics?.IssuesDetected? (
                     <Tab title="Issues" eventKey="Issues" className="pt-4">
-                      <ListItems
-                        data={data?.ConversationAnalytics?.IssuesDetected?.map(
-                          (issue) => (
-                            <Tag
+                      {data?.ConversationAnalytics?.IssuesDetected?.map(
+                          (issue, j) => (
+                            <Tag key={j}
                               style={{
                                 "--highlight-colour": "yellow",
                               }}
@@ -328,17 +327,15 @@ function Dashboard({ setAlert }) {
                             </Tag>
                           )
                         )}
-                      />
                     </Tab>
                   ) : 
-                    (<div/>)
+                    (<Fragment/>)
                   }
                   { data?.ConversationAnalytics?.ActionItemsDetected? (
                     <Tab title="Action Items"  eventKey="ActionItems" className="pt-4">
-                      <ListItems
-                        data={data?.ConversationAnalytics?.ActionItemsDetected?.map(
-                          (actionItem) => (
-                            <Tag
+                      {data?.ConversationAnalytics?.ActionItemsDetected?.map(
+                          (actionItem, j) => (
+                            <Tag key={j}
                               style={{
                                 "--highlight-colour": "LightPink",
                               }}
@@ -346,17 +343,15 @@ function Dashboard({ setAlert }) {
                               {actionItem.Text}
                             </Tag>
                           )
-                        )}
-                      />
+                      )}
                     </Tab>
-                    ) : (<div/>)
+                    ) : (<Fragment/>)
                   }
                   {data?.ConversationAnalytics?.OutcomesDetected? (
                     <Tab title="Outcomes" eventKey="Outcomes" className="pt-4">
-                      <ListItems
-                        data={data?.ConversationAnalytics?.OutcomesDetected?.map(
-                        (outcome) => (
-                          <Tag
+                      {data?.ConversationAnalytics?.OutcomesDetected?.map(
+                        (outcome, j ) => (
+                          <Tag key={j}
                             style={{
                               "--highlight-colour": "Aquamarine",
                             }}
@@ -365,9 +360,8 @@ function Dashboard({ setAlert }) {
                           </Tag>
                         )
                       )}
-                    />
                   </Tab>
-                  ) : (<div/>)}
+                  ) : (<Fragment/>)}
               </Tabs>
               
             )}
