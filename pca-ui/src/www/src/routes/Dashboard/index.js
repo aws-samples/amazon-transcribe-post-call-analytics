@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, Fragment } from "react";
 import { useParams } from "react-router";
 import useSWR, { useSWRConfig } from "swr";
 import { get, swap } from "../../api/api";
@@ -19,6 +19,8 @@ import { getEntityColor } from "./colours";
 import { TranscriptOverlay } from "./TranscriptOverlay";
 import { range } from "../../util";
 import { Sentiment } from "../../components/Sentiment";
+import { Tabs, Tab } from "react-bootstrap";
+
 
 const getSentimentTrends = (d, target, labels) => {
   const id = Object.entries(labels).find(([_, v]) => v === target)?.[0];
@@ -306,24 +308,62 @@ function Dashboard({ setAlert }) {
       )}
       {isTranscribeCallAnalyticsMode && (
         <Card>
-          <Card.Header>Issues</Card.Header>
+          <Card.Header>Summary</Card.Header>
           <Card.Body>
             {!data && !error ? (
               <Placeholder />
             ) : (
-              <ListItems
-                data={data?.ConversationAnalytics?.IssuesDetected.map(
-                  (issue) => (
-                    <Tag
-                      style={{
-                        "--highlight-colour": "yellow",
-                      }}
-                    >
-                      {issue.Text}
-                    </Tag>
-                  )
-                )}
-              />
+              <Tabs>
+                  { data?.ConversationAnalytics?.IssuesDetected? (
+                    <Tab title="Issues" eventKey="Issues" className="pt-4">
+                      {data?.ConversationAnalytics?.IssuesDetected?.map(
+                          (issue, j) => (
+                            <Tag key={j}
+                              style={{
+                                "--highlight-colour": "yellow",
+                              }}
+                            >
+                              {issue.Text}
+                            </Tag>
+                          )
+                        )}
+                    </Tab>
+                  ) : 
+                    (<Fragment/>)
+                  }
+                  { data?.ConversationAnalytics?.ActionItemsDetected? (
+                    <Tab title="Action Items"  eventKey="ActionItems" className="pt-4">
+                      {data?.ConversationAnalytics?.ActionItemsDetected?.map(
+                          (actionItem, j) => (
+                            <Tag key={j}
+                              style={{
+                                "--highlight-colour": "LightPink",
+                              }}
+                            >
+                              {actionItem.Text}
+                            </Tag>
+                          )
+                      )}
+                    </Tab>
+                    ) : (<Fragment/>)
+                  }
+                  {data?.ConversationAnalytics?.OutcomesDetected? (
+                    <Tab title="Outcomes" eventKey="Outcomes" className="pt-4">
+                      {data?.ConversationAnalytics?.OutcomesDetected?.map(
+                        (outcome, j ) => (
+                          <Tag key={j}
+                            style={{
+                              "--highlight-colour": "Aquamarine",
+                            }}
+                          >
+                            {outcome.Text}
+                          </Tag>
+                        )
+                      )}
+                  </Tab>
+                  ) : (<Fragment/>)}
+              </Tabs>
+              
             )}
           </Card.Body>
         </Card>
@@ -370,7 +410,7 @@ function Dashboard({ setAlert }) {
                       </TranscriptOverlay>
                     ),
                   })),
-                  ...s.IssuesDetected.map((issue) => ({
+                  ...(s.IssuesDetected? s.IssuesDetected?.map((issue) => ({
                     start: issue.BeginOffset,
                     end: issue.EndOffset,
                     fn: (match, key) => (
@@ -382,7 +422,33 @@ function Dashboard({ setAlert }) {
                         <span className="text-danger">[ISSUE]</span>: {match}
                       </TranscriptOverlay>
                     ),
-                  })),
+                  })) : []),
+                  ...(s.ActionItemsDetected? s.ActionItemsDetected?.map((issue) => ({
+                    start: issue.BeginOffset,
+                    end: issue.EndOffset,
+                    fn: (match, key) => (
+                      <TranscriptOverlay
+                        key={key}
+                        colour="lightpink"
+                        tooltip="Action Item"
+                      >
+                        <span className="text-danger">[Action Item]</span>: {match}
+                      </TranscriptOverlay>
+                    ),
+                  })) : []),
+                  ...(s.OutcomesDetected? s.OutcomesDetected?.map((issue) => ({
+                    start: issue.BeginOffset,
+                    end: issue.EndOffset,
+                    fn: (match, key) => (
+                      <TranscriptOverlay
+                        key={key}
+                        colour="aquamarine"
+                        tooltip="Outcome"
+                      >
+                        <span className="text-danger">[Outcome]</span>: {match}
+                      </TranscriptOverlay>
+                    ),
+                  })) : []),
                 ]}
                 score={s.SentimentIsPositive - s.SentimentIsNegative}
                 interruption={s.SegmentInterruption}
