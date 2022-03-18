@@ -314,51 +314,60 @@ function Dashboard({ setAlert }) {
               <Placeholder />
             ) : (
               <Tabs>
-                <Tab title="Issues" eventKey="Issues" className="pt-4">
-                  <ListItems
-                    data={data?.ConversationAnalytics?.IssuesDetected.map(
-                      (issue) => (
-                        <Tag
-                          style={{
-                            "--highlight-colour": "yellow",
-                          }}
-                        >
-                          {issue.Text}
-                        </Tag>
-                      )
-                    )}
-                  />
-                </Tab>
-                <Tab title="Action Items"  eventKey="ActionItems" className="pt-4">
-                  <ListItems
-                    data={data?.ConversationAnalytics?.ActionItemsDetected.map(
-                      (actionItem) => (
-                        <Tag
-                          style={{
-                            "--highlight-colour": "LightPink",
-                          }}
-                        >
-                          {actionItem.Text}
-                        </Tag>
-                      )
-                    )}
-                  />
-                </Tab>
-                <Tab title="Outcomes" eventKey="Outcomes" className="pt-4">
-                  <ListItems
-                    data={data?.ConversationAnalytics?.OutcomesDetected.map(
-                      (outcome) => (
-                        <Tag
-                          style={{
-                            "--highlight-colour": "Aquamarine",
-                          }}
-                        >
-                          {outcome.Text}
-                        </Tag>
-                      )
-                    )}
-                  />
-                </Tab>
+                  { data?.ConversationAnalytics?.IssuesDetected? (
+                    <Tab title="Issues" eventKey="Issues" className="pt-4">
+                      <ListItems
+                        data={data?.ConversationAnalytics?.IssuesDetected?.map(
+                          (issue) => (
+                            <Tag
+                              style={{
+                                "--highlight-colour": "yellow",
+                              }}
+                            >
+                              {issue.Text}
+                            </Tag>
+                          )
+                        )}
+                      />
+                    </Tab>
+                  ) : 
+                    (<div/>)
+                  }
+                  { data?.ConversationAnalytics?.ActionItemsDetected? (
+                    <Tab title="Action Items"  eventKey="ActionItems" className="pt-4">
+                      <ListItems
+                        data={data?.ConversationAnalytics?.ActionItemsDetected?.map(
+                          (actionItem) => (
+                            <Tag
+                              style={{
+                                "--highlight-colour": "LightPink",
+                              }}
+                            >
+                              {actionItem.Text}
+                            </Tag>
+                          )
+                        )}
+                      />
+                    </Tab>
+                    ) : (<div/>)
+                  }
+                  {data?.ConversationAnalytics?.OutcomesDetected? (
+                    <Tab title="Outcomes" eventKey="Outcomes" className="pt-4">
+                      <ListItems
+                        data={data?.ConversationAnalytics?.OutcomesDetected?.map(
+                        (outcome) => (
+                          <Tag
+                            style={{
+                              "--highlight-colour": "Aquamarine",
+                            }}
+                          >
+                            {outcome.Text}
+                          </Tag>
+                        )
+                      )}
+                    />
+                  </Tab>
+                  ) : (<div/>)}
               </Tabs>
               
             )}
@@ -407,7 +416,7 @@ function Dashboard({ setAlert }) {
                       </TranscriptOverlay>
                     ),
                   })),
-                  ...s.IssuesDetected.map((issue) => ({
+                  ...(s.IssuesDetected? s.IssuesDetected?.map((issue) => ({
                     start: issue.BeginOffset,
                     end: issue.EndOffset,
                     fn: (match, key) => (
@@ -419,8 +428,8 @@ function Dashboard({ setAlert }) {
                         <span className="text-danger">[ISSUE]</span>: {match}
                       </TranscriptOverlay>
                     ),
-                  })),
-                  ...s.ActionItemsDetected.map((issue) => ({
+                  })) : []),
+                  ...(s.ActionItemsDetected? s.ActionItemsDetected?.map((issue) => ({
                     start: issue.BeginOffset,
                     end: issue.EndOffset,
                     fn: (match, key) => (
@@ -432,8 +441,8 @@ function Dashboard({ setAlert }) {
                         <span className="text-danger">[Action Item]</span>: {match}
                       </TranscriptOverlay>
                     ),
-                  })),
-                  ...s.OutcomesDetected.map((issue) => ({
+                  })) : []),
+                  ...(s.OutcomesDetected? s.OutcomesDetected?.map((issue) => ({
                     start: issue.BeginOffset,
                     end: issue.EndOffset,
                     fn: (match, key) => (
@@ -445,8 +454,7 @@ function Dashboard({ setAlert }) {
                         <span className="text-danger">[Outcome]</span>: {match}
                       </TranscriptOverlay>
                     ),
-                  })),
-
+                  })) : []),
                 ]}
                 score={s.SentimentIsPositive - s.SentimentIsNegative}
                 interruption={s.SegmentInterruption}
