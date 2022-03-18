@@ -35,6 +35,8 @@ Contains header-level information around the analytics that have been generated,
   "CustomEntities": [ ],
   "CategoriesDetected": [ ],
   "IssuesDetected": [ ],
+  "ActionItemsDetected": [ ],
+  "OutcomesDetected": [ ],
   "SourceInformation": [ ]
 }
 ```
