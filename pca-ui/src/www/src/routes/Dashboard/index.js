@@ -19,6 +19,8 @@ import { getEntityColor } from "./colours";
 import { TranscriptOverlay } from "./TranscriptOverlay";
 import { range } from "../../util";
 import { Sentiment } from "../../components/Sentiment";
+import { Tabs, Tab } from "react-bootstrap";
+
 
 const getSentimentTrends = (d, target, labels) => {
   const id = Object.entries(labels).find(([_, v]) => v === target)?.[0];
@@ -306,24 +308,59 @@ function Dashboard({ setAlert }) {
       )}
       {isTranscribeCallAnalyticsMode && (
         <Card>
-          <Card.Header>Issues</Card.Header>
+          <Card.Header>Summary</Card.Header>
           <Card.Body>
             {!data && !error ? (
               <Placeholder />
             ) : (
-              <ListItems
-                data={data?.ConversationAnalytics?.IssuesDetected.map(
-                  (issue) => (
-                    <Tag
-                      style={{
-                        "--highlight-colour": "yellow",
-                      }}
-                    >
-                      {issue.Text}
-                    </Tag>
-                  )
-                )}
-              />
+              <Tabs>
+                <Tab title="Issues" eventKey="Issues" className="pt-4">
+                  <ListItems
+                    data={data?.ConversationAnalytics?.IssuesDetected.map(
+                      (issue) => (
+                        <Tag
+                          style={{
+                            "--highlight-colour": "yellow",
+                          }}
+                        >
+                          {issue.Text}
+                        </Tag>
+                      )
+                    )}
+                  />
+                </Tab>
+                <Tab title="Action Items"  eventKey="ActionItems" className="pt-4">
+                  <ListItems
+                    data={data?.ConversationAnalytics?.ActionItemsDetected.map(
+                      (actionItem) => (
+                        <Tag
+                          style={{
+                            "--highlight-colour": "LightPink",
+                          }}
+                        >
+                          {actionItem.Text}
+                        </Tag>
+                      )
+                    )}
+                  />
+                </Tab>
+                <Tab title="Outcomes" eventKey="Outcomes" className="pt-4">
+                  <ListItems
+                    data={data?.ConversationAnalytics?.OutcomesDetected.map(
+                      (outcome) => (
+                        <Tag
+                          style={{
+                            "--highlight-colour": "Aquamarine",
+                          }}
+                        >
+                          {outcome.Text}
+                        </Tag>
+                      )
+                    )}
+                  />
+                </Tab>
+              </Tabs>
+              
             )}
           </Card.Body>
         </Card>
@@ -383,6 +420,33 @@ function Dashboard({ setAlert }) {
                       </TranscriptOverlay>
                     ),
                   })),
+                  ...s.ActionItemsDetected.map((issue) => ({
+                    start: issue.BeginOffset,
+                    end: issue.EndOffset,
+                    fn: (match, key) => (
+                      <TranscriptOverlay
+                        key={key}
+                        colour="lightpink"
+                        tooltip="Action Item"
+                      >
+                        <span className="text-danger">[Action Item]</span>: {match}
+                      </TranscriptOverlay>
+                    ),
+                  })),
+                  ...s.OutcomesDetected.map((issue) => ({
+                    start: issue.BeginOffset,
+                    end: issue.EndOffset,
+                    fn: (match, key) => (
+                      <TranscriptOverlay
+                        key={key}
+                        colour="aquamarine"
+                        tooltip="Outcome"
+                      >
+                        <span className="text-danger">[Outcome]</span>: {match}
+                      </TranscriptOverlay>
+                    ),
+                  })),
+
                 ]}
                 score={s.SentimentIsPositive - s.SentimentIsNegative}
                 interruption={s.SegmentInterruption}
