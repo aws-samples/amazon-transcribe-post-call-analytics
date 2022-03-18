@@ -54,6 +54,8 @@ class SpeechSegment:
         self.segmentLoudnessScores = []
         self.segmentInterruption = False
         self.segmentIssuesDetected = []
+        self.segmentActionItemsDetected = []
+        self.segmentOutcomesDetected = []
         self.segmentCategoriesDetectedPre = []
         self.segmentCategoriesDetectedPost = []
 
@@ -86,6 +88,8 @@ class TranscribeParser:
         self.analytics_channel_map = {}
         self.asr_output = ""
         self.issues_detected = []
+        self.actions_detected = []
+        self.outcomes_detected = []
 
         cf.loadConfiguration()
 
@@ -256,6 +260,8 @@ class TranscribeParser:
             resultsHeaderInfo["SpeakerTime"] = self.extract_analytics_speaker_time(self.asr_output["ConversationCharacteristics"])
             resultsHeaderInfo["CategoriesDetected"] = self.extract_analytics_categories(self.asr_output["Categories"])
             resultsHeaderInfo["IssuesDetected"] = self.issues_detected
+            resultsHeaderInfo["ActionItemsDetected"] = self.actions_detected
+            resultsHeaderInfo["OutcomesDetected"] = self.outcomes_detected
             resultsHeaderInfo["CombinedAnalyticsGraph"] = self.create_combined_tca_graphic()
         # For non-analytics mode, we can simulate some analytics data
         elif self.api_mode == cf.API_STANDARD:
@@ -556,6 +562,8 @@ class TranscribeParser:
             nextSegment["CategoriesDetected"] = segment.segmentCategoriesDetectedPre
             nextSegment["FollowOnCategories"] = segment.segmentCategoriesDetectedPost
             nextSegment["IssuesDetected"] = segment.segmentIssuesDetected
+            nextSegment["ActionItemsDetected"] = segment.segmentActionItemsDetected
+            nextSegment["OutcomesDetected"] = segment.segmentOutcomesDetected
             nextSegment["WordConfidence"] = segment.segmentConfidence
 
             # Add what we have to the full list
@@ -1106,9 +1114,12 @@ class TranscribeParser:
 
                 # Check if this block is within an interruption block for the speaker
                 if turn["ParticipantRole"] in interrupts["InterruptionsByInterrupter"]:
+                    turnStart = turn["BeginOffsetMillis"]
+                    turnEnd = turn["EndOffsetMillis"]
                     for entry in interrupts["InterruptionsByInterrupter"][turn["ParticipantRole"]]:
-                        if turn["BeginOffsetMillis"] == entry["BeginOffsetMillis"]:
+                        if (entry["BeginOffsetMillis"] >= turnStart) and (entry["BeginOffsetMillis"] < turnEnd):
                             nextSpeechSegment.segmentInterruption = True
+                            break
 
                 # Process each word in this turn
                 for word in turn["Items"]:
@@ -1140,21 +1151,15 @@ class TranscribeParser:
                         last_word = nextSpeechSegment.segmentConfidence[-1]
                         last_word["Text"] = last_word["Text"] + word["Content"]
 
-                # Record any issues detected
-                if "IssuesDetected" in turn:
-                    for issue in turn["IssuesDetected"]:
-                        # Grab the transcript offsets for the issue text
-                        begin_offset = issue["CharacterOffsets"]["Begin"]
-                        end_offset = issue["CharacterOffsets"]["End"]
-                        next_issue = {"Text": nextSpeechSegment.segmentText[begin_offset:end_offset],
-                                      "BeginOffset": begin_offset,
-                                      "EndOffset": end_offset}
+                # Record any issues, actions or outcomes detected
+                self.extract_summary_data(nextSpeechSegment, nextSpeechSegment.segmentIssuesDetected,
+                                          self.issues_detected, "IssuesDetected", turn)
+                self.extract_summary_data(nextSpeechSegment, nextSpeechSegment.segmentActionItemsDetected,
+                                          self.actions_detected, "ActionItemsDetected", turn)
+                self.extract_summary_data(nextSpeechSegment, nextSpeechSegment.segmentOutcomesDetected,
+                                          self.outcomes_detected, "OutcomesDetected", turn)
 
-                        # Tag this one on to our segment list and the header list
-                        nextSpeechSegment.segmentIssuesDetected.append(next_issue)
-                        self.issues_detected.append(next_issue)
-
-                # Tag on the sentiment - analytics has no per-turn numbers, so max out the
+            # Tag on the sentiment - analytics has no per-turn numbers, so max out the
                 # positive and negative, which effectively is 1.0 * COMPREHEND_SENTIMENT_SCALER
                 turn_sentiment = turn["Sentiment"]
                 if turn_sentiment == "POSITIVE":
@@ -1180,6 +1185,31 @@ class TranscribeParser:
 
         # Return our full turn-by-turn speaker segment list with sentiment
         return speechSegmentList
+
+    def extract_summary_data(self, speech_segment, segment_summary_block, call_summary_block, summary_tag, turn):
+        """
+        Extracts Call Analytics call summary data of a specific tag type and stores it at both the current
+        speech segment and at the call header level.  This is used to get all types of summary data, as the
+        data structures for each one from Transcribe are identical
+
+        :param speech_segment: Speech segment being populated
+        :param segment_summary_block: Segment-level block to record all summary data items of this type
+        :param call_summary_block: Call-level block to record all summary data items of this type
+        :param summary_tag: JSON tag reference for the requested type of summary data
+        :param turn: Current turn of the call being processed
+        """
+        if summary_tag in turn:
+            for summary in turn[summary_tag]:
+                # Grab the transcript offsets for the issue text
+                begin_offset = summary["CharacterOffsets"]["Begin"]
+                end_offset = summary["CharacterOffsets"]["End"]
+                next_summary = {"Text": speech_segment.segmentText[begin_offset:end_offset],
+                                "BeginOffset": begin_offset,
+                                "EndOffset": end_offset}
+
+                # Tag this one on to our segment list and the header list
+                segment_summary_block.append(next_summary)
+                call_summary_block.append(next_summary)
 
     def create_simple_entity_entries(self, speech_segments):
         """
@@ -1534,7 +1564,7 @@ def lambda_handler(event, context):
 if __name__ == "__main__":
     # Standard test event
     event = {
-        "bucket": "ak-cci-input",
+        "bucket": "ak-sedona-data-oregon",
         # "key": "originalAudio/0a.93.a0.3e.00.00-16.22.53.402-09-05-2019.wav",
         # "apiMode": "standard",
         # "jobName": "0a.93.a0.3e.00.00-16.22.53.402-09-05-2019.wav",
@@ -1547,9 +1577,9 @@ if __name__ == "__main__":
         # "key": "originalAudio/stereo.mp3",
         # "apiMode": "analytics",
         # "jobName": "stereo.mp3",
-        "key": "originalAudio/Auto1_GUID_001_AGENT_AndrewK_DT_2021-12-01T07-55-51.wav",
+        "key": "originalAudio/1951f745.wav",
         "apiMode": "analytics",
-        "jobName": "Auto1_GUID_001_AGENT_AndrewK_DT_2021-12-01T07-55-51.wav",
+        "jobName": "1951f745.wav",
         "langCode": "en-US",
         "transcribeStatus": "COMPLETED"
     }
