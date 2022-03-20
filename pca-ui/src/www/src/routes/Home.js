@@ -47,7 +47,7 @@ function Home({ setAlert }) {
 
   return (
     <div>
-      <h3>Home</h3>
+      <span className="align-middle">Home </span>
       <ContactTable
         data={details}
         loading={!data && !error}

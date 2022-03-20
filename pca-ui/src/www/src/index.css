@@ -36,3 +36,7 @@ span.audio-start {
   color: cadetblue;
   cursor: pointer;
 }
+
+.navbar {
+  background: black;
+}

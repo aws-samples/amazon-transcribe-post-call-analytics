@@ -24,7 +24,7 @@ const routes = [
 
 function Navigation({ userName }) {
   return (
-    <Navbar bg="light" expand="lg">
+    <Navbar bg="dark" variant="dark">
       <Container>
         <Navbar.Brand>Amazon Transcribe PCA</Navbar.Brand>
         <Navbar.Toggle aria-controls="navbar-nav" />
@@ -47,7 +47,7 @@ function Navigation({ userName }) {
           </Nav>
           <Navbar.Text>Signed in as: {userName}</Navbar.Text>
           <Navbar.Text className="justify-content-end ">
-            <Button className="pe-0 text-dark" variant="link" onClick={logOut}>
+            <Button className="pe-0" variant="dark" onClick={logOut}>
               Logout
             </Button>
           </Navbar.Text>

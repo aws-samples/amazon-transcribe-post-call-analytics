@@ -197,8 +197,8 @@ function Dashboard({ setAlert }) {
 
   return (
     <Stack direction="vertical" gap={4}>
-      <div>
-        <h3 className="d-inline">Call Details </h3>
+      <div className="align-middle">
+        <span className="align-middle"><a href="/">Home</a> &gt; Call Details </span>
         <Button onClick={swapAgent} disabled={isSwapping} className="float-end">
           {isSwapping ? "Swapping..." : "Swap Agent/Caller"}
         </Button>
@@ -241,18 +241,27 @@ function Dashboard({ setAlert }) {
           </Card.Body>
         </Card>
         <Card className="charts">
+        <Card.Header>Sentiment</Card.Header>
+
           <Card.Body>
             <Row>
               <Col>
                 <div>
-                  <h5 className="text-muted">Sentiment</h5>
                   <SentimentChart
                     data={data?.ConversationAnalytics?.SentimentTrends}
                     speakerOrder={speakerLabels}
                   />
                 </div>
+              </Col>
+            </Row>
+          </Card.Body>
+          <Card.Header>
+            Speaker Time
+          </Card.Header>
+          <Card.Body>
+            <Row>
+              <Col>
                 <div>
-                  <h5 className="text-muted">Speaker Time</h5>
                   <SpeakerTimeChart
                     data={Object.entries(
                       data?.ConversationAnalytics?.SpeakerTime || {}

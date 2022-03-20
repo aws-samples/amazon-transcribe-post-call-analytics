@@ -15,6 +15,7 @@
     "react-router-bootstrap": "^0.25.0",
     "react-router-dom": "^5.3.0",
     "react-select": "^5.2.1",
+    "sass": "^1.49.9",
     "swr": "^1.0.1"
   },
   "devDependencies": {

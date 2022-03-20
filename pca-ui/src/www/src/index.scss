@@ -1,0 +1,106 @@
+@import "react-datepicker/dist/react-datepicker.css";
+
+.react-datepicker__input-container > input {
+  background-color: hsl(0, 0%, 100%);
+  border-color: hsl(0, 0%, 80%);
+  border-radius: 4px;
+  border-style: solid;
+  border-width: 1px;
+  padding: 7px 8px;
+  width: 100%;
+}
+.react-datepicker__input-container > input:focus {
+  outline: 1px solid var(--bs-blue);
+}
+
+img.sentiment {
+  display: inline;
+  width: 2rem;
+  margin-right: 1rem;
+}
+
+span.segment {
+  color: cadetblue;
+  cursor: pointer;
+}
+
+img.sentiment-icon {
+  width: 40px;
+}
+
+tr.contact-table {
+  cursor: pointer;
+}
+
+span.audio-start {
+  color: cadetblue;
+  cursor: pointer;
+}
+
+// Override default variables before the import
+$body-bg: rgb(242, 243, 243);
+$dark: rgb(35, 47, 62);
+
+.navbar {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.navbar-brand {
+  color:white;
+  font-family: var(--font-family-base-2X3QfY,"Noto Sans","Helvetica Neue",Roboto,Arial,sans-serif);
+  font-size: var(--font-body-m-size-3mVn35,14px);
+    font-stretch: normal;
+    font-style: normal;
+    font-variant: normal;
+    font-weight: 700;
+}
+
+.card {
+  border: 1px solid #eaeded !important;
+  border-radius: 0px !important;
+  box-shadow: 0 1px 1px 0 rgb(0 28 36 / 30%), 1px 1px 1px 0 rgb(0 28 36 / 15%), -1px 1px 1px 0 rgb(0 28 36 / 15%);
+}
+
+.card-header {
+  background-color: #fafafa !important;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+h5 {
+  font-weight: 700;
+  font-size: 14px;
+}
+.nav-tabs .nav-link {
+  background-color:transparent !important;
+  border-radius: 0% !important;
+  border-left: 0px transparent !important;
+  border-right: 1px solid rgb(170, 183, 184) !important;
+  border-top:0px transparent !important;
+  border-bottom:0px transparent !important;
+  padding-left:15px;
+  padding-right:15px;
+  padding-top: 0px;
+  padding-bottom: 0px;
+  color: rgb(84, 91, 100);
+}
+
+.nav-tabs .nav-item {
+  padding-top:14px;
+  padding-bottom:14px;
+  border-bottom:0px solid transparent !important;
+
+}
+
+.nav-tabs .nav-item  {
+  font-weight:700;
+  color: rgb(84, 91, 100);
+}
+.nav-tabs .nav-item .active {
+  font-weight:700;
+  color: rgb(236, 114, 17) !important;
+}
+
+// Import Bootstrap and its default variables
+@import '~bootstrap/scss/bootstrap.scss';
