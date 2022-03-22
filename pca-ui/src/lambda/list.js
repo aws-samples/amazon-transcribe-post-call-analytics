@@ -28,7 +28,7 @@ async function handler(event, context) {
   if (event.queryStringParameters != null) {
     if (
       "startKey" in event.queryStringParameters &&
-      "startTimestamp" in event.queryStringParameters
+      "timestampFrom" in event.queryStringParameters
     ) {
       start = {
         PK: {
@@ -38,7 +38,7 @@ async function handler(event, context) {
           S: "call",
         },
         TK: {
-          N: event.queryStringParameters.startTimestamp,
+          N: event.queryStringParameters.timestampFrom,
         },
       };
     }
@@ -83,7 +83,7 @@ async function handler(event, context) {
 
   if (res.LastEvaluatedKey) {
     body.StartKey = res.LastEvaluatedKey.PK.S;
-    body.StartTimestamp = res.LastEvaluatedKey.TK.N;
+    body.timestampFrom = res.LastEvaluatedKey.TK.N;
   }
 
   return response(200, body, {
