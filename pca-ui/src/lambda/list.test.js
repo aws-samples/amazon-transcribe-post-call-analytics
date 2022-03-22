@@ -101,7 +101,9 @@ describe("list handler", () => {
       },
     });
 
-    const resp = await handler({ queryStringParameters: { count: "2" } });
+    const resp = await handler({
+      queryStringParameters: { count: "2", timestampFrom: "1631779340342" },
+    });
 
     expect(resp.statusCode).toEqual(200);
 
@@ -109,6 +111,6 @@ describe("list handler", () => {
     expect(body.StartKey).toEqual(
       "call#parsedFiles/AutoRepairs2_GUID_2a602c1a-4ca3-4d37-a933-444d575c0222_AGENT_SteveE_DATETIME_08.02.20.342-09-16-2021.wav.json"
     );
-    expect(body.StartTimestamp).toEqual("1631779340342");
+    expect(body.timestampFrom).toEqual("1631779340342");
   });
 });

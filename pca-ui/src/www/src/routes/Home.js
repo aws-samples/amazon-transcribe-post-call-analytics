@@ -8,12 +8,12 @@ import { Button } from "react-bootstrap";
 const config = window.pcaSettings;
 
 function Home({ setAlert }) {
-  const fetcher = (url, startKey, startTimestamp) => {
+  const fetcher = (url, startKey, timestampFrom) => {
     const opts = {
       count: config.api.pageSize,
     };
 
-    if (startTimestamp) opts.startTimestamp = startTimestamp;
+    if (timestampFrom) opts.timestampFrom = timestampFrom;
     if (startKey) opts.startKey = startKey;
     return list(opts);
   };
@@ -22,12 +22,12 @@ function Home({ setAlert }) {
     if (previousPageData && !previousPageData.StartKey) return null;
     if (pageIndex === 0) return `/list`;
 
-    const { StartKey, StartTimestamp } = previousPageData;
+    const { StartKey, timestampFrom } = previousPageData;
 
     return [
-      `/list?startKey=${StartKey}&startTimestamp=${StartTimestamp}`,
+      `/list?startKey=${StartKey}&timestampFrom=${timestampFrom}`,
       StartKey,
-      StartTimestamp,
+      timestampFrom,
     ];
   };
 
