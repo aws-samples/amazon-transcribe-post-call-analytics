@@ -22,12 +22,12 @@ function Home({ setAlert }) {
     if (previousPageData && !previousPageData.StartKey) return null;
     if (pageIndex === 0) return `/list`;
 
-    const { StartKey, TimestampFrom } = previousPageData;
+    const { StartKey, timestampFrom } = previousPageData;
 
     return [
-      `/list?startKey=${StartKey}&timestampFrom=${TimestampFrom}`,
+      `/list?startKey=${StartKey}&timestampFrom=${timestampFrom}`,
       StartKey,
-      TimestampFrom,
+      timestampFrom,
     ];
   };
 
