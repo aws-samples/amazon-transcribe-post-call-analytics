@@ -13,3 +13,13 @@
 .call-details-col {
   flex: 1 1 550px;
 }
+
+.seg-hide {
+  display: none;
+}
+
+.span-hl {
+  background-color: gold;
+  font-weight: bold;
+  text-decoration: underline;
+}

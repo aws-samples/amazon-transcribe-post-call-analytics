@@ -195,6 +195,66 @@ function Dashboard({ setAlert }) {
     },
   ];
 
+  let audioEndTimestamps = []
+  data?.SpeechSegments?.map((seg) => {
+    seg?.WordConfidence.map((wc) => {
+      if (wc?.EndTime) {
+        audioEndTimestamps.push(wc.EndTime)
+      } else {
+        audioEndTimestamps.push(audioEndTimestamps[audioEndTimestamps.length - 1])
+      }
+    })
+  })
+
+  let audioElem = undefined
+  
+  const onAudioPLayTimeUpdate = (e) => {
+    let flag = data?.SpeechSegments?.length && 
+               data.SpeechSegments[0]?.WordConfidence?.length
+    if (!flag) {
+      return 
+    }
+
+    if (!audioElem) {
+      audioElem = document.getElementsByTagName("audio")[0]  
+    }
+    let id = undefined
+    for (let i = 0; i < audioEndTimestamps.length; i++) {
+      if (audioElem.currentTime < audioEndTimestamps[i]) {
+        id = `ts${i}`
+        break;
+      }
+    }
+  
+    if (!id) {
+      return
+    }
+    clearAllAudioPlayHighlights()
+    const currElem = document.getElementById(id);
+    if (currElem) {
+      currElem.setAttribute('class', 'span-hl');
+    }
+  };
+
+  const [isAudioPlaying, setAudioPlaying] = useState(false)
+
+  const setAudioState = () => {
+    const flag = data?.SpeechSegments?.length && 
+                 data.SpeechSegments[0]?.WordConfidence?.length
+    if (!flag) {
+      return 
+    }
+    clearAllAudioPlayHighlights()
+    setAudioPlaying(!isAudioPlaying)
+  }
+
+  const clearAllAudioPlayHighlights = () => {
+    const words = document.querySelectorAll('.span-hl');
+    for (const word of words) {
+      word.classList.remove('span-hl');
+    }
+  }
+
   return (
     <Stack direction="vertical" gap={4}>
       <div>
@@ -379,13 +439,16 @@ function Dashboard({ setAlert }) {
                 data?.ConversationAnalytics?.SourceInformation[0]
                   ?.TranscribeJobInfo?.MediaFileUri
               }
+              onTimeUpdate = {onAudioPLayTimeUpdate}
+              onPause = {setAudioState}
+              onPlay = {setAudioState}
             >
               Your browser does not support the
               <code>audio</code> element.
             </audio>
           )}
         </Card.Header>
-        <Card.Body className="pt-4">
+        <Card.Body className={isAudioPlaying ? "pt-4 seg-hide" : "pt-4"}>
           {!data && !error ? (
             <Placeholder />
           ) : (
@@ -460,6 +523,38 @@ function Dashboard({ setAlert }) {
                     </span>
                   ) : null
                 }
+                allSegments={data?.SpeechSegments || []}
+                idx={i}
+                hmode={true}
+              />
+            ))
+          )}
+        </Card.Body>
+        <Card.Body className={isAudioPlaying ? "pt-4" : "pt-4 seg-hide"}>
+          {!data && !error ? (
+            <Placeholder />
+          ) : (
+            (data?.SpeechSegments || []).map((s, i) => (
+              <TranscriptSegment
+                key={i}
+                name={speakerLabels[s.SegmentSpeaker]}
+                segmentStart={s.SegmentStartTime}
+                text={s.DisplayText}
+                onClick={setAudioCurrentTime}
+                highlightLocations={[]}
+                score={s.SentimentIsPositive - s.SentimentIsNegative}
+                interruption={s.SegmentInterruption}
+                aboveText={
+                  s.CategoriesDetected.length ? (
+                    <span className="text-muted">
+                      {" "}
+                      Categories Detetected: {s.CategoriesDetected}
+                    </span>
+                  ) : null
+                }
+                allSegments={data?.SpeechSegments || []}
+                idx={i}
+                hmode={false}
               />
             ))
           )}
