@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 
-Description: Amazon Transcribe Post Call Analytics - PCA (v0.1.4) (uksb-1sn29lk73)
+Description: Amazon Transcribe Post Call Analytics - PCA (v0.2) (uksb-1sn29lk73)
 
 Parameters:
 
@@ -63,7 +63,7 @@ Parameters:
 
   EntityThreshold:
     Type: String
-    Default: "0.5"
+    Default: "0.6"
     Description: Confidence threshold where we accept the custom entity detection result
 
   EntityTypes:
