@@ -63,7 +63,7 @@ Parameters:
 
   EntityThreshold:
     Type: String
-    Default: "0.5"
+    Default: "0.6"
     Description: Confidence threshold where we accept the custom entity detection result
 
   EntityTypes:
