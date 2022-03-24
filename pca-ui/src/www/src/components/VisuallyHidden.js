@@ -1,5 +1,5 @@
 export const VisuallyHidden = ({ children }) => (
-  <div
+  <span
     style={{
       border: 0,
       clip: "rect(0 0 0 0)",
@@ -11,5 +11,5 @@ export const VisuallyHidden = ({ children }) => (
     }}
   >
     {children}
-  </div>
+  </span>
 );
