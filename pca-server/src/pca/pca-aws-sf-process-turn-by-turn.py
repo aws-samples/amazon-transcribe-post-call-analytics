@@ -43,6 +43,7 @@ class SpeechSegment:
         self.segmentEndTime = 0.0
         self.segmentSpeaker = ""
         self.segmentText = ""
+        self.segmentItems = []
         self.segmentConfidence = []
         self.segmentSentimentScore = 0.0
         self.segmentPositive = 0.0
@@ -554,6 +555,7 @@ class TranscribeParser:
             nextSegment["SegmentInterruption"] = segment.segmentInterruption
             nextSegment["OriginalText"] = segment.segmentText
             nextSegment["DisplayText"] = segment.segmentText
+            nextSegment["SegmentItems"] = segment.segmentItems
             nextSegment["TextEdited"] = 0
             nextSegment["LoudnessScores"] = segment.segmentLoudnessScores
             nextSegment["SentimentIsPositive"] = int(segment.segmentIsPositive)
@@ -1109,6 +1111,7 @@ class TranscribeParser:
                 nextSpeechSegment.segmentEndTime = float(turn["EndOffsetMillis"]) / 1000.0
                 nextSpeechSegment.segmentSpeaker = nextSpeaker
                 nextSpeechSegment.segmentText = turn["Content"]
+                nextSpeechSegment.segmentItems = turn["Items"]
                 nextSpeechSegment.segmentLoudnessScores = turn["LoudnessScores"]
                 confidenceList = []
                 nextSpeechSegment.segmentConfidence = confidenceList
