@@ -74,12 +74,11 @@ def generateJobName(key):
     characters and returns that as the job-name to use
     """
 
-    # Get rid of leading path, and replace [SPACE] with "-"
+    # Get rid of leading path, and replace [SPACE] with "-", replace "/" with "-"
     response = key
-    index = response.rfind("/")
-
-    if index != -1:
-        response = response[1 + index :]
+    if "/" in key:
+        response = response[1 + key.find("/") :]
+    response = response.replace("/", "-")
     response = response.replace(" ", "-")
 
     return response
