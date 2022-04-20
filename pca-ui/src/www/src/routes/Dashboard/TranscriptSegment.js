@@ -11,6 +11,9 @@ export const TranscriptSegment = ({
   score,
   interruption,
   aboveText,
+  allSegments,
+  idx,
+  hmode  
 }) => (
   <div className="mb-4 d-flex flex-row flex-nowrap gap-3">
     <div className="d-flex align-items-center">
@@ -33,7 +36,8 @@ export const TranscriptSegment = ({
         </Badge>
       )}
       {aboveText && <div>{aboveText}</div>}
-      <div>{applyReplacements(text, highlightLocations)}</div>
+      <div>{hmode && applyReplacements(text, highlightLocations)}</div>
+      <div>{!hmode && getSpansForSegment(allSegments, idx)}</div>
     </div>
   </div>
 );
@@ -79,3 +83,23 @@ const sortFn = (a, b) => {
   if (a.start < b.start) return -1;
   return 0;
 };
+
+const getSpansForSegment = (allSegments, key) => {
+  const flag = allSegments?.length && allSegments[0]?.WordConfidence?.length
+  if (!flag) {
+    return
+  }
+  let start = 0
+  if (key > 0){
+    for (let i = 0; i < key; i++){
+      start += allSegments[i]['WordConfidence'].length
+    }
+  }
+  let spans = []
+  for (const segItem of allSegments[key]?.WordConfidence) {
+    spans.push(segItem?.Text)
+  }
+  return spans.map((w, i) => {
+    return <span className="ap-word" id={`ts${start + i}`}>{w + ' '}</span>
+  })
+}
