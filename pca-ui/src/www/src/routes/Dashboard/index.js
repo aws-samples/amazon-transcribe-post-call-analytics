@@ -432,8 +432,13 @@ const onAudioPLayTimeUpdate = () => {
                         data-end={end}
                         data-offset-start={offsetStart}
                         data-offset-end={offsetEnd}
+                        content={match}
+                        type={""}
+                        entityOffsetStart={e.BeginOffset}
+                        entityOffsetEnd={e.EndOffset}
+                        entityClass={"text-danger"}
+                        addType={offsetStart === e.BeginOffset ? true : false}
                       >
-                        {match}
                       </TranscriptOverlay>
                     ),
                   })),
@@ -449,34 +454,57 @@ const onAudioPLayTimeUpdate = () => {
                         data-end={end}
                         data-offset-start={offsetStart}
                         data-offset-end={offsetEnd}
+                        content={match}
+                        type={"Issue"}
+                        entityOffsetStart={issue.BeginOffset}
+                        entityOffsetEnd={issue.EndOffset}
+                        entityClass={"text-danger"}
+                        addType={offsetStart === issue.BeginOffset ? true : false}
                       >
-                        <span className="text-danger">[ISSUE]</span>: {match}
                       </TranscriptOverlay>
                     ),
                   })) : []),
                   ...(s.ActionItemsDetected? s.ActionItemsDetected?.map((issue) => ({
                     start: issue.BeginOffset,
                     end: issue.EndOffset,
-                    fn: (match, key) => (
+                    fn: (match, key, start, end, offsetStart, offsetEnd) => (
                       <TranscriptOverlay
                         key={key}
                         colour="lightpink"
                         tooltip="Action Item"
+                        data-start={start}
+                        data-end={end}
+                        data-offset-start={offsetStart}
+                        data-offset-end={offsetEnd}
+                        content={match}
+                        type={"Action Item"}
+                        entityOffsetStart={issue.BeginOffset}
+                        entityOffsetEnd={issue.EndOffset}
+                        entityClass={"text-danger"}
+                        addType={offsetStart === issue.BeginOffset ? true : false}
                       >
-                        <span className="text-danger">[Action Item]</span>: {match}
                       </TranscriptOverlay>
                     ),
                   })) : []),
                   ...(s.OutcomesDetected? s.OutcomesDetected?.map((issue) => ({
                     start: issue.BeginOffset,
                     end: issue.EndOffset,
-                    fn: (match, key) => (
+                    fn: (match, key, start, end, offsetStart, offsetEnd) => (
                       <TranscriptOverlay
                         key={key}
                         colour="aquamarine"
                         tooltip="Outcome"
+                        data-start={start}
+                        data-end={end}
+                        data-offset-start={offsetStart}
+                        data-offset-end={offsetEnd}
+                        content={match}
+                        type={"Outcome"}
+                        entityOffsetStart={issue.BeginOffset}
+                        entityOffsetEnd={issue.EndOffset}
+                        entityClass={"text-danger"}
+                        addType={offsetStart === issue.BeginOffset ? true : false}
                       >
-                        <span className="text-danger">[Outcome]</span>: {match}
                       </TranscriptOverlay>
                     ),
                   })) : []),

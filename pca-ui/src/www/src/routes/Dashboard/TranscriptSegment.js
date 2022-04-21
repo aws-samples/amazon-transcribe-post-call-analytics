@@ -12,7 +12,7 @@ const getTranscriptDetails = (allSegments) => {
       
       accumulator =[...accumulator,{content: item.Content, start:item.BeginOffsetMillis/1000, end:item.EndOffsetMillis/1000, offsetStart: offsetStartValue, offsetEnd: offsetEndValue}];
     } else {
-      offsetStartValue = offsetEndValue === 0 ? offsetEndValue : offsetEndValue;
+      offsetStartValue = offsetEndValue;
       offsetEndValue = offsetStartValue + item?.Content.length;
 
       accumulator =[...accumulator,{content: item.Content, start: null, end: null, offsetStart: offsetStartValue, offsetEnd: offsetEndValue}];
