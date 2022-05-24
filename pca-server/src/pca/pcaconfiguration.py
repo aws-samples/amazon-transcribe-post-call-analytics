@@ -74,10 +74,11 @@ def generateJobName(key):
     characters and returns that as the job-name to use
     """
 
-    # Get rid of leading path, and replace [SPACE] with "-"
+    # Get rid of leading path, and replace [SPACE] with "-", replace "/" with "-"
     response = key
     if "/" in key:
-        response = response[1 + key.find('/'):]
+        response = response[1 + key.find("/") :]
+    response = response.replace("/", "-")
     response = response.replace(" ", "-")
 
     return response
@@ -110,22 +111,52 @@ def loadConfiguration():
     """
 
     # Load the the core ones in from Parameter Store in batches of up to 10
-    ssm = boto3.client('ssm')
-    fullParamList1 = ssm.get_parameters(Names=[CONF_COMP_LANGS, CONF_REDACTION_LANGS, CONF_ENTITYENDPOINT,
-                                               CONF_ENTITY_FILE, CONF_ENTITYCONF, CONF_PREFIX_MP3_PLAYBACK,
-                                               CONF_S3BUCKET_INPUT, CONF_PREFIX_RAW_AUDIO, CONF_PREFIX_FAILED_AUDIO,
-                                               CONF_MAX_SPEAKERS])
-    fullParamList2 = ssm.get_parameters(Names=[CONF_MINNEGATIVE, CONF_MINPOSITIVE, CONF_S3BUCKET_OUTPUT,
-                                               CONF_PREFIX_PARSED_RESULTS, CONF_SPEAKER_NAMES, CONF_SPEAKER_MODE,
-                                               COMP_SFN_NAME, CONF_SUPPORT_BUCKET, CONF_TRANSCRIBE_LANG,
-                                               CONF_PREFIX_TRANSCRIBE_RESULTS])
-    fullParamList3 = ssm.get_parameters(Names=[CONF_VOCABNAME, CONF_CONVO_LOCATION, CONF_ENTITY_TYPES, 
-                                               CONF_FILTER_MODE, CONF_FILTER_NAME, 
-                                               CONF_FILENAME_DATETIME_REGEX, CONF_FILENAME_DATETIME_FIELDMAP,
-                                               CONF_FILENAME_GUID_REGEX, CONF_FILENAME_AGENT_REGEX,
-                                               CONF_FILENAME_CUST_REGEX])
-    fullParamList4 = ssm.get_parameters(Names=[CONF_KENDRA_INDEX_ID, CONF_WEB_URI, CONF_TRANSCRIBE_API, CONF_REDACTION_TRANSCRIPT,
-                                               CONF_REDACTION_AUDIO])
+    ssm = boto3.client("ssm")
+    fullParamList1 = ssm.get_parameters(
+        Names=[
+            CONF_COMP_LANGS,
+            CONF_REDACTION_LANGS,
+            CONF_ENTITYENDPOINT,
+            CONF_ENTITY_FILE,
+            CONF_ENTITYCONF,
+            CONF_PREFIX_MP3_PLAYBACK,
+            CONF_S3BUCKET_INPUT,
+            CONF_PREFIX_RAW_AUDIO,
+            CONF_PREFIX_FAILED_AUDIO,
+            CONF_MAX_SPEAKERS,
+        ]
+    )
+    fullParamList2 = ssm.get_parameters(
+        Names=[
+            CONF_MINNEGATIVE,
+            CONF_MINPOSITIVE,
+            CONF_S3BUCKET_OUTPUT,
+            CONF_PREFIX_PARSED_RESULTS,
+            CONF_SPEAKER_NAMES,
+            CONF_SPEAKER_MODE,
+            COMP_SFN_NAME,
+            CONF_SUPPORT_BUCKET,
+            CONF_TRANSCRIBE_LANG,
+            CONF_PREFIX_TRANSCRIBE_RESULTS,
+        ]
+    )
+    fullParamList3 = ssm.get_parameters(
+        Names=[
+            CONF_VOCABNAME,
+            CONF_CONVO_LOCATION,
+            CONF_ENTITY_TYPES,
+            CONF_FILTER_MODE,
+            CONF_FILTER_NAME,
+            CONF_FILENAME_DATETIME_REGEX,
+            CONF_FILENAME_DATETIME_FIELDMAP,
+            CONF_FILENAME_GUID_REGEX,
+            CONF_FILENAME_AGENT_REGEX,
+            CONF_FILENAME_CUST_REGEX,
+        ]
+    )
+    fullParamList4 = ssm.get_parameters(
+        Names=[CONF_KENDRA_INDEX_ID, CONF_WEB_URI, CONF_TRANSCRIBE_API, CONF_REDACTION_TRANSCRIPT, CONF_REDACTION_AUDIO]
+    )
 
     # Extract our parameters into our config
     extractParameters(fullParamList1, False)
