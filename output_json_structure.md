@@ -35,6 +35,8 @@ Contains header-level information around the analytics that have been generated,
   "CustomEntities": [ ],
   "CategoriesDetected": [ ],
   "IssuesDetected": [ ],
+  "ActionItemsDetected": [ ],
+  "OutcomesDetected": [ ],
   "SourceInformation": [ ]
 }
 ```
@@ -54,6 +56,8 @@ Contains header-level information around the analytics that have been generated,
 | CustomEntities       | -      | Summary of the custom entities detected throughout the conversation |
 | CategoriesDetected   | -      | A list of categories detected by *Call Analytics*            |
 | IssuesDetected       | -      | A list of issues detected by *Call Analytics*                |
+| ActionItemsDetected  | -      | A list of action items detected by *Call Analytics*                |
+| OutcomesDetected     | -      | A list of outcomes detected by *Call Analytics*                |
 | SourceInformation    | -      | Source-specific details for the conversation.  Contains just one of any of the possible supported sources |
 
 ###### SpeakerLabels
@@ -206,16 +210,16 @@ Within Amazon Transcribe Call Analytics the customer can define a number of cate
 
 Note that the *Timestamps* block can be empty, as some categories are triggered on the absence of data in the call, so those categories would have an *Instances* count but no *Timestamps*
 
-###### IssuesDetected
+###### IssuesDetected | ActionItemsDetected | OutcomesDetected
 
 **-- THIS SECTION IS ALL NEW --**
 
 Note: this information is only available from Call Analytics calls.
 
-The issue detection model in Call Analytics will highlight text in the transcript that it recognises as an issue - it does not give a category for the issue, just the text and location.  This information is listed here, but is repeated further down in the *SpeechSegments* list against the relevant line.
+The issue detection model in Call Analytics will highlight text in the transcript that it recognises as an issue, an outcome or an action.  It does not give a category for any of these items, just the text and location.  This information is listed here, but is repeated further down in the *SpeechSegments* list against the relevant line.
 
 ```json
-"IssuesDetected": [
+"IssuesDetected | ActionItemsDetected | OutcomesDetected": [
   {
     "Text": "string",
     "BeginOffset": "integer",

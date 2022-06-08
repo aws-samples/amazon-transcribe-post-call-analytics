@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 
-Description: Amazon Transcribe Post Call Analytics - PCA (v0.1.3)
+Description: Amazon Transcribe Post Call Analytics - PCA (v0.1.5b) (uksb-1sn29lk73)
 
 Parameters:
 
@@ -47,6 +47,7 @@ Parameters:
 
   ConversationLocation:
     Type: String
+    AllowedPattern: "[+-_\/a-zA-Z0-9]*"
     Default: America/New_York
     Description: Name of the timezone location for the call source - this is the TZ database name from https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
 
@@ -142,11 +143,13 @@ Parameters:
 
   StepFunctionName:
     Type: String
+    AllowedPattern: "[-_a-zA-Z0-9]*"
     Default: PostCallAnalyticsWorkflow
     Description: Name of Step Functions workflow that orchestrates this process
     
   BulkUploadStepFunctionName:
     Type: String
+    AllowedPattern: "[-_a-zA-Z0-9]*"
     Default: BulkUploadWorkflow
     Description: Name of Step Functions workflow that orchestrates the bulk import process
     
