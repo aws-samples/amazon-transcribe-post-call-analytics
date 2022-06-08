@@ -1133,7 +1133,7 @@ class TranscribeParser:
                         confidenceList.append({"Text": wordToAdd,
                                                "Confidence": conf_score,
                                                "StartTime": float(word["BeginOffsetMillis"]) / 1000.0,
-                                               "EndTime": float(word["BeginOffsetMillis"] / 1000.0)})
+                                               "EndTime": float(word["EndOffsetMillis"] / 1000.0)})
                         self.numWordsParsed += 1
                         self.cummulativeWordAccuracy += conf_score
 
@@ -1569,10 +1569,13 @@ if __name__ == "__main__":
         # "key": "originalAudio/stereo.mp3",
         # "apiMode": "analytics",
         # "jobName": "stereo.mp3",
-        "key": "originalAudio/Auto1_GUID_001_AGENT_AndrewK_DT_2021-12-01T07-55-51.wav",
-        "apiMode": "analytics",
-        "jobName": "Auto1_GUID_001_AGENT_AndrewK_DT_2021-12-01T07-55-51.wav",
+        # "key": "originalAudio/AutoRepairs1_GUID_4628bb26-9631-487f-8d7b-0ac8e84074fd_AGENT_AndrewK_DATETIME_07.55.51.067-09-16-2021.wav",
+        # "apiMode": "analytics",
+        # "jobName": "AutoRepairs1_GUID_4628bb26-9631-487f-8d7b-0ac8e84074fd_AGENT_AndrewK_DATETIME_07.55.51.067-09-16-2021.wav",
         "langCode": "en-US",
-        "transcribeStatus": "COMPLETED"
+        "apiMode": "standard",
+        "transcribeStatus": "COMPLETED",
+        "key": "originalAudio/fb460133-9f03-44e4-8cfd-91e501fe9fd8_20220415T08:12_UTC.wav",
+        "jobName": "fb460133-9f03-44e4-8cfd-91e501fe9fd8_20220415T08-12_UTC.wav"
     }
     lambda_handler(event, "")

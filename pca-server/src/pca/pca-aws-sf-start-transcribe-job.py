@@ -19,7 +19,7 @@ TMP_DIR = "/tmp/"
 
 
 def check_existing_job_status(job_name, transcribe, api_mode):
-    '''
+    """
     Checks the status of the named transcription job, either in the Standard Transcribe APIs or
     the Call Analytics APIs.  This is required before launching a new job, as our job names are
     based upon the name of the input audio file, but Transcribe jobs need to be uniquely named
@@ -28,7 +28,7 @@ def check_existing_job_status(job_name, transcribe, api_mode):
     @param transcribe: Boto3 client for the Transcribe service
     @param api_mode: Transcribe API mode being used
     @return: Status of the transcription job, empty string means the job didn't exist
-    '''
+    """
     try:
         # Extract the standard Transcribe job status from the correct API
         if api_mode == cf.API_ANALYTICS:
@@ -43,13 +43,13 @@ def check_existing_job_status(job_name, transcribe, api_mode):
 
 
 def delete_existing_job(job_name, transcribe, api_mode):
-    '''
+    """
     Deletes the specified transcription job from either the Standard or Call Analytics APIs
 
     @param job_name: Name of the transcription job to delete
     @param transcribe: Boto3 client for the Transcribe service
     @param api_mode: Transcribe API mode being used
-    '''
+    """
     try:
         if api_mode == cf.API_ANALYTICS:
             transcribe.delete_call_analytics_job(CallAnalyticsJobName=job_name)
@@ -61,14 +61,14 @@ def delete_existing_job(job_name, transcribe, api_mode):
 
 
 def count_audio_channels(bucket, key):
-    '''
+    """
     Examines an audio file using the FFPROBE utility to determine the number of audio channels in the file.  If
     any errors occurs then it will default to returning "1", implying that it has just a single channel.
 
     @param bucket: Bucket holding the audio file to be tested
     @param key: Key for the audio file in the bucket
     @return: Number of audio channels found in the file
-    '''
+    """
 
     # First, we need to download the original audio file
     ffmpegInputFilename = TMP_DIR + key.split('/')[-1]
@@ -82,7 +82,7 @@ def count_audio_channels(bucket, key):
         probResult = subprocess.check_output(command, stderr=subprocess.STDOUT).decode()
         channels_found = int(probResult)
     except Exception as e:
-        print('Failed to get number of audio streams from input file: ' + e)
+        print(f'Failed to get number of audio streams from input file: {str(e)}')
         channels_found = 1
     finally:
         # Delete our downloaded audio
@@ -91,16 +91,15 @@ def count_audio_channels(bucket, key):
     return channels_found
 
 
-def submitTranscribeJob(bucket, key, lang_code):
-    '''
+def submitTranscribeJob(bucket, key):
+    """
     Submits the supplied audio file to Transcribe, using the suppplied language code.  The method will decide
     whether to call the standard Transcribe APIs or the Call Analytics APIs
 
     @param bucket: Bucket holding the audio file to be tested
     @param key: Key for the audio file in the bucket
-    @param lang_code: Configured language code for the audio file
     @return: Name of the transcription job, and the Transcript API mode
-    '''
+    """
 
     # Work out our API mode for Transcribe, and get our boto3 client
     transcribe = boto3.client('transcribe')
@@ -126,31 +125,37 @@ def submitTranscribeJob(bucket, key, lang_code):
         'MediaFileUri': uri
     }
 
-    # Double check that if we have a custom vocab that it actually exists
-    if cf.appConfig[cf.CONF_VOCABNAME] != "":
-        try:
-            vocab_name = cf.appConfig[cf.CONF_VOCABNAME] + '-' + lang_code.lower()
-            our_vocab = transcribe.get_vocabulary(VocabularyName = vocab_name)
-            if our_vocab["VocabularyState"] == "READY":
-                # Only use it if it is ready for use
-                job_settings["VocabularyName"] = vocab_name
-        except:
-            # Doesn't exist - don't use it
-            pass
+    # Add our vocab filter method, then check on our language requirements
+    job_settings["VocabularyFilterMethod"] = cf.appConfig[cf.CONF_FILTER_MODE]
+    if len(cf.appConfig[cf.CONF_TRANSCRIBE_LANG]) == 1:
+        # Specific language, so dd a CV and Vocab Filter to our job_setting if either exists for this language
+        lang_code = cf.appConfig[cf.CONF_TRANSCRIBE_LANG][0]
+        add_custom_vocabulary(job_settings, lang_code, transcribe)
+        add_vocabulary_filter(job_settings, lang_code, transcribe)
 
-    # Double check that if we have a defined vocabulary filter that it exists
-    try:
-        vocab_filter_name = cf.appConfig[cf.CONF_FILTER_NAME] + '-' + lang_code.lower()
-        transcribe.get_vocabulary_filter(VocabularyFilterName = vocab_filter_name)
-        job_settings["VocabularyFilterMethod"] = cf.appConfig[cf.CONF_FILTER_MODE]
-        job_settings["VocabularyFilterName"] = vocab_filter_name
-    except:
-        # Doesn't exist - don't use it
-        pass
+        # Clear all Language ID settings
+        language_id_settings = None
+        language_options = None
+    else:
+        # Language ID is in play - need to build up language-specific structures
+        language_id_settings = {}
+        language_options = []
+        for language in cf.appConfig[cf.CONF_TRANSCRIBE_LANG]:
+            lang_id_options = {}
+            add_custom_vocabulary(lang_id_options, language, transcribe)
+            add_vocabulary_filter(lang_id_options, language, transcribe)
+            language_id_settings[language] = lang_id_options
+            language_options.append(language)
 
-    # Get our role ARN from the environment and enable content redaction (if possible, and if wanted)
+        # Ensure we clear our "single language" flag
+        lang_code = None
+
+    # Get our role ARN from the environment and enable content redaction (if possible,
+    # and if wanted).  Note, if wanted and LangID is active then we enable it, as if the
+    # detected language doesn't support PII redaction then Transcribe will ignore the setting
     role_arn = os.environ["RoleArn"]
-    if cf.isTranscriptRedactionEnabled() and (lang_code in cf.appConfig[cf.CONF_REDACTION_LANGS]):
+    if cf.isTranscriptRedactionEnabled() and \
+            ((lang_code in cf.appConfig[cf.CONF_REDACTION_LANGS]) or language_options is not None):
         content_redaction = {'RedactionType': 'PII', 'RedactionOutput': 'redacted_and_unredacted'}
     else:
         content_redaction = None
@@ -160,7 +165,6 @@ def submitTranscribeJob(bucket, key, lang_code):
         # CALL ANALYTICS JOB MODE - start with redaction and language
         if content_redaction is not None:
             job_settings["ContentRedaction"] = content_redaction
-        job_settings["LanguageOptions"] = [lang_code]
 
         # Work out where our AGENT channel is - this will default to AGENT=0 if it can't work it out
         conf_channels = [speaker_name.lower() for speaker_name in cf.appConfig[cf.CONF_SPEAKER_NAMES]]
@@ -177,6 +181,13 @@ def submitTranscribeJob(bucket, key, lang_code):
         chan_def_agent = {'ChannelId': agent_channel_number, 'ParticipantRole': 'AGENT'}
         chan_def_cust = {'ChannelId': agent_channel_number ^ 1, 'ParticipantRole': 'CUSTOMER'}
 
+        # Add our language ID or fixed language to "Settings"
+        if lang_code is None:
+            job_settings["LanguageOptions"] = language_options
+            job_settings["LanguageIdSettings"] = language_id_settings
+        else:
+            job_settings["LanguageOptions"] = [lang_code]
+
         # Should have a clear run at doing the job now
         kwargs = {'CallAnalyticsJobName': job_name,
                   'Media': media_settings,
@@ -186,7 +197,7 @@ def submitTranscribeJob(bucket, key, lang_code):
                   'ChannelDefinitions': [chan_def_agent, chan_def_cust]
         }
 
-        # Start the Transcribe job
+        # Start the Transcribe job, removing any params that are "None"
         response = transcribe.start_call_analytics_job(
             **{k: v for k, v in kwargs.items() if v is not None}
         )
@@ -207,7 +218,10 @@ def submitTranscribeJob(bucket, key, lang_code):
 
         # Should have a clear run at doing the job now
         kwargs = {'TranscriptionJobName': job_name,
+                  'IdentifyLanguage': lang_code is None,
+                  'LanguageIdSettings': language_id_settings,
                   'LanguageCode': lang_code,
+                  'LanguageOptions': language_options,
                   'Media': media_settings,
                   'OutputBucketName': cf.appConfig[cf.CONF_S3BUCKET_OUTPUT],
                   'OutputKey': cf.appConfig[cf.CONF_PREFIX_TRANSCRIBE_RESULTS] + '/',
@@ -216,7 +230,7 @@ def submitTranscribeJob(bucket, key, lang_code):
                   'ContentRedaction': content_redaction
         }
 
-        # Start the Transcribe job, removing any 'None' values on the way
+        # Start the Transcribe job, removing any params that are "None"
         response = transcribe.start_transcription_job(
             **{k: v for k, v in kwargs.items() if v is not None}
         )
@@ -225,8 +239,50 @@ def submitTranscribeJob(bucket, key, lang_code):
     return job_name, api_mode
 
 
+def add_vocabulary_filter(tag_structure, lang_code, transcribe_client):
+    """
+    Checks to see if our defined vocabulary base name has an instance defined within Transcribe
+    for the given language code.  If it does then it is added as a tag to the provided structure
+
+    :param tag_structure: Dictionary to hold the filter field tag
+    :param lang_code: Language that we're searching for a filter for
+    :param transcribe_client: Boto3 client
+    """
+
+    try:
+        # Look for a vocabulary filter variant defined for this language code
+        vocab_filter_name = cf.appConfig[cf.CONF_FILTER_NAME] + '-' + lang_code.lower()
+        transcribe_client.get_vocabulary_filter(VocabularyFilterName=vocab_filter_name)
+        tag_structure["VocabularyFilterName"] = vocab_filter_name
+    except:
+        # Doesn't exist for this language code - quietly exit
+        pass
+
+
+def add_custom_vocabulary(tag_structure, lang_code, transcribe_client):
+    """
+    Checks to see if our defined vocabulary base name has an instance defined within Transcribe
+    for the given language code.  If it does then it is added as a tag to the provided structure
+
+    :param tag_structure: Dictionary to hold a "VocabularyName" field if ours exist
+    :param lang_code: Language that we're searching for a vocabulary for
+    :param transcribe_client: Boto3 client
+    """
+
+    try:
+        # Look for a custom vocabulary variant defined for this language code
+        vocab_name = cf.appConfig[cf.CONF_VOCABNAME] + '-' + lang_code.lower()
+        our_vocab = transcribe_client.get_vocabulary(VocabularyName=vocab_name)
+        if our_vocab["VocabularyState"] == "READY":
+            # It exists, but we can only use it if it is ready for use
+            tag_structure["VocabularyName"] = vocab_name
+    except:
+        # Doesn't exist for this lamguage code - quietly exit
+        pass
+
+
 def evaluate_transcribe_mode(bucket, key):
-    '''
+    """
     The user can configure which API and which speaker separation method to use, but this will validate that those
     options are valid for the current file and will overrule/downgrade the options.  The rules are:
 
@@ -238,7 +294,7 @@ def evaluate_transcribe_mode(bucket, key):
     @param bucket: Bucket holding the audio file to be tested
     @param key: Key for the audio file in the bucket
     @return: Transcribe API mode and flag for channel separation
-    '''
+    """
     # Determine the correct API and speaker separation that we'll be using
     api_mode = cf.appConfig[cf.CONF_TRANSCRIBE_API]
     channel_count = count_audio_channels(bucket, key)
@@ -273,10 +329,9 @@ def lambda_handler(event, context):
     # Get the object from the event and show its content type
     bucket = sfData["bucket"]
     key = sfData["key"]
-    langCode = sfData["langCode"]
 
     try:
-        job_name, api_mode = submitTranscribeJob(event["bucket"], key, langCode)
+        job_name, api_mode = submitTranscribeJob(event["bucket"], key)
         sfData["jobName"] = job_name
         sfData["apiMode"] = api_mode
         return sfData
@@ -293,8 +348,7 @@ if __name__ == "__main__":
     event = {
         "bucket": "ak-cci-input",
         # "key": "originalAudio/mono.wav",
-        "key": "originalAudio/stereo.mp3",
-        "langCode": "en-US"
+        "key": "originalAudio/AutoRepairs1_GUID_4628bb26-9631-487f-8d7b-0ac8e84074fd_AGENT_AndrewK_DATETIME_07.55.51.067-09-16-2021.wav"
     }
-    os.environ['RoleArn'] = 'arn:aws:iam::543648494853:role/cci-07-PCAServer-5IOUU5NAJR9O-PCA-T-TranscribeRole-1MJD9E20C1IS4'
+    os.environ['RoleArn'] = 'arn:aws:iam::543648494853:role/PostCallAnalytics-PCAServer-176G28X-TranscribeRole-190N3L79VHCF9'
     lambda_handler(event, "")
