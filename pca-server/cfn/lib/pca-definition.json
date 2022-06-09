@@ -1,19 +1,7 @@
 {
   "Comment": "Post-Call Analytics Workflow with Transcribe and Comprehend",
-  "StartAt": "LanguageDetection?",
+  "StartAt": "TranscribeAudio",
   "States": {
-    "LanguageDetection?": {
-      "Type": "Choice",
-      "Comment": "Triggers Language Detection is required",
-      "Choices": [
-        {
-          "Variable": "$.langCode",
-          "StringEquals": "",
-          "Next": "TranscribeLangDetectClip"
-        }
-      ],
-      "Default": "TranscribeAudio"
-    },
     "TranscribeAudio": {
       "Comment": "Sends the file in S3 for Transcription",
       "Type": "Task",
@@ -23,77 +11,6 @@
           "ErrorEquals": ["Lambda.Unknown"]
       }],
       "Next": "TranscribeStarted?"
-    },
-    "TranscribeLangDetectClip": {
-      "Type": "Task",
-      "Resource": "${SFLanguageDetectionArn}",
-      "Retry": [{
-          "IntervalSeconds": 5,
-          "ErrorEquals": ["Lambda.Unknown"]
-      }],
-      "Next": "LanguageDetectPossible?"
-    },
-    "LanguageDetectPossible?": {
-      "Type": "Choice",
-      "Comment": "Checks if we created our language detection job or now",
-      "Choices": [
-        {
-          "Not": {
-            "Variable": "$.langCode",
-            "StringEquals": ""
-          },
-          "Next": "TranscribeAudio"
-        }
-      ],
-      "Default": "WaitForLangDetectTranscribe"
-    },
-    "WaitForLangDetectTranscribe": {
-      "Type": "Task",
-      "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
-      "Parameters": {
-        "FunctionName":"${SFAwaitNotificationArn}",
-        "Payload":{
-          "Input.$": "$",
-          "TaskToken.$":"$$.Task.Token"
-        }
-      },
-      "Retry": [{
-          "IntervalSeconds": 5,
-          "ErrorEquals": ["Lambda.Unknown"]
-      }],
-      "Next": "LangDetectionComplete?",
-      "Catch": [
-      {
-        "ErrorEquals": [ "States.ALL" ],
-        "Next": "TranscriptionFailed"
-      }
-      ]
-    },
-    "LangDetectionComplete?": {
-      "Type": "Choice",
-      "Choices": [
-        {
-          "Variable": "$.transcribeStatus",
-          "StringEquals": "COMPLETED",
-          "Next": "ParseDetectedLanguage"
-        },
-        {
-          "Variable": "$.transcribeStatus",
-          "StringEquals": "RETRY",
-          "Next": "TranscribeLangDetectClip"
-        }
-      ],
-      "Default": "TranscriptionFailed"
-    },
-    "ParseDetectedLanguage": {
-      "Comment": "Extracts the detected language code from the Transcribe job",
-      "Type": "Task",
-      "Resource": "${SFGetDetectedLanguageArn}",
-      "Retry": [{
-          "IntervalSeconds": 5,
-          "ErrorEquals": ["Lambda.Unknown"]
-      }],
-      "Next": "TranscribeAudio"
     },
     "TranscribeStarted?": {
       "Type": "Choice",

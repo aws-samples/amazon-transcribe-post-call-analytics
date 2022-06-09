@@ -90,7 +90,7 @@ Resources:
                   os.mkdir(root_path)
                 # Write out the requirements.txt file, which is the boto3 version we need
                 with open(reqs_file, 'w') as f:
-                  f.write("boto3==1.18.51")
+                  f.write("boto3==1.24.2")
                   f.close()
                 # Install this version of boto3 locally and copy out Transcribe model
                 subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", reqs_file, "-t", pip_folder])
