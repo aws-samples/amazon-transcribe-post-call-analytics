@@ -1144,7 +1144,7 @@ class TranscribeParser:
                         confidenceList.append({"Text": wordToAdd,
                                                "Confidence": conf_score,
                                                "StartTime": float(word["BeginOffsetMillis"]) / 1000.0,
-                                               "EndTime": float(word["BeginOffsetMillis"] / 1000.0)})
+                                               "EndTime": float(word["EndOffsetMillis"] / 1000.0)})
                         self.numWordsParsed += 1
                         self.cummulativeWordAccuracy += conf_score
 
@@ -1161,7 +1161,7 @@ class TranscribeParser:
                 self.extract_summary_data(nextSpeechSegment, nextSpeechSegment.segmentOutcomesDetected,
                                           self.outcomes_detected, "OutcomesDetected", turn)
 
-            # Tag on the sentiment - analytics has no per-turn numbers, so max out the
+                # Tag on the sentiment - analytics has no per-turn numbers, so max out the
                 # positive and negative, which effectively is 1.0 * COMPREHEND_SENTIMENT_SCALER
                 turn_sentiment = turn["Sentiment"]
                 if turn_sentiment == "POSITIVE":
@@ -1586,23 +1586,11 @@ def lambda_handler(event, context):
 if __name__ == "__main__":
     # Standard test event
     event = {
-        "bucket": "ak-sedona-data-oregon",
-        # "key": "originalAudio/0a.93.a0.3e.00.00-16.22.53.402-09-05-2019.wav",
-        # "apiMode": "standard",
-        # "jobName": "0a.93.a0.3e.00.00-16.22.53.402-09-05-2019.wav",
-        # "key": "originalAudio/mono.wav",
-        # "apiMode": "standard",
-        # "jobName": "mono.wav",
-        # "key": "originalAudio/stereo_std.mp3",
-        # "apiMode": "standard",
-        # "jobName": "stereo_std.mp3",
-        # "key": "originalAudio/stereo.mp3",
-        # "apiMode": "analytics",
-        # "jobName": "stereo.mp3",
-        "key": "originalAudio/1951f745.wav",
-        "apiMode": "analytics",
-        "jobName": "1951f745.wav",
+        "bucket": "ak-cci-input",
         "langCode": "en-US",
-        "transcribeStatus": "COMPLETED"
+        "apiMode": "standard",
+        "transcribeStatus": "COMPLETED",
+        "key": "originalAudio/fb460133-9f03-44e4-8cfd-91e501fe9fd8_20220415T08:12_UTC.wav",
+        "jobName": "fb460133-9f03-44e4-8cfd-91e501fe9fd8_20220415T08-12_UTC.wav"
     }
     lambda_handler(event, "")
