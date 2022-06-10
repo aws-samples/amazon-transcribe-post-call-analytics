@@ -131,3 +131,8 @@ Outputs:
 
   Bucket:
     Value: !Ref WebBucket
+
+  RolesForKMSKey:
+    Value: !Join
+      - ', '
+      - - !Sub '"${EdgeFunctionRole.Arn}"'

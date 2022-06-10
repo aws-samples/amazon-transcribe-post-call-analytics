@@ -236,3 +236,13 @@ Resources:
           - CloudWatchLogsLogGroup:
               LogGroupArn: !GetAtt LogGroup.Arn
       RoleArn: !GetAtt Role.Arn
+
+Outputs:
+
+  RolesForKMSKey:
+    Value: !Join
+      - ', '
+      - - !Sub '"${TranscribeLambdaRole.Arn}"'
+        - !Sub '"${TranscribeRole.Arn}"'
+        - !Sub '"${SFProcessTurnRole.Arn}"'
+

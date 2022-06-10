@@ -70,3 +70,10 @@ Resources:
     Properties:
       ServiceToken: !GetAtt CopySamplesFunction.Arn
       SamplesVersion: 0.2
+
+Outputs:
+
+  RolesForKMSKey:
+    Value: !Join
+      - ', '
+      - - !Sub '"${CopySamplesRole.Arn}"'

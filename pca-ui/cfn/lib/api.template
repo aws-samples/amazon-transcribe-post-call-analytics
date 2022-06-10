@@ -198,3 +198,9 @@ Resources:
 Outputs:
   Uri:
     Value: !Sub https://${Api}.execute-api.${AWS::Region}.amazonaws.com/Prod
+
+  RolesForKMSKey:
+    Value: !Join
+      - ', '
+      - - !Sub '"${GetFunctionRole.Arn}"'
+        - !Sub '"${SwapFunctionRole.Arn}"'

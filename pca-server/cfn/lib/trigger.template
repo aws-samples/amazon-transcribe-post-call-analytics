@@ -164,3 +164,10 @@ Resources:
           - dynamodb:DeleteItem
           - dynamodb:GetItem
           Resource: !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${TableName}
+
+Outputs:
+
+  RolesForKMSKey:
+    Value: !Join
+      - ', '
+      - - !Sub '"${FileDropTriggerRole.Arn}"'

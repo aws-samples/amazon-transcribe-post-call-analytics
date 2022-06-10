@@ -108,3 +108,10 @@ Resources:
       AuthClientId: !Ref AuthClientId
       ApiUri: !Ref ApiUri
       Region: !Ref AWS::Region
+
+Outputs:
+
+  RolesForKMSKey:
+    Value: !Join
+      - ', '
+      - - !Sub '"${Role.Arn}"'
