@@ -12,7 +12,8 @@ def lambda_handler(event, context):
     supportfiles_bucket = os.environ['SUPPORTFILES_BUCKET_NAME']
     input_bucket = os.environ['INPUT_BUCKET_NAME']
     prefix = os.environ['INPUT_BUCKET_RAW_AUDIO']
-    if event['RequestType'] != 'Delete':
+    requestType = event.get('RequestType')
+    if requestType != 'Delete':
         try:
             s3Client = boto3.client('s3')
             # sample entities
@@ -33,4 +34,5 @@ def lambda_handler(event, context):
             print(e)
             responseData["Error"] = f"Exception thrown: {e}"
             status = cfnresponse.FAILED
-    cfnresponse.send(event, context, status, responseData)
+    if requestType:
+        cfnresponse.send(event, context, status, responseData)
