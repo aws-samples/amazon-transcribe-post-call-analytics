@@ -87,3 +87,5 @@ Outputs:
       - - !Sub '${CopySamples.Outputs.RolesForKMSKey}'
         - !Sub '${Trigger.Outputs.RolesForKMSKey}'
         - !Sub '${PCA.Outputs.RolesForKMSKey}'
+        - !Sub '${BulkImport.Outputs.RolesForKMSKey}'
+
