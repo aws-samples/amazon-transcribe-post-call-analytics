@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.4] - 2022-06-10
+### Fixed
+- Use sigv4 for S3 presignedURLS
+- New stack output with list of role ARNS thta need access KMS key (if any) used to encrypt S3 InputBucket, OutputBucket, or BulkUploadBucket
+
 ## [0.2.3] - 2022-06-09
 ### Fixed
 - Simplifies workflow by using new Transcribe API to specify Custom Vocabulary and Vocabulary Filter at the same time as using Language ID.
@@ -49,7 +54,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial release
 
-[Unreleased]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/compare/v0.2.3...develop
+[Unreleased]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/compare/v0.2.4...develop
+[0.2.4]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.2.4
 [0.2.3]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.2.3
 [0.2.2]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.2.2
 [0.2.1]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.2.1
