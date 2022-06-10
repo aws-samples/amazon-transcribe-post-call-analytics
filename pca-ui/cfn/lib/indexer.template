@@ -127,3 +127,9 @@ Resources:
 Outputs:
   TableName:
     Value: !Ref Table
+
+  RolesForKMSKey:
+    Value: !Join
+      - ', '
+      - - !Sub '"${IndexFunctionRole.Arn}"'
+        - !Sub '"${ConfigureDataBucketRole.Arn}"'

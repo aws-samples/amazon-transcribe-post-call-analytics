@@ -133,3 +133,11 @@ Outputs:
 
   WebUri:
     Value: !GetAtt Web.Outputs.Uri
+
+  RolesForKMSKey:
+    Value: !Join
+      - ', '
+      - - !Sub '${Api.Outputs.RolesForKMSKey}'
+        - !Sub '${Indexer.Outputs.RolesForKMSKey}'
+        - !Sub '${Deploy.Outputs.RolesForKMSKey}'
+        - !Sub '${Web.Outputs.RolesForKMSKey}'

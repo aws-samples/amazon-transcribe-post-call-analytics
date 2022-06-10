@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 
-Description: Amazon Transcribe Post Call Analytics - PCA (v0.2.3) (uksb-1sn29lk73)
+Description: Amazon Transcribe Post Call Analytics - PCA (v0.2.4) (uksb-1sn29lk73)
 
 Parameters:
 
@@ -612,3 +612,9 @@ Outputs:
     Description: PCA admin user
     Value: !Ref AdminUsername
 
+  RolesForKMSKey:
+    Description: When using KMS key to encrypt S3 input/output buckets, KMS key must grant access to these roles.
+    Value: !Join
+      - ', '
+      - - !Sub '${PCAUI.Outputs.RolesForKMSKey}'
+        - !Sub '${PCAServer.Outputs.RolesForKMSKey}'
