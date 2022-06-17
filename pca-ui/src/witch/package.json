@@ -1,0 +1,13 @@
+{
+  "name": "witch",
+  "version": "1.0.0",
+  "description": "helper lambda layer used to upload a directory to S3",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "mkdir -p build/nodejs/node_modules/witch && cp -R node_modules package.json witch.js build/nodejs/node_modules/witch && cd build &&  zip -r ../witch.zip nodejs"
+  },
+  "dependencies": {
+    "mime-types": "^2.1.34"
+  }
+}
