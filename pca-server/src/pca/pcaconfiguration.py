@@ -67,23 +67,6 @@ VOCAB_FILTER_MODES = {"remove", "mask", "tag"}
 appConfig = {}
 
 
-def generateJobName(key):
-    """
-    Transcribe job names cannot contains spaces.  This takes in an S3
-    object key, extracts the filename part, replaces spaces with "-"
-    characters and returns that as the job-name to use
-    """
-
-    # Get rid of leading path, and replace [SPACE] with "-", replace "/" with "-", , replace ":" with "-"
-    response = key
-    if "/" in key:
-        response = response[1 + key.find("/") :]
-    response = response.replace("/", "-")
-    response = response.replace(" ", "-")
-    response = response.replace(":", "-")
-    return response
-
-
 def extractParameters(ssmResponse, useTagName):
     """
     Picks out the Parameter Store results and appends the values to our

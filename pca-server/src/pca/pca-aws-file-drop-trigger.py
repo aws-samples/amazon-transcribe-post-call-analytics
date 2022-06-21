@@ -1,7 +1,8 @@
 """
 This python function is triggered when a new audio file is dropped into the S3 bucket that has
-been configured for audio ingestion.  It will ensure that no Transcribe job already exists for this
-filename, and will then trigger the main Step Functions workflow to process this file.
+been configured for audio ingestion.  It will trigger the main Step Functions workflow to process this file.
+No checks are made here to see if a file is already being processed, as there are multiple modes for Transcribe,
+and the configured settings can be overridden - existing jobs will be properly checked later in the workflow
 
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
@@ -27,22 +28,6 @@ def lambda_handler(event, context):
         raise Exception(
             'Error getting object {} from bucket {}. Make sure they exist and your bucket is in the same region as this function.'.format(
                 key, bucket))
-
-    # Check a Transcribe job isn't in progress for this file-name
-    jobName = cf.generateJobName(key)
-    try:
-        # If it exists (e.g. doesn't exception) then we may want to delete iz
-        transcribe = boto3.client('transcribe')
-        currentJobStatus = transcribe.get_transcription_job(TranscriptionJobName=jobName)["TranscriptionJob"]["TranscriptionJobStatus"]
-    except Exception as e:
-        # Job didn't already exist - no problem here
-        currentJobStatus = ""
-
-    # If there's a job already running then the input file may have been copied - quit
-    if (currentJobStatus == "IN_PROGRESS") or (currentJobStatus == "QUEUED"):
-        # Throw an exception if this is the case
-        raise Exception(
-            'A Transcription job named \'{}\' is already in progress - cannot continue.'.format(jobName))
 
     # Now find our Step Function
     ourStepFunction = cf.appConfig[cf.COMP_SFN_NAME]

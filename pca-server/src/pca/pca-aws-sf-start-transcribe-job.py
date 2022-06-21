@@ -106,7 +106,7 @@ def submitTranscribeJob(bucket, key):
     api_mode, channel_ident = evaluate_transcribe_mode(bucket, key)
 
     # Generate job-name - delete if it already exists
-    job_name = cf.generateJobName(key)
+    job_name = pcacommon.generate_job_name(key)
     current_job_status = check_existing_job_status(job_name, transcribe, api_mode)
     uri = 's3://' + bucket + '/' + key
 

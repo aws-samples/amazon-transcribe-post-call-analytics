@@ -10,6 +10,7 @@ from datetime import datetime
 from urllib.parse import urlparse
 from math import floor
 from pcakendrasearch import prepare_transcript, put_kendra_document
+from pcaresults import SpeechSegment, PCAResults
 import pcaconfiguration as cf
 import matplotlib.pyplot as plt
 import numpy as np
@@ -30,50 +31,20 @@ COMPREHEND_SENTIMENT_SCALER = 5.0
 # Other Markers and helpers
 PII_PLACEHOLDER = "[PII]"
 PII_PLACEHOLDER_MASK = "*" * len(PII_PLACEHOLDER)
-KNOWN_SPEAKER_PREFIX = "spk_"
-UNKNOWN_SPEAKER_PREFIX = "Unknown_"
 TMP_DIR = "/tmp"
 BAR_CHART_WIDTH = 1.0
-
-
-class SpeechSegment:
-    """ Class to hold information about a single speech segment """
-    def __init__(self):
-        self.segmentStartTime = 0.0
-        self.segmentEndTime = 0.0
-        self.segmentSpeaker = ""
-        self.segmentText = ""
-        self.segmentConfidence = []
-        self.segmentSentimentScore = 0.0
-        self.segmentPositive = 0.0
-        self.segmentNegative = 0.0
-        self.segmentIsPositive = False
-        self.segmentIsNegative = False
-        self.segmentAllSentiments = []
-        self.segmentCustomEntities = []
-        self.segmentLoudnessScores = []
-        self.segmentInterruption = False
-        self.segmentIssuesDetected = []
-        self.segmentActionItemsDetected = []
-        self.segmentOutcomesDetected = []
-        self.segmentCategoriesDetectedPre = []
-        self.segmentCategoriesDetectedPost = []
 
 
 class TranscribeParser:
 
     def __init__(self, min_sentiment_pos, min_sentiment_neg, custom_entity_endpoint):
+        self.pca_results = PCAResults()
+        self.analytics = self.pca_results.get_conv_analytics()
+        self.speechSegmentList = []
         self.min_sentiment_positive = min_sentiment_pos
         self.min_sentiment_negative = min_sentiment_neg
         self.transcribeJobInfo = ""
-        self.conversationLanguageCode = ""
         self.comprehendLanguageCode = ""
-        self.guid = ""
-        self.agent = ""
-        self.cust = ""
-        self.conversationTime = ""
-        self.conversationLocation = ""
-        self.speechSegmentList = []
         self.headerEntityDict = {}
         self.numWordsParsed = 0
         self.cummulativeWordAccuracy = 0.0
@@ -83,14 +54,10 @@ class TranscribeParser:
         self.simpleEntityMap = {}
         self.matchedSimpleEntities = {}
         self.audioPlaybackUri = ""
-        self.duration = 0.0
         self.transcript_uri = ""
         self.api_mode = cf.API_STANDARD
         self.analytics_channel_map = {}
         self.asr_output = ""
-        self.issues_detected = []
-        self.actions_detected = []
-        self.outcomes_detected = []
 
         cf.loadConfiguration()
 
@@ -114,7 +81,7 @@ class TranscribeParser:
         self.simpleEntityMatchingUsed = (self.customEntityEndpointARN == "") and \
                                         (cf.appConfig[cf.CONF_ENTITY_FILE] != "")
 
-    def generate_speaker_sentiment_trend(self, speaker, speaker_num):
+    def generate_sentiment_trend(self, speaker, speaker_num):
         """
         Generates an entry for the "SentimentTrends" block for the given speaker, which is the overall speaker
         sentiment score and trend over the call.  For Call Analytics calls we also store the per-quarter sentiment
@@ -173,7 +140,7 @@ class TranscribeParser:
                     speakerTurns += 1
                     segment_midpoint = segment.segmentStartTime + \
                                        (segment.segmentEndTime - segment.segmentStartTime) / 2
-                    quarter_offset = min(floor((segment_midpoint * 4) / self.duration), 3)
+                    quarter_offset = min(floor((segment_midpoint * 4) / self.analytics.duration), 3)
 
                     # Update some quarter-based values that are separate from sentiment
                     quarter_scores[quarter_offset]["datapoints"] += 1
@@ -205,99 +172,117 @@ class TranscribeParser:
 
         return speaker_trend
 
-    def create_output_conversation_analytics(self):
+    def push_turn_by_turn_results(self):
         '''
-        Generates some conversation-level analytics for this document, which includes information
-        about the call, speaker labels, sentiment trends and entities
+        Pushes the rest of our calculated data items into the PCA Results structures.  Some
+        of these are updated directly in the code, but some need explicit calculations. We just
+        upload the speech segment list as-is, then do the other constructs one by one
         '''
         resultsHeaderInfo = {}
+        analytics = self.analytics
 
-        # Basic information.  Note, we expect the input stream processing mechanism
-        # to set the conversation time - if it is not set then we have no choice
-        # but to default this to the current processing time.
-        resultsHeaderInfo["GUID"] = self.guid
-        resultsHeaderInfo["Agent"] = self.agent
-        resultsHeaderInfo["Cust"] = self.cust
-        resultsHeaderInfo["ConversationTime"] = self.conversationTime
-        resultsHeaderInfo["ConversationLocation"] = self.conversationLocation
-        resultsHeaderInfo["ProcessTime"] = str(datetime.now())
-        resultsHeaderInfo["LanguageCode"] = self.conversationLanguageCode
-        resultsHeaderInfo["Duration"] = str(self.duration)
-        if self.conversationTime == "":
-            resultsHeaderInfo["ConversationTime"] = resultsHeaderInfo["ProcessTime"]
+        # Ensure our results have the speech segments recorded
+        self.pca_results.speech_segments = self.speechSegmentList
 
-        # Build up a list of speaker labels from the config; note that if we
-        # have more speakers than configured then we still return something
-        speakerLabels = []
+        # -----------------------------
+        # Conversational Analytics data
+        # -----------------------------
 
-        # Standard Transcribe - look them up in the order in the config
+        # Sentiment Trends
+        for speaker in range(self.maxSpeakerIndex + 1):
+            full_name = self.pca_results.get_speaker_prefix(True) + str(speaker)
+            analytics.sentiment_trends[full_name] = self.generate_sentiment_trend(full_name, speaker)
+
+        # Build up a list of speaker labels from the config; note that if we have more speakers
+        # than configured then we still return something (clear first, as we're appending)
+        analytics.speaker_labels = []
         if self.api_mode == cf.API_STANDARD:
+            # Standard Transcribe - look them up in the order in the config
             for speaker in range(self.maxSpeakerIndex + 1):
                 next_label = {}
-                next_label["Speaker"] = KNOWN_SPEAKER_PREFIX + str(speaker)
+                next_label["Speaker"] = self.pca_results.get_speaker_prefix(True) + str(speaker)
                 try:
                     next_label["DisplayText"] = cf.appConfig[cf.CONF_SPEAKER_NAMES][speaker]
                 except:
-                    next_label["DisplayText"] = UNKNOWN_SPEAKER_PREFIX + str(speaker)
-                speakerLabels.append(next_label)
-        # Analytics is more prescriptive - they're defined in the call results
+                    next_label["DisplayText"] = self.pca_results.get_speaker_prefix(False) + str(speaker)
+                analytics.speaker_labels.append(next_label)
         elif self.api_mode == cf.API_ANALYTICS:
+            # Analytics is more prescriptive - they're defined in the call results
             for speaker in self.analytics_channel_map:
                 next_label = {}
-                next_label["Speaker"] = KNOWN_SPEAKER_PREFIX + str(self.analytics_channel_map[speaker])
+                next_label["Speaker"] = self.pca_results.get_speaker_prefix(True) + str(
+                    self.analytics_channel_map[speaker])
                 next_label["DisplayText"] = speaker.title()
-                speakerLabels.append(next_label)
-        resultsHeaderInfo["SpeakerLabels"] = speakerLabels
-
-        # Sentiment Trends
-        sentimentTrends = {}
-        for speaker in range(self.maxSpeakerIndex + 1):
-            full_name = KNOWN_SPEAKER_PREFIX + str(speaker)
-            sentimentTrends[full_name] = self.generate_speaker_sentiment_trend(full_name, speaker)
-        resultsHeaderInfo["SentimentTrends"] = sentimentTrends
+                analytics.speaker_labels.append(next_label)
 
         # Analytics mode additional metadata
         if self.api_mode == cf.API_ANALYTICS:
             # Speaker and non-talk time
-            resultsHeaderInfo["SpeakerTime"] = self.extract_analytics_speaker_time(self.asr_output["ConversationCharacteristics"])
-            resultsHeaderInfo["CategoriesDetected"] = self.extract_analytics_categories(self.asr_output["Categories"])
-            resultsHeaderInfo["IssuesDetected"] = self.issues_detected
-            resultsHeaderInfo["ActionItemsDetected"] = self.actions_detected
-            resultsHeaderInfo["OutcomesDetected"] = self.outcomes_detected
-            resultsHeaderInfo["CombinedAnalyticsGraph"] = self.create_combined_tca_graphic()
+            analytics.speaker_time = self.extract_analytics_speaker_time(self.asr_output["ConversationCharacteristics"])
+            analytics.categories_detected = analytics.extract_analytics_categories(self.asr_output["Categories"], self.speechSegmentList)
+            analytics.combined_graphic_url = self.create_combined_tca_graphic()
         # For non-analytics mode, we can simulate some analytics data
         elif self.api_mode == cf.API_STANDARD:
             # Calculate the speaker time from the speech segments, once per speaker (can't do silent time like this)
-            resultsHeaderInfo["SpeakerTime"] = {}
-            for speaker in resultsHeaderInfo["SpeakerLabels"]:
-                speaker_label = speaker["Speaker"]
-                speaker_time = sum((segment.segmentEndTime - segment.segmentStartTime) for segment in self.speechSegmentList if segment.segmentSpeaker == speaker_label)
-                resultsHeaderInfo["SpeakerTime"][speaker_label] = {"TotalTimeSecs": speaker_time}
+            speaker_time = {}
+            for next_speaker in analytics.speaker_labels:
+                next_speaker_label = next_speaker["Speaker"]
+                next_speaker_time = sum(
+                    (segment.segmentEndTime - segment.segmentStartTime) for segment in self.speechSegmentList if
+                    segment.segmentSpeaker == next_speaker_label)
+                speaker_time[next_speaker_label] = {"TotalTimeSecs": float(next_speaker_time)}
+            analytics.speaker_time = speaker_time
 
-        # Detected custom entity summaries next
-        customEntityList = []
+        # Detected custom entity summaries next (clear first, as we're appending)
+        analytics.custom_entities = []
         for entity in self.headerEntityDict:
             nextEntity = {}
             nextEntity["Name"] = entity
             nextEntity["Instances"] = len(self.headerEntityDict[entity])
             nextEntity["Values"] = self.headerEntityDict[entity]
-            customEntityList.append(nextEntity)
-        resultsHeaderInfo["CustomEntities"] = customEntityList
-
-        # Decide which source information block to add - only one for now
-        transcribeSourceInfo = {}
-        transcribeSourceInfo["TranscribeJobInfo"] = self.create_output_transcribe_job_info()
-        sourceInfo = []
-        sourceInfo.append(transcribeSourceInfo)
-        resultsHeaderInfo["SourceInformation"] = sourceInfo
+            analytics.custom_entities.append(nextEntity)
 
         # Add on any file-based entity used
         if self.simpleEntityMatchingUsed:
-            resultsHeaderInfo["EntityRecognizerName"] = cf.appConfig[cf.CONF_ENTITY_FILE]
+            analytics.entity_recognizer = cf.appConfig[cf.CONF_ENTITY_FILE]
         elif self.customEntityEndpointName != "":
-            resultsHeaderInfo["EntityRecognizerName"] = self.customEntityEndpointName
+            analytics.entity_recognizer = self.customEntityEndpointName
 
-        return resultsHeaderInfo
+        # ------------------------
+        # Transcribe Job Info data
+        # ------------------------
+        transcribe_info = analytics.get_transcribe_job()
+
+        # Some fields we pick off the basic job info
+        transcribe_info.api_mode = self.api_mode
+        transcribe_info.completion_time = str(self.transcribeJobInfo["CompletionTime"])
+        transcribe_info.media_format = self.transcribeJobInfo["MediaFormat"]
+        transcribe_info.media_sample_rate = self.transcribeJobInfo["MediaSampleRateHertz"]
+        transcribe_info.media_original_uri = self.transcribeJobInfo["Media"]["MediaFileUri"]
+        transcribe_info.cummulative_word_conf = self.cummulativeWordAccuracy / max(float(self.numWordsParsed), 1.0)
+
+        # Did we create an MP3 output file?  If so then use it for playback rather than the original
+        if self.audioPlaybackUri != "":
+            transcribe_info.media_playback_uri = self.audioPlaybackUri
+        else:
+            transcribe_info.media_playback_uri = self.transcribeJobInfo["MediaOriginalUri"]
+
+        # Vocabulary name is optional
+        if "VocabularyName" in self.transcribeJobInfo["Settings"]:
+            transcribe_info.custom_vocab_name = self.transcribeJobInfo["Settings"]["VocabularyName"]
+
+        # Vocabulary filter is optional
+        if "VocabularyFilterName" in self.transcribeJobInfo["Settings"]:
+            transcribe_info.vocab_filter_name = self.transcribeJobInfo["Settings"]["VocabularyFilterName"]
+            transcribe_info.vocab_filter_method = self.transcribeJobInfo["Settings"]["VocabularyFilterMethod"]
+
+        # Some fields are different in the job-status depending upon which API we were using
+        if self.api_mode == cf.API_ANALYTICS:
+            transcribe_info.transcribe_job_name = self.transcribeJobInfo["CallAnalyticsJobName"]
+            transcribe_info.channel_identification = 1
+        else:
+            transcribe_info.transcribe_job_name = self.transcribeJobInfo["TranscriptionJobName"]
+            transcribe_info.channel_identification = int(self.transcribeJobInfo["Settings"]["ChannelIdentification"])
 
     def create_combined_tca_graphic(self):
         """
@@ -310,7 +295,6 @@ class TranscribeParser:
 
         :return: URL to the combined chart graphic
         """
-        image_url = ""
 
         # Initialise our loudness structures
         secsLoudAgent = []
@@ -494,97 +478,6 @@ class TranscribeParser:
         if show_chart_legend:
             axes.legend(loc="upper right", bbox_to_anchor=(1.21, 1.0), ncol=1, borderaxespad=0)
 
-    def create_output_transcribe_job_info(self):
-        """
-        Creates the information about the underlying Transcribe job
-
-        @return: JSON structure representing the original Transcribe job
-        """
-        transcribeJobInfo = {}
-
-        # Some fields we pick off the basic job info
-        transcribeJobInfo["TranscribeApiType"] = self.api_mode
-        transcribeJobInfo["CompletionTime"] = str(self.transcribeJobInfo["CompletionTime"])
-        transcribeJobInfo["MediaFormat"] = self.transcribeJobInfo["MediaFormat"]
-        transcribeJobInfo["MediaSampleRateHertz"] = self.transcribeJobInfo["MediaSampleRateHertz"]
-        transcribeJobInfo["MediaOriginalUri"] = self.transcribeJobInfo["Media"]["MediaFileUri"]
-        transcribeJobInfo["AverageWordConfidence"] = self.cummulativeWordAccuracy / max(float(self.numWordsParsed), 1.0)
-
-        # Did we create an MP3 output file?  If so then use it for playback rather than the original
-        if self.audioPlaybackUri != "":
-            transcribeJobInfo["MediaFileUri"] = self.audioPlaybackUri
-        else:
-            transcribeJobInfo["MediaFileUri"] = transcribeJobInfo["MediaOriginalUri"]
-
-        # Vocabulary name is optional
-        if "VocabularyName" in self.transcribeJobInfo["Settings"]:
-            transcribeJobInfo["VocabularyName"] = self.transcribeJobInfo["Settings"]["VocabularyName"]
-
-        # Vocabulary filter is optional
-        if "VocabularyFilterName" in self.transcribeJobInfo["Settings"]:
-            vocab_filter = self.transcribeJobInfo["Settings"]["VocabularyFilterName"]
-            vocab_method = self.transcribeJobInfo["Settings"]["VocabularyFilterMethod"]
-            transcribeJobInfo["VocabularyFilter"] = vocab_filter + " [" + vocab_method + "]"
-
-        # Some fields are different in the job-status depending upon which API we were using
-        if self.api_mode == cf.API_ANALYTICS:
-            transcribeJobInfo["TranscriptionJobName"] = self.transcribeJobInfo["CallAnalyticsJobName"]
-            transcribeJobInfo["ChannelIdentification"] = 1
-        else:
-            transcribeJobInfo["TranscriptionJobName"] = self.transcribeJobInfo["TranscriptionJobName"]
-            transcribeJobInfo["ChannelIdentification"] = int(self.transcribeJobInfo["Settings"]["ChannelIdentification"])
-
-        return transcribeJobInfo
-
-    def create_output_speech_segments(self):
-        '''
-        Creates a list of speech segments for this conversation, including custom entities
-        '''
-        speechSegments = []
-
-        # Loop through each of our speech segments
-        # for segment in self.speechSegmentList:
-        for segment in self.speechSegmentList:
-            nextSegment = {}
-
-            # Pick everything off our structures
-            nextSegment["SegmentStartTime"] = segment.segmentStartTime
-            nextSegment["SegmentEndTime"] = segment.segmentEndTime
-            nextSegment["SegmentSpeaker"] = segment.segmentSpeaker
-            nextSegment["SegmentInterruption"] = segment.segmentInterruption
-            nextSegment["OriginalText"] = segment.segmentText
-            nextSegment["DisplayText"] = segment.segmentText
-            nextSegment["TextEdited"] = 0
-            nextSegment["LoudnessScores"] = segment.segmentLoudnessScores
-            nextSegment["SentimentIsPositive"] = int(segment.segmentIsPositive)
-            nextSegment["SentimentIsNegative"] = int(segment.segmentIsNegative)
-            nextSegment["SentimentScore"] = segment.segmentSentimentScore
-            nextSegment["BaseSentimentScores"] = segment.segmentAllSentiments
-            nextSegment["EntitiesDetected"] = segment.segmentCustomEntities
-            nextSegment["CategoriesDetected"] = segment.segmentCategoriesDetectedPre
-            nextSegment["FollowOnCategories"] = segment.segmentCategoriesDetectedPost
-            nextSegment["IssuesDetected"] = segment.segmentIssuesDetected
-            nextSegment["ActionItemsDetected"] = segment.segmentActionItemsDetected
-            nextSegment["OutcomesDetected"] = segment.segmentOutcomesDetected
-            nextSegment["WordConfidence"] = segment.segmentConfidence
-
-            # Add what we have to the full list
-            speechSegments.append(nextSegment)
-
-        return speechSegments
-
-    def create_json_results(self):
-        """
-        Creates a single JSON structure that holds every aspect of the post-call processing
-
-        @return: JSON structure holding all of the results
-        """
-        outputJson = {}
-        outputJson["ConversationAnalytics"] = self.create_output_conversation_analytics()
-        outputJson["SpeechSegments"] = self.create_output_speech_segments()
-
-        return outputJson
-
     def merge_speaker_segments(self, inputSegmentList):
         """
         Merges together two adjacent speaker segments if (a) the speaker is
@@ -651,7 +544,7 @@ class TranscribeParser:
         EN-US and EN-GB.  If we cannot determine a language to use then we cannot use Comprehend standard models
         '''
         targetLangModel = ""
-        self.conversationLanguageCode = transcribeLangCode
+        self.analytics.conversationLanguageCode = transcribeLangCode
 
         try:
             for checkLangCode in cf.appConfig[cf.CONF_COMP_LANGS]:
@@ -708,67 +601,6 @@ class TranscribeParser:
 
         return entityResponse
 
-    def extract_analytics_categories(self, categories):
-        """
-        This will extract and return the header information for detected categories, but it will also inject
-        markers into the SpeechSegments to indicate on which line of the transcript a particular category should
-        be highlighted in a UI
-
-        @param categories: "Categories" block from the Call Analytics results
-        @return: JSON structure for header-level "CategoriesDetected" block
-        """
-
-        # Work around each of the matched categories
-        timed_categories = {}
-        categories_detected = []
-        for matched_cat in categories["MatchedCategories"]:
-
-            # Record the name and the instance count, which will be 0 for a "not found" type of category
-            next_category = {"Name": matched_cat}
-            next_category["Instances"] = len(categories["MatchedDetails"][matched_cat]["PointsOfInterest"])
-            timestamp_array = []
-
-            # Map across all of the instance timestamps (if any)
-            for instance in categories["MatchedDetails"][matched_cat]["PointsOfInterest"]:
-                # Store the timestamps for the header
-                next_poi_time = {"BeginOffsetSecs": float(instance["BeginOffsetMillis"]/1000)}
-                next_poi_time["EndOffsetSecs"] = float(instance["EndOffsetMillis"]/1000)
-                timestamp_array.append((next_poi_time))
-
-                # Keep our time-keyed category list up to date
-                if next_poi_time["BeginOffsetSecs"] not in timed_categories:
-                    timed_categories[next_poi_time["BeginOffsetSecs"]] = [matched_cat]
-                else:
-                    timed_categories[next_poi_time["BeginOffsetSecs"]].append(matched_cat)
-
-            # "Missing" categories have no timestamps, so record them against a time of 0.0 seconds
-            if next_category["Instances"] == 0:
-                # Keep out time-keyed category list up to date
-                if 0.0 not in timed_categories:
-                    timed_categories[0.0] = [matched_cat]
-                else:
-                    timed_categories[0.0].append(matched_cat)
-
-            # Put it all together
-            next_category["Timestamps"] = timestamp_array
-            categories_detected.append(next_category)
-
-        # If we had some categories then ensure each segment is tagged with them
-        if len(timed_categories) > 0:
-            # Go through each speech segment and see if a category fits here
-            for segment in self.speechSegmentList:
-                for cat_time in timed_categories.copy().keys():
-                    if cat_time <= segment.segmentStartTime:
-                        segment.segmentCategoriesDetectedPre += timed_categories[cat_time]
-                        timed_categories.pop(cat_time)
-
-            # If we have any categories left then tag them to the final segment
-            for category in timed_categories:
-                self.speechSegmentList[-1].segmentCategoriesDetectedPost += timed_categories[category]
-
-        # Return the header structure for detected categories
-        return categories_detected
-
     def extract_analytics_speaker_time(self, conv_characteristics):
         """
         Generates information on the speaking time in the call analytics results.  It creates the following information:
@@ -787,7 +619,7 @@ class TranscribeParser:
                 speaker_talk_time = conv_characteristics["TalkTime"]["DetailsByParticipant"][speaker]["TotalTimeMillis"]
             else:
                 speaker_talk_time = 0
-            speaker_tag = KNOWN_SPEAKER_PREFIX + str(self.analytics_channel_map[speaker])
+            speaker_tag = self.pca_results.get_speaker_prefix(True) + str(self.analytics_channel_map[speaker])
             speaker_time[speaker_tag] = {"TotalTimeSecs":  float(speaker_talk_time / 1000)}
 
         # Extra the quiet-time instances and also generate the total quiet time value
@@ -1155,11 +987,11 @@ class TranscribeParser:
 
                 # Record any issues, actions or outcomes detected
                 self.extract_summary_data(nextSpeechSegment, nextSpeechSegment.segmentIssuesDetected,
-                                          self.issues_detected, "IssuesDetected", turn)
+                                          self.analytics.issues_detected, "IssuesDetected", turn)
                 self.extract_summary_data(nextSpeechSegment, nextSpeechSegment.segmentActionItemsDetected,
-                                          self.actions_detected, "ActionItemsDetected", turn)
+                                          self.analytics.actions_detected, "ActionItemsDetected", turn)
                 self.extract_summary_data(nextSpeechSegment, nextSpeechSegment.segmentOutcomesDetected,
-                                          self.outcomes_detected, "OutcomesDetected", turn)
+                                          self.analytics.outcomes_detected, "OutcomesDetected", turn)
 
                 # Tag on the sentiment - analytics has no per-turn numbers, so max out the
                 # positive and negative, which effectively is 1.0 * COMPREHEND_SENTIMENT_SCALER
@@ -1183,7 +1015,7 @@ class TranscribeParser:
 
         # Now set the overall call duration if we actually had any speech
         if len(speechSegmentList) > 0:
-            self.duration = float(speechSegmentList[-1].segmentConfidence[-1]["EndTime"])
+            self.analytics.duration = float(speechSegmentList[-1].segmentConfidence[-1]["EndTime"])
 
         # Return our full turn-by-turn speaker segment list with sentiment
         return speechSegmentList
@@ -1286,17 +1118,17 @@ class TranscribeParser:
         fieldmap = cf.appConfig[cf.CONF_FILENAME_DATETIME_FIELDMAP]
         print(f"INFO: Parsing datetime from filename '{filename}' using regex: '{regex}' and fieldmap: '{fieldmap}'.")
         try:
-            self.conversationLocation = cf.appConfig[cf.CONF_CONVO_LOCATION]
+            self.analytics.conversationLocation = cf.appConfig[cf.CONF_CONVO_LOCATION]
             match = re.search(regex, filename)
             fieldstring = " ".join(match.groups())
-            self.conversationTime = str(datetime.strptime(fieldstring, fieldmap))
-            print(f"INFO: Assembled datetime: '{self.conversationTime}'")
+            self.analytics.conversationTime = str(datetime.strptime(fieldstring, fieldmap))
+            print(f"INFO: Assembled datetime: '{self.analytics.conversationTime}'")
         except Exception as e:
             # If everything fails system will use "now" as the datetime in UTC, which is likely wrong
             print(e)
             print(f"WARNING: Unable to parse datetime from filename. Defaulting to current system time.")
-            if self.conversationLocation == "":
-                self.conversationLocation = "Etc/UTC"
+            if self.analytics.conversationLocation == "":
+                self.analytics.conversationLocation = "Etc/UTC"
                 
     def set_guid(self, filename):
         '''
@@ -1314,8 +1146,8 @@ class TranscribeParser:
             print(f"INFO: Parsed GUID: '{guid}'")
         except:
             print(f"WARNING: Unable to parse GUID from filename {filename}, using regex: '{regex}'. Defaulting to 'None'.")
-            guid='None'
-        self.guid = guid
+            guid = 'None'
+        self.analytics.guid = guid
 
     def set_agent(self, filename):
         '''
@@ -1333,8 +1165,8 @@ class TranscribeParser:
             print(f"INFO: Parsed AGENT: '{agent}'")
         except:
             print(f"WARNING: Unable to parse Agent name/ID from filename {filename}, using regex: '{regex}'. Defaulting to 'None'.")
-            agent='None'
-        self.agent = agent
+            agent = 'None'
+        self.analytics.agent = agent
 
     def set_cust(self, filename):
         '''
@@ -1352,8 +1184,8 @@ class TranscribeParser:
             print(f"INFO: Parsed CUST: '{cust}'")
         except:
             print(f"WARNING: Unable to parse CUST name/ID from filename {filename}, using regex: '{regex}'. Defaulting to 'None'.")
-            cust='None'
-        self.cust = cust
+            cust = 'None'
+        self.analytics.cust = cust
 
     def load_simple_entity_string_map(self):
         """
@@ -1541,22 +1373,24 @@ class TranscribeParser:
         # Now create turn-by-turn diarisation, with associated sentiments and entities
         self.speechSegmentList = self.create_turn_by_turn_segments(json_filepath)
 
-        # generate JSON results
-        output = self.create_json_results()
+        # Update our results data structures, generate JSON results and save them to S3
+        self.push_turn_by_turn_results()
+        # output = self.create_json_results()
 
         # Write out the JSON data to our S3 location
-        s3Resource = boto3.resource('s3')
-        s3Object = s3Resource.Object(outputS3Bucket, outputS3Key + '/' + self.jsonOutputFilename)
-        s3Object.put(
-            Body=(bytes(json.dumps(output).encode('UTF-8')))
-        )
+        json_output = self.pca_results.write_results_to_s3(outputS3Bucket, outputS3Key + '/' + self.jsonOutputFilename)
+        # s3Resource = boto3.resource('s3')
+        # s3Object = s3Resource.Object(outputS3Bucket, outputS3Key + '/' + self.jsonOutputFilename)
+        # s3Object.put(
+        #     Body=(bytes(json.dumps(output).encode('UTF-8')))
+        # )
 
         # Index transcript in Kendra, if transcript search is enabled
         kendraIndexId = cf.appConfig[cf.CONF_KENDRA_INDEX_ID]
-        if (kendraIndexId != "None"):
+        if kendraIndexId != "None":
             analysisUri = f"{cf.appConfig[cf.CONF_WEB_URI]}dashboard/parsedFiles/{self.jsonOutputFilename}"
             transcript_with_markers = prepare_transcript(json_filepath)
-            conversationAnalytics = output["ConversationAnalytics"]
+            conversationAnalytics = json_output["ConversationAnalytics"]
             put_kendra_document(kendraIndexId, analysisUri, conversationAnalytics, transcript_with_markers)
 
         # delete the local file
@@ -1584,13 +1418,24 @@ def lambda_handler(event, context):
 
 # Main entrypoint for testing
 if __name__ == "__main__":
-    # Standard test event
+    # Analytics test event
     event = {
         "bucket": "ak-cci-input",
         "langCode": "en-US",
-        "apiMode": "standard",
         "transcribeStatus": "COMPLETED",
-        "key": "originalAudio/fb460133-9f03-44e4-8cfd-91e501fe9fd8_20220415T08:12_UTC.wav",
-        "jobName": "fb460133-9f03-44e4-8cfd-91e501fe9fd8_20220415T08-12_UTC.wav"
+        "apiMode": "analytics",
+        "key": "originalAudio/Auto3_GUID_003_AGENT_BobS_DT_2021-12-03T17-51-51.wav",
+        "jobName": "Auto3_GUID_003_AGENT_BobS_DT_2021-12-03T17-51-51.wav"
+    }
+    lambda_handler(event, "")
+
+    # Mono test event
+    event = {
+        "bucket": "ak-cci-input",
+        "langCode": "en-US",
+        "transcribeStatus": "COMPLETED",
+        "apiMode": "standard",
+        "key": "originalAudio/Auto0_GUID_000_AGENT_ChrisL_DT_2021-12-01T06-01-22_Mono.wav",
+        "jobName": "Auto0_GUID_000_AGENT_ChrisL_DT_2021-12-01T06-01-22_Mono.wav"
     }
     lambda_handler(event, "")
