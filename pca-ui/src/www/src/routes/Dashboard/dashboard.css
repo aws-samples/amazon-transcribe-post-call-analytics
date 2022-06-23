@@ -13,3 +13,7 @@
 .call-details-col {
   flex: 1 1 550px;
 }
+.playing {
+  background-color: #ffff00;
+  text-decoration: underline;
+}

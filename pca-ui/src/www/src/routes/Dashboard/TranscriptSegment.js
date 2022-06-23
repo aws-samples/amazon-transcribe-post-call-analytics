@@ -2,8 +2,39 @@ import { SentimentIcon } from "../../components/SentimentIcon";
 import { Formatter } from "../../format";
 import { Badge } from "react-bootstrap";
 
+const getTranscriptDetails = (allSegments) => {
+  let offsetStartValue = 0;
+  let offsetEndValue = 0;
+  return allSegments.reduce((accumulator, item) => {
+    offsetStartValue = offsetEndValue === 0 ? offsetEndValue : offsetEndValue + 1;
+    offsetEndValue = offsetStartValue + item?.Text.trim().length;
+    
+    accumulator =[...accumulator,{content: item.Text.trim(), start: item.StartTime, end: item.EndTime, offsetStart: offsetStartValue, offsetEnd: offsetEndValue}];
+    return accumulator;
+  },[]);
+}
+
+const generateTranscriptElement = (text, allSegments, highlightLocations) => {
+  if (!allSegments.length) {
+    return applyReplacements(text, highlightLocations);
+  }
+  const transcript = getTranscriptDetails(allSegments);
+  
+  return  transcript.map((segment, i) => {
+    const addHighlight = highlightLocations.filter(highlight => highlight.start === segment.offsetStart || highlight.end === segment.offsetEnd || (highlight.start <= segment.offsetStart && highlight.end >= segment.offsetEnd) || (highlight.end >= segment.offsetStart && highlight.end <= segment.offsetEnd));
+    const content = segment.content + " " ;
+    const key = "segment-"+ segment.offsetStart;
+
+    if(addHighlight.length) {
+      return addHighlight[0].fn(content, key, segment.start, segment.end, segment.offsetStart, segment.offsetEnd);
+    }
+    return <span data-start={segment.start} data-end={segment.end} data-offset-start={segment.offsetStart} data-offset-end={segment.offsetEnd} key={key}>{content}</span>
+  });
+}
+
 export const TranscriptSegment = ({
   name,
+  allSegments,
   segmentStart,
   text,
   onClick,
@@ -33,7 +64,7 @@ export const TranscriptSegment = ({
         </Badge>
       )}
       {aboveText && <div>{aboveText}</div>}
-      <div>{applyReplacements(text, highlightLocations)}</div>
+      <div>{generateTranscriptElement(text, allSegments, highlightLocations)}</div>
     </div>
   </div>
 );

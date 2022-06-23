@@ -1,4 +1,4 @@
-import { useState, useEffect, Fragment } from "react";
+import { useState, useEffect, Fragment, useRef } from "react";
 import { useParams } from "react-router";
 import useSWR, { useSWRConfig } from "swr";
 import { get, swap } from "../../api/api";
@@ -42,6 +42,8 @@ const createLoudnessData = (segment) => {
 function Dashboard({ setAlert }) {
   const { key } = useParams();
   const { mutate } = useSWRConfig();
+  const audioElem = useRef();
+  const transcriptElem = useRef();
 
   const { data, error } = useSWR(`/get/${key}`, () => get(key));
   const isTranscribeCallAnalyticsMode =
@@ -194,6 +196,24 @@ function Dashboard({ setAlert }) {
         ),
     },
   ];
+
+  const audioEndTimestamps = (data?.SpeechSegments || [])
+  .map(({WordConfidence}) => WordConfidence)
+  .flat()
+  .reduce((accumulator, item) => ([...accumulator, item.EndTime]),[]);
+
+const onAudioPLayTimeUpdate = () => {
+  let elementEndTime = undefined;
+  for (let i = 0; i < audioEndTimestamps.length; i++) {
+    if (audioElem.current.currentTime < audioEndTimestamps[i]) {
+      elementEndTime = audioEndTimestamps[i];
+      break;
+    }
+  }
+
+  [...transcriptElem.current.getElementsByClassName('playing')].map(elem => elem.classList?.remove("playing"));
+  transcriptElem.current.querySelector('span[data-end="'+elementEndTime+'"]')?.classList?.add("playing");
+};
 
   return (
     <Stack direction="vertical" gap={4}>
@@ -373,19 +393,21 @@ function Dashboard({ setAlert }) {
           <div className="d-inline-flex pb-3">Transcript</div>
           {data && (
             <audio
+              ref={audioElem}
               className="float-end"
               controls
               src={
                 data?.ConversationAnalytics?.SourceInformation[0]
                   ?.TranscribeJobInfo?.MediaFileUri
               }
+              onTimeUpdate={onAudioPLayTimeUpdate}
             >
               Your browser does not support the
               <code>audio</code> element.
             </audio>
           )}
         </Card.Header>
-        <Card.Body className="pt-4">
+        <Card.Body className="pt-4" ref={transcriptElem}>
           {!data && !error ? (
             <Placeholder />
           ) : (
@@ -393,6 +415,7 @@ function Dashboard({ setAlert }) {
               <TranscriptSegment
                 key={i}
                 name={speakerLabels[s.SegmentSpeaker]}
+                allSegments={s?.WordConfidence || []}
                 segmentStart={s.SegmentStartTime}
                 text={s.DisplayText}
                 onClick={setAudioCurrentTime}
@@ -400,52 +423,88 @@ function Dashboard({ setAlert }) {
                   ...s.EntitiesDetected.map((e) => ({
                     start: e.BeginOffset,
                     end: e.EndOffset,
-                    fn: (match, key) => (
+                    fn: (match, key, start, end, offsetStart, offsetEnd) => (
                       <TranscriptOverlay
                         key={key}
                         colour={getEntityColor(e.Type)}
                         visuallyHidden={`Entity - ${e.Type}`}
+                        data-start={start}
+                        data-end={end}
+                        data-offset-start={offsetStart}
+                        data-offset-end={offsetEnd}
+                        content={match}
+                        type={""}
+                        entityOffsetStart={e.BeginOffset}
+                        entityOffsetEnd={e.EndOffset}
+                        entityClass={"text-danger"}
+                        addType={offsetStart === e.BeginOffset ? true : false}
                       >
-                        {match}
                       </TranscriptOverlay>
                     ),
                   })),
                   ...(s.IssuesDetected? s.IssuesDetected?.map((issue) => ({
                     start: issue.BeginOffset,
                     end: issue.EndOffset,
-                    fn: (match, key) => (
+                    fn: (match, key, start, end, offsetStart, offsetEnd) => (
                       <TranscriptOverlay
                         key={key}
-                        colour="yellow"
+                        colour="#ffff00"
                         tooltip="Issue"
+                        data-start={start}
+                        data-end={end}
+                        data-offset-start={offsetStart}
+                        data-offset-end={offsetEnd}
+                        content={match}
+                        type={"Issue"}
+                        entityOffsetStart={issue.BeginOffset}
+                        entityOffsetEnd={issue.EndOffset}
+                        entityClass={"text-danger"}
+                        addType={offsetStart === issue.BeginOffset ? true : false}
                       >
-                        <span className="text-danger">[ISSUE]</span>: {match}
                       </TranscriptOverlay>
                     ),
                   })) : []),
                   ...(s.ActionItemsDetected? s.ActionItemsDetected?.map((issue) => ({
                     start: issue.BeginOffset,
                     end: issue.EndOffset,
-                    fn: (match, key) => (
+                    fn: (match, key, start, end, offsetStart, offsetEnd) => (
                       <TranscriptOverlay
                         key={key}
                         colour="lightpink"
                         tooltip="Action Item"
+                        data-start={start}
+                        data-end={end}
+                        data-offset-start={offsetStart}
+                        data-offset-end={offsetEnd}
+                        content={match}
+                        type={"Action Item"}
+                        entityOffsetStart={issue.BeginOffset}
+                        entityOffsetEnd={issue.EndOffset}
+                        entityClass={"text-danger"}
+                        addType={offsetStart === issue.BeginOffset ? true : false}
                       >
-                        <span className="text-danger">[Action Item]</span>: {match}
                       </TranscriptOverlay>
                     ),
                   })) : []),
                   ...(s.OutcomesDetected? s.OutcomesDetected?.map((issue) => ({
                     start: issue.BeginOffset,
                     end: issue.EndOffset,
-                    fn: (match, key) => (
+                    fn: (match, key, start, end, offsetStart, offsetEnd) => (
                       <TranscriptOverlay
                         key={key}
                         colour="aquamarine"
                         tooltip="Outcome"
+                        data-start={start}
+                        data-end={end}
+                        data-offset-start={offsetStart}
+                        data-offset-end={offsetEnd}
+                        content={match}
+                        type={"Outcome"}
+                        entityOffsetStart={issue.BeginOffset}
+                        entityOffsetEnd={issue.EndOffset}
+                        entityClass={"text-danger"}
+                        addType={offsetStart === issue.BeginOffset ? true : false}
                       >
-                        <span className="text-danger">[Outcome]</span>: {match}
                       </TranscriptOverlay>
                     ),
                   })) : []),
