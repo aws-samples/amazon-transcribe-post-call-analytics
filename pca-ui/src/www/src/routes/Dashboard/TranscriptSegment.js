@@ -6,17 +6,10 @@ const getTranscriptDetails = (allSegments) => {
   let offsetStartValue = 0;
   let offsetEndValue = 0;
   return allSegments.reduce((accumulator, item) => {
-    if(item?.EndOffsetMillis) {
-      offsetStartValue = offsetEndValue === 0 ? offsetEndValue : offsetEndValue + 1;
-      offsetEndValue = offsetStartValue + item?.Content.length;
-      
-      accumulator =[...accumulator,{content: item.Content, start:item.BeginOffsetMillis/1000, end:item.EndOffsetMillis/1000, offsetStart: offsetStartValue, offsetEnd: offsetEndValue}];
-    } else {
-      offsetStartValue = offsetEndValue;
-      offsetEndValue = offsetStartValue + item?.Content.length;
-
-      accumulator =[...accumulator,{content: item.Content, start: null, end: null, offsetStart: offsetStartValue, offsetEnd: offsetEndValue}];
-    }
+    offsetStartValue = offsetEndValue === 0 ? offsetEndValue : offsetEndValue + 1;
+    offsetEndValue = offsetStartValue + item?.Text.trim().length;
+    
+    accumulator =[...accumulator,{content: item.Text.trim(), start: item.StartTime, end: item.EndTime, offsetStart: offsetStartValue, offsetEnd: offsetEndValue}];
     return accumulator;
   },[]);
 }
@@ -28,8 +21,8 @@ const generateTranscriptElement = (text, allSegments, highlightLocations) => {
   const transcript = getTranscriptDetails(allSegments);
   
   return  transcript.map((segment, i) => {
-    const addHighlight = highlightLocations.filter(highlight => highlight.start === segment.offsetStart || highlight.end === segment.offsetEnd || (highlight.start <= segment.offsetStart && highlight.end >= segment.offsetEnd));
-    const content = segment.content + (transcript[i+1]?.start === null ? "" : " " );
+    const addHighlight = highlightLocations.filter(highlight => highlight.start === segment.offsetStart || highlight.end === segment.offsetEnd || (highlight.start <= segment.offsetStart && highlight.end >= segment.offsetEnd) || (highlight.end >= segment.offsetStart && highlight.end <= segment.offsetEnd));
+    const content = segment.content + " " ;
     const key = "segment-"+ segment.offsetStart;
 
     if(addHighlight.length) {

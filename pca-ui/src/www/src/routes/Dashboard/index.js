@@ -198,9 +198,9 @@ function Dashboard({ setAlert }) {
   ];
 
   const audioEndTimestamps = (data?.SpeechSegments || [])
-  .map(({SegmentItems}) => SegmentItems)
+  .map(({WordConfidence}) => WordConfidence)
   .flat()
-  .reduce((accumulator, item) => (item?.EndOffsetMillis ? [...accumulator, item.EndOffsetMillis/1000] : [...accumulator, accumulator[accumulator.length-1]]),[]);
+  .reduce((accumulator, item) => ([...accumulator, item.EndTime]),[]);
 
 const onAudioPLayTimeUpdate = () => {
   let elementEndTime = undefined;
@@ -415,7 +415,7 @@ const onAudioPLayTimeUpdate = () => {
               <TranscriptSegment
                 key={i}
                 name={speakerLabels[s.SegmentSpeaker]}
-                allSegments={s?.SegmentItems || []}
+                allSegments={s?.WordConfidence || []}
                 segmentStart={s.SegmentStartTime}
                 text={s.DisplayText}
                 onClick={setAudioCurrentTime}
