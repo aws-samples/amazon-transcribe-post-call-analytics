@@ -32,6 +32,7 @@ COMPREHEND_SENTIMENT_SCALER = 5.0
 PII_PLACEHOLDER = "[PII]"
 PII_PLACEHOLDER_MASK = "*" * len(PII_PLACEHOLDER)
 TMP_DIR = "/tmp"
+TEMP_OUTPUT_KEY = "interimResults"
 BAR_CHART_WIDTH = 1.0
 
 
@@ -257,7 +258,7 @@ class TranscribeParser:
         transcribe_info.api_mode = self.api_mode
         transcribe_info.completion_time = str(self.transcribeJobInfo["CompletionTime"])
         transcribe_info.media_format = self.transcribeJobInfo["MediaFormat"]
-        transcribe_info.media_sample_rate = self.transcribeJobInfo["MediaSampleRateHertz"]
+        transcribe_info.media_sample_rate = int(self.transcribeJobInfo["MediaSampleRateHertz"])
         transcribe_info.media_original_uri = self.transcribeJobInfo["Media"]["MediaFileUri"]
         transcribe_info.cummulative_word_conf = self.cummulativeWordAccuracy / max(float(self.numWordsParsed), 1.0)
 
@@ -1341,7 +1342,6 @@ class TranscribeParser:
 
         # Pick out the config parameters that we need
         outputS3Bucket = cf.appConfig[cf.CONF_S3BUCKET_OUTPUT]
-        outputS3Key = cf.appConfig[cf.CONF_PREFIX_PARSED_RESULTS]
 
         # Parse Call GUID and Agent Name/ID from filename if possible
         self.set_guid(job_name)
@@ -1375,15 +1375,10 @@ class TranscribeParser:
 
         # Update our results data structures, generate JSON results and save them to S3
         self.push_turn_by_turn_results()
-        # output = self.create_json_results()
 
         # Write out the JSON data to our S3 location
-        json_output = self.pca_results.write_results_to_s3(outputS3Bucket, outputS3Key + '/' + self.jsonOutputFilename)
-        # s3Resource = boto3.resource('s3')
-        # s3Object = s3Resource.Object(outputS3Bucket, outputS3Key + '/' + self.jsonOutputFilename)
-        # s3Object.put(
-        #     Body=(bytes(json.dumps(output).encode('UTF-8')))
-        # )
+        interim_results_file_key = TEMP_OUTPUT_KEY + '/' + self.jsonOutputFilename
+        json_output = self.pca_results.write_results_to_s3(outputS3Bucket, interim_results_file_key)
 
         # Index transcript in Kendra, if transcript search is enabled
         kendraIndexId = cf.appConfig[cf.CONF_KENDRA_INDEX_ID]
@@ -1396,8 +1391,8 @@ class TranscribeParser:
         # delete the local file
         pcacommon.remove_temp_file(json_filepath)
 
-        # Return our filename for re-use later
-        return self.jsonOutputFilename
+        # Return our interim results file key for re-use later
+        return interim_results_file_key
 
 
 def lambda_handler(event, context):
@@ -1409,10 +1404,11 @@ def lambda_handler(event, context):
     transcribeParser = TranscribeParser(cf.appConfig[cf.CONF_MINPOSITIVE],
                                         cf.appConfig[cf.CONF_MINNEGATIVE],
                                         cf.appConfig[cf.CONF_ENTITYENDPOINT])
-    outputFilename = transcribeParser.parse_transcribe_file(sf_data)
+    output_filename = transcribeParser.parse_transcribe_file(sf_data)
 
-    # Get the object from the event and show its content type
-    sf_data["parsedJsonFile"] = outputFilename
+    # Add tag the location of the output file to the SF data, along with the requested telephony CTR type
+    sf_data["interimResultsFile"] = output_filename
+    sf_data["telephony"] = cf.appConfig[cf.CONF_TELEPHONY_CTR]
     return sf_data
 
 
@@ -1424,8 +1420,8 @@ if __name__ == "__main__":
         "langCode": "en-US",
         "transcribeStatus": "COMPLETED",
         "apiMode": "analytics",
-        "key": "originalAudio/Auto3_GUID_003_AGENT_BobS_DT_2021-12-03T17-51-51.wav",
-        "jobName": "Auto3_GUID_003_AGENT_BobS_DT_2021-12-03T17-51-51.wav"
+        "key": "originalAudio/Card2_GUID_102_AGENT_AndrewK_DT_2022-03-22T12-23-49.wav",
+        "jobName": "Card2_GUID_102_AGENT_AndrewK_DT_2022-03-22T12-23-49.wav"
     }
     lambda_handler(event, "")
 
@@ -1435,7 +1431,7 @@ if __name__ == "__main__":
         "langCode": "en-US",
         "transcribeStatus": "COMPLETED",
         "apiMode": "standard",
-        "key": "originalAudio/Auto0_GUID_000_AGENT_ChrisL_DT_2021-12-01T06-01-22_Mono.wav",
-        "jobName": "Auto0_GUID_000_AGENT_ChrisL_DT_2021-12-01T06-01-22_Mono.wav"
+        "key": "originalAudio/Auto0_GUID_000_AGENT_ChrisL_DT_2022-03-19T06-01-22_Mono.wav",
+        "jobName": "Auto0_GUID_000_AGENT_ChrisL_DT_2022-03-19T06-01-22_Mono.wav"
     }
     lambda_handler(event, "")

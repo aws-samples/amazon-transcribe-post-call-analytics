@@ -37,6 +37,11 @@ Resources:
     Properties:
       TemplateURL: lib/boto3.template
 
+  PYTHONUTILS:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: lib/python-utilities.template
+
   DDB:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -50,7 +55,8 @@ Resources:
         TableName: !GetAtt DDB.Outputs.TableName
         FFMPEGZipName: !GetAtt FFMPEG.Outputs.FFMPEGZipName
         MPLZipName: !GetAtt MATPLOTLIB.Outputs.MPLZipName
-        Boto3Layer: !GetAtt BOTO3.Outputs.Boto3Layer
+        Boto3Layer:  !GetAtt BOTO3.Outputs.Boto3Layer
+        PyUtilsLayer: !GetAtt PYTHONUTILS.Outputs.PyUtilsLayer
 
   Trigger:
     Type: AWS::CloudFormation::Stack
@@ -59,6 +65,7 @@ Resources:
       Parameters:
         TableName: !GetAtt DDB.Outputs.TableName
         Boto3Layer: !GetAtt BOTO3.Outputs.Boto3Layer
+        PyUtilsLayer: !GetAtt PYTHONUTILS.Outputs.PyUtilsLayer
 
   BulkImport:
     Type: AWS::CloudFormation::Stack

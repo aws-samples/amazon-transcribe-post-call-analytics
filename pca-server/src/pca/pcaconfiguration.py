@@ -31,6 +31,7 @@ CONF_SPEAKER_MODE = "SpeakerSeparationType"
 COMP_SFN_NAME = "StepFunctionName"
 CONF_SUPPORT_BUCKET = "SupportFilesBucketName"
 CONF_TRANSCRIBE_LANG = "TranscribeLanguages"
+CONF_TELEPHONY_CTR = "TelephonyCTRType"
 CONF_VOCABNAME = "VocabularyName"
 CONF_FILENAME_DATETIME_REGEX = "FilenameDatetimeRegex"
 CONF_FILENAME_DATETIME_FIELDMAP = "FilenameDatetimeFieldMap"
@@ -138,7 +139,14 @@ def loadConfiguration():
         ]
     )
     fullParamList4 = ssm.get_parameters(
-        Names=[CONF_KENDRA_INDEX_ID, CONF_WEB_URI, CONF_TRANSCRIBE_API, CONF_REDACTION_TRANSCRIPT, CONF_REDACTION_AUDIO]
+        Names=[
+            CONF_KENDRA_INDEX_ID,
+            CONF_WEB_URI,
+            CONF_TRANSCRIBE_API,
+            CONF_REDACTION_TRANSCRIPT,
+            CONF_REDACTION_AUDIO,
+            CONF_TELEPHONY_CTR
+        ]
     )
 
     # Extract our parameters into our config

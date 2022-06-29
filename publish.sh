@@ -62,7 +62,10 @@ echo "Getting package dependencies"
 pushd pca-server/src/trigger
 npm install
 popd
-# no need to install python packages.. only boto3 and it's included in Lambda runtime
+# Not required, no additional server libraries to package
+# pushd pca-server/src/pca
+# pip install -r requirements.txt -t .
+# popd
 pushd pca-ui/src/lambda
 npm install
 popd

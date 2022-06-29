@@ -70,6 +70,36 @@
           "IntervalSeconds": 5,
           "ErrorEquals": ["Lambda.Unknown"]
       }],
+      "Next": "ProcessTelephonyCTR?"
+    },
+    "ProcessTelephonyCTR?": {
+      "Type": "Choice",
+      "Comment": "Do we have a telephony-supplied CTR file to process?",
+      "Choices": [
+        {
+          "Variable": "$.telephony",
+          "StringEquals": "genesys",
+          "Next": "GenesysCTR"
+        }
+      ],
+      "Default": "NoDefinedCTR"
+    },
+    "NoDefinedCTR": {
+      "Type": "Pass",
+      "Next": "FinalProcessing"
+    },
+    "GenesysCTR": {
+      "Type": "Pass",
+      "Next": "FinalProcessing"
+    },
+    "FinalProcessing": {
+      "Comment": "Performs any final common processing after the telephony CTR work",
+      "Type": "Task",
+      "Resource": "${SFFinalProcessingArn}",
+      "Retry": [{
+          "IntervalSeconds": 5,
+          "ErrorEquals": ["Lambda.Unknown"]
+      }],
       "Next": "Success"
     },
     "TranscriptionFailed": {
