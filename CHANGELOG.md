@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.5] - 2022-07-05
+### Fixed
+- Stack failure when 'loadSampleAudioFiles` set to `false` 
+
 ## [0.2.4] - 2022-06-10
 ### Fixed
 - Use sigv4 for S3 presignedURLS
@@ -54,7 +58,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial release
 
-[Unreleased]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/compare/v0.2.4...develop
+[Unreleased]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/compare/v0.2.5...develop
+[0.2.5]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.2.5
 [0.2.4]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.2.4
 [0.2.3]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.2.3
 [0.2.2]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.2.2
