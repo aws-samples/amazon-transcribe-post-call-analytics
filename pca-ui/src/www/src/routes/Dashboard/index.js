@@ -511,14 +511,8 @@ const onAudioPLayTimeUpdate = () => {
                 ]}
                 score={s.SentimentIsPositive - s.SentimentIsNegative}
                 interruption={s.SegmentInterruption}
-                aboveText={
-                  s.CategoriesDetected.length ? (
-                    <span className="text-muted">
-                      {" "}
-                      Categories Detetected: {s.CategoriesDetected}
-                    </span>
-                  ) : null
-                }
+                ivr={s?.IVRSegment || false}
+                categoryList={s.CategoriesDetected}
               />
             ))
           )}

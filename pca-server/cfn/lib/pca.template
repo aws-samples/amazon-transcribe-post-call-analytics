@@ -171,6 +171,20 @@ Resources:
         - arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess
         - arn:aws:iam::aws:policy/AmazonS3FullAccess
 
+  SFCTRGenesys:
+    Type: "AWS::Serverless::Function"
+    Properties:
+      CodeUri:  ../../src/pca
+      Handler: pca-aws-sf-ctr-genesys.lambda_handler
+      Layers:
+        - !Ref Boto3Layer
+      Environment:
+        Variables:
+          AWS_DATA_PATH: "/opt/models"
+      Policies:
+        - arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+
   SFAwaitNotification:
     Type: "AWS::Serverless::Function"
     Properties:
@@ -222,6 +236,7 @@ Resources:
                   - !GetAtt SFAwaitNotification.Arn
                   - !GetAtt SFTranscribeFailed.Arn
                   - !GetAtt SFFinalProcessing.Arn
+                  - !GetAtt SFCTRGenesys.Arn
         - PolicyName: CloudWatchLogs
           PolicyDocument:
             Statement:
@@ -248,6 +263,7 @@ Resources:
         SFAwaitNotificationArn: !GetAtt SFAwaitNotification.Arn
         SFTranscribeFailedArn: !GetAtt SFTranscribeFailed.Arn
         SFFinalProcessingArn: !GetAtt SFFinalProcessing.Arn
+        SFCTRGenesysArn: !GetAtt SFCTRGenesys.Arn
       LoggingConfiguration:
         Level: ERROR
         IncludeExecutionData: true
@@ -265,4 +281,5 @@ Outputs:
         - !Sub '"${TranscribeRole.Arn}"'
         - !Sub '"${SFProcessTurnRole.Arn}"'
         - !Sub '"${SFFinalProcessing.Arn}"'
+        - !Sub '"${SFCTRGenesys.Arn}"'
 

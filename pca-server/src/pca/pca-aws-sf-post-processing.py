@@ -28,9 +28,13 @@ def lambda_handler(event, context):
     }
     s3_resource.meta.client.copy(copy_source, results_bucket, dest_key)
 
-    # Then delete the interim file
-    s3_client = boto3.client("s3")
-    s3_client.delete_object(Bucket=results_bucket, Key=event["interimResultsFile"])
+    # Then delete the interim file if we're not debugging
+    if "debug" not in event:
+        s3_client = boto3.client("s3")
+        s3_client.delete_object(Bucket=results_bucket, Key=event["interimResultsFile"])
+
+    return event
+
 
 # Main entrypoint for testing
 if __name__ == "__main__":
@@ -39,9 +43,10 @@ if __name__ == "__main__":
         "langCode": "en-US",
         "transcribeStatus": "COMPLETED",
         "apiMode": "analytics",
-        "key": "originalAudio/Card2_GUID_102_AGENT_AndrewK_DT_2022-03-22T12-23-49.wav",
+        "key": "originalAudio/b27d6650-09e7-41c1-a10a-dc1c77cb5bcd.wav",
         "jobName": "Card2_GUID_102_AGENT_AndrewK_DT_2022-03-22T12-23-49.wav",
-        "parsedJsonFile": "interimResults/Card2_GUID_102_AGENT_AndrewK_DT_2022-03-22T12-23-49.wav.json",
-        "telephony": "none"
+        "interimResultsFile": "interimResults/b27d6650-09e7-41c1-a10a-dc1c77cb5bcd.wav.json",
+        "telephony": "none",
+        "debug": True
     }
     lambda_handler(event, "")

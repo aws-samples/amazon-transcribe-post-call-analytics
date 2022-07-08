@@ -160,8 +160,6 @@ class ConversationAnalytics:
 
         # # Decide which source information block to add - only one for now, so straightforward
         self.transcribe_job.parse_json_input(json_input["SourceInformation"][0]["TranscribeJobInfo"])
-        # transcribe_job_info = {"TranscribeJobInfo": self.transcribe_job.create_json_output()}
-        # conv_header_info["SourceInformation"] = [transcribe_job_info]
 
 
     def extract_analytics_categories(self, categories, speech_segments):
@@ -335,7 +333,7 @@ class PCAResults:
                             "SegmentEndTime": segment.segmentEndTime,
                             "SegmentSpeaker": segment.segmentSpeaker,
                             "SegmentInterruption": segment.segmentInterruption,
-                            "IVRSegment": int(segment.segmentIVR),
+                            "IVRSegment": segment.segmentIVR,
                             "OriginalText": segment.segmentText,
                             "DisplayText": segment.segmentText,
                             "TextEdited": 0,
@@ -425,4 +423,4 @@ class PCAResults:
                 new_segment.segmentIVR = bool(next_segment["IVRSegment"])
 
             # Add what we have to the full list
-            self.speech_segments.append(next_segment)
+            self.speech_segments.append(new_segment)
