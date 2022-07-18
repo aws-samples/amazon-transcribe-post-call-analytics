@@ -1,7 +1,12 @@
 export const colours = {
-  Agent: "hsl(45, 100%, 50%)",
-  Customer: "hsl(202, 100%, 50%)",
-  Silence: "hsl(272, 100%, 50%)",
+  NonTalkTime: "hsl(190, 100%, 50%)",
+  IVR: "hsl(354, 50%, 50%)",
+  spk_0: "hsl(272, 100%, 50%)",
+  spk_1: "hsl(45, 100%, 50%)",
+  spk_2: "hsl(80, 100%, 31%)",
+  spk_3: "hsl(27, 100%, 50%)",
+  spk_4: "hsl(300, 75%, 50%)",
+  spk_5: "hsl(152, 75%, 50%)",
 };
 
 const Entities = {

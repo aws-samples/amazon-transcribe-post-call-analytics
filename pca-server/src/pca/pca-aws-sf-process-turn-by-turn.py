@@ -677,8 +677,8 @@ class TranscribeParser:
                     if self.comprehendLanguageCode == "":
                         # We had no language - use default neutral sentiment scores
                         next_segment.segmentAllSentiments = sentiment_set_neutral
-                        next_segment.segmentPositive = 0.0
-                        next_segment.segmentNegative = 0.0
+                        next_segment.segmentIsPositive = False
+                        next_segment.segmentIsNegative = False
                     else:
                         # For Standard Transcribe we need to set the sentiment marker based on score thresholds
                         sentimentResponse = self.comprehend_single_sentiment(nextText, client)

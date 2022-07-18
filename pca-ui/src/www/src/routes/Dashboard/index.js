@@ -279,6 +279,7 @@ const onAudioPLayTimeUpdate = () => {
                     ).map(([key, value]) => ({
                       value: value.TotalTimeSecs,
                       label: speakerLabels[key],
+                      channel: key
                     }))}
                     speakerOrder={speakerLabels}
                   />

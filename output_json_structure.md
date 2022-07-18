@@ -64,15 +64,17 @@ The system generates internal speaker markers, but you can assign (and change) e
 "SpeakerLabels": [
   {
     "Speaker": "string",
-    "DisplayText": "string"
+    "DisplayText": "string",
+    "UserId": "string"
   }
 ]
 ```
 
-| Field       | Type   | Description                                                  |
-| ----------- | ------ | ------------------------------------------------------------ |
+| Field       | Type   | Description                                                        |
+|-------------| ------ |--------------------------------------------------------------------|
 | Speaker     | string | Internal speaker name in the format `spk_0`, `spk_1` up to `spk_n` |
-| DisplayText | string | Text label to display for that speaker                       |
+| DisplayText | string | Text label to display for that speaker                             |
+| UserId      | string | [optional] Telephony system's user ID reference for this speaker   |
 
 ###### SentimentTrends
 
@@ -88,6 +90,7 @@ The per-quarter sentiment scores are similar - we either use the values provided
   "<SpeakerLabels|Speaker>": {
     "SentimentScore": "float",
     "SentimentChange": "float",
+    "NameOverride": "string",
     "SentimentPerQuarter": [
       {
         "Quarter": "int",
@@ -100,15 +103,16 @@ The per-quarter sentiment scores are similar - we either use the values provided
 }
 ```
 
-| Field           | Type   | Description                                                  |
-| --------------- | ------ | ------------------------------------------------------------ |
-| Speaker         | string | Internal speaker name in the format `spk_n`, starting with n=0 |
+| Field           | Type   | Description                                                      |
+|-----------------|--------|------------------------------------------------------------------|
+| Speaker         | string | Internal speaker name in the format `spk_n`, starting with n=0   |
 | SentimentScore  | float  | The sentiment for this speaker this period, in range [-5.0, 5.0] |
-| SentimentChange | float  | Change in sentiment from start to end of call                |
-| Quarter         | int    | Period number, in range [1, 4]                               |
+| SentimentChange | float  | Change in sentiment from start to end of call                    |
+| NameOverride    | string | Override the normal display name for this speaker [optional]     |
+| Quarter         | int    | Period number, in range [1, 4]                                   |
 | Score           | float  | The sentiment for this speaker this period, in range [-5.0, 5.0] |
-| BeginOffsetSecs | float  | Start time for this speaker talking in this period           |
-| EndOffsetSecs   | float  | End time for this speaker talking in this period             |
+| BeginOffsetSecs | float  | Start time for this speaker talking in this period               |
+| EndOffsetSecs   | float  | End time for this speaker talking in this period                 |
 
 ###### CustomEntities
 

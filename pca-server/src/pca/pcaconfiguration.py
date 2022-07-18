@@ -64,6 +64,9 @@ SPEAKER_MODES = [SPEAKER_MODE_SPEAKER, SPEAKER_MODE_CHANNEL, SPEAKER_MODE_AUTO]
 # Vocabulary filter modes - gets reset to "" if configured value is not one of the list
 VOCAB_FILTER_MODES = {"remove", "mask", "tag"}
 
+# Other defined constant values
+NLP_THROTTLE_RETRIES = 3
+
 # Configuration data
 appConfig = {}
 

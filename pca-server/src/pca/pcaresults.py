@@ -113,6 +113,7 @@ class ConversationAnalytics:
 
         # SpeakerTime plus any additional Analytics metadata
         conv_header_info["SpeakerTime"] = self.speaker_time
+
         if self.transcribe_job.api_mode == cf.API_ANALYTICS:
             # TCA includes categories, issues, actions, outcomes and the large call metadata graphic
             conv_header_info["CategoriesDetected"] = self.categories_detected
@@ -379,16 +380,16 @@ class PCAResults:
         # Return the JSON in case the caller needs it
         return json_data
 
-    def read_results_from_s3(self, bucket, object_key):
+    def read_results_from_s3(self, bucket, object_key, offline=False):
 
         # Download results file from S3
         local_filename = TMP_DIR + object_key.split('/')[-1]
-        s3_client = boto3.client('s3')
-        s3_client.download_file(bucket, object_key, local_filename)
+        if not offline:
+            s3_client = boto3.client('s3')
+            s3_client.download_file(bucket, object_key, local_filename)
 
         # Load data into JSON structure
         json_filepath = Path(local_filename)
-        # json_filepath = Path("/Users/andkane/Downloads/Card2_GUID_102_AGENT_AndrewK_DT_2022-03-22T12-23-49.wav.json")
         json_data = json.load(open(json_filepath.absolute(), "r", encoding="utf-8"))
 
         # First parse out the main analytics
