@@ -117,7 +117,7 @@ def iso8601_datetime(value):
         return False
     return dt
     
-def get_entity_values(entityType, dicts):
+def get_entity_values(entityType, dicts, maxLength=10):
     """
     Return string array of entity values for specified type, from the inpout array of entityType dicts
     """
@@ -125,7 +125,7 @@ def get_entity_values(entityType, dicts):
     entityDict = next((item for item in dicts if item["Name"] == entityType), None)
     if entityDict:
         list = entityDict["Values"]
-    return list
+    return dict(list(list.items())[:maxLength])
 
 def durationBucket(durationStr):
     """
