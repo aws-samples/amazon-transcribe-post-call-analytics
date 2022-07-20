@@ -91,8 +91,8 @@ Outputs:
   RolesForKMSKey:
     Value: !Join
       - ', '
-      - - !Sub '${CopySamples.Outputs.RolesForKMSKey}'
-        - !Sub '${Trigger.Outputs.RolesForKMSKey}'
+      - - !Sub '${Trigger.Outputs.RolesForKMSKey}'
         - !Sub '${PCA.Outputs.RolesForKMSKey}'
         - !Sub '${BulkImport.Outputs.RolesForKMSKey}'
+        - !If [ShouldLoadSampleAudioFiles, !Sub '${CopySamples.Outputs.RolesForKMSKey}', !Ref AWS::NoValue]
 

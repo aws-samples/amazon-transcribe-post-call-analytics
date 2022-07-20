@@ -8,8 +8,9 @@ In the project directory, you can run:
 
 ### `npm run start`
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+For **Post Call Analytics**, first deploy PCA into an AWS account.  Go to the `webbucket` folder and copy the `config.js` file into the local `pca-ui/src/www/public` folder. 
+
+Finally, run `npm run start` and navigate to http://localhost:3000 in a browser -- the existing PCA should load up on the local browser, in development mode.
 
 The page will reload if you make edits.\
 You will also see any lint errors in the console.
