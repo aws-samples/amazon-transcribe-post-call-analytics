@@ -199,6 +199,11 @@ Parameters:
         - genesys
     Description: Type of telephony system that will deliver Contact Trace Record files along with the audio recordings
 
+  PostProcessingLambdaARN:
+    Type: String
+    Default: ''
+    Description: The ARN of the Lambda to call after the CTR processing step.
+
   CallRedactionTranscript:
     Type: String
     Default: true
@@ -650,6 +655,7 @@ Resources:
         VocabFilterName: !Ref VocabFilterName
         VocabFilterMode: !Ref VocabFilterMode
         VocabularyName: !Ref VocabularyName
+        PostProcessingLambdaARN: !Ref PostProcessingLambdaARN
         FilenameDatetimeRegex: !Ref FilenameDatetimeRegex
         FilenameDatetimeFieldMap: !Ref FilenameDatetimeFieldMap
         FilenameGUIDRegex: !Ref FilenameGUIDRegex

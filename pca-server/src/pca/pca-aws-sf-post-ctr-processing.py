@@ -1,14 +1,17 @@
 """
-This python function is part of the main processing workflow.  It performs any final processing steps required
-when the main processing has completed, along with any additional optional processing carried out by the
-telephony-specific Contract Trace Record handling
+This python function is part of the main processing workflow as a stub for customers.
+
+It performs processing steps required when the contact trace record processing has completed.
 
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 """
 import boto3
+import json
 import pcaconfiguration as cf
 import pcaresults
+
+lambda_client = boto3.client('lambda')
 
 def lambda_handler(event, context):
     """
@@ -17,19 +20,24 @@ def lambda_handler(event, context):
 
     # Load our configuration data
     cf.loadConfiguration()
-    results_bucket = cf.appConfig[cf.CONF_S3BUCKET_OUTPUT]
+    processing_lambda_arn = cf.appConfig[cf.CONF_POST_PROCESS_LAMBDA_ARN]
 
-    # Load in our existing interim CCA results
-    pca_results = pcaresults.PCAResults()
-    pca_analytics = pca_results.get_conv_analytics()
-    pca_results.read_results_from_s3(cf.appConfig[cf.CONF_S3BUCKET_OUTPUT], event["interimResultsFile"])
+    if processing_lambda_arn:
+        # Load in our existing interim CCA results
+        pca_results = pcaresults.PCAResults()
+        pca_results.read_results_from_s3(cf.appConfig[cf.CONF_S3BUCKET_OUTPUT], event["interimResultsFile"])
 
-    # --------- Do any post processing here ----------
+        # --------- Do any post processing here ----------
+        response = lambda_client.invoke(
+            FunctionName=processing_lambda_arn,
+            InvocationType='RequestResponse',
+            Payload = json.dumps(pca_results)
+        )
 
+        pca_results = json.loads(response['Payload'])
 
-    # Write out back to interim file
-    pca_results.write_results_to_s3(cf.appConfig[cf.CONF_S3BUCKET_OUTPUT], event["interimResultsFile"])
-
+        # Write out back to interim file
+        pca_results.write_results_to_s3(cf.appConfig[cf.CONF_S3BUCKET_OUTPUT], event["interimResultsFile"])
 
     return event
 

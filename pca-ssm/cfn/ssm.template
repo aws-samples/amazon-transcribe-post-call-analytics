@@ -240,6 +240,11 @@ Parameters:
     Type: String
     Default: 'pca'
     Description: Glue catalog database name used to contain tables/views for SQL integration.
+          
+  PostProcessingLambdaARN:
+    Type: String
+    Default: ''
+    Description:  This Lambda will be called post CTR processing in the step function. 
       
 Resources:
   BulkUploadBucketParameter:
@@ -595,3 +600,11 @@ Resources:
       Type: String
       Value: !Ref DatabaseName
       Description: PCA Glue catalog database name
+
+  PostProcessingLambdaARNParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: PostProcessingLambdaARN
+      Type: String
+      Value: !Ref PostProcessingLambdaARN
+      Description: This Lambda will be called post CTR processing in the step function. 

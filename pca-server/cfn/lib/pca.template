@@ -34,6 +34,13 @@ Parameters:
     Type: AWS::SSM::Parameter::Value<String>
     Default: InputBucketName
 
+  PostProcessingLambdaARN:
+    Type: String
+    Default: ''
+
+Condition: 
+  ShouldEnablePostProcessingLambda: !NotEquals [!Ref PostProcessingLambdaARN, ""]
+
 Globals:
   Function:
     Runtime: python3.8
@@ -198,6 +205,14 @@ Resources:
       Policies:
         - arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess
         - arn:aws:iam::aws:policy/AmazonS3FullAccess
+        - !If ShouldEnablePostProcessingLambda
+          PolicyName: AllowInvokePostProcessLambda
+          PolicyDocument:
+            Statement:
+            - Effect: Allow
+              Action: lambda:InvokeFunction
+              Resource:
+              - !Ref PostProcessingLambdaARN
         
   SFAwaitNotification:
     Type: "AWS::Serverless::Function"

@@ -16,6 +16,11 @@ Parameters:
         - false
     Description: Set to true to automatically ingest some sample audio files.
 
+  PostProcessingLambdaARN:
+    Type: String
+    Default: ''
+    Description: The ARN of a Lambda function for post processing.
+
 Conditions:
   ShouldLoadSampleAudioFiles: !Equals [!Ref loadSampleAudioFiles, 'true']
 
@@ -57,6 +62,7 @@ Resources:
         MPLZipName: !GetAtt MATPLOTLIB.Outputs.MPLZipName
         Boto3Layer:  !GetAtt BOTO3.Outputs.Boto3Layer
         PyUtilsLayer: !GetAtt PYTHONUTILS.Outputs.PyUtilsLayer
+        PostProcessingLambdaARN: !Ref PostProcessingLambdaARN
 
   Trigger:
     Type: AWS::CloudFormation::Stack

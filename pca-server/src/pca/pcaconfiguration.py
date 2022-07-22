@@ -33,6 +33,7 @@ CONF_SUPPORT_BUCKET = "SupportFilesBucketName"
 CONF_TRANSCRIBE_LANG = "TranscribeLanguages"
 CONF_TELEPHONY_CTR = "TelephonyCTRType"
 CONF_VOCABNAME = "VocabularyName"
+CONF_POST_PROCESS_LAMBDA_ARN = "PostProcessingLambdaARN"
 CONF_FILENAME_DATETIME_REGEX = "FilenameDatetimeRegex"
 CONF_FILENAME_DATETIME_FIELDMAP = "FilenameDatetimeFieldMap"
 CONF_FILENAME_GUID_REGEX = "FilenameGUIDRegex"
@@ -148,7 +149,8 @@ def loadConfiguration():
             CONF_TRANSCRIBE_API,
             CONF_REDACTION_TRANSCRIPT,
             CONF_REDACTION_AUDIO,
-            CONF_TELEPHONY_CTR
+            CONF_TELEPHONY_CTR,
+            CONF_POST_PROCESS_LAMBDA_ARN
         ]
     )
 
