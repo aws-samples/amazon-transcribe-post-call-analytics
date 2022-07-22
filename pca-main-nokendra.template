@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 
-Description: Amazon Transcribe Post Call Analytics - PCA (v0.2.4) (uksb-1sn29lk73)
+Description: Amazon Transcribe Post Call Analytics - PCA (v0.2.5) (uksb-1sn29lk73)
 
 Parameters:
 
@@ -191,6 +191,14 @@ Parameters:
         - analytics
     Description: Set the default operational mode for Transcribe
 
+  TelephonyCTRType:
+    Type: String
+    Default: none
+    AllowedValues:
+        - none
+        - genesys
+    Description: Type of telephony system that will deliver Contact Trace Record files along with the audio recordings
+
   CallRedactionTranscript:
     Type: String
     Default: true
@@ -352,6 +360,7 @@ Metadata:
                 default: Transcription
               Parameters:
                   - TranscribeApiMode
+                  - TelephonyCTRType
                   - TranscribeLanguages
                   - VocabFilterMode
                   - VocabFilterName
@@ -503,6 +512,7 @@ Resources:
           - !Ref SupportFilesBucketName
         TranscribeLanguages: !Ref TranscribeLanguages
         TranscribeApiMode: !Ref TranscribeApiMode
+        TelephonyCTRType: !Ref TelephonyCTRType
         CallRedactionTranscript: !Ref CallRedactionTranscript
         CallRedactionAudio: !Ref CallRedactionAudio
         VocabFilterName: !Ref VocabFilterName

@@ -5,12 +5,12 @@ export const SentimentChart = ({ data = {}, speakerOrder = {} }) => {
   return (
     <Line
       data={{
-        labels: [1, 2, 3, 4],
+        labels: ["Q1", "Q2", "Q3", "Q4"],
         datasets: Object.keys(data).map((speakerId) => {
           return {
-            label: speakerOrder[speakerId],
-            backgroundColor: colours[speakerOrder[speakerId]],
-            borderColor: colours[speakerOrder[speakerId]],
+            label: (data?.[speakerId]?.NameOverride ? data.[speakerId].NameOverride : speakerOrder[speakerId] ),
+            backgroundColor: colours[speakerId],
+            borderColor: colours[speakerId],
             fill: false,
             spanGaps: true,
             tension: 0.5,
@@ -32,7 +32,7 @@ const options = {
   scales: {
     xAxes: {
       display: true,
-      title: { text: "Quarter", display: true },
+      title: { text: "Call Quarter", display: true },
     },
 
     yAxes: {
@@ -56,6 +56,10 @@ const options = {
   plugins: {
     legend: {
       onClick: null,
+      labels :{
+        padding:10,
+        boxWidth:30
+      },
     },
   },
 };

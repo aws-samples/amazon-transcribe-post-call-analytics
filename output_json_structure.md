@@ -15,10 +15,6 @@ The Transcribe Parser python Lambda function will be triggered on completion of 
 
 Contains header-level information around the analytics that have been generated, along with information specific to the type of source input that the conversation came from - the majority of the analytics have their own detailed sections later.
 
-**-- NEW FIELDS --** Added new *Agent* and *GUID* fields
-
-**-- NEW SECTIONS --** Added new *SpeakerTime*, *CategoriesDetected* and *IssuesDetected* sections
-
 ```json
 "ConversationAnalytics": {
   "Agent": "string",
@@ -68,15 +64,17 @@ The system generates internal speaker markers, but you can assign (and change) e
 "SpeakerLabels": [
   {
     "Speaker": "string",
-    "DisplayText": "string"
+    "DisplayText": "string",
+    "UserId": "string"
   }
 ]
 ```
 
-| Field       | Type   | Description                                                  |
-| ----------- | ------ | ------------------------------------------------------------ |
+| Field       | Type   | Description                                                        |
+|-------------| ------ |--------------------------------------------------------------------|
 | Speaker     | string | Internal speaker name in the format `spk_0`, `spk_1` up to `spk_n` |
-| DisplayText | string | Text label to display for that speaker                       |
+| DisplayText | string | Text label to display for that speaker                             |
+| UserId      | string | [optional] Telephony system's user ID reference for this speaker   |
 
 ###### SentimentTrends
 
@@ -87,17 +85,12 @@ Sentiment trends for each caller.  The sentiment score is either:
 
 The per-quarter sentiment scores are similar - we either use the values provided by *Call Analytics* or we calculate them on-the-fly.
 
-**-- CHANGE --** Renamed *AverageSentiment* to *SentimentScore*, inserted all per-quarter sentiment, which may be missing (but I'll look to try and generate it before launch)
-
-**-- CHANGE --** Rather than being a list of data dictionaries we now just have dictionary with an entry per speaker, and each is a dictionary of the original values
-
-**-- NEW --** The *SentimentPerQuarter* block includes a list of per-quarter sentiment scores for the speaker
-
 ```json
 "SentimentTrends": {
   "<SpeakerLabels|Speaker>": {
     "SentimentScore": "float",
     "SentimentChange": "float",
+    "NameOverride": "string",
     "SentimentPerQuarter": [
       {
         "Quarter": "int",
@@ -110,21 +103,20 @@ The per-quarter sentiment scores are similar - we either use the values provided
 }
 ```
 
-| Field           | Type   | Description                                                  |
-| --------------- | ------ | ------------------------------------------------------------ |
-| Speaker         | string | Internal speaker name in the format `spk_n`, starting with n=0 |
+| Field           | Type   | Description                                                      |
+|-----------------|--------|------------------------------------------------------------------|
+| Speaker         | string | Internal speaker name in the format `spk_n`, starting with n=0   |
 | SentimentScore  | float  | The sentiment for this speaker this period, in range [-5.0, 5.0] |
-| SentimentChange | float  | Change in sentiment from start to end of call                |
-| Quarter         | int    | Period number, in range [1, 4]                               |
+| SentimentChange | float  | Change in sentiment from start to end of call                    |
+| NameOverride    | string | Override the normal display name for this speaker [optional]     |
+| Quarter         | int    | Period number, in range [1, 4]                                   |
 | Score           | float  | The sentiment for this speaker this period, in range [-5.0, 5.0] |
-| BeginOffsetSecs | float  | Start time for this speaker talking in this period           |
-| EndOffsetSecs   | float  | End time for this speaker talking in this period             |
+| BeginOffsetSecs | float  | Start time for this speaker talking in this period               |
+| EndOffsetSecs   | float  | End time for this speaker talking in this period                 |
 
 ###### CustomEntities
 
 A list of the custom entities that have been detected via Amazon Comprehend Custom Entity Detection, or via the string-matching algorithm.  This is summarised by entity type, and doesn't give any indication as to where the entity lies in the text - that is part of the *SpeechSegments* structure.
-
-**-- CHANGE --** Changed name from *Count* to *Instances* to be consistent with other blocks
 
 ```json
 "CustomEntities": [
@@ -144,13 +136,11 @@ A list of the custom entities that have been detected via Amazon Comprehend Cust
 
 ###### SpeakerTime
 
-**-- THIS SECTION IS ALL NEW --**
-
-Note: this information is only available from Call Analytics calls.
-
 Each speaker on the call has their total talk time in seconds included in this block.  Additionally, the total amount of quiet non-talk time is also recorded, along with the location within the call when each of those quiet periods occured.
 
 The sum of talk times for all speakers may add up to more than the duraction of the call, as it only reports the time they were speaking, which could overlap with when other speakers were talking.
+
+Note: for non-Analytics calls we do not yet have quiet time.
 
 ```json
 "SpeakerTime": {
@@ -179,8 +169,6 @@ The sum of talk times for all speakers may add up to more than the duraction of 
 | DurationSecs       | float  | Duration of a period of non-talk time                        |
 
 ###### CategoriesDetected
-
-**-- THIS SECTION IS ALL NEW --**
 
 Note: this information is only available from Call Analytics calls.
 
@@ -212,8 +200,6 @@ Note that the *Timestamps* block can be empty, as some categories are triggered 
 
 ###### IssuesDetected | ActionItemsDetected | OutcomesDetected
 
-**-- THIS SECTION IS ALL NEW --**
-
 Note: this information is only available from Call Analytics calls.
 
 The issue detection model in Call Analytics will highlight text in the transcript that it recognises as an issue, an outcome or an action.  It does not give a category for any of these items, just the text and location.  This information is listed here, but is repeated further down in the *SpeechSegments* list against the relevant line.
@@ -237,10 +223,6 @@ The issue detection model in Call Analytics will highlight text in the transcrip
 ###### SourceInformation | TranscribeJobInfo
 
 Present when the source of the conversation is Amazon Transcribe.  A mixture of information around the Transcription job itself, some of which comes directly from the service but some is generated by the parser and stored here, as it is high-level transcription-wide information.
-
-**--CHANGE --** Renamed *AverageAccuracy* to *AverageWordConfidence*, as it isn't an accuracy metric.
-
-**-- NEW --** The *TranscriptionApiType* indicates which API mode of Amazon Tramscribe was used
 
 ```json
 "SourceInformation": [
@@ -284,8 +266,6 @@ Present when the source of the conversation is Amazon Transcribe.  A mixture of 
 
 Contains a single line - or *turn* - of transcribed text, along with sentiment indicators and any other analytics that have been calculated or provided by Transcribe.
 
-**-- NEW FIELDS/SECTIONS --** *LoudnessScores, IssuesDetected, SegmentInterruption, CategoriesDetected, FollowOnCategories*
-
 ```json
 "SpeechSegments": [
   {
@@ -293,6 +273,7 @@ Contains a single line - or *turn* - of transcribed text, along with sentiment i
     "SegmentEndTime": "float",
     "SegmentSpeaker": "string",
     "SegmentInterruption": "boolean",
+    "IVRSegment": "boolean",
     "OriginalText": "string",
     "DisplayText": "string",
     "TextEdited": "boolean",
@@ -316,6 +297,7 @@ Contains a single line - or *turn* - of transcribed text, along with sentiment i
 | SegmentEndTime      | float     | End time in the conversation for this segment in seconds     |
 | SegmentSpeaker      | string    | Internal speaker name in the format `spk_n`, starting with n=0 |
 | SegmentInterruption | bool      | Indicates if this segment was an interruption by the speaker |
+| IVRSegment          | bool      | Indicates if this segment was spoken by a telephony IVR      |
 | OriginalText        | string    | Original text string generated by conversation source        |
 | DisplayText         | string    | Text to be displayed by the front-end application            |
 | TextEdited          | bool      | Indicates if text has been edited                            |
@@ -333,10 +315,6 @@ Contains a single line - or *turn* - of transcribed text, along with sentiment i
 ###### BaseSentimentScores
 
 Amazon Comprehend will generate a score between +/- 5.0 for each of four different sentiment types, and we will use several of these.  If the sentiment comes from a source that only return tags rather than scores, such as Amazon Transcribe Call Analytics, then then the confidence levels will be set to just 0.0 or 1.0.
-
-**-- CHANGE --** Removed the *Mixed* option from Amazon Comprehend results
-
-**-- CHANGE --** Score ranges are now +/- 5.0 (used to be +/- 1.0)
 
 ```JSON
 "BaseSentimentScores": {
@@ -377,8 +355,6 @@ List of the custom entities detected in this speech segment - the offset text ma
 | Score       | float  | The level of confidence that Amazon Comprehend has in the accuracy of the detection |
 
 ###### IssuesDetected
-
-**-- THIS SECTION IS ALL NEW --**
 
 Issue text and their timestamps are called out in the header for *ConversationAnalytics*, but in the *SpeechSegments* we include more detailed information.  The presenced of data here indicates that there is text on this segment that has triggered issue detection, what the text is and where it can be found within the segment.
 

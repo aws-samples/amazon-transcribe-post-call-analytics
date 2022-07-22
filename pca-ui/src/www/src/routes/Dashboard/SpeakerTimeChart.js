@@ -4,7 +4,7 @@ import { Formatter } from "../../format";
 
 export const SpeakerTimeChart = ({ data = [] }) => {
   const options = {
-    aspectRatio: 1.7,
+    aspectRatio: 1.2,
     scales: {
       y: {
         stacked: true,
@@ -29,11 +29,15 @@ export const SpeakerTimeChart = ({ data = [] }) => {
       },
       legend: {
         onClick: null,
+        labels :{
+          padding:10,
+          boxWidth:15
+        },
       },
     },
   };
 
-  const totalTime = data.reduce((prev, curr) => curr.value + prev, 0);
+  const totalTime = Math.ceil(data.reduce((prev, curr) => curr.value + prev, 0));
 
   return (
     <Bar
@@ -42,7 +46,7 @@ export const SpeakerTimeChart = ({ data = [] }) => {
         datasets: data.map((entry) => ({
           label: entry.label,
           data: [entry.value / totalTime],
-          backgroundColor: colours[entry.label],
+          backgroundColor: colours[entry.channel],
         })),
       }}
       options={options}

@@ -31,6 +31,7 @@ CONF_SPEAKER_MODE = "SpeakerSeparationType"
 COMP_SFN_NAME = "StepFunctionName"
 CONF_SUPPORT_BUCKET = "SupportFilesBucketName"
 CONF_TRANSCRIBE_LANG = "TranscribeLanguages"
+CONF_TELEPHONY_CTR = "TelephonyCTRType"
 CONF_VOCABNAME = "VocabularyName"
 CONF_FILENAME_DATETIME_REGEX = "FilenameDatetimeRegex"
 CONF_FILENAME_DATETIME_FIELDMAP = "FilenameDatetimeFieldMap"
@@ -62,6 +63,9 @@ SPEAKER_MODES = [SPEAKER_MODE_SPEAKER, SPEAKER_MODE_CHANNEL, SPEAKER_MODE_AUTO]
 
 # Vocabulary filter modes - gets reset to "" if configured value is not one of the list
 VOCAB_FILTER_MODES = {"remove", "mask", "tag"}
+
+# Other defined constant values
+NLP_THROTTLE_RETRIES = 3
 
 # Configuration data
 appConfig = {}
@@ -138,7 +142,14 @@ def loadConfiguration():
         ]
     )
     fullParamList4 = ssm.get_parameters(
-        Names=[CONF_KENDRA_INDEX_ID, CONF_WEB_URI, CONF_TRANSCRIBE_API, CONF_REDACTION_TRANSCRIPT, CONF_REDACTION_AUDIO]
+        Names=[
+            CONF_KENDRA_INDEX_ID,
+            CONF_WEB_URI,
+            CONF_TRANSCRIBE_API,
+            CONF_REDACTION_TRANSCRIPT,
+            CONF_REDACTION_AUDIO,
+            CONF_TELEPHONY_CTR
+        ]
     )
 
     # Extract our parameters into our config

@@ -1,6 +1,7 @@
 import { SentimentIcon } from "../../components/SentimentIcon";
 import { Formatter } from "../../format";
 import { Badge } from "react-bootstrap";
+import {Tag} from "../../components/Tag";
 
 const getTranscriptDetails = (allSegments) => {
   let offsetStartValue = 0;
@@ -41,7 +42,8 @@ export const TranscriptSegment = ({
   highlightLocations,
   score,
   interruption,
-  aboveText,
+  ivr,
+  categoryList,
 }) => (
   <div className="mb-4 d-flex flex-row flex-nowrap gap-3">
     <div className="d-flex align-items-center">
@@ -58,12 +60,24 @@ export const TranscriptSegment = ({
           {Formatter.Time(segmentStart)}
         </span>
       </span>
+      {ivr && (
+        <Badge bg="danger" className="ms-2">
+          IVR
+        </Badge>
+      )}
       {interruption && (
         <Badge bg="warning" text="dark" className="ms-2">
           Interruption
         </Badge>
       )}
-      {aboveText && <div>{aboveText}</div>}
+      {categoryList.length > 0 && (
+        categoryList.map((category) => (
+              <Badge bg="primary" className="ms-2">
+                {category}
+              </Badge>
+            )
+          )
+        )}
       <div>{generateTranscriptElement(text, allSegments, highlightLocations)}</div>
     </div>
   </div>
