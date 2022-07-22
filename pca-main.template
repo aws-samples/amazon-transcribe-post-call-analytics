@@ -676,6 +676,7 @@ Resources:
     Properties:
       TemplateURL: pca-server/cfn/pca-server.template
       Parameters:
+        PostProcessingLambdaARN: !Ref PostProcessingLambdaARN
         ffmpegDownloadUrl: !Ref ffmpegDownloadUrl
         loadSampleAudioFiles: !Ref loadSampleAudioFiles
       
