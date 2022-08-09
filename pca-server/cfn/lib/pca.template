@@ -245,4 +245,5 @@ Outputs:
       - - !Sub '"${TranscribeLambdaRole.Arn}"'
         - !Sub '"${TranscribeRole.Arn}"'
         - !Sub '"${SFProcessTurnRole.Arn}"'
+        - !Sub '"${SFTranscribeFailedRole.Arn}"'
 
