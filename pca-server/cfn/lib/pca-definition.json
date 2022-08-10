@@ -86,12 +86,22 @@
     },
     "NoDefinedCTR": {
       "Type": "Pass",
-      "Next": "FinalProcessing"
+      "Next": "PostCTRProcessing"
     },
     "GenesysCTR": {
       "Type": "Task",
       "Comment": "Handle Genesys-specific CTR files",
       "Resource": "${SFCTRGenesysArn}",
+      "Retry": [{
+          "IntervalSeconds": 5,
+          "ErrorEquals": ["Lambda.Unknown"]
+      }],
+      "Next": "PostCTRProcessing"
+    },
+    "PostCTRProcessing": {
+      "Comment": "Performs post processing after the CTR step has been completed",
+      "Type": "Task",
+      "Resource":"${SFPostCTRProcessingArn}",
       "Retry": [{
           "IntervalSeconds": 5,
           "ErrorEquals": ["Lambda.Unknown"]

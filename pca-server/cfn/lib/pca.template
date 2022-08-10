@@ -185,6 +185,20 @@ Resources:
         - arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess
         - arn:aws:iam::aws:policy/AmazonS3FullAccess
 
+  SFPostCTRProcessing:
+    Type: "AWS::Serverless::Function"
+    Properties:
+      CodeUri:  ../../src/pca
+      Handler: pca-aws-sf-post-ctr-processing.lambda_handler
+      Layers:
+        - !Ref Boto3Layer
+      Environment:
+        Variables:
+          AWS_DATA_PATH: "/opt/models"
+      Policies:
+        - arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+        
   SFAwaitNotification:
     Type: "AWS::Serverless::Function"
     Properties:
@@ -237,6 +251,7 @@ Resources:
                   - !GetAtt SFTranscribeFailed.Arn
                   - !GetAtt SFFinalProcessing.Arn
                   - !GetAtt SFCTRGenesys.Arn
+                  - !GetAtt SFPostCTRProcessing.Arn
         - PolicyName: CloudWatchLogs
           PolicyDocument:
             Statement:
@@ -264,6 +279,7 @@ Resources:
         SFTranscribeFailedArn: !GetAtt SFTranscribeFailed.Arn
         SFFinalProcessingArn: !GetAtt SFFinalProcessing.Arn
         SFCTRGenesysArn: !GetAtt SFCTRGenesys.Arn
+        SFPostCTRProcessingArn: !GetAtt SFPostCTRProcessing.Arn
       LoggingConfiguration:
         Level: ERROR
         IncludeExecutionData: true

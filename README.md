@@ -5,7 +5,7 @@
 ## Overview
 
 Your contact center connects your business to your community, enabling customers to order products, callers to request support, clients to make appointments, and much more. Each conversation with a caller is an opportunity to learn more about that caller’s needs, and how well those needs were addressed during the call. You can uncover insights from these conversations that help you manage script compliance and find new opportunities to satisfy your customers, perhaps by expanding your services to address reported gaps, improving the quality of reported problem areas, or by elevating the customer experience delivered by your contact center agents.
- 
+
 This sample solution, Post Call Analytics (PCA), does most of the heavy lifting associated with providing an end-to-end solution that can process call recordings from your existing contact center. PCA provides actionable insights to spot emerging trends, identify agent coaching opportunities, and assess the general sentiment of calls. 
 
 PCA currently supports the following features:
@@ -29,27 +29,46 @@ PCA currently supports the following features:
     * Search transcriptions
 * **Other**
     * Detects metadata from audio file names, such as call GUID, agent’s name, and call date time
+    * Can ingest telephony contact trace record files (CTRs) for stereo to mark transcript speech segments as being from an **IVR** system, as well as identify multiple Agents in a single call
     * Scales automatically to handle variable call volumes
     * Bulk loads large archives of older recordings while maintaining capacity to process new recordings as they arrive
     * Sample recordings so you can quickly try out PCA for yourself
     * It’s easy to install with a single [AWS CloudFormation](https://aws.amazon.com/cloudformation/) template
 
- 
+
 ## Architecture
 
 ![pca-architecture](./images/architecture-diagram.png)
 
 Call recording audio files are uploaded to the S3 bucket and folder, identified in the main stack outputs as `InputBucket` and `InputBucketPrefix`, respectively. The sample call recordings are automatically uploaded because you set the parameter `loadSampleAudioFiles` to `true` when you deployed PCA. 
- 
+
 As each recording file is added to the input bucket, an S3 event notification triggers a Lambda function that initiates a workflow in Step Functions to process the file. The workflow orchestrates the steps to start an Amazon Transcribe batch job and process the results by doing entity detection and additional preparation of the call analytics results. Processed results are stored as JSON files in another S3 bucket and folder, identified in the main stack outputs as ``OutputBucket`` and ``OutputBucketPrefix``**.**
- 
+
 As the Step Functions workflow creates each JSON results file in the output bucket, an S3 event notification triggers a Lambda function, which loads selected call metadata into a DynamoDB table.
- 
+
 The PCA UI web app queries the DynamoDB table to retrieve the list of processed calls to display on the home page. The call detail page reads additional detailed transcription and analytics from the JSON results file for the selected call.
- 
+
 Amazon S3 lifecycle policies delete recordings and JSON files from both input and output buckets after a configurable retention period, defined by the deployment parameter `RetentionDays`. S3 event notifications and Lambda functions keep the DynamoDB table synchronized as files are both created and deleted.
- 
+
 When the `EnableTranscriptKendraSearch` parameter** **is `true`, the Step Functions workflow also adds time markers and metadata attributes to the transcription, which are loaded into an Amazon Kendra index. The transcription search web application is used to search call transcriptions. For more information on how this works, see [Make your audio and video files searchable using Amazon Transcribe and Amazon Kendra](http://www.amazon.com/mediasearch).
+
+## Integration with Telephony CTR Files
+
+Currently, the list of telephony systems where PCA can ingest CTR files are:
+
+- Genesys
+
+The CTR file, which is typically named in a way that easily relates it to the audio file being ingested, needs to delivered to PCA alongside the audio file; e.g. they are delivered together to the same Amazon S3 bucket.  Once standard PCA processing is complete the telephony-specific CTR handler will be invoked.  This will update the PCA results with the following:
+
+- Tagging of any IVR entry in the Agent's transcript as being from an IVR
+- Removing the sentiment scores associated with IVR lines
+- Identification of multiple Agents within the call, associating the telephony system's internal user identifier with their parts of the transcript
+
+***Known issues with CTR processing***
+
+- Processing of Genesys outbound call CTR records will fail
+- Call metadata, such as entities or issue, is still be removed from IVR lines
+- Re-calculation of overall agent call sentiment is yet to be completed
 
 
 ## Deployment instructions
@@ -63,7 +82,7 @@ Prerequisite: You must already have the [AWS CLI](https://docs.aws.amazon.com/cl
 
 To deploy to non-default region, set environment variable `AWS_DEFAULT_REGION` to a region supported by Amazon Transcribe. See: [AWS Regional Services](https://aws.amazon.com/about-aws/global-infrastructure/regional-product-services/) 
 E.g. to deploy in Ireland run `export AWS_DEFAULT_REGION=eu-west-1` before running the publish script.  
-  
+
 **NOTE:** To publish in a region that is not yet supported by Amazon Kendra, follow the direction below, but use the script `publish-nokendra.sh` instead of `publish.sh`. See [AWS Region Table](https://aws.amazon.com/about-aws/global-infrastructure/regional-product-services/)
 
 Run the script with up to 3 parameters:
@@ -107,21 +126,21 @@ OR, if you opted to follow the steps above to Build and Publish PCA CloudFormati
 * For **loadSampleAudioFiles**, change the value to `true`.
 * For **EnableTranscriptKendraSearch**, change the value to ``Yes, create new Kendra Index (Developer Edition)``.
 
- 
+
 If you have previously used your [Amazon Kendra](https://aws.amazon.com/kendra/) Free Tier allowance, you incur an hourly cost for this index (more information on cost later in this post). Amazon Kendra transcript search is an optional feature, so if you don’t need it and are concerned about cost, use the default value of ``No``.
- 
+
 
 * For all other parameters, use the default values. 
 
- 
+
 If you want to customize the settings later, for example to apply custom vocabulary to improve accuracy, or to customize entity detection, you can update the stack to set these parameters.
- 
+
 
 * Select the two acknowledgement boxes, and choose **Create stack**.
 
- 
+
 The main CloudFormation stack uses nested stacks to create the following resources in your AWS account:
- 
+
 
 * [Amazon Simple Storage Service](https://aws.amazon.com/s3) (Amazon S3) buckets to hold build artifacts and call recordings
 * [Amazon Systems Manager Parameter Store](https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-parameter-store.html) settings to store configuration settings 
@@ -132,14 +151,14 @@ The main CloudFormation stack uses nested stacks to create the following resourc
 * Other miscellaneous supporting resources, including [AWS Identity and Access Management](https://aws.amazon.com/iam/) (IAM) roles and policies (using least-privilege best practices), [Amazon Simple Queue Service](https://aws.amazon.com/sqs/) (Amazon SQS) message queues, and [Amazon CloudWatch](https://aws.amazon.com/cloudwatch) log groups.
 * Optionally, an Amazon Kendra index and [AWS Amplify](https://aws.amazon.com/amplify/) search application to provide intelligent call transcript search.
 
- 
+
 The stacks take about 20 minutes to deploy. The main stack status shows as `CREATE_COMPLETE` when everything is deployed. 
 
 
 ### Set your password 
 
 After you deploy the stack, you need to open the PCA web user interface and set your password.
- 
+
 
 * On the AWS CloudFormation console, choose the main stack, `PostCallAnalytics`, and choose the **Outputs** tab.
 
@@ -150,38 +169,38 @@ You’re redirected to a login page.
 * Open the email your received, at the email address you provided, with the subject “Welcome to the Amazon Transcribe Post Call Analytics (PCA) Solution!” 
 
 This email contains a generated temporary password that you can use to log in (as user ``admin``) and create your own password. 
- 
+
 * Set a new password.
 
 Your new password must have a length of at least 8 characters, and contain uppercase and lowercase characters, plus numbers and special characters.
- 
+
 You’re now logged in to PCA. Because you set `loadSampleAudioFiles` to `true`, your PCA deployment now has three sample calls pre-loaded for you to explore.
- 
+
 
 ### Optional: Open the transcription search web UI and set your permanent password 
 
 Follow these additional steps to log in to the companion transcript search web app, which is deployed only when you set ``EnableTranscriptKendraSearch``** **when you launch the stack.
- 
+
 
 * On the AWS CloudFormation console, choose the main stack, `PostCallAnalytics`, and choose the **Outputs** tab.
 * Open your web browser to the URL shown as `TranscriptionMediaSearchFinderURL` in the outputs.
 
- 
+
 You’re redirected to the login page.
- 
+
  
 
 * Open the email your received, at the email address you provided, with the subject “Welcome to Finder Web App.” 
 
- 
+
 This email contains a generated temporary password that you can use to log in (as user ``admin``).
- 
+
 
 * Create your own password, just like you already did for the PCA web application. 
 
- 
+
 As before, your new password must have a length of at least 8 characters, and contain uppercase and lowercase characters, plus numbers and special characters.
- 
+
 You’re now logged in to the transcript search Finder application. The sample audio files are indexed already, and ready for search.
 
 ## Learn more
