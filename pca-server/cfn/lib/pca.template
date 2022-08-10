@@ -280,6 +280,7 @@ Outputs:
       - - !Sub '"${TranscribeLambdaRole.Arn}"'
         - !Sub '"${TranscribeRole.Arn}"'
         - !Sub '"${SFProcessTurnRole.Arn}"'
-        - !Sub '"${SFFinalProcessing.Arn}"'
-        - !Sub '"${SFCTRGenesys.Arn}"'
+        - !Sub '"${SFFinalProcessingRole.Arn}"'
+        - !Sub '"${SFCTRGenesysRole.Arn}"'
+        - !Sub '"${SFTranscribeFailedRole.Arn}"'
 
