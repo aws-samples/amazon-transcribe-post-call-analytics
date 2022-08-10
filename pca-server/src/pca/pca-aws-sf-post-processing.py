@@ -43,9 +43,9 @@ if __name__ == "__main__":
         "langCode": "en-US",
         "transcribeStatus": "COMPLETED",
         "apiMode": "analytics",
-        "key": "originalAudio/b27d6650-09e7-41c1-a10a-dc1c77cb5bcd.wav",
-        "jobName": "Card2_GUID_102_AGENT_AndrewK_DT_2022-03-22T12-23-49.wav",
-        "interimResultsFile": "interimResults/b27d6650-09e7-41c1-a10a-dc1c77cb5bcd.wav.json",
+        "key": "originalAudio/006c7659-258e-4adc-a036-df717505e25a.wav",
+        "jobName": "006c7659-258e-4adc-a036-df717505e25a.wav",
+        "interimResultsFile": "interimResults/006c7659-258e-4adc-a036-df717505e25a.wav.json",
         "telephony": "none",
         "debug": True
     }
