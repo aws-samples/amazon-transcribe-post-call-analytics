@@ -32,6 +32,7 @@ COMPREHEND_SENTIMENT_SCALER = 5.0
 PII_PLACEHOLDER = "[PII]"
 PII_PLACEHOLDER_MASK = "*" * len(PII_PLACEHOLDER)
 TMP_DIR = "/tmp"
+TEMP_OUTPUT_KEY = "interimResults"
 BAR_CHART_WIDTH = 1.0
 
 
@@ -99,21 +100,41 @@ class TranscribeParser:
             # Speaker scores / trends using Analytics data - find our speaker data
             speaker = next(key for key, value in self.analytics_channel_map.items() if value == speaker_num)
             sentiment_block = self.asr_output["ConversationCharacteristics"]["Sentiment"]
+            speaker_trend["SentimentPerQuarter"] = []
 
             # Store the overall score, then loop through each of the quarter's sentiment
-            speaker_trend["SentimentScore"] = sentiment_block["OverallSentiment"][speaker]
-            speaker_trend["SentimentPerQuarter"] = []
-            for period in sentiment_block["SentimentByPeriod"]["QUARTER"][speaker]:
-                speaker_trend["SentimentPerQuarter"].append(
-                    {"Quarter": len(speaker_trend["SentimentPerQuarter"])+1,
-                     "Score": period["Score"],
-                     "BeginOffsetSecs": period["BeginOffsetMillis"]/1000.0,
-                     "EndOffsetSecs": period["EndOffsetMillis"]/1000.0}
-                )
+            if speaker in sentiment_block["OverallSentiment"]:
+                # We have some data for this speaker channel
+                speaker_trend["SentimentScore"] = sentiment_block["OverallSentiment"][speaker]
+                for period in sentiment_block["SentimentByPeriod"]["QUARTER"][speaker]:
+                    speaker_trend["SentimentPerQuarter"].append(
+                        {"Quarter": len(speaker_trend["SentimentPerQuarter"])+1,
+                         "Score": period["Score"],
+                         "BeginOffsetSecs": period["BeginOffsetMillis"]/1000.0,
+                         "EndOffsetSecs": period["EndOffsetMillis"]/1000.0}
+                    )
 
-            # Trend is simply FINAL-FIRST sentiment
-            speaker_trend["SentimentChange"] = speaker_trend["SentimentPerQuarter"][-1]["Score"] - \
-                                              speaker_trend["SentimentPerQuarter"][0]["Score"]
+                # Trend is simply FINAL-FIRST sentiment
+                speaker_trend["SentimentChange"] = speaker_trend["SentimentPerQuarter"][-1]["Score"] - \
+                                                   speaker_trend["SentimentPerQuarter"][0]["Score"]
+            else:
+                # This speaker track has no speed data, so we need to create a zero-sentiment block
+                speaker_trend["SentimentScore"] = 0.0
+                speaker_trend["SentimentChange"] = 0.0
+
+                # Initialise data for the per-quarter scores
+                quarter_duration = self.analytics.duration / 4.0
+                quarter_scores = []
+                for quarter in range(1, 5):
+                    quarter_block = {
+                        "Quarter": quarter,
+                        "Score": 0.0,
+                        "BeginOffsetSecs": quarter_duration * (quarter - 1),
+                        "EndOffsetSecs": quarter_duration * quarter,
+                        "datapoints": 0
+                    }
+                    quarter_scores.append(quarter_block)
+                speaker_trend["SentimentPerQuarter"] = quarter_scores
         else:
             # Speaker scores / trends using aggregated data from Comprehend
             # Start by initialising data structures for the sentiment total and change
@@ -131,6 +152,7 @@ class TranscribeParser:
                     "datapoints": 0
                 }
                 quarter_scores.append(quarter_block)
+            speaker_trend["SentimentPerQuarter"] = quarter_scores
 
             # Loop through each speech segment for this speaker
             for segment in self.speechSegmentList:
@@ -257,7 +279,7 @@ class TranscribeParser:
         transcribe_info.api_mode = self.api_mode
         transcribe_info.completion_time = str(self.transcribeJobInfo["CompletionTime"])
         transcribe_info.media_format = self.transcribeJobInfo["MediaFormat"]
-        transcribe_info.media_sample_rate = self.transcribeJobInfo["MediaSampleRateHertz"]
+        transcribe_info.media_sample_rate = int(self.transcribeJobInfo["MediaSampleRateHertz"])
         transcribe_info.media_original_uri = self.transcribeJobInfo["Media"]["MediaFileUri"]
         transcribe_info.cummulative_word_conf = self.cummulativeWordAccuracy / max(float(self.numWordsParsed), 1.0)
 
@@ -265,7 +287,7 @@ class TranscribeParser:
         if self.audioPlaybackUri != "":
             transcribe_info.media_playback_uri = self.audioPlaybackUri
         else:
-            transcribe_info.media_playback_uri = self.transcribeJobInfo["MediaOriginalUri"]
+            transcribe_info.media_playback_uri = transcribe_info.media_original_uri
 
         # Vocabulary name is optional
         if "VocabularyName" in self.transcribeJobInfo["Settings"]:
@@ -676,8 +698,8 @@ class TranscribeParser:
                     if self.comprehendLanguageCode == "":
                         # We had no language - use default neutral sentiment scores
                         next_segment.segmentAllSentiments = sentiment_set_neutral
-                        next_segment.segmentPositive = 0.0
-                        next_segment.segmentNegative = 0.0
+                        next_segment.segmentIsPositive = False
+                        next_segment.segmentIsNegative = False
                     else:
                         # For Standard Transcribe we need to set the sentiment marker based on score thresholds
                         sentimentResponse = self.comprehend_single_sentiment(nextText, client)
@@ -1341,7 +1363,6 @@ class TranscribeParser:
 
         # Pick out the config parameters that we need
         outputS3Bucket = cf.appConfig[cf.CONF_S3BUCKET_OUTPUT]
-        outputS3Key = cf.appConfig[cf.CONF_PREFIX_PARSED_RESULTS]
 
         # Parse Call GUID and Agent Name/ID from filename if possible
         self.set_guid(job_name)
@@ -1375,15 +1396,10 @@ class TranscribeParser:
 
         # Update our results data structures, generate JSON results and save them to S3
         self.push_turn_by_turn_results()
-        # output = self.create_json_results()
 
         # Write out the JSON data to our S3 location
-        json_output = self.pca_results.write_results_to_s3(outputS3Bucket, outputS3Key + '/' + self.jsonOutputFilename)
-        # s3Resource = boto3.resource('s3')
-        # s3Object = s3Resource.Object(outputS3Bucket, outputS3Key + '/' + self.jsonOutputFilename)
-        # s3Object.put(
-        #     Body=(bytes(json.dumps(output).encode('UTF-8')))
-        # )
+        interim_results_file_key = TEMP_OUTPUT_KEY + '/' + self.jsonOutputFilename
+        json_output = self.pca_results.write_results_to_s3(outputS3Bucket, interim_results_file_key)
 
         # Index transcript in Kendra, if transcript search is enabled
         kendraIndexId = cf.appConfig[cf.CONF_KENDRA_INDEX_ID]
@@ -1396,8 +1412,8 @@ class TranscribeParser:
         # delete the local file
         pcacommon.remove_temp_file(json_filepath)
 
-        # Return our filename for re-use later
-        return self.jsonOutputFilename
+        # Return our interim results file key for re-use later
+        return interim_results_file_key
 
 
 def lambda_handler(event, context):
@@ -1409,33 +1425,23 @@ def lambda_handler(event, context):
     transcribeParser = TranscribeParser(cf.appConfig[cf.CONF_MINPOSITIVE],
                                         cf.appConfig[cf.CONF_MINNEGATIVE],
                                         cf.appConfig[cf.CONF_ENTITYENDPOINT])
-    outputFilename = transcribeParser.parse_transcribe_file(sf_data)
+    output_filename = transcribeParser.parse_transcribe_file(sf_data)
 
-    # Get the object from the event and show its content type
-    sf_data["parsedJsonFile"] = outputFilename
+    # Add tag the location of the output file to the SF data, along with the requested telephony CTR type
+    sf_data["interimResultsFile"] = output_filename
+    sf_data["telephony"] = cf.appConfig[cf.CONF_TELEPHONY_CTR]
     return sf_data
 
 
 # Main entrypoint for testing
 if __name__ == "__main__":
-    # Analytics test event
+    # Test event
     event = {
         "bucket": "ak-cci-input",
         "langCode": "en-US",
         "transcribeStatus": "COMPLETED",
         "apiMode": "analytics",
-        "key": "originalAudio/Auto3_GUID_003_AGENT_BobS_DT_2021-12-03T17-51-51.wav",
-        "jobName": "Auto3_GUID_003_AGENT_BobS_DT_2021-12-03T17-51-51.wav"
-    }
-    lambda_handler(event, "")
-
-    # Mono test event
-    event = {
-        "bucket": "ak-cci-input",
-        "langCode": "en-US",
-        "transcribeStatus": "COMPLETED",
-        "apiMode": "standard",
-        "key": "originalAudio/Auto0_GUID_000_AGENT_ChrisL_DT_2021-12-01T06-01-22_Mono.wav",
-        "jobName": "Auto0_GUID_000_AGENT_ChrisL_DT_2021-12-01T06-01-22_Mono.wav"
+        "key": "originalAudio/006c7659-258e-4adc-a036-df717505e25a.wav",
+        "jobName": "006c7659-258e-4adc-a036-df717505e25a.wav"
     }
     lambda_handler(event, "")

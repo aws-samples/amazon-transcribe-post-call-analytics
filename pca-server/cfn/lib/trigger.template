@@ -11,6 +11,9 @@ Parameters:
   Boto3Layer:
     Type: String
 
+  PyUtilsLayer:
+    Type: String
+
   InputBucketName:
     Type: AWS::SSM::Parameter::Value<String>
     Default: InputBucketName
@@ -35,6 +38,9 @@ Resources:
     Properties:
       CodeUri:  ../../src/pca
       Handler: pca-aws-file-drop-trigger.lambda_handler
+      Layers:
+        - !Ref Boto3Layer
+        - !Ref PyUtilsLayer
       Policies:
       - arn:aws:iam::aws:policy/AmazonTranscribeReadOnlyAccess
       - Statement:

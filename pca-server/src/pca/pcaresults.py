@@ -25,6 +25,10 @@ import boto3
 import json
 import pcaconfiguration as cf
 from datetime import datetime
+from pathlib import Path
+
+TMP_DIR = "/tmp/"
+
 
 class SpeechSegment:
     """ Class to hold information about a single speech segment """
@@ -49,6 +53,9 @@ class SpeechSegment:
         self.segmentCategoriesDetectedPre = []
         self.segmentCategoriesDetectedPost = []
 
+        # Not in original version, so may not exist in legacy files
+        self.segmentIVR = False
+
 
 class ConversationAnalytics:
     """ Class to hold the header-level analytics information about a call """
@@ -59,6 +66,7 @@ class ConversationAnalytics:
         self.cust = ""
         self.conversationTime = ""
         self.conversationLocation = ""
+        self.processingTime = str(datetime.now())
         self.entity_recognizer = ""
         self.duration = 0.0
         self.sentiment_trends = {}
@@ -91,7 +99,7 @@ class ConversationAnalytics:
                             "Cust": self.cust,
                             "ConversationTime": self.conversationTime,
                             "ConversationLocation": self.conversationLocation,
-                            "ProcessTime": str(datetime.now()),
+                            "ProcessTime": self.processingTime,
                             "LanguageCode": self.conversationLanguageCode,
                             "Duration": str(self.duration),
                             "SpeakerLabels": self.speaker_labels,
@@ -105,6 +113,7 @@ class ConversationAnalytics:
 
         # SpeakerTime plus any additional Analytics metadata
         conv_header_info["SpeakerTime"] = self.speaker_time
+
         if self.transcribe_job.api_mode == cf.API_ANALYTICS:
             # TCA includes categories, issues, actions, outcomes and the large call metadata graphic
             conv_header_info["CategoriesDetected"] = self.categories_detected
@@ -118,6 +127,41 @@ class ConversationAnalytics:
         conv_header_info["SourceInformation"] = [transcribe_job_info]
 
         return conv_header_info
+
+    def parse_json_input(self, json_input):
+        """
+        Creates the internal data structures required for the Conversation Analytics data from the supplied
+        JSON fragment.
+
+        :param json_input: "ConversationAnalytics" block from a PCA results file
+        """
+        # Extract the information from our structures and create the output results JSON
+        self.guid = json_input["GUID"]
+        self.agent = json_input["Agent"]
+        self.cust = json_input["Cust"]
+        self.conversationTime = json_input["ConversationTime"]
+        self.conversationLocation = json_input["ConversationLocation"]
+        self.processingTime = json_input["ProcessTime"]
+        self.conversationLanguageCode = json_input["LanguageCode"]
+        self.duration = float(json_input["Duration"])
+        self.speaker_labels = json_input["SpeakerLabels"]
+        self.custom_entities = json_input["CustomEntities"]
+        self.entity_recognizer = json_input["EntityRecognizerName"]
+        self.sentiment_trends = json_input["SentimentTrends"]
+        self.conversationTime = json_input["ConversationTime"]
+        self.speaker_time = json_input["SpeakerTime"]
+
+        # Load in all analytics data if it exists
+        if "CategoriesDetected" in json_input:
+            self.categories_detected = json_input["CategoriesDetected"]
+            self.issues_detected = json_input["IssuesDetected"]
+            self.actions_detected = json_input["ActionItemsDetected"]
+            self.outcomes_detected = json_input["OutcomesDetected"]
+            self.combined_graphic_url = json_input["CombinedAnalyticsGraph"]
+
+        # # Decide which source information block to add - only one for now, so straightforward
+        self.transcribe_job.parse_json_input(json_input["SourceInformation"][0]["TranscribeJobInfo"])
+
 
     def extract_analytics_categories(self, categories, speech_segments):
         """
@@ -200,7 +244,7 @@ class TranscribeJobInfo:
 
         # Some fields we pick off the basic job info
         transcribe_job_info = {"TranscribeApiType": self.api_mode,
-                               "CompletionTime": str(self.completion_time),
+                               "CompletionTime": self.completion_time,
                                "MediaFormat": self.media_format,
                                "MediaSampleRateHertz": self.media_sample_rate,
                                "MediaOriginalUri": self.media_original_uri,
@@ -218,6 +262,32 @@ class TranscribeJobInfo:
             transcribe_job_info["VocabularyFilter"] = self.vocab_filter_name + " [" + self.vocab_filter_method + "]"
 
         return transcribe_job_info
+
+    def parse_json_input(self, json_input):
+        """
+        Creates the internal data structures required for the TranscribeJobInfo data from the supplied
+        JSON fragment.
+
+        :param json_input: "TranscribeJobInfo" block from a PCA results file
+        """
+        # Pick off the standard fields
+        self.api_mode = json_input["TranscribeApiType"]
+        self.completion_time = json_input["CompletionTime"]
+        self.media_format = json_input["MediaFormat"]
+        self.media_sample_rate = json_input["MediaSampleRateHertz"]
+        self.media_original_uri = json_input["MediaOriginalUri"]
+        self.media_playback_uri = json_input["MediaFileUri"]
+        self.cummulative_word_conf = float(json_input["AverageWordConfidence"])
+        self.transcribe_job_name = json_input["TranscriptionJobName"]
+        self.channel_identification = int(json_input["ChannelIdentification"])
+
+        # Some of the following may not be in the JSON
+        if "VocabularyName" in json_input:
+            self.custom_vocab_name = json_input["VocabularyName"]
+        if "VocabularyFilter" in json_input:
+            filter_string = json_input["VocabularyFilter"]
+            self.vocab_filter_name = filter_string.split(" ")[0]
+            self.vocab_filter_method = filter_string.split("[")[-1].split("]")[0]
 
 
 class PCAResults:
@@ -259,28 +329,27 @@ class PCAResults:
         # Loop through each of our speech segments
         # for segment in self.speechSegmentList:
         for segment in self.speech_segments:
-            next_segment = {}
-
             # Pick everything off our structures
-            next_segment["SegmentStartTime"] = segment.segmentStartTime
-            next_segment["SegmentEndTime"] = segment.segmentEndTime
-            next_segment["SegmentSpeaker"] = segment.segmentSpeaker
-            next_segment["SegmentInterruption"] = segment.segmentInterruption
-            next_segment["OriginalText"] = segment.segmentText
-            next_segment["DisplayText"] = segment.segmentText
-            next_segment["TextEdited"] = 0
-            next_segment["LoudnessScores"] = segment.segmentLoudnessScores
-            next_segment["SentimentIsPositive"] = int(segment.segmentIsPositive)
-            next_segment["SentimentIsNegative"] = int(segment.segmentIsNegative)
-            next_segment["SentimentScore"] = segment.segmentSentimentScore
-            next_segment["BaseSentimentScores"] = segment.segmentAllSentiments
-            next_segment["EntitiesDetected"] = segment.segmentCustomEntities
-            next_segment["CategoriesDetected"] = segment.segmentCategoriesDetectedPre
-            next_segment["FollowOnCategories"] = segment.segmentCategoriesDetectedPost
-            next_segment["IssuesDetected"] = segment.segmentIssuesDetected
-            next_segment["ActionItemsDetected"] = segment.segmentActionItemsDetected
-            next_segment["OutcomesDetected"] = segment.segmentOutcomesDetected
-            next_segment["WordConfidence"] = segment.segmentConfidence
+            next_segment = {"SegmentStartTime": segment.segmentStartTime,
+                            "SegmentEndTime": segment.segmentEndTime,
+                            "SegmentSpeaker": segment.segmentSpeaker,
+                            "SegmentInterruption": segment.segmentInterruption,
+                            "IVRSegment": segment.segmentIVR,
+                            "OriginalText": segment.segmentText,
+                            "DisplayText": segment.segmentText,
+                            "TextEdited": 0,
+                            "LoudnessScores": segment.segmentLoudnessScores,
+                            "SentimentIsPositive": int(segment.segmentIsPositive),
+                            "SentimentIsNegative": int(segment.segmentIsNegative),
+                            "SentimentScore": segment.segmentSentimentScore,
+                            "BaseSentimentScores": segment.segmentAllSentiments,
+                            "EntitiesDetected": segment.segmentCustomEntities,
+                            "CategoriesDetected": segment.segmentCategoriesDetectedPre,
+                            "FollowOnCategories": segment.segmentCategoriesDetectedPost,
+                            "IssuesDetected": segment.segmentIssuesDetected,
+                            "ActionItemsDetected": segment.segmentActionItemsDetected,
+                            "OutcomesDetected": segment.segmentOutcomesDetected,
+                            "WordConfidence": segment.segmentConfidence}
 
             # Add what we have to the full list
             speech_segments.append(next_segment)
@@ -310,3 +379,49 @@ class PCAResults:
 
         # Return the JSON in case the caller needs it
         return json_data
+
+    def read_results_from_s3(self, bucket, object_key, offline=False):
+
+        # Download results file from S3
+        local_filename = TMP_DIR + object_key.split('/')[-1]
+        if not offline:
+            s3_client = boto3.client('s3')
+            s3_client.download_file(bucket, object_key, local_filename)
+
+        # Load data into JSON structure
+        json_filepath = Path(local_filename)
+        json_data = json.load(open(json_filepath.absolute(), "r", encoding="utf-8"))
+
+        # First parse out the main analytics
+        self.analytics.parse_json_input(json_data["ConversationAnalytics"])
+
+        # Loop around each defined segment in the JSON, and create a new data structure
+        self.speech_segments = []
+        for next_segment in json_data["SpeechSegments"]:
+            new_segment = SpeechSegment()
+
+            # Standard segment data
+            new_segment.segmentStartTime = float(next_segment["SegmentStartTime"])
+            new_segment.segmentEndTime = float(next_segment["SegmentEndTime"])
+            new_segment.segmentSpeaker = next_segment["SegmentSpeaker"]
+            new_segment.segmentInterruption = bool(next_segment["SegmentInterruption"])
+            new_segment.segmentText = next_segment["OriginalText"]
+            new_segment.segmentLoudnessScores = next_segment["LoudnessScores"]
+            new_segment.segmentIsPositive = bool(next_segment["SentimentIsPositive"])
+            new_segment.segmentIsNegative = bool(next_segment["SentimentIsNegative"])
+            new_segment.segmentSentimentScore = float(next_segment["SentimentScore"])
+            new_segment.segmentAllSentiments = next_segment["BaseSentimentScores"]
+            new_segment.segmentCustomEntities = next_segment["EntitiesDetected"]
+            new_segment.segmentCategoriesDetectedPre = next_segment["CategoriesDetected"]
+            new_segment.segmentCategoriesDetectedPost = next_segment["FollowOnCategories"]
+            new_segment.segmentIssuesDetected = next_segment["IssuesDetected"]
+            new_segment.segmentActionItemsDetected = next_segment["ActionItemsDetected"]
+            new_segment.segmentOutcomesDetected = next_segment["OutcomesDetected"]
+            new_segment.segmentConfidence = next_segment["WordConfidence"]
+
+            # Additional segment data (not in original version)
+            if "IVRSegment" in next_segment:
+                new_segment.segmentIVR = bool(next_segment["IVRSegment"])
+
+            # Add what we have to the full list
+            self.speech_segments.append(new_segment)
