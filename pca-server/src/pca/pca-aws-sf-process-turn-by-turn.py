@@ -100,21 +100,41 @@ class TranscribeParser:
             # Speaker scores / trends using Analytics data - find our speaker data
             speaker = next(key for key, value in self.analytics_channel_map.items() if value == speaker_num)
             sentiment_block = self.asr_output["ConversationCharacteristics"]["Sentiment"]
+            speaker_trend["SentimentPerQuarter"] = []
 
             # Store the overall score, then loop through each of the quarter's sentiment
-            speaker_trend["SentimentScore"] = sentiment_block["OverallSentiment"][speaker]
-            speaker_trend["SentimentPerQuarter"] = []
-            for period in sentiment_block["SentimentByPeriod"]["QUARTER"][speaker]:
-                speaker_trend["SentimentPerQuarter"].append(
-                    {"Quarter": len(speaker_trend["SentimentPerQuarter"])+1,
-                     "Score": period["Score"],
-                     "BeginOffsetSecs": period["BeginOffsetMillis"]/1000.0,
-                     "EndOffsetSecs": period["EndOffsetMillis"]/1000.0}
-                )
+            if speaker in sentiment_block["OverallSentiment"]:
+                # We have some data for this speaker channel
+                speaker_trend["SentimentScore"] = sentiment_block["OverallSentiment"][speaker]
+                for period in sentiment_block["SentimentByPeriod"]["QUARTER"][speaker]:
+                    speaker_trend["SentimentPerQuarter"].append(
+                        {"Quarter": len(speaker_trend["SentimentPerQuarter"])+1,
+                         "Score": period["Score"],
+                         "BeginOffsetSecs": period["BeginOffsetMillis"]/1000.0,
+                         "EndOffsetSecs": period["EndOffsetMillis"]/1000.0}
+                    )
 
-            # Trend is simply FINAL-FIRST sentiment
-            speaker_trend["SentimentChange"] = speaker_trend["SentimentPerQuarter"][-1]["Score"] - \
-                                              speaker_trend["SentimentPerQuarter"][0]["Score"]
+                # Trend is simply FINAL-FIRST sentiment
+                speaker_trend["SentimentChange"] = speaker_trend["SentimentPerQuarter"][-1]["Score"] - \
+                                                   speaker_trend["SentimentPerQuarter"][0]["Score"]
+            else:
+                # This speaker track has no speed data, so we need to create a zero-sentiment block
+                speaker_trend["SentimentScore"] = 0.0
+                speaker_trend["SentimentChange"] = 0.0
+
+                # Initialise data for the per-quarter scores
+                quarter_duration = self.analytics.duration / 4.0
+                quarter_scores = []
+                for quarter in range(1, 5):
+                    quarter_block = {
+                        "Quarter": quarter,
+                        "Score": 0.0,
+                        "BeginOffsetSecs": quarter_duration * (quarter - 1),
+                        "EndOffsetSecs": quarter_duration * quarter,
+                        "datapoints": 0
+                    }
+                    quarter_scores.append(quarter_block)
+                speaker_trend["SentimentPerQuarter"] = quarter_scores
         else:
             # Speaker scores / trends using aggregated data from Comprehend
             # Start by initialising data structures for the sentiment total and change
@@ -132,6 +152,7 @@ class TranscribeParser:
                     "datapoints": 0
                 }
                 quarter_scores.append(quarter_block)
+            speaker_trend["SentimentPerQuarter"] = quarter_scores
 
             # Loop through each speech segment for this speaker
             for segment in self.speechSegmentList:
@@ -266,7 +287,7 @@ class TranscribeParser:
         if self.audioPlaybackUri != "":
             transcribe_info.media_playback_uri = self.audioPlaybackUri
         else:
-            transcribe_info.media_playback_uri = self.transcribeJobInfo["MediaOriginalUri"]
+            transcribe_info.media_playback_uri = transcribe_info.media_original_uri
 
         # Vocabulary name is optional
         if "VocabularyName" in self.transcribeJobInfo["Settings"]:
@@ -1414,24 +1435,13 @@ def lambda_handler(event, context):
 
 # Main entrypoint for testing
 if __name__ == "__main__":
-    # Analytics test event
+    # Test event
     event = {
         "bucket": "ak-cci-input",
         "langCode": "en-US",
         "transcribeStatus": "COMPLETED",
         "apiMode": "analytics",
-        "key": "originalAudio/Card2_GUID_102_AGENT_AndrewK_DT_2022-03-22T12-23-49.wav",
-        "jobName": "Card2_GUID_102_AGENT_AndrewK_DT_2022-03-22T12-23-49.wav"
-    }
-    lambda_handler(event, "")
-
-    # Mono test event
-    event = {
-        "bucket": "ak-cci-input",
-        "langCode": "en-US",
-        "transcribeStatus": "COMPLETED",
-        "apiMode": "standard",
-        "key": "originalAudio/Auto0_GUID_000_AGENT_ChrisL_DT_2022-03-19T06-01-22_Mono.wav",
-        "jobName": "Auto0_GUID_000_AGENT_ChrisL_DT_2022-03-19T06-01-22_Mono.wav"
+        "key": "originalAudio/006c7659-258e-4adc-a036-df717505e25a.wav",
+        "jobName": "006c7659-258e-4adc-a036-df717505e25a.wav"
     }
     lambda_handler(event, "")

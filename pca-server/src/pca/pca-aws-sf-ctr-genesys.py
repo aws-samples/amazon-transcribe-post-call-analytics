@@ -72,10 +72,30 @@ def convert_times_to_seconds(start_time, end_time, call_start_time):
 
     :return: Zero-offset timings both start- and end-time
     """
-    segment_start = datetime.strptime(start_time, "%Y-%m-%dT%H:%M:%S.%fZ").timestamp() - call_start_time
-    segment_end = datetime.strptime(end_time, "%Y-%m-%dT%H:%M:%S.%fZ").timestamp() - call_start_time
+    segment_start = parse_genesys_ctr_datetime(start_time).timestamp() - call_start_time
+    segment_end = parse_genesys_ctr_datetime(end_time).timestamp() - call_start_time
 
     return segment_start, segment_end
+
+
+def parse_genesys_ctr_datetime(call_time):
+    """
+    Extracts the timestamp from a Genesys CTR datetime string.  Typically, the expression for this string format
+    is "%Y-%m-%dT%H:%M:%S.%fZ", but it has been seen in Genesys CTR files that some entries do not have a microsecond
+    component.  Hence, if the standard parse fails with a ValueError exception then we will retry by dropping the
+    microsecond component from the parse string
+
+    :param call_time: CTR datetime string
+    :return: Datetime object representing the CTR datetime string
+    """
+    try:
+        # Try first with times that have a microsecond part (which is normal)
+        genesys_call_time = datetime.strptime(call_time, "%Y-%m-%dT%H:%M:%S.%fZ")
+    except ValueError:
+        # If that fails then try again without the microsecond (which is unusual, but happens)
+        genesys_call_time = datetime.strptime(call_time, "%Y-%m-%dT%H:%M:%SZ").replace(microsecond=1)
+
+    return genesys_call_time
 
 
 def get_agent_channel(speaker_map):
@@ -204,10 +224,12 @@ def calculate_conversation_time(ctr_json, pca_analytics):
 
     # Pick out the official conversation time
     # TODO Push all the regexes to pcacommon.py and simplify/abstract
-    match = re.search(cf.appConfig[cf.CONF_FILENAME_DATETIME_REGEX], ctr_json["conversationStart"])
-    matched_fields = " ".join(match.groups())
-    pca_analytics.conversationTime = str(datetime.strptime(matched_fields,
-                                                           cf.appConfig[cf.CONF_FILENAME_DATETIME_FIELDMAP]))
+    # match = re.search(cf.appConfig[cf.CONF_FILENAME_DATETIME_REGEX], ctr_json["conversationStart"])
+    # matched_fields = " ".join(match.groups())
+    # pca_analytics.conversationTime = str(datetime.strptime(matched_fields,
+    #                                                        cf.appConfig[cf.CONF_FILENAME_DATETIME_FIELDMAP]))
+    pca_analytics.conversationTime = str(parse_genesys_ctr_datetime(ctr_json["conversationStart"]))
+    print(pca_analytics.conversationTime)
 
 
 def regenerate_segment_text(segment):
@@ -240,9 +262,10 @@ def extract_ivr_lines(agent_channel, call_start_time, ctr_json, pca_analytics, p
     # Extract all the IVR lines - these are those where the
     # "participant" entry has a "purpose" tag is set to "ivr"
     ivr_lines = list(filter(lambda x: x["purpose"] == "ivr", ctr_json["participants"]))
+    acd_lines = list(filter(lambda x: x["purpose"] == "acd", ctr_json["participants"]))
 
     # If we found any IVR lines then update the relevant speech segments
-    if ivr_lines:
+    if ivr_lines or acd_lines:
 
         # We  need to know what the speaker number should be for the IVR entries
         ivr_speaker_name = cf.appConfig[cf.CONF_TELEPHONY_CTR].capitalize() + " " + IVR_CHANNEL_NAME
@@ -262,7 +285,22 @@ def extract_ivr_lines(agent_channel, call_start_time, ctr_json, pca_analytics, p
                                                                               call_start_time)
                         ivr_times.append({"Start": segment_start, "End": segment_end})
 
-        # Now go through each speech segment, and if it STARTS within a start/end point then flag as IVR.
+        # We now need to do the same with ACD times - whilst these strictly-speaking aren't IVR entries
+        # the caller is still in the automated call distribution system.  The customer has been routed,
+        # so are out of the root of the IVR, but it's still an automated voice
+        # sessions / segments / segmentType == "interact"
+        # sessions / segments / segmentStart/End time
+        for acd_entry in acd_lines:
+            for session in acd_entry["sessions"]:
+                for segment in session["segments"]:
+                    if segment["segmentType"] == "interact":
+                        segment_start, segment_end = convert_times_to_seconds(segment["segmentStart"],
+                                                                              segment["segmentEnd"],
+                                                                              call_start_time)
+                        ivr_times.append({"Start": segment_start, "End": segment_end})
+
+        # Now go through each speech segment, and if it STARTS within
+        # a start/end point of an agent segment then flag as IVR
         segments_to_split = []
         for segment in pca_results.speech_segments:
             for ivr in ivr_times:
@@ -445,11 +483,11 @@ def lambda_handler(event, context):
 if __name__ == "__main__":
     event = {
         "bucket": "ak-cci-input",
-        "key": "originalAudio/b27d6650-09e7-41c1-a10a-dc1c77cb5bcd.wav",
-        "jobName": "b27d6650-09e7-41c1-a10a-dc1c77cb5bcd.wav",
+        "key": "originalAudio/006c7659-258e-4adc-a036-df717505e25a.wav",
+        "jobName": "006c7659-258e-4adc-a036-df717505e25a.wav",
         "apiMode": "analytics",
         "transcribeStatus": "COMPLETED",
-        "interimResultsFile": "interimResults/b27d6650-09e7-41c1-a10a-dc1c77cb5bcd.wav.json",
+        "interimResultsFile": "interimResults/006c7659-258e-4adc-a036-df717505e25a.wav.json",
         "telephony": "genesys"
     }
 

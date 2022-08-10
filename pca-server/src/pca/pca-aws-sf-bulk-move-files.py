@@ -39,9 +39,9 @@ def lambda_handler(event, context):
                                                     Key=(keyPrefix + audioFile["Key"]))
                 deleteResponse = s3Client.delete_object(Bucket=sourceBucket, Key=audioFile["Key"])
                 movedFiles += 1
-            except:
+            except Exception as e:
                 print("Failed to move audio file {}".format(audioFile["Key"]))
-                pass
+                print(e)
 
     # Increase our counter, remove the queue value and return
     sfData["filesProcessed"] += movedFiles
