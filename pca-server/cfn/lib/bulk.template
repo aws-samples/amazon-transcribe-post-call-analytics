@@ -138,4 +138,5 @@ Outputs:
   RolesForKMSKey:
     Value: !Join
       - ', '
-      - - !Sub '"${BulkMoveFiles.Arn}"'
+      - - !Sub '"${BulkMoveFilesRole.Arn}"'
+        - !Sub '"${BulkFilesCountRole.Arn}"'
