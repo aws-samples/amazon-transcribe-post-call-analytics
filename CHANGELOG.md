@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2022-08-12
+### Added
+- Initial processing for Genesys CTR telephony files. See [Integration with Telephony CTR Files](./README.md#integration-with-telephony-ctr-files)
+### Fixed
+- Stack outputs `RolesForKMSKey` - Replace incorrect function ARN with Role Arn for BulkMoveFiles, and added BulkFilesCount
+
 ## [0.2.5] - 2022-07-05
 ### Fixed
 - Stack failure when 'loadSampleAudioFiles` set to `false` 
@@ -58,7 +64,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial release
 
-[Unreleased]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/compare/v0.2.5...develop
+[Unreleased]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/compare/v0.3.0...develop
+[0.3.0]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.3.0
 [0.2.5]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.2.5
 [0.2.4]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.2.4
 [0.2.3]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.2.3
