@@ -142,6 +142,11 @@ Parameters:
     Default: analytics
     Description: Specifies which Transcribe API to use for new jobs - must be standard or analytics
 
+  TelephonyCTRType:
+    Type: String
+    Default: none
+    Description: Type of telephony system that will deliver Contact Trace Record files along with the audio recordings
+
   CallRedactionTranscript:
     Type: String
     Default: true
@@ -444,6 +449,14 @@ Resources:
       Type: String
       Description: Specifies which Transcribe API to use for new jobs - must be standard or analytics
       Value: !Ref TranscribeApiMode
+
+  TelephonyCTRTypeParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: TelephonyCTRType
+      Type: String
+      Description: Type of telephony system that will deliver Contact Trace Record files along with the audio recordings
+      Value: !Ref TelephonyCTRType
 
   CallRedactionTranscriptParameter:
     Type: "AWS::SSM::Parameter"

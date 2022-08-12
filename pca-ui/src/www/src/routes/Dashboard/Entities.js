@@ -7,7 +7,7 @@ export const Entities = ({ data }) => {
   return data.length ? (
     <Tabs defaultActiveKey={data[0].Name}>
       {data.map((e, i) => (
-        <Tab title={toSentenceCase(e.Name)} eventKey={e.Name} className="pt-4">
+        <Tab title={toSentenceCase(e.Name)} eventKey={e.Name} className="pt-4" key={i}>
           {e.Values.map((x, j) => (
             <Tag
               key={j}

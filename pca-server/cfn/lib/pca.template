@@ -19,6 +19,9 @@ Parameters:
   Boto3Layer:
     Type: String
 
+  PyUtilsLayer:
+    Type: String
+
   SupportFilesBucketName:
     Type: AWS::SSM::Parameter::Value<String>
     Default: SupportFilesBucketName
@@ -123,7 +126,7 @@ Resources:
     Properties:
       CodeUri:  ../../src/pca
       Handler: pca-aws-sf-start-transcribe-job.lambda_handler
-      Timeout: 15
+      Timeout: 30
       Layers:
         - !Ref FFMPEGLayer
         - !Ref Boto3Layer
@@ -154,6 +157,48 @@ Resources:
         - arn:aws:iam::aws:policy/ComprehendFullAccess
         - arn:aws:iam::aws:policy/AmazonKendraFullAccess
 
+  SFFinalProcessing:
+    Type: "AWS::Serverless::Function"
+    Properties:
+      CodeUri:  ../../src/pca
+      Handler: pca-aws-sf-post-processing.lambda_handler
+      Layers:
+        - !Ref Boto3Layer
+      Environment:
+        Variables:
+          AWS_DATA_PATH: "/opt/models"
+      Policies:
+        - arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+
+  SFCTRGenesys:
+    Type: "AWS::Serverless::Function"
+    Properties:
+      CodeUri:  ../../src/pca
+      Handler: pca-aws-sf-ctr-genesys.lambda_handler
+      Layers:
+        - !Ref Boto3Layer
+      Environment:
+        Variables:
+          AWS_DATA_PATH: "/opt/models"
+      Policies:
+        - arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+
+  SFPostCTRProcessing:
+    Type: "AWS::Serverless::Function"
+    Properties:
+      CodeUri:  ../../src/pca
+      Handler: pca-aws-sf-post-ctr-processing.lambda_handler
+      Layers:
+        - !Ref Boto3Layer
+      Environment:
+        Variables:
+          AWS_DATA_PATH: "/opt/models"
+      Policies:
+        - arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+        
   SFAwaitNotification:
     Type: "AWS::Serverless::Function"
     Properties:
@@ -204,6 +249,9 @@ Resources:
                   - !GetAtt SFStartTranscribeJob.Arn
                   - !GetAtt SFAwaitNotification.Arn
                   - !GetAtt SFTranscribeFailed.Arn
+                  - !GetAtt SFFinalProcessing.Arn
+                  - !GetAtt SFCTRGenesys.Arn
+                  - !GetAtt SFPostCTRProcessing.Arn
         - PolicyName: CloudWatchLogs
           PolicyDocument:
             Statement:
@@ -229,6 +277,9 @@ Resources:
         SFStartTranscribeJobArn: !GetAtt SFStartTranscribeJob.Arn
         SFAwaitNotificationArn: !GetAtt SFAwaitNotification.Arn
         SFTranscribeFailedArn: !GetAtt SFTranscribeFailed.Arn
+        SFFinalProcessingArn: !GetAtt SFFinalProcessing.Arn
+        SFCTRGenesysArn: !GetAtt SFCTRGenesys.Arn
+        SFPostCTRProcessingArn: !GetAtt SFPostCTRProcessing.Arn
       LoggingConfiguration:
         Level: ERROR
         IncludeExecutionData: true
@@ -245,4 +296,7 @@ Outputs:
       - - !Sub '"${TranscribeLambdaRole.Arn}"'
         - !Sub '"${TranscribeRole.Arn}"'
         - !Sub '"${SFProcessTurnRole.Arn}"'
+        - !Sub '"${SFFinalProcessingRole.Arn}"'
+        - !Sub '"${SFCTRGenesysRole.Arn}"'
+        - !Sub '"${SFTranscribeFailedRole.Arn}"'
 
