@@ -11,7 +11,6 @@ import pcaconfiguration as cf
 import copy
 import boto3
 
-
 def lambda_handler(event, context):
 
     # Get our params, looking them up if we haven't got them
@@ -39,9 +38,11 @@ def lambda_handler(event, context):
 
     # Just get a single S3 check on whether or not we have files to go
     s3Client = boto3.client('s3')
-    response = s3Client.list_objects_v2(Bucket=bucket, MaxKeys=dripRate)
+    maxKeys = dripRate + 10 # list a few additional keys to allow for some folder objects that won't be moved
+    response = s3Client.list_objects_v2(Bucket=bucket, MaxKeys=maxKeys)
     if "Contents" in response:
-        filesFound = len(response["Contents"])
+        files = [f for f in response["Contents"] if not f["Key"].endswith("/")][:dripRate] # ignore folder objects
+        filesFound = len(files)
     else:
         filesFound = 0
     sfData["filesToMove"] = filesFound
