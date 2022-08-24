@@ -299,4 +299,5 @@ Outputs:
         - !Sub '"${SFFinalProcessingRole.Arn}"'
         - !Sub '"${SFCTRGenesysRole.Arn}"'
         - !Sub '"${SFTranscribeFailedRole.Arn}"'
+        - !Sub '"${SFPostCTRProcessingRole.Arn}"'
 
