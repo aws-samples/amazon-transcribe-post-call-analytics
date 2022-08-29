@@ -20,8 +20,8 @@ Parameters:
 Globals:
   Function:
     Runtime: python3.8
-    MemorySize: 128
-    Timeout: 15
+    MemorySize: 1024
+    Timeout: 60
 
 Resources:
   BulkFilesCount:
