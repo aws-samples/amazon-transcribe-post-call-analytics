@@ -126,7 +126,8 @@ Resources:
     Properties:
       CodeUri:  ../../src/pca
       Handler: pca-aws-sf-start-transcribe-job.lambda_handler
-      EphemeralStorage: 2048
+      EphemeralStorage:
+        Size: 4096
       Timeout: 300
       Layers:
         - !Ref FFMPEGLayer
