@@ -217,7 +217,7 @@ Parameters:
 
   ffmpegDownloadUrl:
     Type: String
-    Default: https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz
+    Default: https://www.johnvansickle.com/ffmpeg/old-releases/ffmpeg-4.4-amd64-static.tar.xz
     Description: URL for ffmpeg binary distribution tar file download - see https://www.johnvansickle.com/ffmpeg/
 
   loadSampleAudioFiles:
