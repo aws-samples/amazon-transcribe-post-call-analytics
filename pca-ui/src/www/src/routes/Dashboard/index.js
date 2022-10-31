@@ -21,7 +21,6 @@ import { range } from "../../util";
 import { Sentiment } from "../../components/Sentiment";
 import { Tabs, Tab } from "react-bootstrap";
 
-
 const getSentimentTrends = (d, target, labels) => {
   const id = Object.entries(labels).find(([_, v]) => v === target)?.[0];
   if (!id) return {};
@@ -45,7 +44,11 @@ function Dashboard({ setAlert }) {
   const audioElem = useRef();
   const transcriptElem = useRef();
 
-  const { data, error } = useSWR(`/get/${key}`, () => get(key));
+  const { data, error } = useSWR(`/get/${key}`, () => get(key), {
+    revalidateIfStale: false,
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false
+  });
   const isTranscribeCallAnalyticsMode =
     data?.ConversationAnalytics?.SourceInformation[0]?.TranscribeJobInfo
       ?.TranscribeApiType === "analytics";
@@ -202,18 +205,18 @@ function Dashboard({ setAlert }) {
   .flat()
   .reduce((accumulator, item) => ([...accumulator, item.EndTime]),[]);
 
-const onAudioPLayTimeUpdate = () => {
-  let elementEndTime = undefined;
-  for (let i = 0; i < audioEndTimestamps.length; i++) {
-    if (audioElem.current.currentTime < audioEndTimestamps[i]) {
-      elementEndTime = audioEndTimestamps[i];
-      break;
+  const onAudioPLayTimeUpdate = () => {
+    let elementEndTime = undefined;
+    for (let i = 0; i < audioEndTimestamps.length; i++) {
+      if (audioElem.current.currentTime < audioEndTimestamps[i]) {
+        elementEndTime = audioEndTimestamps[i];
+        break;
+      }
     }
-  }
 
-  [...transcriptElem.current.getElementsByClassName('playing')].map(elem => elem.classList?.remove("playing"));
-  transcriptElem.current.querySelector('span[data-end="'+elementEndTime+'"]')?.classList?.add("playing");
-};
+    [...transcriptElem.current.getElementsByClassName('playing')].map(elem => elem.classList?.remove("playing"));
+    transcriptElem.current.querySelector('span[data-end="'+elementEndTime+'"]')?.classList?.add("playing");
+  };
 
   return (
     <Stack direction="vertical" gap={4}>
