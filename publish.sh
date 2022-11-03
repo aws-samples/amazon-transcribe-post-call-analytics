@@ -94,6 +94,7 @@ aws s3 cp $mediasearch_template build/pca-mediasearch-finder.yaml
 echo "Packaging Cfn artifacts"
 aws cloudformation package --template-file pca-main.template --output-template-file /tmp/packaged.template --s3-bucket ${BUCKET} --s3-prefix ${PREFIX_AND_VERSION} --region ${region}|| exit 1
 
+aws s3 cp build/packaged.template "s3://${BUCKET}/${PREFIX}/pca-main.yaml" || exit 1
 
 if $PUBLIC; then
   echo "Setting public read ACLs on published artifacts"
