@@ -92,6 +92,7 @@ if $PUBLIC; then
     done
 fi
 
+aws s3 cp build/packaged.template "s3://${BUCKET}/${PREFIX}/pca-main.yaml" || exit 1
 
 echo "Validating Cfn artifacts"
 template="https://s3.${region}.amazonaws.com/${BUCKET}/${PREFIX}/pca-main.yaml"
