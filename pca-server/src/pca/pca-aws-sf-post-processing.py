@@ -43,10 +43,15 @@ if __name__ == "__main__":
         "langCode": "en-US",
         "transcribeStatus": "COMPLETED",
         "apiMode": "analytics",
-        "key": "originalAudio/006c7659-258e-4adc-a036-df717505e25a.wav",
-        "jobName": "006c7659-258e-4adc-a036-df717505e25a.wav",
-        "interimResultsFile": "interimResults/006c7659-258e-4adc-a036-df717505e25a.wav.json",
-        "telephony": "none",
-        "debug": True
+        # "key": "originalAudio/006c7659-258e-4adc-a036-df717505e25a.wav",
+        # "jobName": "006c7659-258e-4adc-a036-df717505e25a.wav",
+        # "interimResultsFile": "interimResults/006c7659-258e-4adc-a036-df717505e25a.wav.json",
+        "key": "originalAudio/fd4bd0f6-52c2-4fab-97de-8f7518474403.wav",
+        "jobName": "fd4bd0f6-52c2-4fab-97de-8f7518474403.wav",
+        "interimResultsFile": "interimResults/fd4bd0f6-52c2-4fab-97de-8f7518474403.wav.json",
+        # "key": "originalAudio/fef9f532-08e0-436c-b0cc-7df991521e96.wav",
+        # "jobName": "fef9f532-08e0-436c-b0cc-7df991521e96.wav",
+        # "interimResultsFile": "interimResults/fef9f532-08e0-436c-b0cc-7df991521e96.wav.json",
+        "telephony": "none"
     }
     lambda_handler(event, "")

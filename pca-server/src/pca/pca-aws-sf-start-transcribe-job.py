@@ -57,8 +57,7 @@ def delete_existing_job(job_name, transcribe, api_mode):
             transcribe.delete_transcription_job(TranscriptionJobName=job_name)
     except Exception as e:
         # If the job has already been deleted then we don't need to take any action
-        pass
-
+        print(f"Unable to delete previous Transcribe job {job_name}: {e}")
 
 def count_audio_channels(bucket, key):
     """
@@ -249,6 +248,9 @@ def add_vocabulary_filter(tag_structure, lang_code, transcribe_client):
     :param transcribe_client: Boto3 client
     """
 
+    # Ensure we at least have something to log if there's an exception
+    vocab_filter_name = ""
+
     try:
         # Look for a vocabulary filter variant defined for this language code
         vocab_filter_name = cf.appConfig[cf.CONF_FILTER_NAME] + '-' + lang_code.lower()
@@ -256,7 +258,7 @@ def add_vocabulary_filter(tag_structure, lang_code, transcribe_client):
         tag_structure["VocabularyFilterName"] = vocab_filter_name
     except:
         # Doesn't exist for this language code - quietly exit
-        pass
+        print(f"No vocabulary filter defined named {vocab_filter_name}")
 
 
 def add_custom_vocabulary(tag_structure, lang_code, transcribe_client):
@@ -269,6 +271,9 @@ def add_custom_vocabulary(tag_structure, lang_code, transcribe_client):
     :param transcribe_client: Boto3 client
     """
 
+    # Ensure we at least have something to log if there's an exception
+    vocab_name = ""
+
     try:
         # Look for a custom vocabulary variant defined for this language code
         vocab_name = cf.appConfig[cf.CONF_VOCABNAME] + '-' + lang_code.lower()
@@ -277,8 +282,8 @@ def add_custom_vocabulary(tag_structure, lang_code, transcribe_client):
             # It exists, but we can only use it if it is ready for use
             tag_structure["VocabularyName"] = vocab_name
     except:
-        # Doesn't exist for this lamguage code - quietly exit
-        pass
+        # Doesn't exist for this language code - quietly exit
+        print(f"No custom vocabulary defined named {vocab_name}")
 
 
 def evaluate_transcribe_mode(bucket, key):

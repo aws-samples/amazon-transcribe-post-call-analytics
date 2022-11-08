@@ -199,6 +199,14 @@ Parameters:
         - genesys
     Description: Type of telephony system that will deliver Contact Trace Record files along with the audio recordings
 
+  TelephonyCTRFileSuffix:
+    Type: String
+    Default: "_metadata.json | _call_metadata.json"
+    Description: >
+      File name suffixes for the CTR file(s) associated with the chosen telephony type, separated by " | ".
+      For Genesys, this needs two entries: one for the conversation CTR file, and one for the call-specific file.
+      Other telephony systems may need fewer or additional entries, please consult the documentation.
+
   CallRedactionTranscript:
     Type: String
     Default: true

@@ -10,7 +10,7 @@ import time
 import pcaconfiguration as cf
 
 
-def generate_job_name(key):
+def generate_job_name(object_path):
     """
     Transcribe job names cannot contain spaces.  This takes in an S3
     object key, extracts the filename part, replaces spaces with "-"
@@ -18,9 +18,9 @@ def generate_job_name(key):
     """
 
     # Get rid of leading path, and replace [SPACE] with "-", replace "/" with "-", , replace ":" with "-"
-    response = key
-    if "/" in key:
-        response = response[1 + key.find("/") :]
+    response = object_path
+    if "/" in object_path:
+        response = response[1 + object_path.find("/"):]
     response = response.replace("/", "-")
     response = response.replace(" ", "-")
     response = response.replace(":", "-")
