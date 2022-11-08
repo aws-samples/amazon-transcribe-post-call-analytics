@@ -37,8 +37,8 @@ Parameters:
 Globals:
   Function:
     Runtime: python3.8
-    MemorySize: 128
-    Timeout: 15
+    MemorySize: 1024
+    Timeout: 60
 
 Resources:
   FFMPEGLayer:
@@ -126,7 +126,9 @@ Resources:
     Properties:
       CodeUri:  ../../src/pca
       Handler: pca-aws-sf-start-transcribe-job.lambda_handler
-      Timeout: 30
+      EphemeralStorage:
+        Size: 4096
+      Timeout: 300
       Layers:
         - !Ref FFMPEGLayer
         - !Ref Boto3Layer
@@ -141,8 +143,8 @@ Resources:
     Properties:
       CodeUri:  ../../src/pca
       Handler: pca-aws-sf-process-turn-by-turn.lambda_handler
-      MemorySize: 192
-      Timeout: 600
+      MemorySize: 1024
+      Timeout: 900
       Layers:
         - !Ref FFMPEGLayer
         - !Ref MPLLayer
@@ -204,7 +206,6 @@ Resources:
     Properties:
       CodeUri:  ../../src/pca
       Handler: pca-aws-sf-wait-for-transcribe-notification.lambda_handler
-      Timeout: 10
       Environment:
         Variables:
           TableName: !Ref TableName
@@ -299,4 +300,5 @@ Outputs:
         - !Sub '"${SFFinalProcessingRole.Arn}"'
         - !Sub '"${SFCTRGenesysRole.Arn}"'
         - !Sub '"${SFTranscribeFailedRole.Arn}"'
+        - !Sub '"${SFPostCTRProcessingRole.Arn}"'
 
