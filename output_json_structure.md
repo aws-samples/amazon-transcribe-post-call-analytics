@@ -230,18 +230,17 @@ The issue detection model in Call Analytics will highlight text in the transcrip
 A set of data points extracted from a telephony CTR file by the selected CTR processor; if no telephony CTR processing is done, or the processor chooses not to write these out, then this section is missing.  It should be noted that each telephony system's CTR records are distinct, and each may contain different values - for the definiteion of each field you are referred to the telephony provider's documentation.
 
 ```json
-"Telephony": [
-  {
-    "Genesys": {
-      "id": "string",
-      "conversationId": "string",
-      "startTime": "string",
-      "endTime": "string",
-      "conversationStart": "string",
-      "originatingDirection": "string"
-    }
+"Telephony": {
+  "Genesys": {
+    "id": "string",
+    "conversationId": "string",
+    "startTime": "string",
+    "endTime": "string",
+    "conversationStart": "string",
+    "originatingDirection": "string",
+    "queueIds": [ "string" ]
   }
-]
+}
 ```
 
 ###### SourceInformation | TranscribeJobInfo

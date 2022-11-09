@@ -643,13 +643,21 @@ def lambda_handler(event, context):
                 telephony["startTime"] = call_ctr_json["startTime"]
                 telephony["endTime"] = call_ctr_json["endTime"]
 
+            # Extract unique queueId values
+            queue_ids = []
+            for participant in conv_ctr_json["participants"]:
+                for session in participant["sessions"]:
+                    # TODO Could pick out ani and dnis values here
+                    for segment in session["segments"]:
+                        if "queueId" in segment:
+                            if segment["queueId"] not in queue_ids:
+                                queue_ids.append(segment["queueId"])
+            telephony["queueIds"] = queue_ids
+
             # Write this all into the Analytics header
-            pca_analytics.telephony = [
-                {
-                    "Genesys": telephony
-                }
-            ]
-            pass
+            pca_analytics.telephony = {
+                "Genesys": telephony
+            }
 
         else:
             print("No AGENT channel defined or present in transcription output")
