@@ -81,7 +81,7 @@ npm run build
 popd
 
 echo "Packaging Cfn artifacts"
-aws cloudformation package --template-file pca-main-nokendra.template --output-template-file /tmp/packaged.template --s3-bucket ${BUCKET} --s3-prefix ${PREFIX_AND_VERSION} --region ${region}|| exit 1
+aws cloudformation package --template-file pca-main-nokendra.template --output-template-file build/packaged.template --s3-bucket ${BUCKET} --s3-prefix ${PREFIX_AND_VERSION} --region ${region}|| exit 1
 
 if $PUBLIC; then
   echo "Setting public read ACLs on published artifacts"
