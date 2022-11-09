@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.4] - 2022-11-9
+### Added
+- Additional processing for Genesys CTR telephony files. See [Integration with Telephony CTR Files](./README.md#integration-with-telephony-ctr-files)
+  - Handling the same agent being on the call multiple times
+  - Removing entities from lines tagged as being from the IVR
+  - Extraction of header-level metadata from Genesys in a new Telephony results header block
+### Fixed
+- lag on Call Detail UI page reload for long calls
+- refactored code to incorporate witch lambda layer source in the repo instead of downloading prebuild zip file
+
 ## [0.3.3] - 2022-09-14
 ### Fixed
 - SFProcessTurn causing CREATE_FAILURE and stack rollback. This was caused by the Sept 10 release of the FFMPEG v5.1.1 distribution which had a larger size than the earlier version, resulting in the FFMPEG Lamba Layer exceeding the max size allowed by the Lambda service. To avoid this issue, the main stack CloudFormation parameter `ffmpegDownloadUrl` now defaults to the v4.4 distribution instead of 'latest'.
@@ -80,7 +90,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial release
 
-[Unreleased]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/compare/v0.3.3...develop
+[Unreleased]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/compare/v0.3.4...develop
+[0.3.4]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.3.4
 [0.3.3]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.3.3
 [0.3.2]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.3.2
 [0.3.1]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.3.1

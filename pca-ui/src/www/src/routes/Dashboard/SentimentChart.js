@@ -8,7 +8,7 @@ export const SentimentChart = ({ data = {}, speakerOrder = {} }) => {
         labels: ["Q1", "Q2", "Q3", "Q4"],
         datasets: Object.keys(data).map((speakerId) => {
           return {
-            label: (data?.[speakerId]?.NameOverride ? data.[speakerId].NameOverride : speakerOrder[speakerId] ),
+            label: (data?.[speakerId]?.NameOverride ? data?.[speakerId]?.NameOverride : speakerOrder[speakerId] ),
             backgroundColor: colours[speakerId],
             borderColor: colours[speakerId],
             fill: false,

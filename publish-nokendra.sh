@@ -72,26 +72,16 @@ popd
 
 pushd pca-ui/src/www
 npm install
-npm run build
+npm run build || exit 1
 popd
 
-
-echo "Downloading witch file and upload into artifacts bucket"
-curl https://saes-prod-us-east-1.s3.us-east-1.amazonaws.com/witch-0eabcaf.zip -o /tmp/witch-0eabcaf.zip
-WITCHKEY=${PREFIX_AND_VERSION}/witch-0eabcaf.zip
-aws s3 cp /tmp/witch-0eabcaf.zip s3://${BUCKET}/${WITCHKEY} || exit 1
+pushd pca-ui/src/witch
+npm install
+npm run build || exit 1
+popd
 
 echo "Packaging Cfn artifacts"
-aws cloudformation package --template-file pca-main-nokendra.template --output-template-file /tmp/packaged.template --s3-bucket ${BUCKET} --s3-prefix ${PREFIX_AND_VERSION} --region ${region}|| exit 1
-
-echo "Inline edit tmp/packaged.template to replace "
-echo "   <ARTIFACT_BUCKET_TOKEN> with bucket name: $BUCKET"
-echo "   <WITCHKEY_TOKEN> with prefix: $WITCHKEY"
-cat /tmp/packaged.template | 
-sed -e "s%<ARTIFACT_BUCKET_TOKEN>%$BUCKET%g" | 
-sed -e "s%<WITCHKEY_TOKEN>%$WITCHKEY%g" > build/packaged.template
-
-aws s3 cp build/packaged.template s3://${BUCKET}/${PREFIX}/pca-main.yaml || exit 1
+aws cloudformation package --template-file pca-main-nokendra.template --output-template-file build/packaged.template --s3-bucket ${BUCKET} --s3-prefix ${PREFIX_AND_VERSION} --region ${region}|| exit 1
 
 if $PUBLIC; then
   echo "Setting public read ACLs on published artifacts"
@@ -102,6 +92,7 @@ if $PUBLIC; then
     done
 fi
 
+aws s3 cp build/packaged.template "s3://${BUCKET}/${PREFIX}/pca-main.yaml" || exit 1
 
 echo "Validating Cfn artifacts"
 template="https://s3.${region}.amazonaws.com/${BUCKET}/${PREFIX}/pca-main.yaml"

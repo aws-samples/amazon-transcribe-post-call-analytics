@@ -147,6 +147,14 @@ Parameters:
     Default: none
     Description: Type of telephony system that will deliver Contact Trace Record files along with the audio recordings
 
+  TelephonyCTRFileSuffix:
+    Type: String
+    Default: none
+    Description: >
+      File number suffixes for the CTR file(s) associated with the chosen telephony type, separated by " | ".
+      For Genesys, this needs two entries: one for the conversation CTR file, and one for the call-specific file.
+      Other telephony systems may need fewer or additional entries, please consult the documentation.
+
   CallRedactionTranscript:
     Type: String
     Default: true
@@ -457,6 +465,17 @@ Resources:
       Type: String
       Description: Type of telephony system that will deliver Contact Trace Record files along with the audio recordings
       Value: !Ref TelephonyCTRType
+
+  TelephonyCTRFileSuffixParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: TelephonyCTRFileSuffix
+      Type: String
+      Description: >
+        File name suffixes for the CTR file(s) associated with the chosen telephony type, separated by " | ".
+        For Genesys, this needs two entries: one for the conversation CTR file, and one for the call-specific file.
+        Other telephony systems may need fewer or additional entries, please consult the documentation.rdings
+      Value: !Ref TelephonyCTRFileSuffix
 
   CallRedactionTranscriptParameter:
     Type: "AWS::SSM::Parameter"

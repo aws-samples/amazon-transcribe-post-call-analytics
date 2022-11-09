@@ -565,19 +565,16 @@ class TranscribeParser:
         for this conversation.  It is "best-match" as Comprehend can model in EN, but has no differentiation between
         EN-US and EN-GB.  If we cannot determine a language to use then we cannot use Comprehend standard models
         '''
-        targetLangModel = ""
         self.analytics.conversationLanguageCode = transcribeLangCode
 
         try:
             for checkLangCode in cf.appConfig[cf.CONF_COMP_LANGS]:
                 if transcribeLangCode.startswith(checkLangCode):
-                    targetLangModel = checkLangCode
+                    self.comprehendLanguageCode = checkLangCode
                     break
         except:
             # If anything fails - e.g. no language  string - then we have no language for Comprehend
-            pass
-
-        self.comprehendLanguageCode = targetLangModel
+            self.comprehendLanguageCode = ""
 
     def comprehend_single_sentiment(self, text, client):
         """
@@ -854,7 +851,8 @@ class TranscribeParser:
                             if next_item["type"] == "punctuation":
                                 wordToAdd += next_item["alternatives"][0]["content"]
                         except IndexError:
-                            pass
+                            # There may not be a next item
+                            word_result_index = -1
 
                         # Add word and confidence to the segment and to our overall stats
                         nextSpeechSegment.segmentText += wordToAdd
@@ -923,7 +921,8 @@ class TranscribeParser:
                                 if next_item["type"] == "punctuation":
                                     wordToAdd += next_item["alternatives"][0]["content"]
                             except IndexError:
-                                pass
+                                # There may not be a next item
+                                word_result_index = -1
 
                             # Add word and confidence to the segment and to our overall stats
                             nextSpeechSegment.segmentText += wordToAdd
@@ -1441,7 +1440,11 @@ if __name__ == "__main__":
         "langCode": "en-US",
         "transcribeStatus": "COMPLETED",
         "apiMode": "analytics",
-        "key": "originalAudio/006c7659-258e-4adc-a036-df717505e25a.wav",
-        "jobName": "006c7659-258e-4adc-a036-df717505e25a.wav"
+        # "key": "originalAudio/006c7659-258e-4adc-a036-df717505e25a.wav",
+        # "jobName": "006c7659-258e-4adc-a036-df717505e25a.wav"
+        "key": "originalAudio/fd4bd0f6-52c2-4fab-97de-8f7518474403.wav",
+        "jobName": "fd4bd0f6-52c2-4fab-97de-8f7518474403.wav"
+        # "key": "originalAudio/fef9f532-08e0-436c-b0cc-7df991521e96.wav",
+        # "jobName": "fef9f532-08e0-436c-b0cc-7df991521e96.wav"
     }
     lambda_handler(event, "")

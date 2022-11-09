@@ -58,17 +58,14 @@ Currently, the list of telephony systems where PCA can ingest CTR files are:
 
 - Genesys
 
-The CTR file, which is typically named in a way that easily relates it to the audio file being ingested, needs to delivered to PCA alongside the audio file; e.g. they are delivered together to the same Amazon S3 bucket.  Once standard PCA processing is complete the telephony-specific CTR handler will be invoked.  This will update the PCA results with the following:
+The CTR files, which are typically named in a way that easily relates it to the audio file being ingested, needs to delivered to PCA alongside the audio file; e.g. they are delivered together to the same Amazon S3 bucket.  One file is the standard conversational metadata file that contains information around the call sessions, participants and queues, and the second is a call-specific metadata file that has some specific information around the position of this particular call's place in a wider conversation.
+
+Once standard PCA processing is complete the telephony-specific CTR handler will be invoked.  This will update the PCA results with the following:
 
 - Tagging of any IVR entry in the Agent's transcript as being from an IVR
-- Removing the sentiment scores associated with IVR lines
-- Identification of multiple Agents within the call, associating the telephony system's internal user identifier with their parts of the transcript
-
-***Known issues with CTR processing***
-
-- Processing of Genesys outbound call CTR records will fail
-- Call metadata, such as entities or issue, is still be removed from IVR lines
-- Re-calculation of overall agent call sentiment is yet to be completed
+- Removing the sentiment scores and entities associated with IVR lines
+- Identification of multiple Agents within the call, associating the telephony system's internal user identifier with their parts of the transcript and correctly allocating each agent's actual speaking time
+- Additional telephony-specific data, such as the Genesys queues involved in the call, is made available
 
 
 ## Deployment instructions

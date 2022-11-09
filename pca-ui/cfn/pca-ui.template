@@ -25,14 +25,6 @@ Parameters:
     Type: String
     Default: OutputBucketName
     Description: S3 bucket containing Transcribe output. JSON object names must be prefixed with parseFiles/
-    
-  ArtifactBucket:
-    Type: String
-    Description: S3 Bucket bucket that holds published artifacts
-    
-  WitchKey:
-    Type: String
-    Description: path to the witch zip file in PublishBucket 
 
   DataPrefix:
     Type: String
@@ -103,8 +95,6 @@ Resources:
     Properties:
       TemplateURL: lib/deploy.template
       Parameters:
-        WitchBucket: !Ref ArtifactBucket
-        WitchKey: !Ref WitchKey
         Bucket: !GetAtt Web.Outputs.Bucket
         AuthUri: !GetAtt Cognito.Outputs.BaseUri
         AuthClientId: !GetAtt Cognito.Outputs.UserPoolClientId

@@ -3,15 +3,6 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description: Amazon Transcribe Post Call Analytics - PCA UI - Deploy
 
 Parameters:
-
-  WitchBucket:
-    Type: String
-    Default: saes-prod-us-east-1
-    
-  WitchKey:
-    Type: String
-    Default: witch-0eabcaf.zip
-
   Bucket:
     Type: String
 
@@ -36,9 +27,7 @@ Resources:
     Properties:
       CompatibleRuntimes:
         - nodejs12.x
-      Content:
-        S3Bucket: !Ref WitchBucket
-        S3Key: !Ref WitchKey
+      Content: ../../src/witch/witch.zip
 
   Role:
     Type: "AWS::IAM::Role"
