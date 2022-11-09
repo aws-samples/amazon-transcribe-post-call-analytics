@@ -4,3 +4,4 @@ build
 /pca-ui/src/www/public/config.js
 /sample-data
 .vscode
+/pca-ui/src/witch/witch.zip
