@@ -63,6 +63,7 @@ class ConversationAnalytics:
         self.conversationLanguageCode = ""
         self.guid = ""
         self.agent = ""
+        self.agent_list = []
         self.cust = ""
         self.conversationTime = ""
         self.conversationLocation = ""
@@ -78,6 +79,7 @@ class ConversationAnalytics:
         self.issues_detected = []
         self.actions_detected = []
         self.outcomes_detected = []
+        self.telephony = None
         self.transcribe_job = TranscribeJobInfo()
 
     def get_transcribe_job(self):
@@ -96,6 +98,7 @@ class ConversationAnalytics:
         # Extract the information from our structures and create the output results JSON
         conv_header_info = {"GUID": self.guid,
                             "Agent": self.agent,
+                            "Agents": self.agent_list,
                             "Cust": self.cust,
                             "ConversationTime": self.conversationTime,
                             "ConversationLocation": self.conversationLocation,
@@ -121,6 +124,10 @@ class ConversationAnalytics:
             conv_header_info["ActionItemsDetected"] = self.actions_detected
             conv_header_info["OutcomesDetected"] = self.outcomes_detected
             conv_header_info["CombinedAnalyticsGraph"] = self.combined_graphic_url
+
+        # Only write out <Telephony> is there is any
+        if self.telephony is not None:
+            conv_header_info["Telephony"] = self.telephony
 
         # Decide which source information block to add - only one for now, so straightforward
         transcribe_job_info = {"TranscribeJobInfo": self.transcribe_job.create_json_output()}
@@ -151,6 +158,12 @@ class ConversationAnalytics:
         self.conversationTime = json_input["ConversationTime"]
         self.speaker_time = json_input["SpeakerTime"]
 
+        # Load in optional fields that were not present in the initial release
+        if "Agents" in json_input:
+            self.agent_list = json_input["Agents"]
+        if "Telephony" in json_input:
+            self.telephony = json_input["Telephony"]
+
         # Load in all analytics data if it exists
         if "CategoriesDetected" in json_input:
             self.categories_detected = json_input["CategoriesDetected"]
@@ -161,7 +174,6 @@ class ConversationAnalytics:
 
         # # Decide which source information block to add - only one for now, so straightforward
         self.transcribe_job.parse_json_input(json_input["SourceInformation"][0]["TranscribeJobInfo"])
-
 
     def extract_analytics_categories(self, categories, speech_segments):
         """
@@ -379,6 +391,44 @@ class PCAResults:
 
         # Return the JSON in case the caller needs it
         return json_data
+
+    def regenerate_header_entities(self):
+        """
+        Some telephony post-processing can erase segment-level entities, such as all of those assigned to
+        an IVR speech segment.  This method will assume that the speech segments are correct and will re-build
+        the header-level entities appropriately.
+        """
+
+        header_ent_dict = {}
+        for entity_type in self.analytics.custom_entities:
+            header_ent_dict[entity_type["Name"]] = []
+        self.analytics.custom_entities = []
+
+        # Build up lists of the remaining entities in the speech segments
+        for segment in self.speech_segments:
+            if segment.segmentCustomEntities:
+                for entity in segment.segmentCustomEntities:
+                    # Pick out our useful values
+                    entity_type = entity["Type"]
+                    entity_text = entity["Text"]
+
+                    # If this is the first example of this type then create a new entry for it.
+                    # This ensures that any newly-inserted entity values are correctly picked up
+                    if entity_type not in header_ent_dict:
+                        header_ent_dict[entity_type] = []
+
+                    # If we haven't seen this type/value pair before then append it to the type entry
+                    if not entity_text in header_ent_dict[entity_type]:
+                        header_ent_dict[entity_type].append(entity_text)
+
+        # Finally, rebuild the header entry summary
+        for entity in header_ent_dict:
+            if len(header_ent_dict[entity]) > 0:
+                nextEntity = {"Name": entity,
+                              "Instances": len(header_ent_dict[entity]),
+                              "Values": header_ent_dict[entity]}
+                self.analytics.custom_entities.append(nextEntity)
+
 
     def read_results_from_s3(self, bucket, object_key, offline=False):
 

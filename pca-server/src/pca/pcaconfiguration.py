@@ -32,6 +32,7 @@ COMP_SFN_NAME = "StepFunctionName"
 CONF_SUPPORT_BUCKET = "SupportFilesBucketName"
 CONF_TRANSCRIBE_LANG = "TranscribeLanguages"
 CONF_TELEPHONY_CTR = "TelephonyCTRType"
+CONF_TELEPHONY_CTR_SUFFIX = "TelephonyCTRFileSuffix"
 CONF_VOCABNAME = "VocabularyName"
 CONF_FILENAME_DATETIME_REGEX = "FilenameDatetimeRegex"
 CONF_FILENAME_DATETIME_FIELDMAP = "FilenameDatetimeFieldMap"
@@ -148,7 +149,8 @@ def loadConfiguration():
             CONF_TRANSCRIBE_API,
             CONF_REDACTION_TRANSCRIPT,
             CONF_REDACTION_AUDIO,
-            CONF_TELEPHONY_CTR
+            CONF_TELEPHONY_CTR,
+            CONF_TELEPHONY_CTR_SUFFIX
         ]
     )
 
@@ -183,7 +185,7 @@ def loadConfiguration():
     appConfig[CONF_REDACTION_LANGS] = appConfig[CONF_REDACTION_LANGS].split(" | ")
     appConfig[CONF_TRANSCRIBE_LANG] = appConfig[CONF_TRANSCRIBE_LANG].split(" | ")
     appConfig[CONF_SPEAKER_NAMES] = appConfig[CONF_SPEAKER_NAMES].split(" | ")
-
+    appConfig[CONF_TELEPHONY_CTR_SUFFIX] = appConfig[CONF_TELEPHONY_CTR_SUFFIX].split(" | ")
 
 def isAutoLanguageDetectionSet():
     """

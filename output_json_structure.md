@@ -18,6 +18,7 @@ Contains header-level information around the analytics that have been generated,
 ```json
 "ConversationAnalytics": {
   "Agent": "string",
+  "Agents": [ ],
   "GUID": "string",
   "ConversationTime": "string",
   "ConversationLocation": "string",
@@ -33,28 +34,32 @@ Contains header-level information around the analytics that have been generated,
   "IssuesDetected": [ ],
   "ActionItemsDetected": [ ],
   "OutcomesDetected": [ ],
+  "Telephony": [ ],
   "SourceInformation": [ ]
 }
 ```
 
-| Field                | Type   | Description                                                  |
-| -------------------- | ------ | ------------------------------------------------------------ |
-| Agent                | string | A unique GUID that identifies the input source for the conversation |
-| GUID                 | string | An indentifier for the Agent that was involved in the conversation |
-| ConversationTime     | string | A timestamp that shows the when the conversation occurred    |
-| ConversationLocation | string | The **TZ database name** for the source location for the calls, which can be looked up in https://en.wikipedia.org/wiki/List_of_tz_database_time_zones |
-| ProcessTime          | string | A timestamp that shows when the analytics job was completed  |
-| Duration             | float  | Duration of the call in seconds                              |
-| LanguageCode         | string | The language code for the input data; e.g. "en-US" for voice or just "en" for text |
-| EntityRecognizerName | string | The name of the Comprehend custom entity recognizer used when processing the transcription job |
-| SpeakerLabels        | -      | List of speaker labels to use for display purposes           |
-| SentimentTrends      | -      | List of sentiment trends per speaker, both at the summary level and on a per call quarter level |
-| CustomEntities       | -      | Summary of the custom entities detected throughout the conversation |
-| CategoriesDetected   | -      | A list of categories detected by *Call Analytics*            |
-| IssuesDetected       | -      | A list of issues detected by *Call Analytics*                |
-| ActionItemsDetected  | -      | A list of action items detected by *Call Analytics*                |
-| OutcomesDetected     | -      | A list of outcomes detected by *Call Analytics*                |
-| SourceInformation    | -      | Source-specific details for the conversation.  Contains just one of any of the possible supported sources |
+| Field                | Type     | Description                                                  |
+| -------------------- | -------- | ------------------------------------------------------------ |
+| Agent                | string   | An indentifier for the Agent that was involved in the conversation, or the agent in a multi-agent call (as identified by the telephony system) that was the top-talker |
+| Agents               | [string] | *[Optional - telephony only]* A list of the names of all agents that participated on this call, ordered in sequence when they first spoke on a call |
+| Cust                 | string   | Customer name or telephony internal Customer ID              |
+| GUID                 | string   | A unique GUID that identifies the input source for the conversation |
+| ConversationTime     | string   | A timestamp that shows the when the conversation occurred    |
+| ConversationLocation | string   | The **TZ database name** for the source location for the calls, which can be looked up in https://en.wikipedia.org/wiki/List_of_tz_database_time_zones |
+| ProcessTime          | string   | A timestamp that shows when the analytics job was completed  |
+| Duration             | float    | Duration of the call in seconds                              |
+| LanguageCode         | string   | The language code for the input data; e.g. "en-US" for voice or just "en" for text |
+| EntityRecognizerName | string   | The name of the Comprehend custom entity recognizer used when processing the transcription job |
+| SpeakerLabels        | -        | List of speaker labels to use for display purposes           |
+| SentimentTrends      | -        | List of sentiment trends per speaker, both at the summary level and on a per call quarter level |
+| CustomEntities       | -        | Summary of the custom entities detected throughout the conversation |
+| CategoriesDetected   | -        | A list of categories detected by *Call Analytics*            |
+| IssuesDetected       | -        | A list of issues detected by *Call Analytics*                |
+| ActionItemsDetected  | -        | A list of action items detected by *Call Analytics*          |
+| OutcomesDetected     | -        | A list of outcomes detected by *Call Analytics*              |
+| Telephony            | -        | *[Optional]* A list of telephony-specific metadata fields extract from the CTR files (only present if the chosen telephony CTR parser chooses to write this information out) |
+| SourceInformation    | -        | Source-specific details for the conversation.  Contains just one of any of the possible supported sources |
 
 ###### SpeakerLabels
 
@@ -70,11 +75,11 @@ The system generates internal speaker markers, but you can assign (and change) e
 ]
 ```
 
-| Field       | Type   | Description                                                        |
-|-------------| ------ |--------------------------------------------------------------------|
+| Field       | Type   | Description                                                  |
+| ----------- | ------ | ------------------------------------------------------------ |
 | Speaker     | string | Internal speaker name in the format `spk_0`, `spk_1` up to `spk_n` |
-| DisplayText | string | Text label to display for that speaker                             |
-| UserId      | string | [optional] Telephony system's user ID reference for this speaker   |
+| DisplayText | string | Text label to display for this speaker                       |
+| UserId      | string | *[Optional - telephony only]* Telephony system's user ID reference for this speaker, whether it's a customer or an agent |
 
 ###### SentimentTrends
 
@@ -219,6 +224,24 @@ The issue detection model in Call Analytics will highlight text in the transcrip
 | Text        | string | Text that triggered the issue                                |
 | BeginOffset | float  | Beginning position of the text that identified this issue in the transcript line |
 | EndOffset   | float  | End position of the text that identified this issue in the transcript line |
+
+###### Telephony | Genesys
+
+A set of data points extracted from a telephony CTR file by the selected CTR processor; if no telephony CTR processing is done, or the processor chooses not to write these out, then this section is missing.  It should be noted that each telephony system's CTR records are distinct, and each may contain different values - for the definiteion of each field you are referred to the telephony provider's documentation.
+
+```json
+"Telephony": {
+  "Genesys": {
+    "id": "string",
+    "conversationId": "string",
+    "startTime": "string",
+    "endTime": "string",
+    "conversationStart": "string",
+    "originatingDirection": "string",
+    "queueIds": [ "string" ]
+  }
+}
+```
 
 ###### SourceInformation | TranscribeJobInfo
 
