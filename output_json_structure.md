@@ -34,6 +34,7 @@ Contains header-level information around the analytics that have been generated,
   "IssuesDetected": [ ],
   "ActionItemsDetected": [ ],
   "OutcomesDetected": [ ],
+  "Telephony": [ ],
   "SourceInformation": [ ]
 }
 ```
@@ -57,6 +58,7 @@ Contains header-level information around the analytics that have been generated,
 | IssuesDetected       | -        | A list of issues detected by *Call Analytics*                |
 | ActionItemsDetected  | -        | A list of action items detected by *Call Analytics*          |
 | OutcomesDetected     | -        | A list of outcomes detected by *Call Analytics*              |
+| Telephony            | -        | *[Optional]* A list of telephony-specific metadata fields extract from the CTR files (only present if the chosen telephony CTR parser chooses to write this information out) |
 | SourceInformation    | -        | Source-specific details for the conversation.  Contains just one of any of the possible supported sources |
 
 ###### SpeakerLabels
@@ -222,6 +224,25 @@ The issue detection model in Call Analytics will highlight text in the transcrip
 | Text        | string | Text that triggered the issue                                |
 | BeginOffset | float  | Beginning position of the text that identified this issue in the transcript line |
 | EndOffset   | float  | End position of the text that identified this issue in the transcript line |
+
+###### Telephony | Genesys
+
+A set of data points extracted from a telephony CTR file by the selected CTR processor; if no telephony CTR processing is done, or the processor chooses not to write these out, then this section is missing.  It should be noted that each telephony system's CTR records are distinct, and each may contain different values - for the definiteion of each field you are referred to the telephony provider's documentation.
+
+```json
+"Telephony": [
+  {
+    "Genesys": {
+      "id": "string",
+      "conversationId": "string",
+      "startTime": "string",
+      "endTime": "string",
+      "conversationStart": "string",
+      "originatingDirection": "string"
+    }
+  }
+]
+```
 
 ###### SourceInformation | TranscribeJobInfo
 

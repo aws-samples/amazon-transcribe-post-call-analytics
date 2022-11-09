@@ -629,6 +629,28 @@ def lambda_handler(event, context):
                             pca_analytics.agent = speaker_details[0]["DisplayText"]
 
             # TODO Recalculate the various sentiment trends to cater for IVR and split segments
+
+            # Finally, write some of the CTR data back into the main results - note
+            # that some comes from the call metatdata file, some from the conversation
+            telephony = {"conversationStart": conv_ctr_json["conversationStart"],
+                         "originatingDirection": conv_ctr_json["originatingDirection"]}
+
+            # We may not hava a call-specific file, and some of this info comes from that file
+            # TODO Some of the call-file values could be inferred from the conversation file
+            if call_ctr_json:
+                telephony["id"] = call_ctr_json["id"]
+                telephony["conversationId"] = call_ctr_json["conversationId"]
+                telephony["startTime"] = call_ctr_json["startTime"]
+                telephony["endTime"] = call_ctr_json["endTime"]
+
+            # Write this all into the Analytics header
+            pca_analytics.telephony = [
+                {
+                    "Genesys": telephony
+                }
+            ]
+            pass
+
         else:
             print("No AGENT channel defined or present in transcription output")
 

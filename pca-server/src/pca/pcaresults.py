@@ -79,6 +79,7 @@ class ConversationAnalytics:
         self.issues_detected = []
         self.actions_detected = []
         self.outcomes_detected = []
+        self.telephony = None
         self.transcribe_job = TranscribeJobInfo()
 
     def get_transcribe_job(self):
@@ -124,6 +125,10 @@ class ConversationAnalytics:
             conv_header_info["OutcomesDetected"] = self.outcomes_detected
             conv_header_info["CombinedAnalyticsGraph"] = self.combined_graphic_url
 
+        # Only write out <Telephony> is there is any
+        if self.telephony is not None:
+            conv_header_info["Telephony"] = self.telephony
+
         # Decide which source information block to add - only one for now, so straightforward
         transcribe_job_info = {"TranscribeJobInfo": self.transcribe_job.create_json_output()}
         conv_header_info["SourceInformation"] = [transcribe_job_info]
@@ -156,6 +161,8 @@ class ConversationAnalytics:
         # Load in optional fields that were not present in the initial release
         if "Agents" in json_input:
             self.agent_list = json_input["Agents"]
+        if "Telephony" in json_input:
+            self.telephony = json_input["Telephony"]
 
         # Load in all analytics data if it exists
         if "CategoriesDetected" in json_input:

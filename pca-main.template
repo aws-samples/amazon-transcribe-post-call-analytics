@@ -370,7 +370,6 @@ Metadata:
                 default: Transcription
               Parameters:
                   - TranscribeApiMode
-                  - TelephonyCTRType
                   - TranscribeLanguages
                   - VocabFilterMode
                   - VocabFilterName
@@ -381,6 +380,11 @@ Metadata:
                   - CallRedactionTranscript
                   - CallRedactionAudio
                   - ContentRedactionLanguages
+            - Label:
+                default: Telephony system
+              Parameters:
+                  - TelephonyCTRType
+                  - TelephonyCTRFileSuffix
             - Label:
                 default: Entity detection
               Parameters:
@@ -653,6 +657,7 @@ Resources:
         TranscribeLanguages: !Ref TranscribeLanguages
         TranscribeApiMode: !Ref TranscribeApiMode
         TelephonyCTRType: !Ref TelephonyCTRType
+        TelephonyCTRFileSuffix: !Ref TelephonyCTRFileSuffix
         CallRedactionTranscript: !Ref CallRedactionTranscript
         CallRedactionAudio: !Ref CallRedactionAudio
         VocabFilterName: !Ref VocabFilterName
