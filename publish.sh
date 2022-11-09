@@ -72,20 +72,20 @@ popd
 
 pushd pca-ui/src/www
 npm install
-npm run build
+npm run build || exit 1
 popd
 
 pushd pca-ui/src/witch
 npm install
-npm run build
+npm run build || exit 1
 popd
 
 # Build and deploy embedded MediaSearch project
 pushd aws-kendra-transcribe-media-search
 if $PUBLIC; then
-  ./publish.sh ${BUCKET} ${PREFIX_AND_VERSION}/mediasearch | tee /tmp/mediasearch.out
+  ./publish.sh ${BUCKET} ${PREFIX_AND_VERSION}/mediasearch | tee /tmp/mediasearch.out || exit 1
 else
-   ./publish-privatebucket.sh ${BUCKET} ${PREFIX_AND_VERSION}/mediasearch | tee /tmp/mediasearch.out
+   ./publish-privatebucket.sh ${BUCKET} ${PREFIX_AND_VERSION}/mediasearch | tee /tmp/mediasearch.out || exit 1
 fi
 popd
 mediasearch_template="s3://${BUCKET}/${PREFIX_AND_VERSION}/mediasearch/msfinder.yaml"
