@@ -16,10 +16,11 @@ CONF_ENTITYENDPOINT = "EntityRecognizerEndpoint"
 CONF_ENTITY_FILE = "EntityStringMap"
 CONF_ENTITYCONF = "EntityThreshold"
 CONF_ENTITY_TYPES = "EntityTypes"
-CONF_PREFIX_MP3_PLAYBACK = "InputBucketAudioPlayback"
+CONF_PREFIX_AUDIO_PLAYBACK = "InputBucketAudioPlayback"
 CONF_S3BUCKET_INPUT = "InputBucketName"
 CONF_PREFIX_RAW_AUDIO = "InputBucketRawAudio"
 CONF_PREFIX_FAILED_AUDIO = "InputBucketFailedTranscriptions"
+CONF_PREFIX_INPUT_TRANSCRIPTS = "InputBucketOrigTranscripts"
 CONF_MAX_SPEAKERS = "MaxSpeakers"
 CONF_MINNEGATIVE = "MinSentimentNegative"
 CONF_MINPOSITIVE = "MinSentimentPositive"
@@ -107,15 +108,16 @@ def loadConfiguration():
             CONF_ENTITYENDPOINT,
             CONF_ENTITY_FILE,
             CONF_ENTITYCONF,
-            CONF_PREFIX_MP3_PLAYBACK,
+            CONF_PREFIX_AUDIO_PLAYBACK,
             CONF_S3BUCKET_INPUT,
             CONF_PREFIX_RAW_AUDIO,
             CONF_PREFIX_FAILED_AUDIO,
-            CONF_MAX_SPEAKERS,
+            CONF_PREFIX_INPUT_TRANSCRIPTS,
         ]
     )
     fullParamList2 = ssm.get_parameters(
         Names=[
+            CONF_MAX_SPEAKERS,
             CONF_MINNEGATIVE,
             CONF_MINPOSITIVE,
             CONF_S3BUCKET_OUTPUT,
@@ -125,11 +127,11 @@ def loadConfiguration():
             COMP_SFN_NAME,
             CONF_SUPPORT_BUCKET,
             CONF_TRANSCRIBE_LANG,
-            CONF_PREFIX_TRANSCRIBE_RESULTS,
         ]
     )
     fullParamList3 = ssm.get_parameters(
         Names=[
+            CONF_PREFIX_TRANSCRIBE_RESULTS,
             CONF_VOCABNAME,
             CONF_CONVO_LOCATION,
             CONF_ENTITY_TYPES,
@@ -139,11 +141,11 @@ def loadConfiguration():
             CONF_FILENAME_DATETIME_FIELDMAP,
             CONF_FILENAME_GUID_REGEX,
             CONF_FILENAME_AGENT_REGEX,
-            CONF_FILENAME_CUST_REGEX,
         ]
     )
     fullParamList4 = ssm.get_parameters(
         Names=[
+            CONF_FILENAME_CUST_REGEX,
             CONF_KENDRA_INDEX_ID,
             CONF_WEB_URI,
             CONF_TRANSCRIBE_API,

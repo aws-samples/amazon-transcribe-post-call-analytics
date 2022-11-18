@@ -58,7 +58,7 @@ Parameters:
 
   InputBucketAudioPlayback:
     Type: String
-    Default: mp3
+    Default: playbackAudio
     Description: Folder that holds the audio files to playback in the browser when original audio cannot be used
 
   InputBucketFailedTranscriptions:
@@ -76,6 +76,13 @@ Parameters:
     Type: String
     Default: originalAudio
     Description: Folder that holds the audio files to be ingested into the system
+
+  InputBucketOrigTranscripts:
+    Type: String
+    Default: originalTranscripts
+    Description: >-
+      Folder that holds Transcripts from other applications (e.g. Live Call Analytics) that are to be
+      processed as if PCA had processed that audio
 
   MaxSpeakers:
     Type: String
@@ -361,6 +368,16 @@ Resources:
       Type: String
       Description: Folder that holds the original call audio to be ingested
       Value: !Ref InputBucketRawAudio
+
+  InputBucketOrigTranscriptsParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: InputBucketOrigTranscripts
+      Type: String
+      Description: >
+        Folder that holds Transcripts from other applications (e.g. Live Call Analytics) that are to be
+        processed as if PCA had processed that audio
+      Value: !Ref InputBucketOrigTranscripts
 
   MaxSpeakersParameter:
     Type: "AWS::SSM::Parameter"

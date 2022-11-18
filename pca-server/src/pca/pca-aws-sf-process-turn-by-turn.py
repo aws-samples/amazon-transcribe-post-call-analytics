@@ -1285,7 +1285,7 @@ class TranscribeParser:
                                 stdin=subprocess.DEVNULL)
 
                 # Now upload the output file to the configured playback folder in the main input bucket
-                s3FileKey = cf.appConfig[cf.CONF_PREFIX_MP3_PLAYBACK] + '/' + outputFilename.split('/')[-1]
+                s3FileKey = cf.appConfig[cf.CONF_PREFIX_AUDIO_PLAYBACK] + '/' + outputFilename.split('/')[-1]
                 s3Client.upload_file(outputFilename, cf.appConfig[cf.CONF_S3BUCKET_INPUT], s3FileKey,
                                      ExtraArgs={'ContentType': 'audio/mp3'})
                 self.audioPlaybackUri = "s3://" + cf.appConfig[cf.CONF_S3BUCKET_INPUT] + "/" + s3FileKey
@@ -1353,7 +1353,7 @@ class TranscribeParser:
             s3_object = urlparse(redacted_url)
             s3_client = boto3.resource("s3")
             source = {"Bucket": s3_object.netloc, "Key": s3_object.path[1:]}
-            dest_key = cf.appConfig[cf.CONF_PREFIX_MP3_PLAYBACK] + '/' + redacted_url.split('/')[-1]
+            dest_key = cf.appConfig[cf.CONF_PREFIX_AUDIO_PLAYBACK] + '/' + redacted_url.split('/')[-1]
             s3_client.meta.client.copy(source, cf.appConfig[cf.CONF_S3BUCKET_INPUT], dest_key)
             self.audioPlaybackUri = "s3://" + cf.appConfig[cf.CONF_S3BUCKET_INPUT] + "/" + dest_key
         else:
