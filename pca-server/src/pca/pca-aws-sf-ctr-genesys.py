@@ -669,7 +669,8 @@ def lambda_handler(event, context):
 
         # Finished all updates - write results back to our interim location
         if not OFFLINE_MODE:
-            pca_results.write_results_to_s3(cf.appConfig[cf.CONF_S3BUCKET_OUTPUT], event["interimResultsFile"])
+            pca_results.write_results_to_s3(bucket=cf.appConfig[cf.CONF_S3BUCKET_OUTPUT],
+                                            object_key=event["interimResultsFile"])
 
     # Return our original event data for the next step
     return event

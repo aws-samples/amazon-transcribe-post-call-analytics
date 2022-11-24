@@ -23,7 +23,7 @@ Parameters:
 
   ComprehendLanguages:
     Type: String
-    Default: en | es | fr | de | it | pt | ar | hi | ja | ko | zh | zh-TW
+    Default: de | en | es | it | pt | fr | ja | ko | hi | ar | zh | zh-TW
     Description: Languages supported by Comprehend's standard calls, separated by " | "
 
   ContentRedactionLanguages:
