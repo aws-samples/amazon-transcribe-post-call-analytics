@@ -6,17 +6,24 @@
 
 Your contact center connects your business to your community, enabling customers to order products, callers to request support, clients to make appointments, and much more. Each conversation with a caller is an opportunity to learn more about that caller’s needs, and how well those needs were addressed during the call. You can uncover insights from these conversations that help you manage script compliance and find new opportunities to satisfy your customers, perhaps by expanding your services to address reported gaps, improving the quality of reported problem areas, or by elevating the customer experience delivered by your contact center agents.
 
-This sample solution, Post Call Analytics (PCA), does most of the heavy lifting associated with providing an end-to-end solution that can process call recordings from your existing contact center. PCA provides actionable insights to spot emerging trends, identify agent coaching opportunities, and assess the general sentiment of calls. 
+This sample solution, Post Call Analytics (PCA), does most of the heavy lifting associated with providing an end-to-end solution that can process call recordings from your existing contact center. PCA provides actionable insights to spot emerging trends, identify agent coaching opportunities, and assess the general sentiment of calls.
+
+If you already have Amazon Transcribe transcripts generated from the Streaming Call Analytics feature then those output transcripts can de delivered to PCA so that they can be aggregated and analyzed in exactly the same way as any audio files that you process from telephony system.  You can use PCA with audio files, with transcript files, or with both.
 
 PCA currently supports the following features:
 
-* **Transcription**
+* **Source Input Data**
+    * Audio files can be delivered to audio ingestion location in Amazon S3, which is defined in AWS Systems Manager Parameter store in the bucket defined in `InputBucketName` and folder `InputBucketRawAudio`. 
+    * Transcript files from Transcribe's Streaming Analytics APIs can be delivered to the transcript ingest location in Amazon S3, which is defined in AWS Systems Manager Parameter store in the bucket defined in `InputBucketName` and folder `InputBucketTranscribeResults`
+    
+
+* **Transcription** *(audio files only)*
     * Batch turn-by-turn transcription with support for [Amazon Transcribe custom vocabulary](https://docs.aws.amazon.com/transcribe/latest/dg/custom-vocabulary.html) for accuracy of domain-specific terminology 
     * [Personally identifiable information (PII) redaction](https://docs.aws.amazon.com/transcribe/latest/dg/call-analytics-pii-redaction.html) from transcripts and audio files, and [vocabulary filtering](https://docs.aws.amazon.com/transcribe/latest/dg/create-filter.html) for masking custom words and phrases
     * Multiple languages and automatic language detection
     * Standard audio file formats
     * Caller and agent speaker labels using [channel identification](https://docs.aws.amazon.com/transcribe/latest/dg/channel-id.html) or [speaker diarization](https://docs.aws.amazon.com/transcribe/latest/dg/diarization.html)
-* **Analytics**
+* **Analytics** *(audio files only)*
     * Caller and agent sentiment details and trends
     * Talk and non-talk time for both caller and agent 
     * Configurable Transcribe Call Analytics categories based on the presence or absence of keywords or phrases, sentiment, and non-talk time
@@ -44,13 +51,15 @@ Call recording audio files are uploaded to the S3 bucket and folder, identified 
 
 As each recording file is added to the input bucket, an S3 event notification triggers a Lambda function that initiates a workflow in Step Functions to process the file. The workflow orchestrates the steps to start an Amazon Transcribe batch job and process the results by doing entity detection and additional preparation of the call analytics results. Processed results are stored as JSON files in another S3 bucket and folder, identified in the main stack outputs as ``OutputBucket`` and ``OutputBucketPrefix``**.**
 
+If you deliver transcript files rather than audio files then the majority of the above is bypassed, and the transcripts just undergo the same post-Transcribe results procesing, giving you a single store of call analytics data for your call data from multiple sources.
+
 As the Step Functions workflow creates each JSON results file in the output bucket, an S3 event notification triggers a Lambda function, which loads selected call metadata into a DynamoDB table.
 
 The PCA UI web app queries the DynamoDB table to retrieve the list of processed calls to display on the home page. The call detail page reads additional detailed transcription and analytics from the JSON results file for the selected call.
 
 Amazon S3 lifecycle policies delete recordings and JSON files from both input and output buckets after a configurable retention period, defined by the deployment parameter `RetentionDays`. S3 event notifications and Lambda functions keep the DynamoDB table synchronized as files are both created and deleted.
 
-When the `EnableTranscriptKendraSearch` parameter** **is `true`, the Step Functions workflow also adds time markers and metadata attributes to the transcription, which are loaded into an Amazon Kendra index. The transcription search web application is used to search call transcriptions. For more information on how this works, see [Make your audio and video files searchable using Amazon Transcribe and Amazon Kendra](http://www.amazon.com/mediasearch).
+When the `EnableTranscriptKendraSearch` parameter is `true`, the Step Functions workflow also adds time markers and metadata attributes to the transcription, which are loaded into an Amazon Kendra index. The transcription search web application is used to search call transcriptions. For more information on how this works, see [Make your audio and video files searchable using Amazon Transcribe and Amazon Kendra](http://www.amazon.com/mediasearch).
 
 ## Integration with Telephony CTR Files
 
