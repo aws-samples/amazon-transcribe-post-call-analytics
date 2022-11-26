@@ -22,6 +22,10 @@ Parameters:
     Type: AWS::SSM::Parameter::Value<String>
     Default: InputBucketRawAudio
     
+  InputBucketOrigTranscripts:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: InputBucketOrigTranscripts
+
   StepFunctionName:
     Type: AWS::SSM::Parameter::Value<String>
     Default: StepFunctionName
@@ -112,12 +116,22 @@ Resources:
         Variables:
           StackName: !Ref AWS::StackName
 
-  ConfigureBucket:
+  ConfigureBucketAudioFile:
     Type: "AWS::CloudFormation::CustomResource"
     Properties:
       ServiceToken: !GetAtt ConfigureBucketFunction.Arn
       BucketName: !Ref InputBucketName
       Prefix: !Ref InputBucketRawAudio
+      LambdaArn: !GetAtt FileDropTrigger.Arn
+
+  ConfigureBucketTranscriptFile:
+    Type: "AWS::CloudFormation::CustomResource"
+    DependsOn:
+      - ConfigureBucketAudioFile
+    Properties:
+      ServiceToken: !GetAtt ConfigureBucketFunction.Arn
+      BucketName: !Ref InputBucketName
+      Prefix: !Ref InputBucketOrigTranscripts
       LambdaArn: !GetAtt FileDropTrigger.Arn
 
   TranscribeEventbridge:

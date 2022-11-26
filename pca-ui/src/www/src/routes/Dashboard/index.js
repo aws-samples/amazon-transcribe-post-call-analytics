@@ -53,6 +53,10 @@ function Dashboard({ setAlert }) {
     data?.ConversationAnalytics?.SourceInformation[0]?.TranscribeJobInfo
       ?.TranscribeApiType === "analytics";
 
+  const hasTranscribeStreamingSession =
+    data?.ConversationAnalytics?.SourceInformation[0]?.TranscribeJobInfo
+      ?.StreamingSession;
+
   useDangerAlert(error, setAlert);
 
   const [speakerLabels, setSpeakerLabels] = useState({
@@ -151,8 +155,12 @@ function Dashboard({ setAlert }) {
       label: "Type",
       value: (d) =>
         isTranscribeCallAnalyticsMode
-          ? "Transcribe Call Analytics"
-          : "Transcribe",
+          ? hasTranscribeStreamingSession
+            ? "Transcribe Streaming Call Analytics"
+            : "Transcribe Call Analytics"
+          : hasTranscribeStreamingSession
+            ? "Transcribe Streaming"
+            : "Transcribe"
     },
     {
       label: "Job Id",
@@ -177,7 +185,14 @@ function Dashboard({ setAlert }) {
         d?.ConversationAnalytics?.SourceInformation[0]?.TranscribeJobInfo
           ?.MediaSampleRateHertz,
     },
-
+    {
+      label: "PII Redaction",
+      value: (d) =>
+        d?.ConversationAnalytics?.SourceInformation[0]?.TranscribeJobInfo
+          ?.RedactedTranscript === true
+          ? "Enabled"
+          : "Disabled"
+    },
     {
       label: "Custom Vocabulary",
       value: (d) =>

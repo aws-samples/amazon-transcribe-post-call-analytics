@@ -253,6 +253,7 @@ Present when the source of the conversation is Amazon Transcribe.  A mixture of 
     "TranscribeJobInfo": {
       "TranscriptionJobName": "string",
       "TranscribeApiType": "string",
+      "StreamingSession": "string",
       "CompletionTime": "string",
       "VocabularyName": "string",
       "VocabularyFilter": "string",
@@ -260,6 +261,7 @@ Present when the source of the conversation is Amazon Transcribe.  A mixture of 
       "MediaSampleRateHertz": "integer",
       "MediaFileUri": "string",
       "MediaOriginalUri": "string",
+      "RedactedTranscript": "boolean",
       "ChannelIdentification": "boolean",
       "AverageWordConfidence": "float",
       "CombinedAnalyticsGraph": "string"
@@ -270,8 +272,9 @@ Present when the source of the conversation is Amazon Transcribe.  A mixture of 
 
 | Field                  | Type   | Description                                                  |
 | ---------------------- | ------ | ------------------------------------------------------------ |
-| TranscriptionJobName   | string | The name of the transcription job                            |
+| TranscriptionJobName   | string | The name of the transcription job (audio file input) or the name of the transcription file (transcription file input) |
 | TranscribeApiType      | string | The Transcribe API used, must be one of:  `standard`, `analytics` |
+| StreamingSession       | string | ID for any associated Transcribe Streaming session           |
 | CompletionTime         | string | A timestamp that shows when the job was completed            |
 | VocabularyName         | string | The name of the vocabulary used in the transcription job     |
 | VocabularyFilter       | string | The name and mask method of the vocabulary filter used in the transcription job |
@@ -279,9 +282,10 @@ Present when the source of the conversation is Amazon Transcribe.  A mixture of 
 | MediaSampleRateHertz   | Int    | The sample rate, in Hertz, of the audio track in the input audio |
 | MediaFileUri           | string | The S3 object location of the media file to use during playback, as we may playback an audio-redacted version or a version that has a format unplayable in all browsers with the HTML5 audio control |
 | MediaOriginalUri       | string | The S3 object location of the original input audio file      |
+| RedactedTranscript     | bool   | Indicates that the transcript has been redacted              |
 | ChannelIdentifcation   | bool   | Indicates whether the transcription job used channel- (true) or speaker-separation (false) |
 | AverageWordConfidence  | float  | Percentage value between 0.00 and 1.00 indicating overall word confidence score for this job |
-| CombinedAnalyticsGraph | string | S3 URL for the pre-generated combined Call Analytics chart |
+| CombinedAnalyticsGraph | string | S3 URL for the pre-generated combined Call Analytics chart   |
 
 ### SpeechSegments
 

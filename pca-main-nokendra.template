@@ -73,7 +73,7 @@ Parameters:
 
   InputBucketAudioPlayback:
     Type: String
-    Default: mp3
+    Default: playbackAudio
     Description: Folder that holds the audio files to playback in the browser when original audio cannot be used
 
   InputBucketFailedTranscriptions:
@@ -92,6 +92,13 @@ Parameters:
     Type: String
     Default: originalAudio
     Description: Prefix/Folder that holds the audio files to be ingested into the system
+
+  InputBucketOrigTranscripts:
+    Type: String
+    Default: originalTranscripts
+    Description: >
+      Folder that holds Transcripts from other applications (e.g. Live Call Analytics) that are to be
+      processed as if PCA had processed that audio
 
   MaxSpeakers:
     Type: String
@@ -353,6 +360,7 @@ Metadata:
               Parameters:
                   - InputBucketFailedTranscriptions
                   - InputBucketRawAudio
+                  - InputBucketOrigTranscripts
                   - InputBucketAudioPlayback
                   - OutputBucketParsedResults
                   - OutputBucketTranscribeResults
@@ -503,6 +511,7 @@ Resources:
           - !Ref InputBucket
           - !Ref InputBucketName        
         InputBucketRawAudio: !Ref InputBucketRawAudio
+        InputBucketOrigTranscripts: !Ref InputBucketOrigTranscripts
         MaxSpeakers: !Ref MaxSpeakers
         MinSentimentNegative: !Ref MinSentimentNegative
         MinSentimentPositive: !Ref MinSentimentPositive
@@ -596,6 +605,10 @@ Outputs:
   InputBucketPrefix:
     Description: S3 Bucket prefix/folder for uploading input audio files
     Value: !Ref InputBucketRawAudio
+
+  InputBucketTranscriptPrefix:
+    Description: S3 Bucket prefix/folder for uploading input transcripts
+    Value: !Ref InputBucketOrigTranscripts
 
   OutputBucket:
     Description: S3 Bucket where Transcribe output files are delivered
