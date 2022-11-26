@@ -156,7 +156,6 @@ class ConversationAnalytics:
         self.custom_entities = json_input["CustomEntities"]
         self.entity_recognizer = json_input["EntityRecognizerName"]
         self.sentiment_trends = json_input["SentimentTrends"]
-        self.conversationTime = json_input["ConversationTime"]
         self.speaker_time = json_input["SpeakerTime"]
 
         # Load in optional fields that were not present in the initial release
@@ -236,6 +235,7 @@ class TranscribeJobInfo:
     """ Class to hold the information about an underlying Transcribe job """
     def __init__(self):
         self.api_mode = cf.API_ANALYTICS
+        self.streaming_session = None
         self.completion_time = ""
         self.media_format = ""
         self.media_sample_rate = 8000
@@ -267,6 +267,10 @@ class TranscribeJobInfo:
                                "TranscriptionJobName": self.transcribe_job_name,
                                "RedactedTranscript": self.redacted_transcript,
                                "ChannelIdentification": self.channel_identification}
+
+        # Streaming session is optional
+        if self.streaming_session is not None:
+            transcribe_job_info["StreamingSession"] = self.streaming_session
 
         # Vocabulary name is optional
         if self.custom_vocab_name != "":
@@ -305,6 +309,8 @@ class TranscribeJobInfo:
             self.vocab_filter_method = filter_string.split("[")[-1].split("]")[0]
         if "RedactedTranscript" in json_input:
             self.redacted_transcript = bool(json_input["RedactedTranscript"])
+        if "StreamingSession" in json_input:
+            self.streaming_session = bool(json_input["StreamingSession"])
 
 
 class PCAResults:
@@ -431,7 +437,7 @@ class PCAResults:
                         header_ent_dict[entity_type] = []
 
                     # If we haven't seen this type/value pair before then append it to the type entry
-                    if not entity_text in header_ent_dict[entity_type]:
+                    if entity_text not in header_ent_dict[entity_type]:
                         header_ent_dict[entity_type].append(entity_text)
 
         # Finally, rebuild the header entry summary
@@ -441,7 +447,6 @@ class PCAResults:
                               "Instances": len(header_ent_dict[entity]),
                               "Values": header_ent_dict[entity]}
                 self.analytics.custom_entities.append(nextEntity)
-
 
     def read_results_from_s3(self, bucket, object_key, offline=False):
 

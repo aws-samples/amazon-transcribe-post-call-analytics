@@ -1,11 +1,12 @@
 """
 This python function is part of the main processing workflow.  It will read in all of the relevant
 Transcribe job header information and write out some partial results before passing control to the
+next step
 
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 """
-from pcaresults import PCAResults, TranscribeJobInfo
+from pcaresults import PCAResults
 import pcaconfiguration as cf
 import copy
 import boto3
@@ -23,6 +24,7 @@ def populate_job_info(transcribe_info, job_info, api_mode):
     """
     # Some fields we pick off the basic job info
     transcribe_info.api_mode = api_mode
+    transcribe_info.streaming_mode = False
     transcribe_info.completion_time = str(job_info["CompletionTime"])
     transcribe_info.media_format = job_info["MediaFormat"]
     transcribe_info.media_sample_rate = int(job_info["MediaSampleRateHertz"])

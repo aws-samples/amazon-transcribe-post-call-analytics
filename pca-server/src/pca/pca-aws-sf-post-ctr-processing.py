@@ -17,11 +17,9 @@ def lambda_handler(event, context):
 
     # Load our configuration data
     cf.loadConfiguration()
-    results_bucket = cf.appConfig[cf.CONF_S3BUCKET_OUTPUT]
 
     # Load in our existing interim CCA results
     pca_results = pcaresults.PCAResults()
-    pca_analytics = pca_results.get_conv_analytics()
     pca_results.read_results_from_s3(cf.appConfig[cf.CONF_S3BUCKET_OUTPUT], event["interimResultsFile"])
 
     # --------- Do any post processing here ----------
@@ -63,6 +61,16 @@ if __name__ == "__main__":
         "transcribeStatus": "COMPLETED",
         "interimResultsFile": "interimResults/redacted-Auto0_GUID_000_AGENT_ChrisL_DT_2022-03-19T06-01-22_Mono.wav.json"
     }
+    test_stream_tca = {
+        "bucket": "ak-cci-input",
+        "key": "originalTranscripts/TCA_GUID_3c7161f7-bebc-4951-9cfb-943af1d3a5f5_CUST_17034816544_AGENT_BabuS_2022-11-22T21-32-52.145Z.json",
+        "inputType": "transcript",
+        "jobName": "TCA_GUID_3c7161f7-bebc-4951-9cfb-943af1d3a5f5_CUST_17034816544_AGENT_BabuS_2022-11-22T21-32-52.145Z.json",
+        "apiMode": "analytics",
+        "transcribeStatus": "COMPLETED",
+        "interimResultsFile": "interimResults/TCA_GUID_3c7161f7-bebc-4951-9cfb-943af1d3a5f5_CUST_17034816544_AGENT_BabuS_2022-11-22T21-32-52.145Z.json"
+    }
     lambda_handler(test_event_analytics, "")
     lambda_handler(test_event_stereo, "")
     lambda_handler(test_event_mono, "")
+    lambda_handler(test_stream_tca, "")

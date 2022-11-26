@@ -56,6 +56,7 @@ BULK_MAX_DRIP_RATE = "BulkUploadMaxDripRate"
 # Transcribe API Modes
 API_STANDARD = "standard"
 API_ANALYTICS = "analytics"
+API_STREAM_ANALYTICS = "analytics-streaming"
 
 # Speaker separation modes
 SPEAKER_MODE_SPEAKER = "speaker"
@@ -188,6 +189,7 @@ def loadConfiguration():
     appConfig[CONF_TRANSCRIBE_LANG] = appConfig[CONF_TRANSCRIBE_LANG].split(" | ")
     appConfig[CONF_SPEAKER_NAMES] = appConfig[CONF_SPEAKER_NAMES].split(" | ")
     appConfig[CONF_TELEPHONY_CTR_SUFFIX] = appConfig[CONF_TELEPHONY_CTR_SUFFIX].split(" | ")
+
 
 def isAutoLanguageDetectionSet():
     """

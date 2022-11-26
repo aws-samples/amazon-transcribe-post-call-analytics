@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 """
 import os
 import time
+import subprocess
 import pcaconfiguration as cf
 
 
@@ -36,6 +37,27 @@ def remove_temp_file(file_path):
     # Delete the file if it exists
     if os.path.exists(file_path):
         os.remove(file_path)
+
+
+def ffprobe_get_stream_entries(select_data, filename):
+    """
+    Calls FFPROBE to look at the streams-based metadata for a given audio file, but you specify which
+    aspect of the stream data to be returned.  To see what's available in the stream run this:
+
+    ffprobe -hide_banner -loglevel panic -show_format -show_streams -of json <filename>
+
+    Note that this could exception for many reason, so the caller should be prepared for failure
+
+    :param select_data: The stream data that you're trying to parse; e.g. stream=sample_rate
+    :param filename: Full path to local file to be probed
+    :return: Data returned from FFPROBE
+    """
+    command = ['ffprobe', '-v', 'error', '-select_streams', 'a', '-of',
+               'default=noprint_wrappers=1:nokey=1', '-show_entries',
+               select_data, filename]
+    prob_result = subprocess.check_output(command, stderr=subprocess.STDOUT).decode()
+
+    return prob_result.strip('\n')
 
 
 def comprehend_single_sentiment(text, lang_code, scalar=1.0, client=None):

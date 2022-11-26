@@ -155,6 +155,23 @@ Resources:
         - arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess
         - arn:aws:iam::aws:policy/AmazonS3FullAccess
 
+  SFExtractTranscriptHeader:
+    Type: "AWS::Serverless::Function"
+    Properties:
+      CodeUri:  ../../src/pca
+      Handler: pca-aws-sf-extract-transcript-header.lambda_handler
+      MemorySize: 1024
+      Timeout: 900
+      Layers:
+        - !Ref Boto3Layer
+        - !Ref FFMPEGLayer
+      Environment:
+        Variables:
+          AWS_DATA_PATH: "/opt/models"
+      Policies:
+        - arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+
   SFProcessTurn:
     Type: "AWS::Serverless::Function"
     Properties:
@@ -264,6 +281,7 @@ Resources:
                 Action: lambda:InvokeFunction
                 Resource:
                   - !GetAtt SFExtractJobHeader.Arn
+                  - !GetAtt SFExtractTranscriptHeader.Arn
                   - !GetAtt SFProcessTurn.Arn
                   - !GetAtt SFStartTranscribeJob.Arn
                   - !GetAtt SFAwaitNotification.Arn
@@ -293,6 +311,7 @@ Resources:
       DefinitionS3Location: ./pca-definition.json
       DefinitionSubstitutions:
         SFExtractJobHeaderArn: !GetAtt SFExtractJobHeader.Arn
+        SFExtractTranscriptHeaderArn: !GetAtt SFExtractTranscriptHeader.Arn
         SFProcessTurnArn: !GetAtt SFProcessTurn.Arn
         SFStartTranscribeJobArn: !GetAtt SFStartTranscribeJob.Arn
         SFAwaitNotificationArn: !GetAtt SFAwaitNotification.Arn

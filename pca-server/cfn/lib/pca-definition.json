@@ -12,7 +12,7 @@
           "Next": "TranscribeAudio"
         }
       ],
-      "Default": "Success"
+      "Default": "ProcessTranscriptHeader"
     },
     "TranscribeAudio": {
       "Comment": "Sends the file in S3 for Transcription",
@@ -78,6 +78,16 @@
       "Comment": "Creates header information based upon the Transcribe job",
       "Type": "Task",
       "Resource": "${SFExtractJobHeaderArn}",
+      "Retry": [{
+          "IntervalSeconds": 5,
+          "ErrorEquals": ["Lambda.Unknown"]
+      }],
+      "Next": "ProcessTranscription"
+    },
+    "ProcessTranscriptHeader": {
+      "Comment": "Creates header information based upon what's available in a transcript file",
+      "Type": "Task",
+      "Resource": "${SFExtractTranscriptHeaderArn}",
       "Retry": [{
           "IntervalSeconds": 5,
           "ErrorEquals": ["Lambda.Unknown"]

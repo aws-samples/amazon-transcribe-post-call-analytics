@@ -940,34 +940,47 @@ class TranscribeParser:
                             break
 
                 # Process each word in this turn
-                for word in turn["Items"]:
-                    # Pick out our next data from a 'pronunciation'
-                    if word["Type"] == "pronunciation":
-                        # Write the word, and a leading space if this isn't the start of the segment
-                        if skipLeadingSpace:
-                            skipLeadingSpace = False
-                            wordToAdd = word["Content"]
+                if "Items" in turn:
+                    # Turn-level items are available
+                    for word in turn["Items"]:
+                        # Pick out our next data from a 'pronunciation'
+                        if word["Type"] == "pronunciation":
+                            # Write the word, and a leading space if this isn't the start of the segment
+                            if skipLeadingSpace:
+                                skipLeadingSpace = False
+                                wordToAdd = word["Content"]
+                            else:
+                                wordToAdd = " " + word["Content"]
+
+                            # If the word is redacted then the word confidence is a bit more buried
+                            if "Confidence" in word:
+                                conf_score = float(word["Confidence"])
+                            elif "Redaction" in word:
+                                conf_score = float(word["Redaction"][0]["Confidence"])
+
+                            # Add the word and confidence to this segment's list and to our overall stats
+                            confidenceList.append({"Text": wordToAdd,
+                                                   "Confidence": conf_score,
+                                                   "StartTime": float(word["BeginOffsetMillis"]) / 1000.0,
+                                                   "EndTime": float(word["EndOffsetMillis"] / 1000.0)})
+                            self.numWordsParsed += 1
+                            self.cummulativeWordAccuracy += conf_score
+
                         else:
-                            wordToAdd = " " + word["Content"]
-
-                        # If the word is redacted then the word confidence is a bit more buried
-                        if "Confidence" in word:
-                            conf_score = float(word["Confidence"])
-                        elif "Redaction" in word:
-                            conf_score = float(word["Redaction"][0]["Confidence"])
-
-                        # Add the word and confidence to this segment's list and to our overall stats
-                        confidenceList.append({"Text": wordToAdd,
-                                               "Confidence": conf_score,
-                                               "StartTime": float(word["BeginOffsetMillis"]) / 1000.0,
-                                               "EndTime": float(word["EndOffsetMillis"] / 1000.0)})
+                            # Punctuation, needs to be added to the previous word
+                            last_word = nextSpeechSegment.segmentConfidence[-1]
+                            last_word["Text"] = last_word["Text"] + word["Content"]
+                else:
+                    # Turn-level items are NOT available (true for the launch of TCA Streaming)
+                    # TODO This should be temporary, as TCA Streaming will support this going forward
+                    word_list = turn["Content"].split(" ")
+                    for wordToAdd in word_list:
+                        # Go through each word and create a similar entry to the above
                         self.numWordsParsed += 1
-                        self.cummulativeWordAccuracy += conf_score
-
-                    else:
-                        # Punctuation, needs to be added to the previous word
-                        last_word = nextSpeechSegment.segmentConfidence[-1]
-                        last_word["Text"] = last_word["Text"] + word["Content"]
+                        confidenceList.append({"Text": wordToAdd,
+                                               "Confidence": 0.0,
+                                               "StartTime": 0.0,
+                                               "EndTime": 0.0})
 
                 # Record any issues, actions or outcomes detected
                 self.extract_summary_data(nextSpeechSegment, nextSpeechSegment.segmentIssuesDetected,
@@ -1019,15 +1032,17 @@ class TranscribeParser:
         if summary_tag in turn:
             for summary in turn[summary_tag]:
                 # Grab the transcript offsets for the issue text
-                begin_offset = summary["CharacterOffsets"]["Begin"]
-                end_offset = summary["CharacterOffsets"]["End"]
-                next_summary = {"Text": speech_segment.segmentText[begin_offset:end_offset],
-                                "BeginOffset": begin_offset,
-                                "EndOffset": end_offset}
+                if "CharacterOffsets" in summary:
+                    # TODO Early releases of streaming TCA omitted the offsets, so be wary
+                    begin_offset = summary["CharacterOffsets"]["Begin"]
+                    end_offset = summary["CharacterOffsets"]["End"]
+                    next_summary = {"Text": speech_segment.segmentText[begin_offset:end_offset],
+                                    "BeginOffset": begin_offset,
+                                    "EndOffset": end_offset}
 
-                # Tag this one on to our segment list and the header list
-                segment_summary_block.append(next_summary)
-                call_summary_block.append(next_summary)
+                    # Tag this one on to our segment list and the header list
+                    segment_summary_block.append(next_summary)
+                    call_summary_block.append(next_summary)
 
     def create_simple_entity_entries(self, speech_segments):
         """
@@ -1037,6 +1052,7 @@ class TranscribeParser:
         """
 
         # Need to check each of our speech segments for each of our entity blocks
+        # TODO We need to match words, not partials!  See notes below
         for nextTurn in speech_segments:
             # Now check this turn for each entity
             turnText = nextTurn.segmentText.lower()
@@ -1266,7 +1282,8 @@ class TranscribeParser:
         """
 
         # First, load in what interim results we have so far
-        self.pca_results.read_results_from_s3(cf.appConfig[cf.CONF_S3BUCKET_OUTPUT], sf_event["interimResultsFile"])
+        output_bucket = cf.appConfig[cf.CONF_S3BUCKET_OUTPUT]
+        self.pca_results.read_results_from_s3(output_bucket, sf_event["interimResultsFile"])
         self.api_mode = self.pca_results.analytics.transcribe_job.api_mode
 
         # Create an MP3 playback file if we have to, using the redacted audio file if needed
@@ -1277,16 +1294,16 @@ class TranscribeParser:
             s3_client = boto3.resource("s3")
             source = {"Bucket": s3_object.netloc, "Key": s3_object.path[1:]}
             dest_key = cf.appConfig[cf.CONF_PREFIX_AUDIO_PLAYBACK] + '/' + redacted_url.split('/')[-1]
-            s3_client.meta.client.copy(source, cf.appConfig[cf.CONF_S3BUCKET_INPUT], dest_key)
-            self.audioPlaybackUri = "s3://" + cf.appConfig[cf.CONF_S3BUCKET_INPUT] + "/" + dest_key
+            s3_client.meta.client.copy(source, output_bucket, dest_key)
+            self.audioPlaybackUri = "s3://" + output_bucket + "/" + dest_key
         else:
             # TODO We need to put ALL playback audio in the playback folder, and assume that the input
             # TODO folder will be archived away (or just deleted) far sooner than the playback folder
-            # Ensure we have an audio file in the playback folder
-            self.create_playback_mp3_audio(self.analytics.transcribe_job.media_playback_uri)
+            # Ensure we have an audio file in the playback folder, and convert it if we have to when
+            if cf.appConfig[cf.CONF_PREFIX_AUDIO_PLAYBACK] not in self.analytics.transcribe_job.media_playback_uri:
+                self.create_playback_mp3_audio(self.analytics.transcribe_job.media_playback_uri)
 
         # Pick out the config parameters that we need
-        outputS3Bucket = cf.appConfig[cf.CONF_S3BUCKET_OUTPUT]
 
         # Parse various fields from the Transcribe job name if possible
         job_name = self.analytics.transcribe_job.transcribe_job_name
@@ -1298,16 +1315,21 @@ class TranscribeParser:
         # Download the job JSON results file to a local temp file - different Transcribe modes put the files in
         # different folder structures, so strip everything past the bucket name to be the location of the tmp file
         json_filepath = TMP_DIR + '/' + sf_event["transcriptUri"].split("/")[-1]
-        transcriptResultsKey = "/".join(sf_event["transcriptUri"].split("/")[4:])
+        if sf_event["transcriptUri"].startswith("https"):
+            # HTTPS URI came from Transcribe, so https://<region>/<bucket>/<key>
+            transcriptResultsKey = "/".join(sf_event["transcriptUri"].split("/")[4:])
+        else:
+            # S3 URI came from Transcribe, so s3://<bucket>/<key>
+            transcriptResultsKey = "/".join(sf_event["transcriptUri"].split("/")[3:])
 
         # Now download - this has been known to get a "404 HeadObject Not Found",
         # which makes no sense, so if that happens then re-try in a sec.  Only once.
         s3Client = boto3.client('s3')
         try:
-            s3Client.download_file(outputS3Bucket, transcriptResultsKey, json_filepath)
+            s3Client.download_file(output_bucket, transcriptResultsKey, json_filepath)
         except:
             time.sleep(3)
-            s3Client.download_file(outputS3Bucket, transcriptResultsKey, json_filepath)
+            s3Client.download_file(output_bucket, transcriptResultsKey, json_filepath)
 
         # Load in the JSON file for processing, and set our language codes for the file and Comprehend
         self.asr_output = json.load(open(Path(json_filepath).absolute(), "r", encoding="utf-8"))
@@ -1323,7 +1345,7 @@ class TranscribeParser:
         self.push_turn_by_turn_results()
 
         # Write out the JSON data back to our interim S3 location
-        json_output = self.pca_results.write_results_to_s3(bucket=outputS3Bucket, object_key=sf_event["interimResultsFile"])
+        json_output = self.pca_results.write_results_to_s3(bucket=output_bucket, object_key=sf_event["interimResultsFile"])
 
         # Index transcript in Kendra, if transcript search is enable
         kendraIndexId = cf.appConfig[cf.CONF_KENDRA_INDEX_ID]
@@ -1394,6 +1416,18 @@ if __name__ == "__main__":
         "transcriptUri": "https://s3.us-east-1.amazonaws.com/ak-cci-output/transcribeResults/redacted-Auto0_GUID_000_AGENT_ChrisL_DT_2022-03-19T06-01-22_Mono.wav.json",
         "interimResultsFile": "interimResults/redacted-Auto0_GUID_000_AGENT_ChrisL_DT_2022-03-19T06-01-22_Mono.wav.json"
     }
+    test_stream_tca = {
+        "bucket": "ak-cci-input",
+        "key": "originalTranscripts/TCA_GUID_3c7161f7-bebc-4951-9cfb-943af1d3a5f5_CUST_17034816544_AGENT_BabuS_2022-11-22T21-32-52.145Z.json",
+        "inputType": "transcript",
+        "jobName": "TCA_GUID_3c7161f7-bebc-4951-9cfb-943af1d3a5f5_CUST_17034816544_AGENT_BabuS_2022-11-22T21-32-52.145Z.json",
+        "apiMode": "analytics",
+        "transcribeStatus": "COMPLETED",
+        "transcriptUri": "s3://ak-cci-output/transcribeResults/liveStreaming/TCA_GUID_3c7161f7-bebc-4951-9cfb-943af1d3a5f5_CUST_17034816544_AGENT_BabuS_2022-11-22T21-32-52.145Z.json",
+        "channelDefinitions": [{'ChannelId': 1, 'ParticipantRole': 'AGENT'}, {'ChannelId': 0, 'ParticipantRole': 'CUSTOMER'}],
+        "interimResultsFile": "interimResults/TCA_GUID_3c7161f7-bebc-4951-9cfb-943af1d3a5f5_CUST_17034816544_AGENT_BabuS_2022-11-22T21-32-52.145Z.json"
+    }
     lambda_handler(test_event_analytics, "")
     lambda_handler(test_event_stereo, "")
     lambda_handler(test_event_mono, "")
+    lambda_handler(test_stream_tca, "")
