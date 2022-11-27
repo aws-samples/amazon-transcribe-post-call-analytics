@@ -387,6 +387,7 @@ class PCAResults:
         :param object_key: Name of the output file for the results
         :param interim: Forcibly writes the key to our interim results folder
         :return: JSON results object
+        :return: Destination S3 object key
         """
 
         # Override our bucket/key values if we're writing to our interim results folder

@@ -1248,33 +1248,31 @@ class TranscribeParser:
         s3Object = urlparse(audio_uri)
         bucket = s3Object.netloc
 
-        # 8Khz WAV audio gets converted
-        if (self.transcribe_job_info.media_format == "wav") and (self.transcribe_job_info.media_sample_rate == 8000):
-            # First, we need to download the original audio file
-            fileObject = s3Object.path.lstrip('/')
-            inputFilename = TMP_DIR + '/' + fileObject.split('/')[-1]
-            outputFilename = inputFilename.split('.wav')[0] + '.mp3'
-            s3Client = boto3.client('s3')
-            s3Client.download_file(bucket, fileObject, inputFilename)
+        # 8Khz WAV audio gets converted - first, we need to download the original audio file
+        fileObject = s3Object.path.lstrip('/')
+        inputFilename = TMP_DIR + '/' + fileObject.split('/')[-1]
+        outputFilename = inputFilename.split('.wav')[0] + '.mp3'
+        s3Client = boto3.client('s3')
+        s3Client.download_file(bucket, fileObject, inputFilename)
 
-            # Transform the file via FFMPEG - this will exception if not installed
-            try:
-                # Just convert from source to destination format
-                subprocess.call(['ffmpeg', '-nostats', '-loglevel', '0', '-y', '-i', inputFilename, outputFilename],
-                                stdin=subprocess.DEVNULL)
+        # Transform the file via FFMPEG - this will exception if not installed
+        try:
+            # Just convert from source to destination format
+            subprocess.call(['ffmpeg', '-nostats', '-loglevel', '0', '-y', '-i', inputFilename, outputFilename],
+                            stdin=subprocess.DEVNULL)
 
-                # Now upload the output file to the configured playback folder in the main input bucket
-                s3FileKey = cf.appConfig[cf.CONF_PREFIX_AUDIO_PLAYBACK] + '/' + outputFilename.split('/')[-1]
-                s3Client.upload_file(outputFilename, cf.appConfig[cf.CONF_S3BUCKET_INPUT], s3FileKey,
-                                     ExtraArgs={'ContentType': 'audio/mp3'})
-                self.audioPlaybackUri = "s3://" + cf.appConfig[cf.CONF_S3BUCKET_INPUT] + "/" + s3FileKey
-            except Exception as e:
-                print(e)
-                print("Unable to create MP3 version of original audio file - could not find FFMPEG libraries")
-            finally:
-                # Remove our temporary files in case of Lambda container re-use
-                pcacommon.remove_temp_file(inputFilename)
-                pcacommon.remove_temp_file(outputFilename)
+            # Now upload the output file to the configured playback folder in the main input bucket
+            s3FileKey = cf.appConfig[cf.CONF_PREFIX_AUDIO_PLAYBACK] + '/' + outputFilename.split('/')[-1]
+            s3Client.upload_file(outputFilename, cf.appConfig[cf.CONF_S3BUCKET_INPUT], s3FileKey,
+                                 ExtraArgs={'ContentType': 'audio/mp3'})
+            self.audioPlaybackUri = "s3://" + cf.appConfig[cf.CONF_S3BUCKET_INPUT] + "/" + s3FileKey
+        except Exception as e:
+            print(e)
+            print("Unable to create MP3 version of original audio file - could not find FFMPEG libraries")
+        finally:
+            # Remove our temporary files in case of Lambda container re-use
+            pcacommon.remove_temp_file(inputFilename)
+            pcacommon.remove_temp_file(outputFilename)
 
     def parse_transcribe_file(self, sf_event):
         """
@@ -1283,25 +1281,30 @@ class TranscribeParser:
 
         # First, load in what interim results we have so far
         output_bucket = cf.appConfig[cf.CONF_S3BUCKET_OUTPUT]
+        input_bucket = cf.appConfig[cf.CONF_S3BUCKET_INPUT]
         self.pca_results.read_results_from_s3(output_bucket, sf_event["interimResultsFile"])
         self.api_mode = self.pca_results.analytics.transcribe_job.api_mode
 
-        # Create an MP3 playback file if we have to, using the redacted audio file if needed
+        # Put a playback audio file in the correct folder - this can have multiple sources
         if "redactedMediaFileUri" in sf_event:
-            # Copy the redacted audio into the playback folder if it exists
+            # If we have redacted audio output from TCA then copy that to the playback folder
             redacted_url = "s3://" + "/".join(sf_event["redactedMediaFileUri"].split("/")[3:])
             s3_object = urlparse(redacted_url)
             s3_client = boto3.resource("s3")
             source = {"Bucket": s3_object.netloc, "Key": s3_object.path[1:]}
             dest_key = cf.appConfig[cf.CONF_PREFIX_AUDIO_PLAYBACK] + '/' + redacted_url.split('/')[-1]
-            s3_client.meta.client.copy(source, output_bucket, dest_key)
-            self.audioPlaybackUri = "s3://" + output_bucket + "/" + dest_key
-        else:
-            # TODO We need to put ALL playback audio in the playback folder, and assume that the input
-            # TODO folder will be archived away (or just deleted) far sooner than the playback folder
-            # Ensure we have an audio file in the playback folder, and convert it if we have to when
-            if cf.appConfig[cf.CONF_PREFIX_AUDIO_PLAYBACK] not in self.analytics.transcribe_job.media_playback_uri:
+            s3_client.meta.client.copy(source, input_bucket, dest_key)
+            self.audioPlaybackUri = "s3://" + input_bucket + "/" + dest_key
+        elif (self.transcribe_job_info.media_format == "wav") and (self.transcribe_job_info.media_sample_rate == 8000):
+                # Certain type of WAV don't play nicely with the HTML playback control
                 self.create_playback_mp3_audio(self.analytics.transcribe_job.media_playback_uri)
+        else:
+            # Copy the original input file to the playback folder
+            s3_client = boto3.resource("s3")
+            source = {"Bucket": input_bucket, "Key": sf_event["key"]}
+            dest_key = cf.appConfig[cf.CONF_PREFIX_AUDIO_PLAYBACK] + '/' + sf_event["key"].split('/')[-1]
+            s3_client.meta.client.copy(source, input_bucket, dest_key)
+            self.audioPlaybackUri = "s3://" + input_bucket + "/" + dest_key
 
         # Pick out the config parameters that we need
 
@@ -1345,14 +1348,14 @@ class TranscribeParser:
         self.push_turn_by_turn_results()
 
         # Write out the JSON data back to our interim S3 location
-        json_output = self.pca_results.write_results_to_s3(bucket=output_bucket, object_key=sf_event["interimResultsFile"])
+        json_output, output_filename = self.pca_results.write_results_to_s3(bucket=output_bucket,
+                                                                            object_key=sf_event["interimResultsFile"])
 
         # Index transcript in Kendra, if transcript search is enable
         kendraIndexId = cf.appConfig[cf.CONF_KENDRA_INDEX_ID]
         if kendraIndexId != "None":
             analysisUri = f"{cf.appConfig[cf.CONF_WEB_URI]}dashboard/parsedFiles/{json_filepath.split('/')[-1]}"
-            transcript_with_markers = prepare_transcript(json_filepath)
-            # TODO Check we can get this from "self", then we can remove json_output from the write_to_s3 call above
+            transcript_with_markers = prepare_transcript(self.pca_results)
             conversationAnalytics = json_output["ConversationAnalytics"]
             put_kendra_document(kendraIndexId, analysisUri, conversationAnalytics, transcript_with_markers)
 
