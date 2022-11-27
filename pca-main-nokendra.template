@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 
-Description: Amazon Transcribe Post Call Analytics - PCA (v0.3.4) (uksb-1sn29lk73)
+Description: Amazon Transcribe Post Call Analytics - PCA (v0.4.0) (uksb-1sn29lk73)
 
 Parameters:
 
@@ -74,7 +74,7 @@ Parameters:
   InputBucketAudioPlayback:
     Type: String
     Default: playbackAudio
-    Description: Folder that holds the audio files to playback in the browser when original audio cannot be used
+    Description: Folder that holds the audio files to playback in the browser.
 
   InputBucketFailedTranscriptions:
     Type: String
@@ -609,6 +609,10 @@ Outputs:
   InputBucketTranscriptPrefix:
     Description: S3 Bucket prefix/folder for uploading input transcripts
     Value: !Ref InputBucketOrigTranscripts
+    
+  InputBucketPlaybackAudioPrefix:
+    Description: S3 Bucket prefix/folder for audio used for playboack from browser
+    Value: !Ref InputBucketAudioPlayback
 
   OutputBucket:
     Description: S3 Bucket where Transcribe output files are delivered
