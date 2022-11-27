@@ -116,8 +116,10 @@ Resources:
         Variables:
           StackName: !Ref AWS::StackName
 
-  ConfigureBucketAudioFile:
+  ConfigureBucket:
     Type: "AWS::CloudFormation::CustomResource"
+    DependsOn:
+      - FileDropTriggerPermission
     Properties:
       ServiceToken: !GetAtt ConfigureBucketFunction.Arn
       BucketName: !Ref InputBucketName
@@ -127,7 +129,8 @@ Resources:
   ConfigureBucketTranscriptFile:
     Type: "AWS::CloudFormation::CustomResource"
     DependsOn:
-      - ConfigureBucketAudioFile
+      - FileDropTriggerPermission
+      - ConfigureBucket
     Properties:
       ServiceToken: !GetAtt ConfigureBucketFunction.Arn
       BucketName: !Ref InputBucketName
