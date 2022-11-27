@@ -8,13 +8,15 @@ Your contact center connects your business to your community, enabling customers
 
 This sample solution, Post Call Analytics (PCA), does most of the heavy lifting associated with providing an end-to-end solution that can process call recordings from your existing contact center. PCA provides actionable insights to spot emerging trends, identify agent coaching opportunities, and assess the general sentiment of calls.
 
-If you already have Amazon Transcribe transcripts generated from the Streaming Call Analytics feature then those output transcripts can de delivered to PCA so that they can be aggregated and analyzed in exactly the same way as any audio files that you process from telephony system.  You can use PCA with audio files, with transcript files, or with both.
+If you already have Amazon Transcribe transcripts generated from the Streaming Call Analytics feature then those output transcripts can de delivered to PCA so that they can be aggregated and analyzed in exactly the same way as any audio files that you process from telephony system.  You can use PCA with audio files, with transcript files, or with both. 
+
+*(New!) The latest version (v0.6.0) of our companion Live Call Analytics and Agent Assist (LCA) supports Amazon Transcribe Real-time Call Analytics and provides easy integration with PCA. See "Live Call Analytics and Agent Assist: Companion Solution" section below.*
 
 PCA currently supports the following features:
 
 * **Source Input Data**
     * Audio files can be delivered to audio ingestion location in Amazon S3, which is defined in AWS Systems Manager Parameter store in the bucket defined in `InputBucketName` and folder `InputBucketRawAudio`. 
-    * Transcript files from Transcribe's Streaming Analytics APIs can be delivered to the transcript ingest location in Amazon S3, which is defined in AWS Systems Manager Parameter store in the bucket defined in `InputBucketName` and folder `InputBucketTranscribeResults`
+    * Transcript files from Transcribe's Streaming Analytics APIs can be delivered to the transcript ingest location in Amazon S3, which is defined in AWS Systems Manager Parameter store in the bucket defined in `InputBucketName` and folder `InputBucketOrigTranscripts`
     
 
 * **Transcription** *(audio files only)*
@@ -208,6 +210,10 @@ This email contains a generated temporary password that you can use to log in (a
 As before, your new password must have a length of at least 8 characters, and contain uppercase and lowercase characters, plus numbers and special characters.
 
 You’re now logged in to the transcript search Finder application. The sample audio files are indexed already, and ready for search.
+
+## Live Call Analytics and Agent Assist: Companion solution
+
+Our companion solution, Live Call Analytics and Agent Assist (LCA), offers real-time transcription and analytics capabilities by using the Amazon Transcribe real-time APIs. Unlike PCA, which transcribes and analyzes recorded audio after the call has ended, LCA transcribes and analyzes your calls as they are happening and provides real-time updates to supervisors and agents.  The new Amazon Transcribe Real-time Call Analytics service provides post-call analytics output from your streaming sessions just a few minutes after the call has ended. LCA (v 0.6.0 or later) can now send this post-call analytics data to PCA to provide analytics visualizations for completed calls without needing to transcribe the audio a second time. Configure LCA (v0.6.0 or later) to integrate with PCA (v0.4.0 or later) and use the two solutions together to get the best of both worlds.. See [Live call analytics and agent assist for your contact center with Amazon language AI services](https://www.amazon.com/live-call-analytics) for more information.
 
 ## Learn more
 
