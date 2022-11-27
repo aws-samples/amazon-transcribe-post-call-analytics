@@ -10,7 +10,7 @@ This sample solution, Post Call Analytics (PCA), does most of the heavy lifting 
 
 If you already have Amazon Transcribe transcripts generated from the Streaming Call Analytics feature then those output transcripts can de delivered to PCA so that they can be aggregated and analyzed in exactly the same way as any audio files that you process from telephony system.  You can use PCA with audio files, with transcript files, or with both. 
 
-*(New!) The latest version (v0.6.0) of our companion Live Call Analytics and Agent Assist (LCA) supports Amazon Transcribe Real-time Call Analytics and provides easy integration with PCA. See "Live Call Analytics and Agent Assist: Companion Solution" section below.*
+*(New!) The latest version (v0.6.0) of our companion Live Call Analytics and Agent Assist (LCA) supports Amazon Transcribe Real-time Call Analytics and provides easy integration with PCA. See [Live Call Analytics and Agent Assist: Companion Solution](#live-call-analytics-and-agent-assist-companion-solution) section below.*
 
 PCA currently supports the following features:
 
