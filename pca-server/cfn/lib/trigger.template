@@ -116,7 +116,7 @@ Resources:
         Variables:
           StackName: !Ref AWS::StackName
 
-  ConfigureBucketAudioFile:
+  ConfigureBucket:
     Type: "AWS::CloudFormation::CustomResource"
     Properties:
       ServiceToken: !GetAtt ConfigureBucketFunction.Arn
@@ -127,7 +127,7 @@ Resources:
   ConfigureBucketTranscriptFile:
     Type: "AWS::CloudFormation::CustomResource"
     DependsOn:
-      - ConfigureBucketAudioFile
+      - ConfigureBucket
     Properties:
       ServiceToken: !GetAtt ConfigureBucketFunction.Arn
       BucketName: !Ref InputBucketName
