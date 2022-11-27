@@ -118,6 +118,8 @@ Resources:
 
   ConfigureBucket:
     Type: "AWS::CloudFormation::CustomResource"
+    DependsOn:
+      - FileDropTriggerPermission
     Properties:
       ServiceToken: !GetAtt ConfigureBucketFunction.Arn
       BucketName: !Ref InputBucketName
@@ -127,6 +129,7 @@ Resources:
   ConfigureBucketTranscriptFile:
     Type: "AWS::CloudFormation::CustomResource"
     DependsOn:
+      - FileDropTriggerPermission
       - ConfigureBucket
     Properties:
       ServiceToken: !GetAtt ConfigureBucketFunction.Arn
