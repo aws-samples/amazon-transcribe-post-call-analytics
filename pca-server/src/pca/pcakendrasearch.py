@@ -2,81 +2,51 @@
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 """
-import os
 import json
 import boto3
 import textwrap
 import urllib
 import dateutil.parser
-import pcaconfiguration as cf
 
 KENDRA = boto3.client('kendra')
 S3 = boto3.client('s3')
 
 
-def prepare_transcript_standard(transcript):
-    print(f"prepare_transcript_callanalytics(...)")
-    items = transcript["results"]["items"]
+def prepare_transcript(results):
+    """
+    Parses the output from the Transcribe job, inserting time markers at the start of each sentence.
+    The time markers enable Kendra search results to link to the relevant time marker in the
+    corresponding audio recording.
+    """
+
+    print(f"prepare_transcript() for {results.get_conv_analytics().get_transcribe_job().transcribe_job_name}")
     txt = ""
-    sentence = ""
-    for i in items:
-        if (i["type"] == 'punctuation'):
-            sentence = sentence + i["alternatives"][0]["content"]
-            if (i["alternatives"][0]["content"] == '.'):
-                #sentence completed
-                txt = txt + " " + sentence + " "
-                sentence = ""
-        else: 
-            if (sentence == ''):
-                sentence = "[" + i["start_time"] + "]"
-            sentence = sentence + " " + i["alternatives"][0]["content"]
-    if (sentence != ""):
-        txt = txt + " " + sentence + " "
+    for segment in results.speech_segments:
+        # If we have word-level timestamps then split this into sentences,
+        # otherwise a returned Kendra fragment might not contain a timestamp
+        if segment.segmentConfidence[0]["EndTime"] > 0:
+            new_sentence = True
+            for word in segment.segmentConfidence:
+                # First word in a sentence needs the start time
+                if new_sentence:
+                    if txt != "":
+                        txt = txt + "  "
+                    txt = txt + f"[{word['StartTime']}] "
+                    new_sentence = False
+
+                txt = txt + f"{word['Text']}"
+                if str(word["Text"]).endswith(".") or str(word["Text"]).endswith("?"):
+                    new_sentence = True
+        else:
+            # Unfortunately not, so need to create a single entry in Kendra (which could be large)
+            if txt != "":
+                txt = txt + "  "
+            txt = txt + f"[{segment.segmentStartTime}] {segment.segmentText}"
+
     out = textwrap.fill(txt, width=70)
     return out
 
 
-def prepare_transcript_callanalytics(transcript):
-    print(f"prepare_transcript_callanalytics(...)")
-    turns = transcript["Transcript"]
-    txt = ""
-    sentence = ""
-    for turn in turns:
-        items = turn["Items"]
-        for i in items:
-            if (i["Type"] == 'punctuation'):
-                sentence = sentence + i["Content"]
-                if (i["Content"] == '.'):
-                    #sentence completed
-                    txt = txt + " " + sentence + " "
-                    sentence = ""
-            else: 
-                if (sentence == ''):
-                    start_time = i["BeginOffsetMillis"]/1000
-                    sentence = "[" + str(start_time) + "]"
-                sentence = sentence + " " + i["Content"]
-    if (sentence != ""):
-        txt = txt + " " + sentence + " "
-    out = textwrap.fill(txt, width=70)
-    return out    
-
-
-def prepare_transcript(transcript_file):
-    """
-    Parses the output from the Transcribe job, inserting time markers at the start of each sentence.
-    The time markers enable Kendra search results to link to the relevant time marker in the 
-    correspondiong audio recording.
-    """
-    print(f"prepare_transcript(transcript_file={transcript_file[0:100]}...)")
-    with open(transcript_file) as f:
-        transcript = json.load(f)
-    # detect if transcript is from Transcribe standard or Transcribe Call Analytics
-    if "results" in transcript:
-        return prepare_transcript_standard(transcript)
-    else:
-        return prepare_transcript_callanalytics(transcript)
-
-    
 def parse_s3uri(s3ur1):
     """
     Parses bucket, key, and filename from an S3 uri, eg s3://bucket/prefix/filename 
@@ -97,7 +67,8 @@ def get_bucket_region(bucket):
         print(f"Unable to retrieve bucket region (bucket owned by another account?).. defaulting to us-east-1. Bucket: {bucket} - Message: " + str(e))
         region = 'us-east-1'
     return region
-    
+
+
 def get_http_from_s3_uri(s3uri):
     """
     Convert URI from s3:// to https://
@@ -106,6 +77,7 @@ def get_http_from_s3_uri(s3uri):
     region = get_bucket_region(bucket)
     http_uri = f"https://s3.{region}.amazonaws.com/{bucket}/{key}"
     return http_uri
+
 
 def iso8601_datetime(value):
     """
@@ -116,7 +88,8 @@ def iso8601_datetime(value):
     except Exception as e:
         return False
     return dt
-    
+
+
 def get_entity_values(entityType, dicts, maxLength=10):
     """
     Return string array of entity values for specified type, from the inpout array of entityType dicts
@@ -126,6 +99,7 @@ def get_entity_values(entityType, dicts, maxLength=10):
     if entityDict:
         entityList = entityDict["Values"]
     return entityList[:maxLength]
+
 
 def durationBucket(durationStr):
     """
