@@ -32,7 +32,6 @@ COMPREHEND_SENTIMENT_SCALER = 5.0
 PII_PLACEHOLDER = "[PII]"
 PII_PLACEHOLDER_MASK = "*" * len(PII_PLACEHOLDER)
 TMP_DIR = "/tmp"
-TEMP_OUTPUT_KEY = "interimResults"
 BAR_CHART_WIDTH = 1.0
 
 
@@ -41,10 +40,10 @@ class TranscribeParser:
     def __init__(self, min_sentiment_pos, min_sentiment_neg, custom_entity_endpoint):
         self.pca_results = PCAResults()
         self.analytics = self.pca_results.get_conv_analytics()
+        self.transcribe_job_info = self.analytics.get_transcribe_job()
         self.speechSegmentList = []
         self.min_sentiment_positive = min_sentiment_pos
         self.min_sentiment_negative = min_sentiment_neg
-        self.transcribeJobInfo = ""
         self.comprehendLanguageCode = ""
         self.headerEntityDict = {}
         self.numWordsParsed = 0
@@ -201,86 +200,70 @@ class TranscribeParser:
         upload the speech segment list as-is, then do the other constructs one by one
         '''
         resultsHeaderInfo = {}
-        analytics = self.analytics
 
         # Ensure our results have the speech segments recorded
         self.pca_results.speech_segments = self.speechSegmentList
 
-        # -----------------------------
-        # Conversational Analytics data
-        # -----------------------------
-
         # Sentiment Trends
         for speaker in range(self.maxSpeakerIndex + 1):
             full_name = self.pca_results.get_speaker_prefix(True) + str(speaker)
-            analytics.sentiment_trends[full_name] = self.generate_sentiment_trend(full_name, speaker)
+            self.analytics.sentiment_trends[full_name] = self.generate_sentiment_trend(full_name, speaker)
 
         # Build up a list of speaker labels from the config; note that if we have more speakers
         # than configured then we still return something (clear first, as we're appending)
-        analytics.speaker_labels = []
+        self.analytics.speaker_labels = []
         if self.api_mode == cf.API_STANDARD:
             # Standard Transcribe - look them up in the order in the config
             for speaker in range(self.maxSpeakerIndex + 1):
-                next_label = {}
-                next_label["Speaker"] = self.pca_results.get_speaker_prefix(True) + str(speaker)
+                next_label = {"Speaker": self.pca_results.get_speaker_prefix(True) + str(speaker)}
                 try:
                     next_label["DisplayText"] = cf.appConfig[cf.CONF_SPEAKER_NAMES][speaker]
                 except:
                     next_label["DisplayText"] = self.pca_results.get_speaker_prefix(False) + str(speaker)
-                analytics.speaker_labels.append(next_label)
+                self.analytics.speaker_labels.append(next_label)
         elif self.api_mode == cf.API_ANALYTICS:
             # Analytics is more prescriptive - they're defined in the call results
             for speaker in self.analytics_channel_map:
-                next_label = {}
-                next_label["Speaker"] = self.pca_results.get_speaker_prefix(True) + str(
-                    self.analytics_channel_map[speaker])
-                next_label["DisplayText"] = speaker.title()
-                analytics.speaker_labels.append(next_label)
+                next_label = {"Speaker": self.pca_results.get_speaker_prefix(True) + str(
+                    self.analytics_channel_map[speaker]), "DisplayText": speaker.title()}
+                self.analytics.speaker_labels.append(next_label)
 
         # Analytics mode additional metadata
         if self.api_mode == cf.API_ANALYTICS:
             # Speaker and non-talk time
-            analytics.speaker_time = self.extract_analytics_speaker_time(self.asr_output["ConversationCharacteristics"])
-            analytics.categories_detected = analytics.extract_analytics_categories(self.asr_output["Categories"], self.speechSegmentList)
-            analytics.combined_graphic_url = self.create_combined_tca_graphic()
+            self.analytics.speaker_time = self.extract_analytics_speaker_time(self.asr_output["ConversationCharacteristics"])
+            self.analytics.categories_detected = self.analytics.extract_analytics_categories(self.asr_output["Categories"], self.speechSegmentList)
+            self.analytics.combined_graphic_url = self.create_combined_tca_graphic()
         # For non-analytics mode, we can simulate some analytics data
         elif self.api_mode == cf.API_STANDARD:
             # Calculate the speaker time from the speech segments, once per speaker (can't do silent time like this)
             speaker_time = {}
-            for next_speaker in analytics.speaker_labels:
+            for next_speaker in self.analytics.speaker_labels:
                 next_speaker_label = next_speaker["Speaker"]
                 next_speaker_time = sum(
                     (segment.segmentEndTime - segment.segmentStartTime) for segment in self.speechSegmentList if
                     segment.segmentSpeaker == next_speaker_label)
                 speaker_time[next_speaker_label] = {"TotalTimeSecs": float(next_speaker_time)}
-            analytics.speaker_time = speaker_time
+            self.analytics.speaker_time = speaker_time
 
         # Detected custom entity summaries next (clear first, as we're appending)
-        analytics.custom_entities = []
+        self.analytics.custom_entities = []
         for entity in self.headerEntityDict:
-            nextEntity = {}
-            nextEntity["Name"] = entity
-            nextEntity["Instances"] = len(self.headerEntityDict[entity])
-            nextEntity["Values"] = self.headerEntityDict[entity]
-            analytics.custom_entities.append(nextEntity)
+            nextEntity = {"Name": entity,
+                          "Instances": len(self.headerEntityDict[entity]),
+                          "Values": self.headerEntityDict[entity]}
+            self.analytics.custom_entities.append(nextEntity)
 
         # Add on any file-based entity used
         if self.simpleEntityMatchingUsed:
-            analytics.entity_recognizer = cf.appConfig[cf.CONF_ENTITY_FILE]
+            self.analytics.entity_recognizer = cf.appConfig[cf.CONF_ENTITY_FILE]
         elif self.customEntityEndpointName != "":
-            analytics.entity_recognizer = self.customEntityEndpointName
+            self.analytics.entity_recognizer = self.customEntityEndpointName
 
-        # ------------------------
-        # Transcribe Job Info data
-        # ------------------------
-        transcribe_info = analytics.get_transcribe_job()
+        # Some transcribe Job Info data may need to be updated
+        transcribe_info = self.analytics.get_transcribe_job()
 
-        # Some fields we pick off the basic job info
-        transcribe_info.api_mode = self.api_mode
-        transcribe_info.completion_time = str(self.transcribeJobInfo["CompletionTime"])
-        transcribe_info.media_format = self.transcribeJobInfo["MediaFormat"]
-        transcribe_info.media_sample_rate = int(self.transcribeJobInfo["MediaSampleRateHertz"])
-        transcribe_info.media_original_uri = self.transcribeJobInfo["Media"]["MediaFileUri"]
+        # Update the job info with our average confidence score
         transcribe_info.cummulative_word_conf = self.cummulativeWordAccuracy / max(float(self.numWordsParsed), 1.0)
 
         # Did we create an MP3 output file?  If so then use it for playback rather than the original
@@ -289,22 +272,6 @@ class TranscribeParser:
         else:
             transcribe_info.media_playback_uri = transcribe_info.media_original_uri
 
-        # Vocabulary name is optional
-        if "VocabularyName" in self.transcribeJobInfo["Settings"]:
-            transcribe_info.custom_vocab_name = self.transcribeJobInfo["Settings"]["VocabularyName"]
-
-        # Vocabulary filter is optional
-        if "VocabularyFilterName" in self.transcribeJobInfo["Settings"]:
-            transcribe_info.vocab_filter_name = self.transcribeJobInfo["Settings"]["VocabularyFilterName"]
-            transcribe_info.vocab_filter_method = self.transcribeJobInfo["Settings"]["VocabularyFilterMethod"]
-
-        # Some fields are different in the job-status depending upon which API we were using
-        if self.api_mode == cf.API_ANALYTICS:
-            transcribe_info.transcribe_job_name = self.transcribeJobInfo["CallAnalyticsJobName"]
-            transcribe_info.channel_identification = 1
-        else:
-            transcribe_info.transcribe_job_name = self.transcribeJobInfo["TranscriptionJobName"]
-            transcribe_info.channel_identification = int(self.transcribeJobInfo["Settings"]["ChannelIdentification"])
 
     def create_combined_tca_graphic(self):
         """
@@ -419,7 +386,7 @@ class TranscribeParser:
                                              final_second, max_decibel_headroom, "Customer", caller_channel, True, True)
 
         # Generate and store the chart locally
-        base_filename = f"{self.jsonOutputFilename.split('.json')[0]}.png"
+        base_filename = f"{self.analytics.transcribe_job.transcribe_job_name}.png"
         chart_filename = f"{TMP_DIR}/{base_filename}"
         fig.savefig(chart_filename, facecolor="aliceblue")
 
@@ -559,17 +526,16 @@ class TranscribeParser:
                 # Now do the same with the SpeechSegment, but append the full details
                 speech_segment.segmentCustomEntities.append(entity_line)
 
-    def set_comprehend_language_code(self, transcribeLangCode):
-        '''
+    def set_comprehend_language_code(self):
+        """
         Based upon the language defined by the input stream set the best-match language code for Comprehend to use
         for this conversation.  It is "best-match" as Comprehend can model in EN, but has no differentiation between
         EN-US and EN-GB.  If we cannot determine a language to use then we cannot use Comprehend standard models
-        '''
-        self.analytics.conversationLanguageCode = transcribeLangCode
+        """
 
         try:
             for checkLangCode in cf.appConfig[cf.CONF_COMP_LANGS]:
-                if transcribeLangCode.startswith(checkLangCode):
+                if self.analytics.conversationLanguageCode.startswith(checkLangCode):
                     self.comprehendLanguageCode = checkLangCode
                     break
         except:
@@ -763,8 +729,7 @@ class TranscribeParser:
         newLabel = "spk_" + str(speaker)
         return newLabel
 
-
-    def create_turn_by_turn_segments(self, transcribe_job_filename):
+    def create_turn_by_turn_segments(self, sf_event):
         """
         Creates a list of conversational turns, splitting up by speaker or if there's a noticeable pause in
         conversation.  Notes, this works differently for speaker-separated and channel-separated files. For speaker-
@@ -773,22 +738,20 @@ class TranscribeParser:
         channels, then merge any together to ensure we keep to the 3-second pause; this way means that channel- files
         are able to show interleaved speech where speakers are talking over one another.  Once all of this is done
         we inject sentiment into each segment.
+
+        :param sf_event: Event data, as previous steps may send data of use
         """
         speechSegmentList = []
 
-        # Load in the JSON file for processing
-        json_filepath = Path(transcribe_job_filename)
-        self.asr_output = json.load(open(json_filepath.absolute(), "r", encoding="utf-8"))
-        is_analytics_mode = (self.api_mode == cf.API_ANALYTICS)
-
         # Decide on our operational mode and set the overall job language
+        is_analytics_mode = (self.api_mode == cf.API_ANALYTICS)
         if is_analytics_mode:
             # We ignore speaker/channel mode on Analytics
             isChannelMode = False
             isSpeakerMode = False
         else:
             # Channel/Speaker-mode only relevant if not using analytics
-            isChannelMode = self.transcribeJobInfo["Settings"]["ChannelIdentification"]
+            isChannelMode = self.analytics.transcribe_job.channel_identification
             isSpeakerMode = not isChannelMode
 
         lastSpeaker = ""
@@ -943,7 +906,7 @@ class TranscribeParser:
 
             # Create our speaker mapping - we need consistent output like spk_0 | spk_1
             # across all Transcribe API variants to help the UI render it all the same
-            for channel_def in self.transcribeJobInfo["ChannelDefinitions"]:
+            for channel_def in sf_event["channelDefinitions"]:
                 self.analytics_channel_map[channel_def["ParticipantRole"]] = channel_def["ChannelId"]
 
             # Lookup shortcuts
@@ -952,7 +915,7 @@ class TranscribeParser:
             # Each turn has already been processed by Transcribe, so the outputs are in order
             for turn in self.asr_output["Transcript"]:
 
-                 # Get our next speaker name
+                # Get our next speaker name
                 nextSpeaker = self.generate_speaker_label(analytics_ts_speaker=turn["ParticipantRole"])
 
                 # Setup the next speaker block
@@ -977,34 +940,47 @@ class TranscribeParser:
                             break
 
                 # Process each word in this turn
-                for word in turn["Items"]:
-                    # Pick out our next data from a 'pronunciation'
-                    if word["Type"] == "pronunciation":
-                        # Write the word, and a leading space if this isn't the start of the segment
-                        if skipLeadingSpace:
-                            skipLeadingSpace = False
-                            wordToAdd = word["Content"]
+                if "Items" in turn:
+                    # Turn-level items are available
+                    for word in turn["Items"]:
+                        # Pick out our next data from a 'pronunciation'
+                        if word["Type"] == "pronunciation":
+                            # Write the word, and a leading space if this isn't the start of the segment
+                            if skipLeadingSpace:
+                                skipLeadingSpace = False
+                                wordToAdd = word["Content"]
+                            else:
+                                wordToAdd = " " + word["Content"]
+
+                            # If the word is redacted then the word confidence is a bit more buried
+                            if "Confidence" in word:
+                                conf_score = float(word["Confidence"])
+                            elif "Redaction" in word:
+                                conf_score = float(word["Redaction"][0]["Confidence"])
+
+                            # Add the word and confidence to this segment's list and to our overall stats
+                            confidenceList.append({"Text": wordToAdd,
+                                                   "Confidence": conf_score,
+                                                   "StartTime": float(word["BeginOffsetMillis"]) / 1000.0,
+                                                   "EndTime": float(word["EndOffsetMillis"] / 1000.0)})
+                            self.numWordsParsed += 1
+                            self.cummulativeWordAccuracy += conf_score
+
                         else:
-                            wordToAdd = " " + word["Content"]
-
-                        # If the word is redacted then the word confidence is a bit more buried
-                        if "Confidence" in word:
-                            conf_score = float(word["Confidence"])
-                        elif "Redaction" in word:
-                            conf_score = float(word["Redaction"][0]["Confidence"])
-
-                        # Add the word and confidence to this segment's list and to our overall stats
-                        confidenceList.append({"Text": wordToAdd,
-                                               "Confidence": conf_score,
-                                               "StartTime": float(word["BeginOffsetMillis"]) / 1000.0,
-                                               "EndTime": float(word["EndOffsetMillis"] / 1000.0)})
+                            # Punctuation, needs to be added to the previous word
+                            last_word = nextSpeechSegment.segmentConfidence[-1]
+                            last_word["Text"] = last_word["Text"] + word["Content"]
+                else:
+                    # Turn-level items are NOT available (true for the launch of TCA Streaming)
+                    # TODO This should be temporary, as TCA Streaming will support this going forward
+                    word_list = turn["Content"].split(" ")
+                    for wordToAdd in word_list:
+                        # Go through each word and create a similar entry to the above
                         self.numWordsParsed += 1
-                        self.cummulativeWordAccuracy += conf_score
-
-                    else:
-                        # Punctuation, needs to be added to the previous word
-                        last_word = nextSpeechSegment.segmentConfidence[-1]
-                        last_word["Text"] = last_word["Text"] + word["Content"]
+                        confidenceList.append({"Text": wordToAdd,
+                                               "Confidence": 0.0,
+                                               "StartTime": 0.0,
+                                               "EndTime": 0.0})
 
                 # Record any issues, actions or outcomes detected
                 self.extract_summary_data(nextSpeechSegment, nextSpeechSegment.segmentIssuesDetected,
@@ -1056,15 +1032,17 @@ class TranscribeParser:
         if summary_tag in turn:
             for summary in turn[summary_tag]:
                 # Grab the transcript offsets for the issue text
-                begin_offset = summary["CharacterOffsets"]["Begin"]
-                end_offset = summary["CharacterOffsets"]["End"]
-                next_summary = {"Text": speech_segment.segmentText[begin_offset:end_offset],
-                                "BeginOffset": begin_offset,
-                                "EndOffset": end_offset}
+                if "CharacterOffsets" in summary:
+                    # TODO Early releases of streaming TCA omitted the offsets, so be wary
+                    begin_offset = summary["CharacterOffsets"]["Begin"]
+                    end_offset = summary["CharacterOffsets"]["End"]
+                    next_summary = {"Text": speech_segment.segmentText[begin_offset:end_offset],
+                                    "BeginOffset": begin_offset,
+                                    "EndOffset": end_offset}
 
-                # Tag this one on to our segment list and the header list
-                segment_summary_block.append(next_summary)
-                call_summary_block.append(next_summary)
+                    # Tag this one on to our segment list and the header list
+                    segment_summary_block.append(next_summary)
+                    call_summary_block.append(next_summary)
 
     def create_simple_entity_entries(self, speech_segments):
         """
@@ -1074,6 +1052,7 @@ class TranscribeParser:
         """
 
         # Need to check each of our speech segments for each of our entity blocks
+        # TODO We need to match words, not partials!  See notes below
         for nextTurn in speech_segments:
             # Now check this turn for each entity
             turnText = nextTurn.segmentText.lower()
@@ -1269,150 +1248,124 @@ class TranscribeParser:
         s3Object = urlparse(audio_uri)
         bucket = s3Object.netloc
 
-        # 8Khz WAV audio gets converted
-        if (self.transcribeJobInfo["MediaFormat"] == "wav") and (self.transcribeJobInfo["MediaSampleRateHertz"] == 8000):
-            # First, we need to download the original audio file
-            fileObject = s3Object.path.lstrip('/')
-            inputFilename = TMP_DIR + '/' + fileObject.split('/')[-1]
-            outputFilename = inputFilename.split('.wav')[0] + '.mp3'
-            s3Client = boto3.client('s3')
-            s3Client.download_file(bucket, fileObject, inputFilename)
+        # 8Khz WAV audio gets converted - first, we need to download the original audio file
+        fileObject = s3Object.path.lstrip('/')
+        inputFilename = TMP_DIR + '/' + fileObject.split('/')[-1]
+        outputFilename = inputFilename.split('.wav')[0] + '.mp3'
+        s3Client = boto3.client('s3')
+        s3Client.download_file(bucket, fileObject, inputFilename)
 
-            # Transform the file via FFMPEG - this will exception if not installed
-            try:
-                # Just convert from source to destination format
-                subprocess.call(['ffmpeg', '-nostats', '-loglevel', '0', '-y', '-i', inputFilename, outputFilename],
-                                stdin=subprocess.DEVNULL)
+        # Transform the file via FFMPEG - this will exception if not installed
+        try:
+            # Just convert from source to destination format
+            subprocess.call(['ffmpeg', '-nostats', '-loglevel', '0', '-y', '-i', inputFilename, outputFilename],
+                            stdin=subprocess.DEVNULL)
 
-                # Now upload the output file to the configured playback folder in the main input bucket
-                s3FileKey = cf.appConfig[cf.CONF_PREFIX_MP3_PLAYBACK] + '/' + outputFilename.split('/')[-1]
-                s3Client.upload_file(outputFilename, cf.appConfig[cf.CONF_S3BUCKET_INPUT], s3FileKey,
-                                     ExtraArgs={'ContentType': 'audio/mp3'})
-                self.audioPlaybackUri = "s3://" + cf.appConfig[cf.CONF_S3BUCKET_INPUT] + "/" + s3FileKey
-            except Exception as e:
-                print(e)
-                print("Unable to create MP3 version of original audio file - could not find FFMPEG libraries")
-            finally:
-                # Remove our temporary files in case of Lambda container re-use
-                pcacommon.remove_temp_file(inputFilename)
-                pcacommon.remove_temp_file(outputFilename)
-
-    def load_transcribe_job_info(self, sf_event):
-        """
-        Loads in the job status for the job named in input event.  The event will inform the method which of the
-        Transcribe APIs should be called (e.g. standard or call analytics).
-
-        :param sf_event: Event info passed down from Step Functions
-        :return: The job's current completion status
-        """
-        transcribe_client = boto3.client("transcribe")
-        job_name = sf_event["jobName"]
-        self.api_mode = sf_event["apiMode"]
-
-        if self.api_mode == cf.API_STANDARD:
-            # Standard Transcribe job
-            self.transcribeJobInfo = transcribe_client.get_transcription_job(TranscriptionJobName=job_name)["TranscriptionJob"]
-            job_status = self.transcribeJobInfo["TranscriptionJobStatus"]
-            if "ContentRedaction" in self.transcribeJobInfo:
-                self.transcript_uri = self.transcribeJobInfo["Transcript"]["RedactedTranscriptFileUri"]
-            else:
-                self.transcript_uri = self.transcribeJobInfo["Transcript"]["TranscriptFileUri"]
-        elif self.api_mode == cf.API_ANALYTICS:
-            # Call Analytics Transcribe job
-            self.transcribeJobInfo = transcribe_client.get_call_analytics_job(CallAnalyticsJobName=job_name)["CallAnalyticsJob"]
-            job_status = self.transcribeJobInfo["CallAnalyticsJobStatus"]
-            if "RedactedTranscriptFileUri" in self.transcribeJobInfo["Transcript"]:
-                self.transcript_uri = self.transcribeJobInfo["Transcript"]["RedactedTranscriptFileUri"]
-            else:
-                self.transcript_uri = self.transcribeJobInfo["Transcript"]["TranscriptFileUri"]
-        else:
-            # This should not happen, but will trigger an exception later
-            job_status = "UNKNOWN"
-
-        return job_status
+            # Now upload the output file to the configured playback folder in the main input bucket
+            s3FileKey = cf.appConfig[cf.CONF_PREFIX_AUDIO_PLAYBACK] + '/' + outputFilename.split('/')[-1]
+            s3Client.upload_file(outputFilename, cf.appConfig[cf.CONF_S3BUCKET_INPUT], s3FileKey,
+                                 ExtraArgs={'ContentType': 'audio/mp3'})
+            self.audioPlaybackUri = "s3://" + cf.appConfig[cf.CONF_S3BUCKET_INPUT] + "/" + s3FileKey
+        except Exception as e:
+            print(e)
+            print("Unable to create MP3 version of original audio file - could not find FFMPEG libraries")
+        finally:
+            # Remove our temporary files in case of Lambda container re-use
+            pcacommon.remove_temp_file(inputFilename)
+            pcacommon.remove_temp_file(outputFilename)
 
     def parse_transcribe_file(self, sf_event):
         """
         Parses the output from the specified Transcribe job
         """
-        # Load in the Amazon Transcribe job header information, ensuring that the job has completed
-        transcribe = boto3.client("transcribe")
-        job_name = sf_event["jobName"]
-        try:
-            job_status = self.load_transcribe_job_info(sf_event)
-            assert job_status == "COMPLETED", f"Transcription job '{job_name}' has not yet completed."
-        except transcribe.exceptions.BadRequestException:
-            assert False, f"Unable to load information for Transcribe job named '{job_name}'."
 
-        # Create an MP3 playback file if we have to, using the redacted audio file if needed
-        if ("RedactedMediaFileUri" in self.transcribeJobInfo["Media"]) and cf.isAudioRedactionEnabled():
-            # Copy the redacted audio into the playback folder
-            # TODO - Once the UI Lambda that plays the audio is changed to NOT assume that the redacted
-            # TODO - audio is in the input bucket we can just set the playback URI to the audio location
-            redacted_url = "s3://" + "/".join(self.transcribeJobInfo["Media"]["RedactedMediaFileUri"].split("/")[3:])
+        # First, load in what interim results we have so far
+        output_bucket = cf.appConfig[cf.CONF_S3BUCKET_OUTPUT]
+        input_bucket = cf.appConfig[cf.CONF_S3BUCKET_INPUT]
+        self.pca_results.read_results_from_s3(output_bucket, sf_event["interimResultsFile"])
+        self.api_mode = self.pca_results.analytics.transcribe_job.api_mode
+
+        # Put a playback audio file in the correct folder - this can have multiple sources
+        if "redactedMediaFileUri" in sf_event:
+            # If we have redacted audio output from TCA then copy that to the playback folder
+            redacted_url = "s3://" + "/".join(sf_event["redactedMediaFileUri"].split("/")[3:])
             s3_object = urlparse(redacted_url)
             s3_client = boto3.resource("s3")
             source = {"Bucket": s3_object.netloc, "Key": s3_object.path[1:]}
-            dest_key = cf.appConfig[cf.CONF_PREFIX_MP3_PLAYBACK] + '/' + redacted_url.split('/')[-1]
-            s3_client.meta.client.copy(source, cf.appConfig[cf.CONF_S3BUCKET_INPUT], dest_key)
-            self.audioPlaybackUri = "s3://" + cf.appConfig[cf.CONF_S3BUCKET_INPUT] + "/" + dest_key
+            dest_key = cf.appConfig[cf.CONF_PREFIX_AUDIO_PLAYBACK] + '/' + redacted_url.split('/')[-1]
+            s3_client.meta.client.copy(source, input_bucket, dest_key)
+            self.audioPlaybackUri = "s3://" + input_bucket + "/" + dest_key
+        elif (self.transcribe_job_info.media_format == "wav") and (self.transcribe_job_info.media_sample_rate == 8000):
+                # Certain type of WAV don't play nicely with the HTML playback control
+                self.create_playback_mp3_audio(self.analytics.transcribe_job.media_playback_uri)
         else:
-            # Just sort out the input file
-            self.create_playback_mp3_audio(self.transcribeJobInfo["Media"]["MediaFileUri"])
+            # Copy the original input file to the playback folder
+            s3_client = boto3.resource("s3")
+            source = {"Bucket": input_bucket, "Key": sf_event["key"]}
+            dest_key = cf.appConfig[cf.CONF_PREFIX_AUDIO_PLAYBACK] + '/' + sf_event["key"].split('/')[-1]
+            s3_client.meta.client.copy(source, input_bucket, dest_key)
+            self.audioPlaybackUri = "s3://" + input_bucket + "/" + dest_key
 
         # Pick out the config parameters that we need
-        outputS3Bucket = cf.appConfig[cf.CONF_S3BUCKET_OUTPUT]
 
-        # Parse Call GUID and Agent Name/ID from filename if possible
+        # Parse various fields from the Transcribe job name if possible
+        job_name = self.analytics.transcribe_job.transcribe_job_name
         self.set_guid(job_name)
         self.set_agent(job_name)
         self.set_cust(job_name)
-
-        # Work out the conversation time and set the language code
         self.calculate_transcribe_conversation_time(job_name)
-        self.set_comprehend_language_code(self.transcribeJobInfo["LanguageCode"])
 
-        # Download the job JSON results file to a local temp file - different Transcribe modes put
-        # the files in different folder structures, so just strip everything past the bucket name
-        self.jsonOutputFilename = self.transcript_uri.split("/")[-1]
-        json_filepath = TMP_DIR + '/' + self.jsonOutputFilename
-        transcriptResultsKey = "/".join(self.transcript_uri.split("/")[4:])
+        # Download the job JSON results file to a local temp file - different Transcribe modes put the files in
+        # different folder structures, so strip everything past the bucket name to be the location of the tmp file
+        json_filepath = TMP_DIR + '/' + sf_event["transcriptUri"].split("/")[-1]
+        if sf_event["transcriptUri"].startswith("https"):
+            # HTTPS URI came from Transcribe, so https://<region>/<bucket>/<key>
+            transcriptResultsKey = "/".join(sf_event["transcriptUri"].split("/")[4:])
+        else:
+            # S3 URI came from Transcribe, so s3://<bucket>/<key>
+            transcriptResultsKey = "/".join(sf_event["transcriptUri"].split("/")[3:])
 
         # Now download - this has been known to get a "404 HeadObject Not Found",
         # which makes no sense, so if that happens then re-try in a sec.  Only once.
         s3Client = boto3.client('s3')
         try:
-            s3Client.download_file(outputS3Bucket, transcriptResultsKey, json_filepath)
+            s3Client.download_file(output_bucket, transcriptResultsKey, json_filepath)
         except:
             time.sleep(3)
-            s3Client.download_file(outputS3Bucket, transcriptResultsKey, json_filepath)
+            s3Client.download_file(output_bucket, transcriptResultsKey, json_filepath)
 
-        # Before we process, let's load up any required simply entity map
+        # Load in the JSON file for processing, and set our language codes for the file and Comprehend
+        self.asr_output = json.load(open(Path(json_filepath).absolute(), "r", encoding="utf-8"))
+
+        # Before we process, let's load up any required simply entity map, which needs the base language code
+        self.set_comprehend_language_code()
         self.load_simple_entity_string_map()
 
         # Now create turn-by-turn diarisation, with associated sentiments and entities
-        self.speechSegmentList = self.create_turn_by_turn_segments(json_filepath)
+        self.speechSegmentList = self.create_turn_by_turn_segments(sf_event)
 
         # Update our results data structures, generate JSON results and save them to S3
         self.push_turn_by_turn_results()
 
-        # Write out the JSON data to our S3 location
-        interim_results_file_key = TEMP_OUTPUT_KEY + '/' + self.jsonOutputFilename
-        json_output = self.pca_results.write_results_to_s3(outputS3Bucket, interim_results_file_key)
+        # Write out the JSON data back to our interim S3 location
+        json_output, output_filename = self.pca_results.write_results_to_s3(bucket=output_bucket,
+                                                                            object_key=sf_event["interimResultsFile"])
 
-        # Index transcript in Kendra, if transcript search is enabled
+        # Index transcript in Kendra, if transcript search is enable
         kendraIndexId = cf.appConfig[cf.CONF_KENDRA_INDEX_ID]
         if kendraIndexId != "None":
-            analysisUri = f"{cf.appConfig[cf.CONF_WEB_URI]}dashboard/parsedFiles/{self.jsonOutputFilename}"
-            transcript_with_markers = prepare_transcript(json_filepath)
+            analysisUri = f"{cf.appConfig[cf.CONF_WEB_URI]}dashboard/parsedFiles/{json_filepath.split('/')[-1]}"
+            transcript_with_markers = prepare_transcript(self.pca_results)
             conversationAnalytics = json_output["ConversationAnalytics"]
             put_kendra_document(kendraIndexId, analysisUri, conversationAnalytics, transcript_with_markers)
 
+        # Finally, remove any Step Functions data that we don't need to pass on (they won't all exist)
+        sf_event.pop("transcriptUri", None)
+        sf_event.pop("channelDefinitions", None)
+        sf_event.pop("redactedMediaFileUri", None)
+
         # delete the local file
         pcacommon.remove_temp_file(json_filepath)
-
-        # Return our interim results file key for re-use later
-        return interim_results_file_key
 
 
 def lambda_handler(event, context):
@@ -1424,10 +1377,9 @@ def lambda_handler(event, context):
     transcribeParser = TranscribeParser(cf.appConfig[cf.CONF_MINPOSITIVE],
                                         cf.appConfig[cf.CONF_MINNEGATIVE],
                                         cf.appConfig[cf.CONF_ENTITYENDPOINT])
-    output_filename = transcribeParser.parse_transcribe_file(sf_data)
+    transcribeParser.parse_transcribe_file(sf_data)
 
-    # Add tag the location of the output file to the SF data, along with the requested telephony CTR type
-    sf_data["interimResultsFile"] = output_filename
+    # Add the requested telephony CTR type
     sf_data["telephony"] = cf.appConfig[cf.CONF_TELEPHONY_CTR]
     return sf_data
 
@@ -1435,16 +1387,50 @@ def lambda_handler(event, context):
 # Main entrypoint for testing
 if __name__ == "__main__":
     # Test event
-    event = {
+    test_event_analytics = {
         "bucket": "ak-cci-input",
-        "langCode": "en-US",
-        "transcribeStatus": "COMPLETED",
+        "key": "originalAudio/Card2_GUID_102_AGENT_AndrewK_DT_2022-03-22T12-23-49.wav",
+        "inputType": "audio",
+        "jobName": "Card2_GUID_102_AGENT_AndrewK_DT_2022-03-22T12-23-49.wav",
         "apiMode": "analytics",
-        # "key": "originalAudio/006c7659-258e-4adc-a036-df717505e25a.wav",
-        # "jobName": "006c7659-258e-4adc-a036-df717505e25a.wav"
-        "key": "originalAudio/fd4bd0f6-52c2-4fab-97de-8f7518474403.wav",
-        "jobName": "fd4bd0f6-52c2-4fab-97de-8f7518474403.wav"
-        # "key": "originalAudio/fef9f532-08e0-436c-b0cc-7df991521e96.wav",
-        # "jobName": "fef9f532-08e0-436c-b0cc-7df991521e96.wav"
+        "transcribeStatus": "COMPLETED",
+        "redactedMediaFileUri": "https://s3.us-east-1.amazonaws.com/ak-cci-output/transcribeResults/redacted-analytics/Card2_GUID_102_AGENT_AndrewK_DT_2022-03-22T12-23-49.wav.wav",
+        "transcriptUri": "https://s3.us-east-1.amazonaws.com/ak-cci-output/transcribeResults/redacted-analytics/Card2_GUID_102_AGENT_AndrewK_DT_2022-03-22T12-23-49.wav.json",
+        "channelDefinitions": [{'ChannelId': 1, 'ParticipantRole': 'AGENT'}, {'ChannelId': 0, 'ParticipantRole': 'CUSTOMER'}],
+        "interimResultsFile": "interimResults/Card2_GUID_102_AGENT_AndrewK_DT_2022-03-22T12-23-49.wav.json"
     }
-    lambda_handler(event, "")
+    test_event_stereo = {
+        "bucket": "ak-cci-input",
+        "key": "originalAudio/Auto3_GUID_003_AGENT_BobS_DT_2022-03-21T17-51-51.wav",
+        "inputType": "audio",
+        "jobName": "Auto3_GUID_003_AGENT_BobS_DT_2022-03-21T17-51-51.wav",
+        "apiMode": "standard",
+        "transcribeStatus": "COMPLETED",
+        "transcriptUri": "https://s3.us-east-1.amazonaws.com/ak-cci-output/transcribeResults/redacted-Auto3_GUID_003_AGENT_BobS_DT_2022-03-21T17-51-51.wav.json",
+        "interimResultsFile": "interimResults/redacted-Auto3_GUID_003_AGENT_BobS_DT_2022-03-21T17-51-51.wav.json"
+    }
+    test_event_mono = {
+        "bucket": "ak-cci-input",
+        "key": "originalAudio/Auto0_GUID_000_AGENT_ChrisL_DT_2022-03-19T06-01-22_Mono.wav",
+        "inputType": "audio",
+        "jobName": "Auto0_GUID_000_AGENT_ChrisL_DT_2022-03-19T06-01-22_Mono.wav",
+        "apiMode": "standard",
+        "transcribeStatus": "COMPLETED",
+        "transcriptUri": "https://s3.us-east-1.amazonaws.com/ak-cci-output/transcribeResults/redacted-Auto0_GUID_000_AGENT_ChrisL_DT_2022-03-19T06-01-22_Mono.wav.json",
+        "interimResultsFile": "interimResults/redacted-Auto0_GUID_000_AGENT_ChrisL_DT_2022-03-19T06-01-22_Mono.wav.json"
+    }
+    test_stream_tca = {
+        "bucket": "ak-cci-input",
+        "key": "originalTranscripts/TCA_GUID_3c7161f7-bebc-4951-9cfb-943af1d3a5f5_CUST_17034816544_AGENT_BabuS_2022-11-22T21-32-52.145Z.json",
+        "inputType": "transcript",
+        "jobName": "TCA_GUID_3c7161f7-bebc-4951-9cfb-943af1d3a5f5_CUST_17034816544_AGENT_BabuS_2022-11-22T21-32-52.145Z.json",
+        "apiMode": "analytics",
+        "transcribeStatus": "COMPLETED",
+        "transcriptUri": "s3://ak-cci-output/transcribeResults/liveStreaming/TCA_GUID_3c7161f7-bebc-4951-9cfb-943af1d3a5f5_CUST_17034816544_AGENT_BabuS_2022-11-22T21-32-52.145Z.json",
+        "channelDefinitions": [{'ChannelId': 1, 'ParticipantRole': 'AGENT'}, {'ChannelId': 0, 'ParticipantRole': 'CUSTOMER'}],
+        "interimResultsFile": "interimResults/TCA_GUID_3c7161f7-bebc-4951-9cfb-943af1d3a5f5_CUST_17034816544_AGENT_BabuS_2022-11-22T21-32-52.145Z.json"
+    }
+    lambda_handler(test_event_analytics, "")
+    lambda_handler(test_event_stereo, "")
+    lambda_handler(test_event_mono, "")
+    lambda_handler(test_stream_tca, "")

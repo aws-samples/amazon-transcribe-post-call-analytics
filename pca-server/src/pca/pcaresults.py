@@ -28,6 +28,7 @@ from datetime import datetime
 from pathlib import Path
 
 TMP_DIR = "/tmp/"
+INTERIM_RESULTS_KEY = "interimResults"
 
 
 class SpeechSegment:
@@ -155,7 +156,6 @@ class ConversationAnalytics:
         self.custom_entities = json_input["CustomEntities"]
         self.entity_recognizer = json_input["EntityRecognizerName"]
         self.sentiment_trends = json_input["SentimentTrends"]
-        self.conversationTime = json_input["ConversationTime"]
         self.speaker_time = json_input["SpeakerTime"]
 
         # Load in optional fields that were not present in the initial release
@@ -235,6 +235,7 @@ class TranscribeJobInfo:
     """ Class to hold the information about an underlying Transcribe job """
     def __init__(self):
         self.api_mode = cf.API_ANALYTICS
+        self.streaming_session = None
         self.completion_time = ""
         self.media_format = ""
         self.media_sample_rate = 8000
@@ -246,6 +247,7 @@ class TranscribeJobInfo:
         self.vocab_filter_method = ""
         self.transcribe_job_name = ""
         self.channel_identification = 1
+        self.redacted_transcript = False
 
     def create_json_output(self):
         """
@@ -263,7 +265,12 @@ class TranscribeJobInfo:
                                "AverageWordConfidence": self.cummulative_word_conf,
                                "MediaFileUri": self.media_playback_uri,
                                "TranscriptionJobName": self.transcribe_job_name,
+                               "RedactedTranscript": self.redacted_transcript,
                                "ChannelIdentification": self.channel_identification}
+
+        # Streaming session is optional
+        if self.streaming_session is not None:
+            transcribe_job_info["StreamingSession"] = self.streaming_session
 
         # Vocabulary name is optional
         if self.custom_vocab_name != "":
@@ -300,6 +307,10 @@ class TranscribeJobInfo:
             filter_string = json_input["VocabularyFilter"]
             self.vocab_filter_name = filter_string.split(" ")[0]
             self.vocab_filter_method = filter_string.split("[")[-1].split("]")[0]
+        if "RedactedTranscript" in json_input:
+            self.redacted_transcript = bool(json_input["RedactedTranscript"])
+        if "StreamingSession" in json_input:
+            self.streaming_session = bool(json_input["StreamingSession"])
 
 
 class PCAResults:
@@ -368,29 +379,38 @@ class PCAResults:
 
         return speech_segments
 
-    def write_results_to_s3(self, bucket, object_key):
+    def write_results_to_s3(self, object_key=None, bucket=None, interim=False):
         """
         Writes out the PCA result data to the specified bucket/key location.
 
         :param bucket: Bucket where the results are to be uploaded to
         :param object_key: Name of the output file for the results
+        :param interim: Forcibly writes the key to our interim results folder
         :return: JSON results object
+        :return: Destination S3 object key
         """
 
+        # Override our bucket/key values if we're writing to our interim results folder
+        if interim:
+            dest_bucket = cf.appConfig[cf.CONF_S3BUCKET_OUTPUT]
+            dest_key = INTERIM_RESULTS_KEY + '/' + object_key
+        else:
+            dest_bucket = bucket
+            dest_key = object_key
+
         # Generate the JSON output from our internal structures
-        json_data = {}
-        json_data["ConversationAnalytics"] = self.analytics.create_json_output()
-        json_data["SpeechSegments"] = self.create_output_speech_segments()
+        json_data = {"ConversationAnalytics": self.analytics.create_json_output(),
+                     "SpeechSegments": self.create_output_speech_segments()}
 
         # Write out the JSON data to the specified S3 location
         s3_resource = boto3.resource('s3')
-        s3_object = s3_resource.Object(bucket, object_key)
+        s3_object = s3_resource.Object(dest_bucket, dest_key)
         s3_object.put(
             Body=(bytes(json.dumps(json_data).encode('UTF-8')))
         )
 
-        # Return the JSON in case the caller needs it
-        return json_data
+        # Return the JSON in case the caller needs it, and the actual output filename
+        return json_data, dest_key
 
     def regenerate_header_entities(self):
         """
@@ -418,7 +438,7 @@ class PCAResults:
                         header_ent_dict[entity_type] = []
 
                     # If we haven't seen this type/value pair before then append it to the type entry
-                    if not entity_text in header_ent_dict[entity_type]:
+                    if entity_text not in header_ent_dict[entity_type]:
                         header_ent_dict[entity_type].append(entity_text)
 
         # Finally, rebuild the header entry summary
@@ -428,7 +448,6 @@ class PCAResults:
                               "Instances": len(header_ent_dict[entity]),
                               "Values": header_ent_dict[entity]}
                 self.analytics.custom_entities.append(nextEntity)
-
 
     def read_results_from_s3(self, bucket, object_key, offline=False):
 

@@ -1,7 +1,19 @@
 {
   "Comment": "Post-Call Analytics Workflow with Transcribe and Comprehend",
-  "StartAt": "TranscribeAudio",
+  "StartAt": "CheckFileType?",
   "States": {
+    "CheckFileType?": {
+      "Type": "Choice",
+      "Comment": "Picks the correct pathway for audio and json files",
+      "Choices": [
+        {
+          "Variable": "$.inputType",
+          "StringEquals": "audio",
+          "Next": "TranscribeAudio"
+        }
+      ],
+      "Default": "ProcessTranscriptHeader"
+    },
     "TranscribeAudio": {
       "Comment": "Sends the file in S3 for Transcription",
       "Type": "Task",
@@ -52,7 +64,7 @@
         {
           "Variable": "$.transcribeStatus",
           "StringEquals": "COMPLETED",
-          "Next": "ProcessTranscription"
+          "Next": "ProcessJobHeader"
         },
         {
           "Variable": "$.transcribeStatus",
@@ -61,6 +73,26 @@
         }
       ],
       "Default": "TranscriptionFailed"
+    },
+    "ProcessJobHeader": {
+      "Comment": "Creates header information based upon the Transcribe job",
+      "Type": "Task",
+      "Resource": "${SFExtractJobHeaderArn}",
+      "Retry": [{
+          "IntervalSeconds": 5,
+          "ErrorEquals": ["Lambda.Unknown"]
+      }],
+      "Next": "ProcessTranscription"
+    },
+    "ProcessTranscriptHeader": {
+      "Comment": "Creates header information based upon what's available in a transcript file",
+      "Type": "Task",
+      "Resource": "${SFExtractTranscriptHeaderArn}",
+      "Retry": [{
+          "IntervalSeconds": 5,
+          "ErrorEquals": ["Lambda.Unknown"]
+      }],
+      "Next": "ProcessTranscription"
     },
     "ProcessTranscription": {
       "Comment": "Takes the output from Transcribe and creates the initial results processing",

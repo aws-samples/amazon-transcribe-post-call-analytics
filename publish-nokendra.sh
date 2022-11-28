@@ -82,6 +82,7 @@ popd
 
 echo "Packaging Cfn artifacts"
 aws cloudformation package --template-file pca-main-nokendra.template --output-template-file build/packaged.template --s3-bucket ${BUCKET} --s3-prefix ${PREFIX_AND_VERSION} --region ${region}|| exit 1
+aws s3 cp build/packaged.template "s3://${BUCKET}/${PREFIX}/pca-main.yaml" || exit 1
 
 if $PUBLIC; then
   echo "Setting public read ACLs on published artifacts"
@@ -92,17 +93,14 @@ if $PUBLIC; then
     done
 fi
 
-aws s3 cp build/packaged.template "s3://${BUCKET}/${PREFIX}/pca-main.yaml" || exit 1
-
 echo "Validating Cfn artifacts"
 template="https://s3.${region}.amazonaws.com/${BUCKET}/${PREFIX}/pca-main.yaml"
 aws cloudformation validate-template --template-url $template > /dev/null || exit 1
 
-
 echo "Outputs"
 echo Template URL: $template
-echo CF Launch URL: https://${region}.console.aws.amazon.com/cloudformation/home?region=${region}#/stacks/create/review?templateURL=${template}\&stackName=PostCallAnalytics
-echo CLI Deploy: aws cloudformation deploy --template-file `pwd`/build/packaged.template --capabilities CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND --stack-name PostCallAnalytics --parameter-overrides AdminEmail=johndoe@example.com
+echo CF Launch URL: https://${region}.console.aws.amazon.com/cloudformation/home?region=${region}#/stacks/create/review?templateURL=${template}\&stackName=PCA
+echo CLI Deploy: aws cloudformation deploy --template-file `pwd`/build/packaged.template --capabilities CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND --stack-name PCA --parameter-overrides AdminEmail=johndoe@example.com
 
 echo Done
 exit 0
