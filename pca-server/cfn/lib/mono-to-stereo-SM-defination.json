@@ -1,0 +1,156 @@
+{
+  "Comment": "A description of my state machine",
+  "StartAt": "Lambda: count_audio_channel",
+  "States": {
+    "Lambda: count_audio_channel": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "OutputPath": "$.Payload",
+      "Parameters": {
+        "Payload.$": "$",
+        "FunctionName": "${countAudioChannelArn}"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 6,
+          "BackoffRate": 2
+        }
+      ],
+      "Next": "Choice: mono_or_stereo?"
+    },
+    "Choice: mono_or_stereo?": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.channel",
+          "NumericEquals": 1,
+          "Next": "Lambda: start_transcribe_job"
+        }
+      ],
+      "Default": "Lambda: trigger_post_call_analytics_SM"
+    },
+    "Lambda: trigger_post_call_analytics_SM": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "OutputPath": "$.Payload",
+      "Parameters": {
+        "Payload.$": "$",
+        "FunctionName": "${triggerPostCallAnalyticsSMArn}"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 6,
+          "BackoffRate": 2
+        }
+      ],
+      "End": true
+    },
+    "Lambda: start_transcribe_job": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "OutputPath": "$.Payload",
+      "Parameters": {
+        "Payload.$": "$",
+        "FunctionName": "${startTranscribeJobArn}"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 6,
+          "BackoffRate": 2
+        }
+      ],
+      "Next": "Wait"
+    },
+    "Wait": {
+      "Type": "Wait",
+      "Seconds": 10,
+      "Next": "Lambda: transcribe_job_status"
+    },
+    "Lambda: transcribe_job_status": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "OutputPath": "$.Payload",
+      "Parameters": {
+        "Payload.$": "$",
+        "FunctionName": "${checkTranscribeJobStatusArn}"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 6,
+          "BackoffRate": 2
+        }
+      ],
+      "Next": "Choice: job_complete?"
+    },
+    "Choice: job_complete?": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.transcriptionJobStatus",
+          "StringEquals": "COMPLETED",
+          "Next": "Lambda: convert_mono_to_stereo_audio"
+        },
+        {
+          "Variable": "$.transcriptionJobStatus",
+          "StringEquals": "FAILED",
+          "Next": "Fail"
+        }
+      ],
+      "Default": "Wait"
+    },
+    "Fail": {
+      "Type": "Fail"
+    },
+    "Lambda: convert_mono_to_stereo_audio": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "OutputPath": "$.Payload",
+      "Parameters": {
+        "Payload.$": "$",
+        "FunctionName": "${convertMonoToStereoAudioArn}"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 6,
+          "BackoffRate": 2
+        }
+      ],
+      "Next": "Lambda: trigger_post_call_analytics_SM"
+    }
+  }
+}

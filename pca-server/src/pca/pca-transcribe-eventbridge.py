@@ -120,7 +120,7 @@ if __name__ == "__main__":
         'id': '0029c6b1-7c8e-1f61-fed5-7ef256b3660b',
         'detail-type': 'Transcribe Job State Change',
         'source': 'aws.transcribe',
-        'account': '710514874879',
+        'account': 'ACCOUNT_ID',
         'time': '2020-08-05T13:32:03Z',
         'region': 'us-east-1',
         'resources': [],

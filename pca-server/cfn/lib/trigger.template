@@ -26,6 +26,10 @@ Parameters:
     Type: AWS::SSM::Parameter::Value<String>
     Default: InputBucketOrigTranscripts
 
+  MonoToStereoStepFunctionName:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: MonoToStereoStepFunctionName
+
   StepFunctionName:
     Type: AWS::SSM::Parameter::Value<String>
     Default: StepFunctionName
@@ -71,8 +75,9 @@ Resources:
         - Sid: StartExecutionPolicy
           Effect: Allow
           Action: states:StartExecution
-          Resource: !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${StepFunctionName}
-
+          Resource:
+            - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${StepFunctionName}
+            - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${MonoToStereoStepFunctionName}
     
   FileDropTriggerPermission:
     Type: AWS::Lambda::Permission

@@ -13,15 +13,15 @@ CONF_COMP_LANGS = "ComprehendLanguages"
 CONF_REDACTION_LANGS = "ContentRedactionLanguages"
 CONF_CONVO_LOCATION = "ConversationLocation"
 CONF_ENTITYENDPOINT = "EntityRecognizerEndpoint"
+CONF_CLASSIFIER_ENDPOINT = "AudioClassifierEndpoint"
 CONF_ENTITY_FILE = "EntityStringMap"
 CONF_ENTITYCONF = "EntityThreshold"
 CONF_ENTITY_TYPES = "EntityTypes"
-CONF_PREFIX_AUDIO_PLAYBACK = "InputBucketAudioPlayback"
+CONF_PREFIX_MP3_PLAYBACK = "InputBucketAudioPlayback"
 CONF_S3BUCKET_INPUT = "InputBucketName"
 CONF_PREFIX_RAW_AUDIO = "InputBucketRawAudio"
 CONF_PREFIX_MONO_STEREO_CONVERTED_AUDIO = "InputBucketMonoToStereoAudio"
 CONF_PREFIX_FAILED_AUDIO = "InputBucketFailedTranscriptions"
-CONF_PREFIX_INPUT_TRANSCRIPTS = "InputBucketOrigTranscripts"
 CONF_MAX_SPEAKERS = "MaxSpeakers"
 CONF_MINNEGATIVE = "MinSentimentNegative"
 CONF_MINPOSITIVE = "MinSentimentPositive"
@@ -58,7 +58,6 @@ BULK_MAX_DRIP_RATE = "BulkUploadMaxDripRate"
 # Transcribe API Modes
 API_STANDARD = "standard"
 API_ANALYTICS = "analytics"
-API_STREAM_ANALYTICS = "analytics-streaming"
 
 # Speaker separation modes
 SPEAKER_MODE_SPEAKER = "speaker"
@@ -111,16 +110,15 @@ def loadConfiguration():
             CONF_ENTITYENDPOINT,
             CONF_ENTITY_FILE,
             CONF_ENTITYCONF,
-            CONF_PREFIX_AUDIO_PLAYBACK,
+            CONF_PREFIX_MP3_PLAYBACK,
             CONF_S3BUCKET_INPUT,
             CONF_PREFIX_RAW_AUDIO,
             CONF_PREFIX_FAILED_AUDIO,
-            CONF_PREFIX_INPUT_TRANSCRIPTS,
+            CONF_MAX_SPEAKERS,
         ]
     )
     fullParamList2 = ssm.get_parameters(
         Names=[
-            CONF_MAX_SPEAKERS,
             CONF_MINNEGATIVE,
             CONF_MINPOSITIVE,
             CONF_S3BUCKET_OUTPUT,
@@ -130,11 +128,11 @@ def loadConfiguration():
             COMP_SFN_NAME,
             CONF_SUPPORT_BUCKET,
             CONF_TRANSCRIBE_LANG,
+            CONF_PREFIX_TRANSCRIBE_RESULTS,
         ]
     )
     fullParamList3 = ssm.get_parameters(
         Names=[
-            CONF_PREFIX_TRANSCRIBE_RESULTS,
             CONF_VOCABNAME,
             CONF_CONVO_LOCATION,
             CONF_ENTITY_TYPES,
@@ -144,11 +142,11 @@ def loadConfiguration():
             CONF_FILENAME_DATETIME_FIELDMAP,
             CONF_FILENAME_GUID_REGEX,
             CONF_FILENAME_AGENT_REGEX,
+            CONF_FILENAME_CUST_REGEX,
         ]
     )
     fullParamList4 = ssm.get_parameters(
         Names=[
-            CONF_FILENAME_CUST_REGEX,
             CONF_KENDRA_INDEX_ID,
             CONF_WEB_URI,
             CONF_TRANSCRIBE_API,
@@ -158,6 +156,7 @@ def loadConfiguration():
             CONF_TELEPHONY_CTR_SUFFIX,
             COMP_MONO_TO_STEREO_SFN_NAME,
             CONF_PREFIX_MONO_STEREO_CONVERTED_AUDIO,
+            CONF_CLASSIFIER_ENDPOINT
         ]
     )
 
@@ -193,7 +192,6 @@ def loadConfiguration():
     appConfig[CONF_TRANSCRIBE_LANG] = appConfig[CONF_TRANSCRIBE_LANG].split(" | ")
     appConfig[CONF_SPEAKER_NAMES] = appConfig[CONF_SPEAKER_NAMES].split(" | ")
     appConfig[CONF_TELEPHONY_CTR_SUFFIX] = appConfig[CONF_TELEPHONY_CTR_SUFFIX].split(" | ")
-
 
 def isAutoLanguageDetectionSet():
     """

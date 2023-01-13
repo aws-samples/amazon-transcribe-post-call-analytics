@@ -47,6 +47,13 @@ Resources:
     Properties:
       TemplateURL: lib/ddb.template
 
+  MONOTOSTEREOPCA:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: lib/mono-to-stereo.yml
+      Parameters:
+        FFMPEGZipName: !GetAtt FFMPEG.Outputs.FFMPEGZipName
+
   PCA:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -77,6 +84,7 @@ Resources:
     DependsOn:
       - PCA
       - Trigger
+      - MONOTOSTEREOPCA
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: lib/copy-samples.template
@@ -93,6 +101,7 @@ Outputs:
       - ', '
       - - !Sub '${Trigger.Outputs.RolesForKMSKey}'
         - !Sub '${PCA.Outputs.RolesForKMSKey}'
+        - !Sub '${MONOTOSTEREOPCA.Outputs.RolesForKMSKey}'
         - !Sub '${BulkImport.Outputs.RolesForKMSKey}'
         - !If [ShouldLoadSampleAudioFiles, !Sub '${CopySamples.Outputs.RolesForKMSKey}', !Ref AWS::NoValue]
 
