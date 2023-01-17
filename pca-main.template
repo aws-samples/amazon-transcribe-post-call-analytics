@@ -169,7 +169,7 @@ Parameters:
 
   TranscribeLanguages:
     Type: String
-    Default: en-US
+    Default: en-US | ar-AE | ar-SA | hi-IN
     Description: Language to be used for Transcription - multiple entries separated by " | " will trigger Language Detection
 
   VocabFilterMode:
