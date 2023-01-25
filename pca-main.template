@@ -309,7 +309,7 @@ Parameters:
         - 'No'
         - 'Yes, create new Kendra Index (Developer Edition)'
         - 'Yes, create new Kendra Index (Enterprise Edition)'
-    Description: Optionally make call transcripts searchable, using Amazon Kendra.
+    Description: Optionally make call transcripts searchable, using Amazon Kendra. If enabled, EnableTranscriptGui must be true.
 
   RetentionDays:
     Type: Number
@@ -424,6 +424,13 @@ Conditions:
   ShouldEnableGui: !Not [!Equals [!Ref EnableTranscriptGui, false]]
   ShouldEnableKendraSearch: !Not [!Equals [!Ref EnableTranscriptKendraSearch, 'No']]
   ShouldCreateKendraIndexDeveloperEdition: !Equals [!Ref EnableTranscriptKendraSearch, 'Yes, create new Kendra Index (Developer Edition)']
+
+Rules:
+  GuiEnabledWithKenda:
+    RuleCondition: ShouldEnableKendraSearch
+    Assertions:
+      - Assert: ShouldEnableGui
+        AssertDescription: If Kendra enabled, GUI must also be enabled.
 
 Resources:
   ########################################################
