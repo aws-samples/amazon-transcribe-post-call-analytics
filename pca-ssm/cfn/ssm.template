@@ -622,7 +622,7 @@ Resources:
       Name: WebUri
       Type: String
       Value: !Ref WebUri
-      Description: PCA Web Application URI
+      Description: PCA Web Application URI, or None if the GUI is disabled
 
   DatabaseNameParameter:
     Type: "AWS::SSM::Parameter"
