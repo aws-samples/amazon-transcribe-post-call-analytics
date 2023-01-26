@@ -421,7 +421,7 @@ Conditions:
   ShouldCreateInputBucket: !Equals [!Ref InputBucketName, '']
   ShouldCreateOutputBucket: !Equals [!Ref OutputBucketName, '']
   ShouldCreateSupportFilesBucket: !Equals [!Ref SupportFilesBucketName, '']
-  ShouldEnableGui: !Not [!Equals [!Ref EnableTranscriptGui, false]]
+  ShouldEnableGui: !Not [!Equals [!Ref EnableTranscriptGui, "false"]]
   ShouldEnableKendraSearch: !Not [!Equals [!Ref EnableTranscriptKendraSearch, 'No']]
   ShouldCreateKendraIndexDeveloperEdition: !Equals [!Ref EnableTranscriptKendraSearch, 'Yes, create new Kendra Index (Developer Edition)']
 
@@ -429,8 +429,8 @@ Rules:
   GuiEnabledWithKenda:
     RuleCondition: !Not [!Equals [!Ref EnableTranscriptKendraSearch, 'No']]
     Assertions:
-      - Assert: !Not [!Equals [!Ref EnableTranscriptGui, false]]
-        AssertDescription: If Kendra enabled, GUI must also be enabled.
+      - Assert: !Not [!Equals [!Ref EnableTranscriptGui, "false"]]
+        AssertDescription: If Kendra is enabled, GUI must also be enabled
 
 Resources:
   ########################################################
