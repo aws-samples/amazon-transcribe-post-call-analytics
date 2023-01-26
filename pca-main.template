@@ -296,10 +296,10 @@ Parameters:
 
   EnableTranscriptGui:
     Type: String
-    Default: true
+    Default: "true"
     AllowedValues:
-        - true
-        - false
+        - "true"
+        - "false"
     Description: Optionally disable the web GUI that comes with this solution to explore transcripts.
   
   EnableTranscriptKendraSearch:
