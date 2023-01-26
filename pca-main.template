@@ -427,9 +427,9 @@ Conditions:
 
 Rules:
   GuiEnabledWithKenda:
-    RuleCondition: ShouldEnableKendraSearch
+    RuleCondition: !Not [!Equals [!Ref EnableTranscriptKendraSearch, 'No']]
     Assertions:
-      - Assert: ShouldEnableGui
+      - Assert: !Not [!Equals [!Ref EnableTranscriptGui, false]]
         AssertDescription: If Kendra enabled, GUI must also be enabled.
 
 Resources:
