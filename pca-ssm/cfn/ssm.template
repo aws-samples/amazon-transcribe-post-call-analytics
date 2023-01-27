@@ -11,6 +11,13 @@ Parameters:
       manually enabled to drip feed them into the system. 
       Leave blank to automatically create new bucket.
 
+  BulkUploadBucketKmsKeyArn:
+    Type: String
+    Description: >-
+      (Optional) KMS key to use to encrypt the bucket `BulkUploadBucketName`. If `BulkUploadBucketName` is empty,
+      use this key to encrypt the bucket this stack creates.
+      Leave blank to use S3 default encryption.
+
   BulkUploadMaxDripRate:
     Type: String
     Default: "25"
@@ -72,6 +79,13 @@ Parameters:
       (Optional) Existing bucket holding all audio files for the system. 
       Leave blank to automatically create new bucket.
 
+  InputBucketKmsKeyArn:
+    Type: String
+    Description: >-
+      (Optional) KMS key to use to encrypt the bucket `InputBucketName`. If `InputBucketName` is empty,
+      use this key to encrypt the bucket this stack creates.
+      Leave blank to use S3 default encryption.
+
   InputBucketRawAudio:
     Type: String
     Default: originalAudio
@@ -104,6 +118,13 @@ Parameters:
     Description: >-
       (Optional) Existing bucket where Transcribe output files are delivered. 
       Leave blank to automatically create new bucket.
+
+  OutputBucketKmsKeyArn:
+    Type: String
+    Description: >-
+      (Optional) KMS key to use to encrypt the bucket `OutputBucketName`. If `OutputBucketName` is empty,
+      use this key to encrypt the bucket this stack creates.
+      Leave blank to use S3 default encryption.
 
   OutputBucketTranscribeResults:
     Type: String
@@ -143,6 +164,13 @@ Parameters:
       (Optional) Existing bucket that hold supporting files, such as the 
       file-based entity recognition mapping files. 
       Leave blank to automatically create new bucket.
+
+  SupportFilesBucketKmsKeyArn:
+    Type: String
+    Description: >-
+      (Optional) KMS key to use to encrypt the bucket `SupportFilesBucketName`. If `SupportFilesBucketName` is empty,
+      use this key to encrypt the bucket this stack creates.
+      Leave blank to use S3 default encryption.
 
   TranscribeApiMode:
     Type: String
@@ -265,6 +293,16 @@ Resources:
       Description: Bucket where files can be dropped, and a secondary Step Function can be manually enabled to drip feed them into the system
       Value: !Ref BulkUploadBucketName
 
+  BulkUploadBucketKmsKeyParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: BulkUploadBucketKmsKey
+      Type: String
+      Description: >
+        Key Management Service Customer Managed Key ARN that encrypts the BulkUploadBucket.
+        The value AES256 means the default S3 server side encryption is used.
+      Value: !Ref BulkUploadBucketKmsKeyArn
+
   BulkUploadMaxDripRateParameter:
     Type: "AWS::SSM::Parameter"
     Properties:
@@ -361,6 +399,16 @@ Resources:
       Description: Bucket where where audio files are delivered
       Value: !Ref InputBucketName
 
+  InputBucketKmsKeyParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: InputBucketKmsKey
+      Type: String
+      Description: >
+        Key Management Service Customer Managed Key ARN that encrypts the InputBucket.
+        The value AES256 means the default S3 server side encryption is used.
+      Value: !Ref InputBucketKmsKeyArn
+
   InputBucketRawAudioParameter:
     Type: "AWS::SSM::Parameter"
     Properties:
@@ -410,6 +458,16 @@ Resources:
       Type: String
       Description: Bucket where Transcribe output files are delivered
       Value: !Ref OutputBucketName
+
+  OutputBucketKmsKeyParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: OutputBucketKmsKey
+      Type: String
+      Description: >
+        Key Management Service Customer Managed Key ARN that encrypts the OutputBucket.
+        The value AES256 means the default S3 server side encryption is used.
+      Value: !Ref OutputBucketKmsKeyArn
 
   OutputBucketTranscribeResultsParameter:
     Type: "AWS::SSM::Parameter"
@@ -466,6 +524,16 @@ Resources:
       Type: String
       Description: Bucket that hold supporting files, such as the file-based entity recognition mapping files
       Value: !Ref SupportFilesBucketName
+
+  SupportFilesBucketKmsKeyParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: SupportFilesBucketKmsKey
+      Type: String
+      Description: >
+        Key Management Service Customer Managed Key ARN that encrypts the SupportFilesBucket.
+        The value AES256 means the default S3 server side encryption is used.
+      Value: !Ref SupportFilesBucketKmsKeyArn
 
   TranscribeApiModeParameter:
     Type: "AWS::SSM::Parameter"
