@@ -22,8 +22,16 @@ Parameters:
     Default: ""
     Description: >-
       (Optional) Existing bucket where files can be dropped, and a secondary Step Function can be 
-      manually enabled to drip feed them into the system. 
+      manually enabled to drip feed them into the system.
       Leave blank to automatically create new bucket.
+
+  BulkUploadBucketKmsKeyArn:
+    Type: String
+    Default: ""
+    Description: >-
+      (Optional) KMS key to use to encrypt the bucket `BulkUploadBucketName`. If `BulkUploadBucketName` is empty,
+      use this key to encrypt the bucket this stack creates.
+      Leave blank to use S3 default encryption.
 
   BulkUploadMaxDripRate:
     Type: String
@@ -88,6 +96,14 @@ Parameters:
       (Optional) Existing bucket holding all audio files for the system. 
       Leave blank to automatically create new bucket with intelligent tiering storage and automated retention policy.
 
+  InputBucketKmsKeyArn:
+    Type: String
+    Default: ""
+    Description: >-
+      (Optional) KMS key to use to encrypt the bucket `InputBucketName`. If `InputBucketName` is empty,
+      use this key to encrypt the bucket this stack creates.
+      Leave blank to use S3 default encryption.
+
   InputBucketRawAudio:
     Type: String
     Default: originalAudio
@@ -121,6 +137,14 @@ Parameters:
     Description: >-
       (Optional) Existing bucket where Transcribe output files are delivered. 
       Leave blank to automatically create new bucket with intelligent tiering storage and automated retention policy.
+
+  OutputBucketKmsKeyArn:
+    Type: String
+    Default: ""
+    Description: >-
+      (Optional) KMS key to use to encrypt the bucket `OutputBucketName`. If `OutputBucketName` is empty,
+      use this key to encrypt the bucket this stack creates.
+      Leave blank to use S3 default encryption.
 
   OutputBucketTranscribeResults:
     Type: String
@@ -166,6 +190,14 @@ Parameters:
     Description: >-
       (Optional) Existing bucket that hold supporting files, such as the  file-based
       entity recognition mapping files.  Leave blank to automatically create new bucket.
+
+  SupportFilesBucketKmsKeyArn:
+    Type: String
+    Default: ""
+    Description: >-
+      (Optional) KMS key to use to encrypt the bucket `SupportFilesBucketName`. If `SupportFilesBucketName` is empty,
+      use this key to encrypt the bucket this stack creates.
+      Leave blank to use S3 default encryption.
 
   TranscribeLanguages:
     Type: String
@@ -355,6 +387,10 @@ Metadata:
                   - OutputBucketName
                   - SupportFilesBucketName
                   - RetentionDays
+                  - InputBucketKmsKeyArn
+                  - BulkUploadBucketKmsKeyArn
+                  - OutputBucketKmsKeyArn
+                  - SupportFilesBucketKmsKeyArn
             - Label:
                 default: S3 bucket prefixes
               Parameters:
@@ -407,11 +443,18 @@ Metadata:
 
 Conditions:
   ShouldCreateBulkUploadBucket: !Equals [!Ref BulkUploadBucketName, '']
+  ShouldEncryptBulkUploadBucketWithCmk: !Not [!Equals [!Ref BulkUploadBucketKmsKeyArn, '']]
   ShouldCreateInputBucket: !Equals [!Ref InputBucketName, '']
+  ShouldEncryptInputBucketWithCmk: !Not [!Equals [!Ref InputBucketKmsKeyArn, '']]
   ShouldCreateOutputBucket: !Equals [!Ref OutputBucketName, '']
+  ShouldEncryptOutputBucketWithCmk: !Not [!Equals [!Ref OutputBucketKmsKeyArn, '']]
   ShouldCreateSupportFilesBucket: !Equals [!Ref SupportFilesBucketName, '']
+  ShouldEncryptSupportFilesBucketWithCmk: !Not [!Equals [!Ref SupportFilesBucketKmsKeyArn, '']]
   ShouldEnableKendraSearch: !Not [!Equals [!Ref EnableTranscriptKendraSearch, 'No']]
   ShouldCreateKendraIndexDeveloperEdition: !Equals [!Ref EnableTranscriptKendraSearch, 'Yes, create new Kendra Index (Developer Edition)']
+
+# TODO: The web UI either needs to add a distribution for KMS in pca-ui/cfn/lib/web.template
+# or we need to add a rule to not allow the web UI and KMS keys
 
 Resources:
   ########################################################
@@ -423,24 +466,30 @@ Resources:
     Condition: ShouldCreateBulkUploadBucket
     Type: 'AWS::S3::Bucket'
     DeletionPolicy: Retain
-    UpdateReplacePolicy: Retain 
+    UpdateReplacePolicy: Retain
     Properties:
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
-              SSEAlgorithm: AES256
+              !If
+              - ShouldEncryptBulkUploadBucketWithCmk
+              - { SSEAlgorithm: 'aws:kms', KMSMasterKeyID: !Ref BulkUploadBucketKmsKeyArn }
+              - { SSEAlgorithm: AES256 }
 
   InputBucket:
     Condition: ShouldCreateInputBucket
     Type: 'AWS::S3::Bucket'
     DeletionPolicy: Retain
-    UpdateReplacePolicy: Retain 
+    UpdateReplacePolicy: Retain
     
     Properties:
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
-              SSEAlgorithm: AES256
+              !If
+              - ShouldEncryptInputBucketWithCmk
+              - { SSEAlgorithm: 'aws:kms', KMSMasterKeyID: !Ref InputBucketKmsKeyArn }
+              - { SSEAlgorithm: AES256 }
       LifecycleConfiguration:
         Rules:
           - Id: StorageClassAndRetention
@@ -459,7 +508,10 @@ Resources:
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
-              SSEAlgorithm: AES256
+              !If
+              - ShouldEncryptOutputBucketWithCmk
+              - { SSEAlgorithm: 'aws:kms', KMSMasterKeyID: !Ref OutputBucketKmsKeyArn }
+              - { SSEAlgorithm: AES256 }
       LifecycleConfiguration:
         Rules:
           - Id: LifecycleRule
@@ -478,7 +530,10 @@ Resources:
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
-              SSEAlgorithm: AES256
+              !If
+              - ShouldEncryptSupportFilesBucketWithCmk
+              - { SSEAlgorithm: 'aws:kms', KMSMasterKeyID: !Ref SupportFilesBucketKmsKeyArn }
+              - { SSEAlgorithm: AES256 }
 
 
   ########################################################
@@ -494,6 +549,11 @@ Resources:
           - ShouldCreateBulkUploadBucket
           - !Ref BulkUploadBucket
           - !Ref BulkUploadBucketName
+        BulkUploadBucketKmsKeyArn:
+          !If
+          - ShouldEncryptBulkUploadBucketWithCmk
+          - !Ref BulkUploadBucketKmsKeyArn
+          - AES256
         BulkUploadMaxDripRate: !Ref BulkUploadMaxDripRate
         BulkUploadMaxTranscribeJobs: !Ref BulkUploadMaxTranscribeJobs
         ComprehendLanguages: !Ref ComprehendLanguages
@@ -505,11 +565,16 @@ Resources:
         EntityTypes: !Ref EntityTypes
         InputBucketAudioPlayback: !Ref InputBucketAudioPlayback
         InputBucketFailedTranscriptions: !Ref InputBucketFailedTranscriptions
-        InputBucketName: 
+        InputBucketName:
           !If
           - ShouldCreateInputBucket
           - !Ref InputBucket
-          - !Ref InputBucketName        
+          - !Ref InputBucketName
+        InputBucketKmsKeyArn:
+          !If
+          - ShouldEncryptInputBucketWithCmk
+          - !Ref InputBucketKmsKeyArn
+          - AES256
         InputBucketRawAudio: !Ref InputBucketRawAudio
         InputBucketOrigTranscripts: !Ref InputBucketOrigTranscripts
         MaxSpeakers: !Ref MaxSpeakers
@@ -519,18 +584,28 @@ Resources:
           !If
           - ShouldCreateOutputBucket
           - !Ref OutputBucket
-          - !Ref OutputBucketName 
+          - !Ref OutputBucketName
+        OutputBucketKmsKeyArn:
+          !If
+          - ShouldEncryptOutputBucketWithCmk
+          - !Ref OutputBucketKmsKeyArn
+          - AES256
         OutputBucketTranscribeResults: !Ref OutputBucketTranscribeResults
         OutputBucketParsedResults: !Ref OutputBucketParsedResults
         SpeakerNames: !Ref SpeakerNames
         SpeakerSeparationType: !Ref SpeakerSeparationType
         StepFunctionName: !Ref StepFunctionName
         BulkUploadStepFunctionName: !Ref BulkUploadStepFunctionName
-        SupportFilesBucketName: 
+        SupportFilesBucketName:
           !If
           - ShouldCreateSupportFilesBucket
           - !Ref SupportFilesBucket
           - !Ref SupportFilesBucketName
+        SupportFilesBucketKmsKeyArn:
+          !If
+          - ShouldEncryptSupportFilesBucketWithCmk
+          - !Ref SupportFilesBucketKmsKeyArn
+          - AES256
         TranscribeLanguages: !Ref TranscribeLanguages
         TranscribeApiMode: !Ref TranscribeApiMode
         TelephonyCTRType: !Ref TelephonyCTRType
@@ -562,7 +637,7 @@ Resources:
       Parameters:
         ffmpegDownloadUrl: !Ref ffmpegDownloadUrl
         loadSampleAudioFiles: !Ref loadSampleAudioFiles
-      
+
   PCAUI:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -594,14 +669,30 @@ Outputs:
           - !Ref BulkUploadBucket
           - !Ref BulkUploadBucketName
 
+  BulkUploadBucketKmsKey:
+    Description: KMS key used to encrypt the BulkUploadBucket. Value of AES256 means default server side encryption is used.
+    Value:
+          !If
+          - ShouldEncryptBulkUploadBucketWithCmk
+          - !Ref BulkUploadBucketKmsKeyArn
+          - AES256
+
   InputBucket:
     Description: S3 Bucket for uploading input audio files
     Value:
       !If
       - ShouldCreateInputBucket
       - !Ref InputBucket
-      - !Ref InputBucketName  
-    
+      - !Ref InputBucketName
+
+  InputBucketKmsKey:
+    Description: KMS key used to encrypt the InputBucket. Value of AES256 means default server side encryption is used.
+    Value:
+          !If
+          - ShouldEncryptInputBucketWithCmk
+          - !Ref InputBucketKmsKeyArn
+          - AES256
+
   InputBucketPrefix:
     Description: S3 Bucket prefix/folder for uploading input audio files
     Value: !Ref InputBucketRawAudio
@@ -620,8 +711,16 @@ Outputs:
       !If
       - ShouldCreateOutputBucket
       - !Ref OutputBucket
-      - !Ref OutputBucketName  
-    
+      - !Ref OutputBucketName
+
+  OutputBucketKmsKey:
+    Description: KMS key used to encrypt the OutputBucket. Value of AES256 means default server side encryption is used.
+    Value:
+          !If
+          - ShouldEncryptOutputBucketWithCmk
+          - !Ref OutputBucketKmsKeyArn
+          - AES256
+
   OutputBucketPrefix:
     Description: S3 Bucket path where Transcribe output files are delivered
     Value: !Ref OutputBucketParsedResults
@@ -633,7 +732,15 @@ Outputs:
       - ShouldCreateSupportFilesBucket
       - !Ref SupportFilesBucket
       - !Ref SupportFilesBucketName  
-    
+
+  SupportFilesBucketKmsKey:
+    Description: KMS key used to encrypt the SupportFilesBucket. Value of AES256 means default server side encryption is used.
+    Value:
+          !If
+          - ShouldEncryptSupportFilesBucketWithCmk
+          - !Ref SupportFilesBucketKmsKeyArn
+          - AES256
+
   TranscriptionMediaSearchFinderURL:
     Description: Transcript Search Application link
     Value:

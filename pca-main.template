@@ -8,11 +8,11 @@ Parameters:
     Type: String
     Default: "admin"
     Description: (Required) Username for admin user
-    
+
   AdminEmail:
       Type: String
       Description: >-
-        (Required) Email address for the admin user. Will be used for logging in and for setting the admin password. 
+        (Required) Email address for the admin user. Will be used for logging in and for setting the admin password.
         This email will receive the temporary password for the admin user.
       AllowedPattern: ".+\\@.+\\..+"
       ConstraintDescription: Must be valid email address eg. johndoe@example.com
@@ -21,9 +21,17 @@ Parameters:
     Type: String
     Default: ""
     Description: >-
-      (Optional) Existing bucket where files can be dropped, and a secondary Step Function can be 
-      manually enabled to drip feed them into the system. 
+      (Optional) Existing bucket where files can be dropped, and a secondary Step Function can be
+      manually enabled to drip feed them into the system.
       Leave blank to automatically create new bucket.
+
+  BulkUploadBucketKmsKeyArn:
+    Type: String
+    Default: ""
+    Description: >-
+      (Optional) KMS key to use to encrypt the bucket `BulkUploadBucketName`. If `BulkUploadBucketName` is empty,
+      use this key to encrypt the bucket this stack creates.
+      Leave blank to use S3 default encryption.
 
   BulkUploadMaxDripRate:
     Type: String
@@ -85,8 +93,16 @@ Parameters:
     Type: String
     Default: ""
     Description: >-
-      (Optional) Existing bucket holding all audio files for the system. 
+      (Optional) Existing bucket holding all audio files for the system.
       Leave blank to automatically create new bucket with intelligent tiering storage and automated retention policy.
+
+  InputBucketKmsKeyArn:
+    Type: String
+    Default: ""
+    Description: >-
+      (Optional) KMS key to use to encrypt the bucket `InputBucketName`. If `InputBucketName` is empty,
+      use this key to encrypt the bucket this stack creates.
+      Leave blank to use S3 default encryption.
 
   InputBucketRawAudio:
     Type: String
@@ -119,8 +135,16 @@ Parameters:
     Type: String
     Default: ""
     Description: >-
-      (Optional) Existing bucket where Transcribe output files are delivered. 
+      (Optional) Existing bucket where Transcribe output files are delivered.
       Leave blank to automatically create new bucket with intelligent tiering storage and automated retention policy.
+
+  OutputBucketKmsKeyArn:
+    Type: String
+    Default: ""
+    Description: >-
+      (Optional) KMS key to use to encrypt the bucket `OutputBucketName`. If `OutputBucketName` is empty,
+      use this key to encrypt the bucket this stack creates.
+      Leave blank to use S3 default encryption.
 
   OutputBucketTranscribeResults:
     Type: String
@@ -153,19 +177,27 @@ Parameters:
     AllowedPattern: "[-_a-zA-Z0-9]*"
     Default: PostCallAnalyticsWorkflow
     Description: Name of Step Functions workflow that orchestrates this process
-    
+
   BulkUploadStepFunctionName:
     Type: String
     AllowedPattern: "[-_a-zA-Z0-9]*"
     Default: BulkUploadWorkflow
     Description: Name of Step Functions workflow that orchestrates the bulk import process
-    
+
   SupportFilesBucketName:
     Type: String
     Default: ''
     Description: >-
       (Optional) Existing bucket that hold supporting files, such as the  file-based
       entity recognition mapping files.  Leave blank to automatically create new bucket.
+
+  SupportFilesBucketKmsKeyArn:
+    Type: String
+    Default: ""
+    Description: >-
+      (Optional) KMS key to use to encrypt the bucket `SupportFilesBucketName`. If `SupportFilesBucketName` is empty,
+      use this key to encrypt the bucket this stack creates.
+      Leave blank to use S3 default encryption.
 
   TranscribeLanguages:
     Type: String
@@ -242,13 +274,13 @@ Parameters:
         - true
         - false
     Description: Set to true to automatically ingest sample audio files.
-    
+
   FilenameDatetimeRegex:
     Type: String
     Default: '(\d{4})-(\d{2})-(\d{2})T(\d{2})-(\d{2})-(\d{2})'
     Description: >
-      Regular Expression (regex) used to parse call Date/Time from audio filenames. 
-      Each datetime field (year, month, etc.) must be matched using a separate parenthesized group in the regex. 
+      Regular Expression (regex) used to parse call Date/Time from audio filenames.
+      Each datetime field (year, month, etc.) must be matched using a separate parenthesized group in the regex.
       Example: the regex '(\d{4})-(\d{2})-(\d{2})T(\d{2})-(\d{2})-(\d{2})' parses
       the filename: CallAudioFile-2021-12-01T07-55-51.wav into a value list: [2021, 12, 01, 07, 55, 51]
       The next parameter, FilenameDatetimeFieldMap, maps the values to datetime field codes.
@@ -258,40 +290,40 @@ Parameters:
     Type: String
     Default: '%Y %m %d %H %M %S'
     Description: >
-      Space separated ordered sequence of time field codes as used by Python's datetime.strptime() function. 
-      Each field code refers to a corresponding value parsed by the regex parameter filenameTimestampRegex. 
+      Space separated ordered sequence of time field codes as used by Python's datetime.strptime() function.
+      Each field code refers to a corresponding value parsed by the regex parameter filenameTimestampRegex.
       Example: the mapping '%Y %m %d %H %M %S' assembles the regex output values [2021, 12, 01, 07, 55, 51]
-      into the full datetime: '2021-12-01 07:55:51'.  
+      into the full datetime: '2021-12-01 07:55:51'.
       If the field map doesn't match the value list parsed by the regex, then the current time is used as the call timestamp.
 
   FilenameGUIDRegex:
     Type: String
     Default: '_GUID_(.*?)_'
     Description: >
-      Regular Expression (regex) used to parse call GUID from audio filenames. 
-      The GUID value must be matched using one or more parenthesized groups in the regex. 
+      Regular Expression (regex) used to parse call GUID from audio filenames.
+      The GUID value must be matched using one or more parenthesized groups in the regex.
       Example: the regex '_GUID_(.*?)_' parses
-      the filename: AutoRepairs1_CUST_12345_GUID_2a602c1a-4ca3-4d37-a933-444d575c0222_AGENT_BobS_DATETIME_07.55.51.067-09-16-2021.wav 
+      the filename: AutoRepairs1_CUST_12345_GUID_2a602c1a-4ca3-4d37-a933-444d575c0222_AGENT_BobS_DATETIME_07.55.51.067-09-16-2021.wav
       to extract the GUID value '2a602c1a-4ca3-4d37-a933-444d575c0222'.
 
   FilenameAgentRegex:
     Type: String
     Default: '_AGENT_(.*?)_'
     Description: >
-      Regular Expression (regex) used to parse call AGENT from audio filenames. 
-      The AGENT value must be matched using one or more parenthesized groups in the regex. 
+      Regular Expression (regex) used to parse call AGENT from audio filenames.
+      The AGENT value must be matched using one or more parenthesized groups in the regex.
       Example: the regex '_AGENT_(.*?)_' parses
-      the filename: AutoRepairs1_CUST_12345_GUID_2a602c1a-4ca3-4d37-a933-444d575c0222_AGENT_BobS_DATETIME_07.55.51.067-09-16-2021.wav 
-      to extract the AGENT value 'BobS'. 
-  
+      the filename: AutoRepairs1_CUST_12345_GUID_2a602c1a-4ca3-4d37-a933-444d575c0222_AGENT_BobS_DATETIME_07.55.51.067-09-16-2021.wav
+      to extract the AGENT value 'BobS'.
+
   FilenameCustRegex:
     Type: String
     Default: '_CUST_(.*?)_'
     Description: >
-      Regular Expression (regex) used to parse Customer from audio filenames. 
-      The customer id value must be matched using one or more parenthesized groups in the regex. 
+      Regular Expression (regex) used to parse Customer from audio filenames.
+      The customer id value must be matched using one or more parenthesized groups in the regex.
       Example: the regex '_CUST_(.*?)_' parses
-      the filename: AutoRepairs1_CUST_12345_GUID_2a602c1a-4ca3-4d37-a933-444d575c0222_AGENT_BobS_DATETIME_07.55.51.067-09-16-2021.wav 
+      the filename: AutoRepairs1_CUST_12345_GUID_2a602c1a-4ca3-4d37-a933-444d575c0222_AGENT_BobS_DATETIME_07.55.51.067-09-16-2021.wav
       to extract the Customer value '12345'.
 
   EnableTranscriptKendraSearch:
@@ -315,7 +347,7 @@ Parameters:
       - 730
       - 1460
     Description: >
-      When using auto-provisioned S3 buckets, your audio files and associated call analysis data will be 
+      When using auto-provisioned S3 buckets, your audio files and associated call analysis data will be
       automatically and permanently deleted after the specified number of retention days. The application
       does not currently archive recordings or call data.
 
@@ -327,7 +359,7 @@ Parameters:
       - TEST
       - PROD
     Default: PROD
-    
+
   DatabaseName:
     Type: String
     Default: 'pca'
@@ -357,6 +389,10 @@ Metadata:
                   - OutputBucketName
                   - SupportFilesBucketName
                   - RetentionDays
+                  - InputBucketKmsKeyArn
+                  - BulkUploadBucketKmsKeyArn
+                  - OutputBucketKmsKeyArn
+                  - SupportFilesBucketKmsKeyArn
             - Label:
                 default: S3 bucket prefixes
               Parameters:
@@ -409,11 +445,18 @@ Metadata:
 
 Conditions:
   ShouldCreateBulkUploadBucket: !Equals [!Ref BulkUploadBucketName, '']
+  ShouldEncryptBulkUploadBucketWithCmk: !Not [!Equals [!Ref BulkUploadBucketKmsKeyArn, '']]
   ShouldCreateInputBucket: !Equals [!Ref InputBucketName, '']
+  ShouldEncryptInputBucketWithCmk: !Not [!Equals [!Ref InputBucketKmsKeyArn, '']]
   ShouldCreateOutputBucket: !Equals [!Ref OutputBucketName, '']
+  ShouldEncryptOutputBucketWithCmk: !Not [!Equals [!Ref OutputBucketKmsKeyArn, '']]
   ShouldCreateSupportFilesBucket: !Equals [!Ref SupportFilesBucketName, '']
+  ShouldEncryptSupportFilesBucketWithCmk: !Not [!Equals [!Ref SupportFilesBucketKmsKeyArn, '']]
   ShouldEnableKendraSearch: !Not [!Equals [!Ref EnableTranscriptKendraSearch, 'No']]
   ShouldCreateKendraIndexDeveloperEdition: !Equals [!Ref EnableTranscriptKendraSearch, 'Yes, create new Kendra Index (Developer Edition)']
+
+# TODO: The web UI either needs to add a distribution for KMS in pca-ui/cfn/lib/web.template
+# or we need to add a rule to not allow the web UI and KMS keys
 
 Resources:
   ########################################################
@@ -425,24 +468,29 @@ Resources:
     Condition: ShouldCreateBulkUploadBucket
     Type: 'AWS::S3::Bucket'
     DeletionPolicy: Retain
-    UpdateReplacePolicy: Retain 
+    UpdateReplacePolicy: Retain
     Properties:
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
-              SSEAlgorithm: AES256
+              !If
+              - ShouldEncryptBulkUploadBucketWithCmk
+              - { SSEAlgorithm: 'aws:kms', KMSMasterKeyID: !Ref BulkUploadBucketKmsKeyArn }
+              - { SSEAlgorithm: AES256 }
 
   InputBucket:
     Condition: ShouldCreateInputBucket
     Type: 'AWS::S3::Bucket'
     DeletionPolicy: Retain
-    UpdateReplacePolicy: Retain 
-    
+    UpdateReplacePolicy: Retain
     Properties:
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
-              SSEAlgorithm: AES256
+              !If
+              - ShouldEncryptInputBucketWithCmk
+              - { SSEAlgorithm: 'aws:kms', KMSMasterKeyID: !Ref InputBucketKmsKeyArn }
+              - { SSEAlgorithm: AES256 }
       LifecycleConfiguration:
         Rules:
           - Id: StorageClassAndRetention
@@ -456,12 +504,15 @@ Resources:
     Condition: ShouldCreateOutputBucket
     Type: 'AWS::S3::Bucket'
     DeletionPolicy: Retain
-    UpdateReplacePolicy: Retain 
+    UpdateReplacePolicy: Retain
     Properties:
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
-              SSEAlgorithm: AES256
+              !If
+              - ShouldEncryptOutputBucketWithCmk
+              - { SSEAlgorithm: 'aws:kms', KMSMasterKeyID: !Ref OutputBucketKmsKeyArn }
+              - { SSEAlgorithm: AES256 }
       LifecycleConfiguration:
         Rules:
           - Id: LifecycleRule
@@ -475,12 +526,15 @@ Resources:
     Condition: ShouldCreateSupportFilesBucket
     Type: 'AWS::S3::Bucket'
     DeletionPolicy: Retain
-    UpdateReplacePolicy: Retain 
+    UpdateReplacePolicy: Retain
     Properties:
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
-              SSEAlgorithm: AES256
+              !If
+              - ShouldEncryptSupportFilesBucketWithCmk
+              - { SSEAlgorithm: 'aws:kms', KMSMasterKeyID: !Ref SupportFilesBucketKmsKeyArn }
+              - { SSEAlgorithm: AES256 }
 
   ########################################################
   # Kendra Index
@@ -522,7 +576,7 @@ Resources:
                   - 'arn:aws:logs:${region}:${account}:log-group:/aws/kendra/*:log-stream:*'
                   - region: !Ref 'AWS::Region'
                     account: !Ref 'AWS::AccountId'
-                Action: 
+                Action:
                   - 'logs:DescribeLogStreams'
                   - 'logs:CreateLogStream'
                   - 'logs:PutLogEvents'
@@ -545,18 +599,18 @@ Resources:
       RoleArn: !GetAtt KendraIndexRole.Arn
       DocumentMetadataConfigurations:
         - Name: ANALYSIS_URI
-          Search: 
+          Search:
             Displayable: true
           Type: 'STRING_VALUE'
         - Name: DATETIME
-          Search: 
+          Search:
             Displayable: true
             Facetable: true
           Relevance:
             Freshness: true
           Type: 'DATE_VALUE'
         - Name: GUID
-          Search: 
+          Search:
             Displayable: true
             Searchable: true
           Type: 'STRING_VALUE'
@@ -566,32 +620,32 @@ Resources:
             Facetable: true
           Type: 'STRING_VALUE'
         - Name: DURATION
-          Search: 
+          Search:
             Displayable: true
             Facetable: true
           Type: 'STRING_VALUE'
         - Name: ENTITY_PERSON
-          Search: 
+          Search:
             Displayable: true
             Facetable: true
-          Type: 'STRING_LIST_VALUE'        
+          Type: 'STRING_LIST_VALUE'
         - Name: ENTITY_LOCATION
-          Search: 
+          Search:
             Displayable: true
             Facetable: true
           Type: 'STRING_LIST_VALUE'
         - Name: ENTITY_ORGANIZATION
-          Search: 
+          Search:
             Displayable: true
             Facetable: true
           Type: 'STRING_LIST_VALUE'
         - Name: ENTITY_COMMERCIAL_ITEM
-          Search: 
+          Search:
             Displayable: true
             Facetable: true
           Type: 'STRING_LIST_VALUE'
         - Name: ENTITY_EVENT
-          Search: 
+          Search:
             Displayable: true
             Facetable: true
           Type: 'STRING_LIST_VALUE'
@@ -612,7 +666,7 @@ Resources:
           Type: 'STRING_LIST_VALUE'
 
 
-  
+
   ########################################################
   # SSM Stack
   ########################################################
@@ -626,6 +680,11 @@ Resources:
           - ShouldCreateBulkUploadBucket
           - !Ref BulkUploadBucket
           - !Ref BulkUploadBucketName
+        BulkUploadBucketKmsKeyArn:
+          !If
+          - ShouldEncryptBulkUploadBucketWithCmk
+          - !Ref BulkUploadBucketKmsKeyArn
+          - AES256
         BulkUploadMaxDripRate: !Ref BulkUploadMaxDripRate
         BulkUploadMaxTranscribeJobs: !Ref BulkUploadMaxTranscribeJobs
         ComprehendLanguages: !Ref ComprehendLanguages
@@ -637,32 +696,47 @@ Resources:
         EntityTypes: !Ref EntityTypes
         InputBucketAudioPlayback: !Ref InputBucketAudioPlayback
         InputBucketFailedTranscriptions: !Ref InputBucketFailedTranscriptions
-        InputBucketName: 
+        InputBucketName:
           !If
           - ShouldCreateInputBucket
           - !Ref InputBucket
-          - !Ref InputBucketName        
+          - !Ref InputBucketName
+        InputBucketKmsKeyArn:
+          !If
+          - ShouldEncryptInputBucketWithCmk
+          - !Ref InputBucketKmsKeyArn
+          - AES256
         InputBucketRawAudio: !Ref InputBucketRawAudio
         InputBucketOrigTranscripts: !Ref InputBucketOrigTranscripts
         MaxSpeakers: !Ref MaxSpeakers
         MinSentimentNegative: !Ref MinSentimentNegative
         MinSentimentPositive: !Ref MinSentimentPositive
-        OutputBucketName: 
+        OutputBucketName:
           !If
           - ShouldCreateOutputBucket
           - !Ref OutputBucket
-          - !Ref OutputBucketName 
+          - !Ref OutputBucketName
+        OutputBucketKmsKeyArn:
+          !If
+          - ShouldEncryptOutputBucketWithCmk
+          - !Ref OutputBucketKmsKeyArn
+          - AES256
         OutputBucketTranscribeResults: !Ref OutputBucketTranscribeResults
         OutputBucketParsedResults: !Ref OutputBucketParsedResults
         SpeakerNames: !Ref SpeakerNames
         SpeakerSeparationType: !Ref SpeakerSeparationType
         StepFunctionName: !Ref StepFunctionName
         BulkUploadStepFunctionName: !Ref BulkUploadStepFunctionName
-        SupportFilesBucketName: 
+        SupportFilesBucketName:
           !If
           - ShouldCreateSupportFilesBucket
           - !Ref SupportFilesBucket
           - !Ref SupportFilesBucketName
+        SupportFilesBucketKmsKeyArn:
+          !If
+          - ShouldEncryptSupportFilesBucketWithCmk
+          - !Ref SupportFilesBucketKmsKeyArn
+          - AES256
         TranscribeLanguages: !Ref TranscribeLanguages
         TranscribeApiMode: !Ref TranscribeApiMode
         TelephonyCTRType: !Ref TelephonyCTRType
@@ -694,7 +768,7 @@ Resources:
       Parameters:
         ffmpegDownloadUrl: !Ref ffmpegDownloadUrl
         loadSampleAudioFiles: !Ref loadSampleAudioFiles
-      
+
   PCAUI:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -707,7 +781,7 @@ Resources:
           !If
           - ShouldCreateInputBucket
           - !Ref InputBucket
-          - !Ref InputBucketName 
+          - !Ref InputBucketName
         DataBucket:
           !If
           - ShouldCreateOutputBucket
@@ -729,7 +803,12 @@ Resources:
           - ShouldCreateInputBucket
           - !Ref InputBucket
           - !Ref InputBucketName
-        
+        MediaBucketKmsKeyArns:
+          !If
+            - ShouldEncryptInputBucketWithCmk
+            - !Ref InputBucketKmsKeyArn
+            - ''
+
 Outputs:
 
   BulkUploadBucket:
@@ -740,14 +819,30 @@ Outputs:
           - !Ref BulkUploadBucket
           - !Ref BulkUploadBucketName
 
+  BulkUploadBucketKmsKey:
+    Description: KMS key used to encrypt the BulkUploadBucket. Value of AES256 means default server side encryption is used.
+    Value:
+          !If
+          - ShouldEncryptBulkUploadBucketWithCmk
+          - !Ref BulkUploadBucketKmsKeyArn
+          - AES256
+
   InputBucket:
     Description: S3 Bucket for uploading input audio files
     Value:
       !If
       - ShouldCreateInputBucket
       - !Ref InputBucket
-      - !Ref InputBucketName  
-    
+      - !Ref InputBucketName
+
+  InputBucketKmsKey:
+    Description: KMS key used to encrypt the InputBucket. Value of AES256 means default server side encryption is used.
+    Value:
+          !If
+          - ShouldEncryptInputBucketWithCmk
+          - !Ref InputBucketKmsKeyArn
+          - AES256
+
   InputBucketPrefix:
     Description: S3 Bucket prefix/folder for uploading input audio files
     Value: !Ref InputBucketRawAudio
@@ -755,7 +850,7 @@ Outputs:
   InputBucketTranscriptPrefix:
     Description: S3 Bucket prefix/folder for uploading input transcripts
     Value: !Ref InputBucketOrigTranscripts
-  
+
   InputBucketPlaybackAudioPrefix:
     Description: S3 Bucket prefix/folder for audio used for playboack from browser
     Value: !Ref InputBucketAudioPlayback
@@ -766,8 +861,16 @@ Outputs:
       !If
       - ShouldCreateOutputBucket
       - !Ref OutputBucket
-      - !Ref OutputBucketName  
-    
+      - !Ref OutputBucketName
+
+  OutputBucketKmsKey:
+    Description: KMS key used to encrypt the OutputBucket. Value of AES256 means default server side encryption is used.
+    Value:
+          !If
+          - ShouldEncryptOutputBucketWithCmk
+          - !Ref OutputBucketKmsKeyArn
+          - AES256
+
   OutputBucketPrefix:
     Description: S3 Bucket path where Transcribe output files are delivered
     Value: !Ref OutputBucketParsedResults
@@ -778,8 +881,16 @@ Outputs:
       !If
       - ShouldCreateSupportFilesBucket
       - !Ref SupportFilesBucket
-      - !Ref SupportFilesBucketName  
-    
+      - !Ref SupportFilesBucketName
+
+  SupportFilesBucketKmsKey:
+    Description: KMS key used to encrypt the SupportFilesBucket. Value of AES256 means default server side encryption is used.
+    Value:
+          !If
+          - ShouldEncryptSupportFilesBucketWithCmk
+          - !Ref SupportFilesBucketKmsKeyArn
+          - AES256
+
   TranscriptionMediaSearchFinderURL:
     Description: Transcript Search Application link
     Value:
@@ -787,11 +898,11 @@ Outputs:
       - ShouldEnableKendraSearch
       - !GetAtt MediaSearchFinder.Outputs.MediaSearchFinderURL
       - "Not enabled"
- 
+
   WebAppURL:
     Description: PCA Web Application link
-    Value: !GetAtt PCAUI.Outputs.WebUri  
-    
+    Value: !GetAtt PCAUI.Outputs.WebUri
+
   WebAdminUsername:
     Description: PCA admin user
     Value: !Ref AdminUsername
