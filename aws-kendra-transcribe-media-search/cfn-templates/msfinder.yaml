@@ -217,7 +217,29 @@ Resources:
                 Action:
                   - 's3:GetObject'                
           PolicyName: AWSMediaAppCredsPolicy
-      
+
+  BulkUploadBucketKmsKeyPolicy:
+    Condition: MediaBucketsEncrypted
+    Type: "AWS::IAM::Policy"
+    Properties:
+      PolicyName: BulkTemplateBulkUploadBucketCustomKey
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - "kms:Encrypt"
+              - "kms:Decrypt"
+              - "kms:ReEncrypt*"
+              - "kms:GenerateDataKey*"
+              - "kms:DescribeKey"
+              - "kms:CreateGrant"
+              - "kms:ListGrants"
+              - "kms:RevokeGrant"
+            Resource: !Ref MediaBucketKmsKeyArns
+      Roles:
+        - !Ref MediaAppCredsRole
+
   ##Create CodeCommit Repository for the code of the application
   Repository:
     Type: 'AWS::CodeCommit::Repository'
@@ -359,6 +381,7 @@ Resources:
       Param5: !Ref EnableAccessTokens
       Param6: !Ref EnableGuestUser
       Param7: !Ref AdminEmail
+      Param8: !Ref MediaBucketKmsKeyArns
   
   TokenEnablerLambdaRole:
     Type: AWS::IAM::Role
@@ -439,6 +462,11 @@ Parameters:
     Default: "<SAMPLES_BUCKET>"
     Description: >-
       (Required) A comma-delimited list of media bucket names - may include wildcards. Needed to support presigned URLs used to access media files contained in search results.
+  MediaBucketKmsKeyArns:
+    Type: CommaDelimitedList
+    Default: ''
+    Description: >-
+      (Optional) A comma-delimited list of media bucket KMS keys that encrypt the objects. Items in this list should be one-to-one with `MediaBucketNames`.
   AdminEmail:
     Type: String
     Description: 'To enable authentication please provide a valid email address for the admin user. This email address will be used for setting the admin password. This email will receive the temporary password for the admin user.'
@@ -464,6 +492,7 @@ Metadata:
               Parameters:
                   - KendraIndexId
                   - MediaBucketNames
+                  - MediaBucketKmsKeyArns
             - Label:
                 default: Authentication and access control parameters
               Parameters:
@@ -479,6 +508,10 @@ Conditions:
   EnableAccess: !Equals 
     - !Ref EnableAccessTokens
     - 'true'
+  MediaBucketsEncrypted: !Not
+    - !Equals
+      - !Join ['', !Ref MediaBucketKmsKeyArns]
+      - ''
     
 Outputs:
   MediaSearchFinderURL:
