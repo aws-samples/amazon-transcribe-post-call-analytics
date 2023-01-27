@@ -9,14 +9,19 @@ Parameters:
   SupportFilesBucketName:
     Type: AWS::SSM::Parameter::Value<String>
     Default: SupportFilesBucketName
-    
+
+  SupportFilesBucketKmsKeyArn:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: SupportFilesBucketKmsKey
+
   MPLZipName:
     Type: String
     Default: matplotlib-layer.zip
 
+Conditions:
+  SupportFilesBucketCustomKey: !Not [!Equals [!Ref SupportFilesBucketKmsKeyArn, 'AES256']]
 
 Resources:
-
   mplZipFunctionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -41,6 +46,28 @@ Resources:
                 Action:
                   - 's3:PutObject'
           PolicyName: mplZipFunctionS3Policy
+
+  SupportFilesBucketKmsKeyPolicy:
+    Condition: SupportFilesBucketCustomKey
+    Type: "AWS::IAM::Policy"
+    Properties:
+      PolicyName: MatplotlibTemplateSupportFilesBucketCustomKey
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - "kms:Encrypt"
+              - "kms:Decrypt"
+              - "kms:ReEncrypt*"
+              - "kms:GenerateDataKey*"
+              - "kms:DescribeKey"
+              - "kms:CreateGrant"
+              - "kms:ListGrants"
+              - "kms:RevokeGrant"
+            Resource: !Ref SupportFilesBucketKmsKeyArn
+      Roles:
+        - !Ref mplZipFunctionRole
 
   mplZipFunction:
     Type: AWS::Lambda::Function

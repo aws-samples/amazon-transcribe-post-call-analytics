@@ -10,13 +10,18 @@ Parameters:
     Type: AWS::SSM::Parameter::Value<String>
     Default: SupportFilesBucketName
 
+  SupportFilesBucketKmsKeyArn:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: SupportFilesBucketKmsKey
+
   PyZipName:
     Type: String
     Default: python-utils-layer.zip
 
+Conditions:
+  SupportFilesBucketCustomKey: !Not [!Equals [!Ref SupportFilesBucketKmsKeyArn, 'AES256']]
 
 Resources:
-
   PyUtilsZipFunctionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -41,6 +46,28 @@ Resources:
                 Action:
                   - 's3:PutObject'
           PolicyName: PyUtilsZipFunctionS3Policy
+
+  SupportFilesBucketKmsKeyPolicy:
+    Condition: SupportFilesBucketCustomKey
+    Type: "AWS::IAM::Policy"
+    Properties:
+      PolicyName: PythonUtilitiesTemplateSupportFilesBucketCustomKey
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - "kms:Encrypt"
+              - "kms:Decrypt"
+              - "kms:ReEncrypt*"
+              - "kms:GenerateDataKey*"
+              - "kms:DescribeKey"
+              - "kms:CreateGrant"
+              - "kms:ListGrants"
+              - "kms:RevokeGrant"
+            Resource: !Ref SupportFilesBucketKmsKeyArn
+      Roles:
+        - !Ref PyUtilsZipFunctionRole
 
   PyUtilZipFunction:
     Type: AWS::Lambda::Function

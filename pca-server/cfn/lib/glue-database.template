@@ -13,13 +13,21 @@ Parameters:
   OutputBucketName:
     Type: AWS::SSM::Parameter::Value<String>
     Default: OutputBucketName
+
+  # TODO: Presumably a Glue DB crawler is needed to use S3 with KMS
+  # However, initial testing seems to show that this is not the case.
+  # OutputBucketKmsKeyArn:
+  #   Type: AWS::SSM::Parameter::Value<String>
+  #   Default: OutputBucketKmsKey
     
   OutputBucketParsedResults:
     Type: AWS::SSM::Parameter::Value<String>
     Default: OutputBucketParsedResults
 
-Resources:
+# Conditions:
+#   OutputBucketCustomKey: !Not [!Equals [!Ref OutputBucketKmsKeyArn, 'AES256']]
 
+Resources:
   Database:
     Type: AWS::Glue::Database
     Properties: 

@@ -5,15 +5,21 @@ Description: Amazon Transcribe Post Call Analytics - PCA Server - Load sample au
 Transform: AWS::Serverless-2016-10-31
 
 Parameters:
-
-
   SupportFilesBucketName:
     Type: AWS::SSM::Parameter::Value<String>
     Default: SupportFilesBucketName
-    
+
+  SupportFilesBucketKmsKeyArn:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: SupportFilesBucketKmsKey
+
   InputBucketName:
     Type: AWS::SSM::Parameter::Value<String>
     Default: InputBucketName
+
+  InputBucketKmsKeyArn:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: InputBucketKmsKey
 
   InputBucketRawAudio:
     Type: AWS::SSM::Parameter::Value<String>
@@ -25,8 +31,11 @@ Globals:
     MemorySize: 1024
     Timeout: 60
 
-Resources:
+Conditions:
+  InputBucketCustomKey: !Not [!Equals [!Ref InputBucketKmsKeyArn, 'AES256']]
+  SupportFilesBucketCustomKey: !Not [!Equals [!Ref SupportFilesBucketKmsKeyArn, 'AES256']]
 
+Resources:
   CopySamplesRole:
     Type: "AWS::IAM::Role"
     Properties:
@@ -50,6 +59,49 @@ Resources:
                 - !Sub arn:aws:s3:::${InputBucketName}/*
                 - !Sub arn:aws:s3:::${SupportFilesBucketName}/*
 
+  InputBucketKmsKeyPolicy:
+    Condition: InputBucketCustomKey
+    Type: "AWS::IAM::Policy"
+    Properties:
+      PolicyName: CopySamplesTemplateInputBucketCustomKey
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - "kms:Encrypt"
+              - "kms:Decrypt"
+              - "kms:ReEncrypt*"
+              - "kms:GenerateDataKey*"
+              - "kms:DescribeKey"
+              - "kms:CreateGrant"
+              - "kms:ListGrants"
+              - "kms:RevokeGrant"
+            Resource: !Ref InputBucketKmsKeyArn
+      Roles:
+        - !Ref CopySamplesRole
+
+  SupportFilesBucketKmsKeyPolicy:
+    Condition: SupportFilesBucketCustomKey
+    Type: "AWS::IAM::Policy"
+    Properties:
+      PolicyName: CopySamplesTemplateSupportFilesBucketCustomKey
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - "kms:Encrypt"
+              - "kms:Decrypt"
+              - "kms:ReEncrypt*"
+              - "kms:GenerateDataKey*"
+              - "kms:DescribeKey"
+              - "kms:CreateGrant"
+              - "kms:ListGrants"
+              - "kms:RevokeGrant"
+            Resource: !Ref SupportFilesBucketKmsKeyArn
+      Roles:
+        - !Ref CopySamplesRole
 
   CopySamplesFunction:
     Type: "AWS::Lambda::Function"

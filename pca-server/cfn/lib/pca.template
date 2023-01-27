@@ -1,6 +1,7 @@
 AWSTemplateFormatVersion: "2010-09-09"
 
-Description: Amazon Transcribe Post Call Analytics - PCA Server - PCA State Machine
+Description:
+  Amazon Transcribe Post Call Analytics - PCA Server - PCA State Machine
 
 Transform: AWS::Serverless-2016-10-31
 
@@ -26,19 +27,36 @@ Parameters:
     Type: AWS::SSM::Parameter::Value<String>
     Default: SupportFilesBucketName
 
+  SupportFilesBucketKmsKeyArn:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: SupportFilesBucketKmsKey
+
   StepFunctionName:
     Type: AWS::SSM::Parameter::Value<String>
     Default: StepFunctionName
-    
+
   InputBucketName:
     Type: AWS::SSM::Parameter::Value<String>
     Default: InputBucketName
+
+  InputBucketKmsKeyArn:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: InputBucketKmsKey
+
+  OutputBucketKmsKeyArn:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: OutputBucketKmsKey
 
 Globals:
   Function:
     Runtime: python3.8
     MemorySize: 1024
     Timeout: 60
+
+Conditions:
+  SupportFilesBucketCustomKey: !Not [!Equals [!Ref SupportFilesBucketKmsKeyArn, "AES256"]]
+  InputBucketCustomKey: !Not [!Equals [!Ref InputBucketKmsKeyArn, "AES256"]]
+  OutputBucketCustomKey: !Not [!Equals [!Ref OutputBucketKmsKeyArn, "AES256"]]
 
 Resources:
   FFMPEGLayer:
@@ -120,11 +138,10 @@ Resources:
                   - ssm:GetParameters
                 Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*
 
-
   SFStartTranscribeJob:
     Type: "AWS::Serverless::Function"
     Properties:
-      CodeUri:  ../../src/pca
+      CodeUri: ../../src/pca
       Handler: pca-aws-sf-start-transcribe-job.lambda_handler
       EphemeralStorage:
         Size: 4096
@@ -141,7 +158,7 @@ Resources:
   SFExtractJobHeader:
     Type: "AWS::Serverless::Function"
     Properties:
-      CodeUri:  ../../src/pca
+      CodeUri: ../../src/pca
       Handler: pca-aws-sf-extract-job-header.lambda_handler
       MemorySize: 1024
       Timeout: 900
@@ -158,7 +175,7 @@ Resources:
   SFExtractTranscriptHeader:
     Type: "AWS::Serverless::Function"
     Properties:
-      CodeUri:  ../../src/pca
+      CodeUri: ../../src/pca
       Handler: pca-aws-sf-extract-transcript-header.lambda_handler
       MemorySize: 1024
       Timeout: 900
@@ -175,7 +192,7 @@ Resources:
   SFProcessTurn:
     Type: "AWS::Serverless::Function"
     Properties:
-      CodeUri:  ../../src/pca
+      CodeUri: ../../src/pca
       Handler: pca-aws-sf-process-turn-by-turn.lambda_handler
       MemorySize: 1024
       Timeout: 900
@@ -196,7 +213,7 @@ Resources:
   SFFinalProcessing:
     Type: "AWS::Serverless::Function"
     Properties:
-      CodeUri:  ../../src/pca
+      CodeUri: ../../src/pca
       Handler: pca-aws-sf-post-processing.lambda_handler
       Layers:
         - !Ref Boto3Layer
@@ -210,7 +227,7 @@ Resources:
   SFCTRGenesys:
     Type: "AWS::Serverless::Function"
     Properties:
-      CodeUri:  ../../src/pca
+      CodeUri: ../../src/pca
       Handler: pca-aws-sf-ctr-genesys.lambda_handler
       Layers:
         - !Ref Boto3Layer
@@ -224,7 +241,7 @@ Resources:
   SFPostCTRProcessing:
     Type: "AWS::Serverless::Function"
     Properties:
-      CodeUri:  ../../src/pca
+      CodeUri: ../../src/pca
       Handler: pca-aws-sf-post-ctr-processing.lambda_handler
       Layers:
         - !Ref Boto3Layer
@@ -234,11 +251,11 @@ Resources:
       Policies:
         - arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess
         - arn:aws:iam::aws:policy/AmazonS3FullAccess
-        
+
   SFAwaitNotification:
     Type: "AWS::Serverless::Function"
     Properties:
-      CodeUri:  ../../src/pca
+      CodeUri: ../../src/pca
       Handler: pca-aws-sf-wait-for-transcribe-notification.lambda_handler
       Environment:
         Variables:
@@ -249,7 +266,7 @@ Resources:
   SFTranscribeFailed:
     Type: "AWS::Serverless::Function"
     Properties:
-      CodeUri:  ../../src/pca
+      CodeUri: ../../src/pca
       Handler: pca-aws-sf-transcribe-failed.lambda_handler
       Environment:
         Variables:
@@ -258,10 +275,91 @@ Resources:
         - arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess
         - arn:aws:iam::aws:policy/AmazonS3FullAccess
 
+  SupportFilesBucketKmsKeyPolicy:
+    Condition: SupportFilesBucketCustomKey
+    Type: "AWS::IAM::Policy"
+    Properties:
+      PolicyName: PcaTemplateSupportFilesBucketCustomKey
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - "kms:Encrypt"
+              - "kms:Decrypt"
+              - "kms:ReEncrypt*"
+              - "kms:GenerateDataKey*"
+              - "kms:DescribeKey"
+              - "kms:CreateGrant"
+              - "kms:ListGrants"
+              - "kms:RevokeGrant"
+            Resource: !Ref SupportFilesBucketKmsKeyArn
+      Roles:
+        - !Ref TranscribeRole
+        - !Ref TranscribeLambdaRole
+        - !Ref SFProcessTurnRole
+
+  InputBucketKmsKeyPolicy:
+    Condition: InputBucketCustomKey
+    Type: "AWS::IAM::Policy"
+    Properties:
+      PolicyName: PcaTemplateInputBucketCustomKey
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - "kms:Encrypt"
+              - "kms:Decrypt"
+              - "kms:ReEncrypt*"
+              - "kms:GenerateDataKey*"
+              - "kms:DescribeKey"
+              - "kms:CreateGrant"
+              - "kms:ListGrants"
+              - "kms:RevokeGrant"
+            Resource: !Ref InputBucketKmsKeyArn
+      Roles:
+        - !Ref TranscribeRole
+        - !Ref TranscribeLambdaRole
+        - !Ref SFExtractTranscriptHeaderRole
+        - !Ref SFProcessTurnRole
+        - !Ref SFCTRGenesysRole
+        - !Ref SFTranscribeFailedRole
+
+  OutputBucketKmsKeyPolicy:
+    Condition: OutputBucketCustomKey
+    Type: "AWS::IAM::Policy"
+    Properties:
+      PolicyName: PcaTemplateOutputBucketCustomKey
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - "kms:Encrypt"
+              - "kms:Decrypt"
+              - "kms:ReEncrypt*"
+              - "kms:GenerateDataKey*"
+              - "kms:DescribeKey"
+              - "kms:CreateGrant"
+              - "kms:ListGrants"
+              - "kms:RevokeGrant"
+            Resource: !Ref OutputBucketKmsKeyArn
+      Roles:
+        - !Ref TranscribeRole
+        - !Ref TranscribeLambdaRole
+        - !Ref SFExtractJobHeaderRole
+        - !Ref SFExtractTranscriptHeaderRole
+        - !Ref SFProcessTurnRole
+        - !Ref SFFinalProcessingRole
+        - !Ref SFCTRGenesysRole
+        - !Ref SFPostCTRProcessingRole
+        - !Ref SFTranscribeFailedRole
+
   LogGroup:
     Type: AWS::Logs::LogGroup
-    Properties: 
-      LogGroupName: !Sub '/aws/vendedlogs/${StepFunctionName}'
+    Properties:
+      LogGroupName: !Sub "/aws/vendedlogs/${StepFunctionName}"
       RetentionInDays: 90
 
   Role:
@@ -292,17 +390,17 @@ Resources:
         - PolicyName: CloudWatchLogs
           PolicyDocument:
             Statement:
-            - Effect: Allow
-              Action:
-              - logs:CreateLogDelivery
-              - logs:GetLogDelivery
-              - logs:UpdateLogDelivery
-              - logs:DeleteLogDelivery
-              - logs:ListLogDeliveries
-              - logs:PutResourcePolicy
-              - logs:DescribeResourcePolicies
-              - logs:DescribeLogGroups
-              Resource: "*"
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogDelivery
+                  - logs:GetLogDelivery
+                  - logs:UpdateLogDelivery
+                  - logs:DeleteLogDelivery
+                  - logs:ListLogDeliveries
+                  - logs:PutResourcePolicy
+                  - logs:DescribeResourcePolicies
+                  - logs:DescribeLogGroups
+                Resource: "*"
 
   StateMachine:
     Type: "AWS::StepFunctions::StateMachine"
@@ -328,10 +426,9 @@ Resources:
       RoleArn: !GetAtt Role.Arn
 
 Outputs:
-
   RolesForKMSKey:
     Value: !Join
-      - ', '
+      - ", "
       - - !Sub '"${TranscribeLambdaRole.Arn}"'
         - !Sub '"${TranscribeRole.Arn}"'
         - !Sub '"${SFProcessTurnRole.Arn}"'
@@ -339,4 +436,3 @@ Outputs:
         - !Sub '"${SFCTRGenesysRole.Arn}"'
         - !Sub '"${SFTranscribeFailedRole.Arn}"'
         - !Sub '"${SFPostCTRProcessingRole.Arn}"'
-

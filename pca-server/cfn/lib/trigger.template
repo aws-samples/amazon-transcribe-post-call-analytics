@@ -18,6 +18,10 @@ Parameters:
     Type: AWS::SSM::Parameter::Value<String>
     Default: InputBucketName
 
+  InputBucketKmsKeyArn:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: InputBucketKmsKey
+
   InputBucketRawAudio:
     Type: AWS::SSM::Parameter::Value<String>
     Default: InputBucketRawAudio
@@ -36,6 +40,9 @@ Globals:
     MemorySize: 128
     Timeout: 15
 
+Conditions:
+  InputBucketCustomKey: !Not [!Equals [!Ref InputBucketKmsKeyArn, "AES256"]]
+
 Resources:
   FileDropTrigger:
     Type: "AWS::Serverless::Function"
@@ -48,7 +55,7 @@ Resources:
       Policies:
       - arn:aws:iam::aws:policy/AmazonTranscribeReadOnlyAccess
       - Statement:
-        - Sid: S3BucketReadPolicy    
+        - Sid: S3BucketReadPolicy
           Effect: Allow
           Action:
           - s3:ListBucket
@@ -57,7 +64,7 @@ Resources:
           - !Sub arn:aws:s3:::${InputBucketName}
           - !Sub arn:aws:s3:::${InputBucketName}/*
       - Statement:
-        - Sid: SSMGetParameterPolicy    
+        - Sid: SSMGetParameterPolicy
           Effect: Allow
           Action:
             - ssm:GetParameter
@@ -73,7 +80,28 @@ Resources:
           Action: states:StartExecution
           Resource: !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${StepFunctionName}
 
-    
+  InputBucketKmsKeyPolicy:
+    Condition: InputBucketCustomKey
+    Type: "AWS::IAM::Policy"
+    Properties:
+      PolicyName: TriggerTemplateInputBucketCustomKey
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - "kms:Encrypt"
+              - "kms:Decrypt"
+              - "kms:ReEncrypt*"
+              - "kms:GenerateDataKey*"
+              - "kms:DescribeKey"
+              - "kms:CreateGrant"
+              - "kms:ListGrants"
+              - "kms:RevokeGrant"
+            Resource: !Ref InputBucketKmsKeyArn
+      Roles:
+        - !Ref FileDropTriggerRole
+
   FileDropTriggerPermission:
     Type: AWS::Lambda::Permission
     Properties:

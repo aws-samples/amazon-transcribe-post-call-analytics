@@ -12,16 +12,28 @@ Parameters:
   BulkUploadBucketName:
     Type: AWS::SSM::Parameter::Value<String>
     Default: BulkUploadBucket
-    
+
+  BulkUploadBucketKmsKeyArn:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: BulkUploadBucketKmsKey
+
   InputBucketName:
     Type: AWS::SSM::Parameter::Value<String>
     Default: InputBucketName
+
+  InputBucketKmsKeyArn:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: InputBucketKmsKey
 
 Globals:
   Function:
     Runtime: python3.8
     MemorySize: 1024
     Timeout: 60
+
+Conditions:
+  BulkUploadBucketCustomKey: !Not [!Equals [!Ref BulkUploadBucketKmsKeyArn, 'AES256']]
+  InputBucketCustomKey: !Not [!Equals [!Ref InputBucketKmsKeyArn, 'AES256']]
 
 Resources:
   BulkFilesCount:
@@ -31,7 +43,7 @@ Resources:
       Handler: pca-aws-sf-bulk-files-count.lambda_handler
       Policies:
       - Statement:
-        - Sid: S3BucketReadPolicy    
+        - Sid: S3BucketReadPolicy
           Effect: Allow
           Action:
           - s3:ListBucket
@@ -40,7 +52,7 @@ Resources:
           - !Sub arn:aws:s3:::${BulkUploadBucketName}
           - !Sub arn:aws:s3:::${BulkUploadBucketName}/*
       - Statement:
-        - Sid: SSMGetParameterPolicy    
+        - Sid: SSMGetParameterPolicy
           Effect: Allow
           Action:
             - ssm:GetParameter
@@ -54,7 +66,7 @@ Resources:
       Timeout: 300
       Policies:
       - Statement:
-        - Sid: S3BucketReadWritePolicy    
+        - Sid: S3BucketReadWritePolicy
           Effect: Allow
           Action:
             - s3:ListBucket
@@ -67,6 +79,51 @@ Resources:
             - !Sub arn:aws:s3:::${InputBucketName}
             - !Sub arn:aws:s3:::${InputBucketName}/*
 
+  BulkUploadBucketKmsKeyPolicy:
+    Condition: BulkUploadBucketCustomKey
+    Type: "AWS::IAM::Policy"
+    Properties:
+      PolicyName: BulkTemplateBulkUploadBucketCustomKey
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - "kms:Encrypt"
+              - "kms:Decrypt"
+              - "kms:ReEncrypt*"
+              - "kms:GenerateDataKey*"
+              - "kms:DescribeKey"
+              - "kms:CreateGrant"
+              - "kms:ListGrants"
+              - "kms:RevokeGrant"
+            Resource: !Ref BulkUploadBucketKmsKeyArn
+      Roles:
+        - !Ref BulkFilesCountRole
+        - !Ref BulkMoveFilesRole
+
+  InputBucketKmsKeyPolicy:
+    Condition: InputBucketCustomKey
+    Type: "AWS::IAM::Policy"
+    Properties:
+      PolicyName: BulkTemplateInputBucketCustomKey
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - "kms:Encrypt"
+              - "kms:Decrypt"
+              - "kms:ReEncrypt*"
+              - "kms:GenerateDataKey*"
+              - "kms:DescribeKey"
+              - "kms:CreateGrant"
+              - "kms:ListGrants"
+              - "kms:RevokeGrant"
+            Resource: !Ref InputBucketKmsKeyArn
+      Roles:
+        - !Ref BulkMoveFilesRole
+
   BulkQueueSpace:
     Type: "AWS::Serverless::Function"
     Properties:
@@ -78,7 +135,7 @@ Resources:
 
   LogGroup:
     Type: AWS::Logs::LogGroup
-    Properties: 
+    Properties:
       LogGroupName: !Sub '/aws/vendedlogs/${BulkUploadStepFunctionName}'
       RetentionInDays: 90
 

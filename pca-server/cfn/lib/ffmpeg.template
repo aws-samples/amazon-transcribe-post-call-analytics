@@ -9,7 +9,11 @@ Parameters:
   SupportFilesBucketName:
     Type: AWS::SSM::Parameter::Value<String>
     Default: SupportFilesBucketName
-    
+
+  SupportFilesBucketKmsKeyArn:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: SupportFilesBucketKmsKey
+
   FFMPEGZipName:
     Type: String
     Default: ffmpeg.zip
@@ -18,10 +22,11 @@ Parameters:
     Type: String
     Default: https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz
     Description: URL for ffmpeg binary distribution tar file download - see https://www.johnvansickle.com/ffmpeg/
-    
+
+Conditions:
+  SupportFilesBucketCustomKey: !Not [!Equals [!Ref SupportFilesBucketKmsKeyArn, 'AES256']]
 
 Resources:
-
   ffmpegZipFunctionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -46,6 +51,28 @@ Resources:
                 Action:
                   - 's3:PutObject'
           PolicyName: ffmpegZipFunctionS3Policy
+
+  SupportFilesBucketKmsKeyPolicy:
+    Condition: SupportFilesBucketCustomKey
+    Type: "AWS::IAM::Policy"
+    Properties:
+      PolicyName: FfmpegTemplateSupportFilesBucketCustomKey
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - "kms:Encrypt"
+              - "kms:Decrypt"
+              - "kms:ReEncrypt*"
+              - "kms:GenerateDataKey*"
+              - "kms:DescribeKey"
+              - "kms:CreateGrant"
+              - "kms:ListGrants"
+              - "kms:RevokeGrant"
+            Resource: !Ref SupportFilesBucketKmsKeyArn
+      Roles:
+        - !Ref ffmpegZipFunctionRole
 
   ffmpegZipFunction:
     Type: AWS::Lambda::Function
