@@ -454,7 +454,15 @@ Conditions:
   ShouldCreateKendraIndexDeveloperEdition: !Equals [!Ref EnableTranscriptKendraSearch, 'Yes, create new Kendra Index (Developer Edition)']
 
 # TODO: The web UI either needs to add a distribution for KMS in pca-ui/cfn/lib/web.template
-# or we need to add a rule to not allow the web UI and KMS keys
+# https://github.com/aws-samples/amazon-transcribe-post-call-analytics/pull/154 adds a flag for the GUI
+Rules:
+  WebNoKmsUsed:
+    RuleCondition: !Or
+      - !Not [!Equals [!Ref InputBucketKmsKeyArn, '']]
+      - !Not [!Equals [!Ref OutputBucketKmsKeyArn, '']]
+    Assertions:
+      - Assert: [!Equals ["true", "false"]]
+        AssertDescription: Input and Output buckets cannot use KMS encryption due to GUI limitations
 
 Resources:
   ########################################################

@@ -95,6 +95,7 @@ Resources:
             ResponseCode: 200
             ResponsePagePath: /index.html
 
+  # TODO: Add Lambda when using KMS for Data or Audio buckets
   ResponseHeaders:
     Type: AWS::CloudFront::ResponseHeadersPolicy
     Properties:
