@@ -146,7 +146,11 @@ def invoke_step_function(bucket, key, file_type):
     :param key: Key of for the input trigger file
     :param file_type: The type of file, either "audio" or "transcript"
     """
-    ourStepFunction = cf.appConfig[cf.COMP_SFN_NAME]
+    if file_type=="audio":
+        ourStepFunction = cf.appConfig[cf.COMP_MONO_TO_STEREO_SFN_NAME]
+    elif file_type=="transcript":
+        ourStepFunction = cf.appConfig[cf.COMP_SFN_NAME]
+    
     sfnClient = boto3.client('stepfunctions')
     sfnMachinesResult = sfnClient.list_state_machines(maxResults=1000)
 

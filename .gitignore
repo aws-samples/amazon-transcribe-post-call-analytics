@@ -5,3 +5,4 @@ build
 /sample-data
 .vscode
 /pca-ui/src/witch/witch.zip
+pca-server/src/pca/__pycache__

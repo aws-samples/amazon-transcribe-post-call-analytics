@@ -1,0 +1,342 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+
+Description: my_stack - Mono-To-Stereo-Conversion - StateMachine
+
+Parameters:
+  FFMPEGZipName:
+    Type: String
+    Default: ffmpeg.zip
+
+  SupportFilesBucketName:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: SupportFilesBucketName
+
+  StepFunctionName:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: StepFunctionName
+
+  MonoToStereoStepFunctionName:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: MonoToStereoStepFunctionName
+    
+  InputBucketName:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: InputBucketName
+
+  OutputBucketName:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: OutputBucketName
+
+Resources:
+  FFMPEGLayer:
+    Type: "AWS::Lambda::LayerVersion"
+    Properties:
+      Content:
+        S3Bucket: !Ref SupportFilesBucketName
+        S3Key: !Ref FFMPEGZipName
+
+  MonoToStereoSMLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties: 
+      LogGroupName: !Sub '/aws/vendedlogs/${MonoToStereoStepFunctionName}'
+      RetentionInDays: 90
+
+## IAM Roles
+  countAudioChannelRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: S3BucketReadWritePolicy
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:DeleteObject
+                Resource:
+                  - !Sub arn:aws:s3:::${InputBucketName}
+                  - !Sub arn:aws:s3:::${InputBucketName}/*
+  
+  startTranscribeJobRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AmazonTranscribeFullAccess
+      Policies:
+        - PolicyName: PassRoleToTranscribe
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - iam:PassRole
+                Resource:
+                  - !GetAtt startTranscribeJobDataAccessRole.Arn
+        - PolicyName: S3BucketReadWritePolicy
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:DeleteObject
+                Resource:
+                  - !Sub arn:aws:s3:::${InputBucketName}
+                  - !Sub arn:aws:s3:::${InputBucketName}/*
+        - PolicyName: SSMGetParameterPolicy
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter*
+                Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*
+
+  startTranscribeJobDataAccessRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - transcribe.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: S3BucketReadWritePolicy
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:DeleteObject
+                Resource:
+                  - !Sub arn:aws:s3:::${InputBucketName}
+                  - !Sub arn:aws:s3:::${InputBucketName}/*
+                  - !Sub arn:aws:s3:::${OutputBucketName}
+                  - !Sub arn:aws:s3:::${OutputBucketName}/*
+
+  checkTranscribeJobStatusRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AmazonTranscribeFullAccess
+      
+  convertMonoToStereoAudioRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AmazonTranscribeFullAccess
+      Policies:
+        - PolicyName: S3BucketReadWritePolicy
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:DeleteObject
+                Resource:
+                  - !Sub arn:aws:s3:::${InputBucketName}
+                  - !Sub arn:aws:s3:::${InputBucketName}/*
+                  - !Sub arn:aws:s3:::${OutputBucketName}
+                  - !Sub arn:aws:s3:::${OutputBucketName}/*
+        - PolicyName: SSMGetParameterPolicy
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter*
+                Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*
+  
+  triggerPostCallAnalyticsSMRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: StateMachineExecutionPolicy
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - states:StartExecution
+                Resource:
+                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${StepFunctionName}
+              - Effect: Allow
+                Action:
+                  - states:ListStateMachines
+                Resource: "*"
+        - PolicyName: SSMGetParameterPolicy
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter*
+                Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*
+
+  monoToStereoStateMachineRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: states.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: AllowInvokeFunctions
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource:
+                  - !GetAtt countAudioChannel.Arn
+                  - !GetAtt startTranscribeJob.Arn
+                  - !GetAtt checkTranscribeJobStatus.Arn
+                  - !GetAtt convertMonoToStereoAudio.Arn
+                  - !GetAtt triggerPostCallAnalyticsSM.Arn                  
+        - PolicyName: CloudWatchLogs
+          PolicyDocument:
+            Statement:
+            - Effect: Allow
+              Action:
+              - logs:*LogDelivery
+              - logs:ListLogDeliveries
+              - logs:PutResourcePolicy
+              - logs:DescribeResourcePolicies
+              - logs:DescribeLogGroups
+              Resource: "*"
+
+## Lambda 
+  countAudioChannel:
+    Type: "AWS::Serverless::Function"
+    Properties:
+      CodeUri:  ../../src/mono-to-stereo-lambda/count_audio_channel
+      Handler: index.lambda_handler
+      Runtime: python3.9
+      MemorySize: 1024
+      Timeout: 60
+      Layers:
+        - !Ref FFMPEGLayer
+      Role: !GetAtt countAudioChannelRole.Arn
+
+  startTranscribeJob:
+    Type: "AWS::Serverless::Function"
+    Properties:
+      CodeUri:  ../../src/mono-to-stereo-lambda/start_transcribe_job
+      Handler: index.lambda_handler
+      Runtime: python3.9
+      MemorySize: 1024
+      Timeout: 60
+      Environment:
+        Variables:
+          RoleArn: !GetAtt startTranscribeJobDataAccessRole.Arn
+      Role: !GetAtt startTranscribeJobRole.Arn
+
+  checkTranscribeJobStatus:
+    Type: "AWS::Serverless::Function"
+    Properties:
+      CodeUri:  ../../src/mono-to-stereo-lambda/check_transcribe_job_status
+      Handler: index.lambda_handler
+      Runtime: python3.9
+      MemorySize: 1024
+      Timeout: 60
+      Role: !GetAtt checkTranscribeJobStatusRole.Arn
+
+  convertMonoToStereoAudio:
+    Type: "AWS::Serverless::Function"
+    Properties:
+      CodeUri:  ../../src/mono-to-stereo-lambda/convert_mono_to_stereo_audio
+      Handler: index.lambda_handler
+      Runtime: python3.9
+      MemorySize: 1024
+      Timeout: 60
+      Layers:
+        - !Ref FFMPEGLayer
+      Role: !GetAtt convertMonoToStereoAudioRole.Arn
+
+  triggerPostCallAnalyticsSM:
+    Type: "AWS::Serverless::Function"
+    Properties:
+      CodeUri:  ../../src/mono-to-stereo-lambda/trigger_post_call_analytics_SM
+      Handler: index.lambda_handler
+      Runtime: python3.9
+      MemorySize: 1024
+      Timeout: 10
+      Role: !GetAtt triggerPostCallAnalyticsSMRole.Arn
+
+
+## State Machine
+  monoToStereoStateMachine:
+    Type: "AWS::StepFunctions::StateMachine"
+    Properties:
+      StateMachineName: !Ref MonoToStereoStepFunctionName
+      DefinitionS3Location: ./mono-to-stereo-SM-defination.json
+      DefinitionSubstitutions:
+        countAudioChannelArn: !GetAtt countAudioChannel.Arn
+        startTranscribeJobArn: !GetAtt startTranscribeJob.Arn
+        checkTranscribeJobStatusArn: !GetAtt checkTranscribeJobStatus.Arn
+        convertMonoToStereoAudioArn: !GetAtt convertMonoToStereoAudio.Arn
+        triggerPostCallAnalyticsSMArn: !GetAtt triggerPostCallAnalyticsSM.Arn   
+      LoggingConfiguration:
+        Level: ERROR
+        IncludeExecutionData: true
+        Destinations:
+          - CloudWatchLogsLogGroup:
+              LogGroupArn: !GetAtt MonoToStereoSMLogGroup.Arn
+      RoleArn: !GetAtt monoToStereoStateMachineRole.Arn
+
+Outputs:
+  RolesForKMSKey:
+    Value: !Join
+        - ', '
+        - - !Sub '"${countAudioChannelRole.Arn}"'
+          - !Sub '"${startTranscribeJobRole.Arn}"'
+          - !Sub '"${checkTranscribeJobStatusRole.Arn}"'
+          - !Sub '"${convertMonoToStereoAudioRole.Arn}"'
+          - !Sub '"${triggerPostCallAnalyticsSMRole.Arn}"'
+          - !Sub '"${monoToStereoStateMachineRole.Arn}"'

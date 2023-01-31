@@ -84,6 +84,11 @@ Parameters:
       Folder that holds Transcripts from other applications (e.g. Live Call Analytics) that are to be
       processed as if PCA had processed that audio
 
+  InputBucketMonoToStereoAudio:
+    Type: String
+    Default: monoToStereoConvertedAudio
+    Description: Prefix/Folder that holds converted mono to stereo audio files
+
   MaxSpeakers:
     Type: String
     Default: "2"
@@ -131,6 +136,11 @@ Parameters:
     Type: String
     Default: PostCallAnalyticsWorkflow
     Description: Name of Step Functions workflow that orchestrates this process
+  
+  MonoToStereoStepFunctionName:
+    Type: String
+    Default: MonoToStereoWorkflow
+    Description: Name of Step Functions workflow that orchestrates mono to stereo audio file converstion
 
   BulkUploadStepFunctionName:
     Type: String
@@ -379,6 +389,14 @@ Resources:
         processed as if PCA had processed that audio
       Value: !Ref InputBucketOrigTranscripts
 
+  InputBucketMonoToStereoAudioParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: InputBucketMonoToStereoAudio
+      Type: String
+      Description: Folder that holds the original call audio to be ingested
+      Value: !Ref InputBucketMonoToStereoAudio
+
   MaxSpeakersParameter:
     Type: "AWS::SSM::Parameter"
     Properties:
@@ -450,6 +468,15 @@ Resources:
       Type: String
       Description: Name of Step Functions workflow that orchestrates this process
       Value: !Ref StepFunctionName
+
+  MonoToStereoStepFunctionNameParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: MonoToStereoStepFunctionName
+      Type: String
+      Description: Name of Step Functions workflow that orchestrates mono to stereo audio file converstion
+      Value: !Ref MonoToStereoStepFunctionName
+
 
   BulkUploadStepFunctionNameParameter:
     Type: "AWS::SSM::Parameter"
