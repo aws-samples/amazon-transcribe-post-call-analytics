@@ -59,14 +59,17 @@ def delete_existing_job(job_name, transcribe, api_mode):
         # If the job has already been deleted then we don't need to take any action
         print(f"Unable to delete previous Transcribe job {job_name}: {e}")
 
-def count_audio_channels(bucket, key):
+
+def extract_audio_metadata(bucket, key):
     """
-    Examines an audio file using the FFPROBE utility to determine the number of audio channels in the file.  If
-    any errors occurs then it will default to returning "1", implying that it has just a single channel.
+    Examines an audio file using the FFPROBE utility to determine (1) the number of audio channels in the file, and
+    (2) if the audio is a NarrowBand audio file < 16000 Hz sample rate.  If errors occur these will default to
+    1 (mono audio) and True (NarrowBand) respectively
 
     @param bucket: Bucket holding the audio file to be tested
     @param key: Key for the audio file in the bucket
     @return: Number of audio channels found in the file
+    @return: Flag indicating if audio is sub-8khz/NarrowBand (True) or 16khz+/WideBand (False)
     """
 
     # First, we need to download the original audio file
@@ -83,11 +86,54 @@ def count_audio_channels(bucket, key):
     except Exception as e:
         print(f'Failed to get number of audio streams from input file: {str(e)}')
         channels_found = 1
+
+
+    # Use ffprobe to get the sample rate and decide if it's wideband or narrowband
+    try:
+        command = ['ffprobe', '-i', ffmpegInputFilename, '-show_entries', 'stream=sample_rate', '-select_streams',
+                   'a:0', '-of', 'compact=p=0:nk=1', '-v', '0']
+        probResult = subprocess.check_output(command, stderr=subprocess.STDOUT).decode()
+        sample_rate = int(probResult)
+        is_narrowband = (sample_rate < 16000)
+    except Exception as e:
+        print(f'Failed to get number of audio streams from input file: {str(e)}')
+        is_narrowband = True
     finally:
         # Delete our downloaded audio
         pcacommon.remove_temp_file(ffmpegInputFilename)
 
-    return channels_found
+    return channels_found, is_narrowband
+
+
+def find_matching_clm(clm_list, lang_code, clm_base_name, base_model_name):
+    """
+    Given the nature of the file that we about to process, and our configuration settings, find a matching
+    CLM that we can use for this job.  This is dependent upon the language code, our configured CLM base name,
+    and the type of audio (NarrowBand or WideBand) that a CLM is defined for
+
+    :param clm_list: List of defined CLMs that start with our configured base name
+    :param lang_code: Language that we will transcribe this audio file as
+    :param clm_base_name: Our configured base name (e.g "common-clm")
+    :param base_model_name: Type of audio file that we are processing (WideBand or NarrowBand)
+    :return:
+    """
+    # Clear our return value and generate the model name we are looking for
+    selected_clm = None
+    full_clm_name = f"{clm_base_name}-{lang_code}".lower()
+
+    # Filter our provided CLM list for a full match (name, language and audio type)
+    matched_clm = list(filter(lambda x: (x["BaseModelName"] == base_model_name) and
+                                        (x["LanguageCode"] == lang_code) and
+                                        (x["ModelName"].lower() == full_clm_name), clm_list))
+
+    # If we have a match then pick out the Transcribe-defined name for returning
+    if matched_clm:
+        selected_clm = matched_clm[0]["ModelName"]
+    else:
+        # Doesn't exist for this language code - quietly exit
+        print(f"No Custom Language Model defined named {full_clm_name}")
+
+    return selected_clm
 
 
 def submitTranscribeJob(bucket, key):
@@ -102,7 +148,7 @@ def submitTranscribeJob(bucket, key):
 
     # Work out our API mode for Transcribe, and get our boto3 client
     transcribe = boto3.client('transcribe')
-    api_mode, channel_ident = evaluate_transcribe_mode(bucket, key)
+    api_mode, channel_ident, base_model_name = evaluate_transcribe_mode(bucket, key)
 
     # Generate job-name - delete if it already exists
     job_name = pcacommon.generate_job_name(key)
@@ -119,18 +165,36 @@ def submitTranscribeJob(bucket, key):
         delete_existing_job(job_name, transcribe, api_mode)
 
     # Setup the structures common to both Standard and Call Analytics
+    model_settings = None
     job_settings = {}
     media_settings = {
         'MediaFileUri': uri
     }
 
+    # Get a list of potential CLMs for use in this call
+    clm_list = transcribe.list_language_models(
+        StatusEquals="COMPLETED",
+        NameContains=cf.appConfig[cf.CONF_CLMNAME]
+    )["Models"]
+
     # Add our vocab filter method, then check on our language requirements
     job_settings["VocabularyFilterMethod"] = cf.appConfig[cf.CONF_FILTER_MODE]
+    clm_name = None
     if len(cf.appConfig[cf.CONF_TRANSCRIBE_LANG]) == 1:
         # Specific language, so dd a CV and Vocab Filter to our job_setting if either exists for this language
         lang_code = cf.appConfig[cf.CONF_TRANSCRIBE_LANG][0]
         add_custom_vocabulary(job_settings, lang_code, transcribe)
         add_vocabulary_filter(job_settings, lang_code, transcribe)
+
+        # Check for a matching CLM - add it to our request params if so
+        clm_name = add_custom_language_model(None, clm_list, lang_code, base_model_name)
+        if clm_name is not None:
+            # Not quite straightforward - different APIs put this in different locations
+            # and at this point in time some of the structures may not yet exist
+            if api_mode == cf.API_STANDARD:
+                model_settings = {"LanguageModelName": clm_name}
+            else:
+                job_settings["LanguageModelName"] = clm_name
 
         # Clear all Language ID settings
         language_id_settings = None
@@ -140,9 +204,11 @@ def submitTranscribeJob(bucket, key):
         language_id_settings = {}
         language_options = []
         for language in cf.appConfig[cf.CONF_TRANSCRIBE_LANG]:
+            # First add custom vocab and filtering
             lang_id_options = {}
             add_custom_vocabulary(lang_id_options, language, transcribe)
             add_vocabulary_filter(lang_id_options, language, transcribe)
+            add_custom_language_model(lang_id_options, clm_list, language, base_model_name)
             language_id_settings[language] = lang_id_options
             language_options.append(language)
 
@@ -225,6 +291,7 @@ def submitTranscribeJob(bucket, key):
                   'OutputBucketName': cf.appConfig[cf.CONF_S3BUCKET_OUTPUT],
                   'OutputKey': cf.appConfig[cf.CONF_PREFIX_TRANSCRIBE_RESULTS] + '/',
                   'Settings': job_settings,
+                  'ModelSettings': model_settings,
                   'JobExecutionSettings': execution_settings,
                   'ContentRedaction': content_redaction
         }
@@ -286,6 +353,17 @@ def add_custom_vocabulary(tag_structure, lang_code, transcribe_client):
         print(f"No custom vocabulary defined named {vocab_name}")
 
 
+def add_custom_language_model(tag_structure, clm_list, lang_code, base_model_name):
+
+    # Check for a matching CLM - add it to our request params if we had any
+    clm_name = find_matching_clm(clm_list, lang_code, cf.appConfig[cf.CONF_CLMNAME], base_model_name)
+    if tag_structure is not None and clm_name is not None:
+        tag_structure["LanguageModelName"] = clm_name
+
+    # Return the name, as caller may need it
+    return clm_name
+
+
 def evaluate_transcribe_mode(bucket, key):
     """
     The user can configure which API and which speaker separation method to use, but this will validate that those
@@ -298,11 +376,11 @@ def evaluate_transcribe_mode(bucket, key):
 
     @param bucket: Bucket holding the audio file to be tested
     @param key: Key for the audio file in the bucket
-    @return: Transcribe API mode and flag for channel separation
+    @return: Transcribe API mode, flag for channel separation, base audio model
     """
     # Determine the correct API and speaker separation that we'll be using
     api_mode = cf.appConfig[cf.CONF_TRANSCRIBE_API]
-    channel_count = count_audio_channels(bucket, key)
+    channel_count, is_narrowband = extract_audio_metadata(bucket, key)
     channel_mode = cf.appConfig[cf.CONF_SPEAKER_MODE]
     if channel_count == 1:
         # Mono files are always sent through Standard Transcribe with speaker separation, as using
@@ -323,7 +401,13 @@ def evaluate_transcribe_mode(bucket, key):
         api_mode = cf.API_STANDARD
         channel_ident = False
 
-    return api_mode, channel_ident
+    # Finally, calculate our base model name
+    if is_narrowband:
+        base_model_name = "NarrowBand"
+    else:
+        base_model_name = "WideBand"
+
+    return api_mode, channel_ident, base_model_name
 
 
 def lambda_handler(event, context):
@@ -352,8 +436,7 @@ if __name__ == "__main__":
     # Standard test event
     event = {
         "bucket": "ak-cci-input",
-        # "key": "originalAudio/mono.wav",
-        "key": "originalAudio/AutoRepairs1_GUID_4628bb26-9631-487f-8d7b-0ac8e84074fd_AGENT_AndrewK_DATETIME_07.55.51.067-09-16-2021.wav"
+        "key": "originalAudio/Card2_GUID_102_AGENT_AndrewK_DT_2022-03-22T12-23-49.wav",
     }
-    os.environ['RoleArn'] = 'arn:aws:iam::543648494853:role/PostCallAnalytics-PCAServer-176G28X-TranscribeRole-190N3L79VHCF9'
+    os.environ['RoleArn'] = 'arn:aws:iam::543648494853:role/clm-base-PCAServer-11R30LEA1153R-PC-TranscribeRole-UD9C8IF23GGR'
     lambda_handler(event, "")

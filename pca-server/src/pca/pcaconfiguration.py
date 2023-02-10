@@ -35,6 +35,7 @@ CONF_TRANSCRIBE_LANG = "TranscribeLanguages"
 CONF_TELEPHONY_CTR = "TelephonyCTRType"
 CONF_TELEPHONY_CTR_SUFFIX = "TelephonyCTRFileSuffix"
 CONF_VOCABNAME = "VocabularyName"
+CONF_CLMNAME = "CustomLangModelName"
 CONF_FILENAME_DATETIME_REGEX = "FilenameDatetimeRegex"
 CONF_FILENAME_DATETIME_FIELDMAP = "FilenameDatetimeFieldMap"
 CONF_FILENAME_GUID_REGEX = "FilenameGUIDRegex"
@@ -134,6 +135,7 @@ def loadConfiguration():
         Names=[
             CONF_PREFIX_TRANSCRIBE_RESULTS,
             CONF_VOCABNAME,
+            CONF_CLMNAME,
             CONF_CONVO_LOCATION,
             CONF_ENTITY_TYPES,
             CONF_FILTER_MODE,
@@ -141,11 +143,11 @@ def loadConfiguration():
             CONF_FILENAME_DATETIME_REGEX,
             CONF_FILENAME_DATETIME_FIELDMAP,
             CONF_FILENAME_GUID_REGEX,
-            CONF_FILENAME_AGENT_REGEX,
         ]
     )
     fullParamList4 = ssm.get_parameters(
         Names=[
+            CONF_FILENAME_AGENT_REGEX,
             CONF_FILENAME_CUST_REGEX,
             CONF_KENDRA_INDEX_ID,
             CONF_WEB_URI,

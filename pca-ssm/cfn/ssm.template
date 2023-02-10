@@ -192,6 +192,11 @@ Parameters:
     Default: undefined
     Description: Name of the custom vocabulary to use for Transcribe (not including language suffix, e.g. -en-US)
 
+  CustomLangModelName:
+    Type: String
+    Default: undefined
+    Description: Name of the custom language model to use for Transcribe (omit the language suffix, e.g. -en-US)
+
   FilenameDatetimeRegex:
     Type: String
     Default: '(\d{4})-(\d{2})-(\d{2})T(\d{2})-(\d{2})-(\d{2})'
@@ -541,6 +546,14 @@ Resources:
       Type: String
       Description: Name of the custom vocabulary to use for Transcribe (not including language suffix, e.g. -en-US)
       Value: !Ref VocabularyName
+
+  CustomLangModelNameParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: CustomLangModelName
+      Type: String
+      Description: Name of the custom language model to use for Transcribe (omit the language suffix, e.g. -en-US)
+      Value: !Ref CustomLangModelName
 
   FilenameDatetimeRegexParameter:
     Type: "AWS::SSM::Parameter"

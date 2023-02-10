@@ -12,7 +12,7 @@ import copy
 import boto3
 
 
-def populate_job_info(transcribe_info, job_info, api_mode):
+def populate_job_info(transcribe_info, job_info, api_mode, lang_code):
     """
     Updates the PCAResults data for Transcribe with data from the Transcribe Job Info.  Note, some of
     this may be overwritten later by other processes; e.g. when the word confidence average score is
@@ -21,6 +21,7 @@ def populate_job_info(transcribe_info, job_info, api_mode):
     :param transcribe_info: Transcribe data block within our PCAResults block
     :param job_info: Output from Transcribe's job information API call
     :param api_mode: The operational mode used for Transcribe (e.g. Standard or Anaytics)
+    :param lang_code: The language of the transcript file
     """
     # Some fields we pick off the basic job info
     transcribe_info.api_mode = api_mode
@@ -44,9 +45,43 @@ def populate_job_info(transcribe_info, job_info, api_mode):
     if api_mode == cf.API_ANALYTICS:
         transcribe_info.transcribe_job_name = job_info["CallAnalyticsJobName"]
         transcribe_info.channel_identification = 1
+
+        # CLM name is optional
+        if "LanguageModelName" in job_info["Settings"]:
+            transcribe_info.clm_name = trim_clm_name(job_info["Settings"]["LanguageModelName"], lang_code)
     else:
         transcribe_info.transcribe_job_name = job_info["TranscriptionJobName"]
         transcribe_info.channel_identification = int(job_info["Settings"]["ChannelIdentification"])
+
+        # CLM name is optional - it's currently the only item in the "ModelSettings"
+        # block in the job-info dataset, but we shouldn't assume that this will last
+        if "ModelSettings" in job_info:
+            if "LanguageModelName" in job_info["ModelSettings"]:
+                transcribe_info.clm_name = trim_clm_name(job_info["ModelSettings"]["LanguageModelName"], lang_code)
+
+
+def trim_clm_name(clm_name, lang_code):
+    """
+    The CLM name in Transcribe will contain a language suffix, as we define a CLM base-name and look
+    for language-specific variants.  This function will strip off the code from CLM name in a case-insensitive
+    fashion and return that for staring in the output JSON.  We could just read the configuration, but
+    there's always a chance of the configured CLM base-name changing between the job being submitted
+    and the transcript being generated
+
+    :param clm_name: Full CLM name in Transcribe
+    :param lang_code: The language of the transcript file
+    :return: CLM name with the language code suffix removed, or just the CLM full name if there's no lang code
+    """
+
+    # Search for the language code in the CLM, and trim the name from that point, taking
+    # into account that there will be another "-" between the name and language code
+    lang_pos = clm_name.lower().find(lang_code.lower())
+    if lang_pos >= 0:
+        base_name = clm_name[0:lang_pos-1]
+    else:
+        base_name = clm_name
+
+    return base_name
 
 
 def load_transcribe_job_header(event):
@@ -86,12 +121,10 @@ def load_transcribe_job_header(event):
 
     # Now take this info data and create the analytics results header info data
     interim_results = PCAResults()
-    job_results_header = interim_results.get_conv_analytics().get_transcribe_job()
-    populate_job_info(job_results_header, transcribe_job_info, api_mode)
-    job_results_header.redacted_transcript = is_redacted
-
-    # Populate the PCAResults() structure with anything else of use
     interim_results.analytics.conversationLanguageCode = transcribe_job_info["LanguageCode"]
+    job_results_header = interim_results.get_conv_analytics().get_transcribe_job()
+    populate_job_info(job_results_header, transcribe_job_info, api_mode, transcribe_job_info["LanguageCode"])
+    job_results_header.redacted_transcript = is_redacted
 
     # Pass the location of any redacted audio to the next step - it isn't
     # needed in the results, but the next step in the workflow may need it
