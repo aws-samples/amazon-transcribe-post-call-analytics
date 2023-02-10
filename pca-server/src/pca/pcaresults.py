@@ -242,6 +242,7 @@ class TranscribeJobInfo:
         self.media_original_uri = ""
         self.media_playback_uri = ""
         self.cummulative_word_conf = 0.0
+        self.clm_name = ""
         self.custom_vocab_name = ""
         self.vocab_filter_name = ""
         self.vocab_filter_method = ""
@@ -276,6 +277,10 @@ class TranscribeJobInfo:
         if self.custom_vocab_name != "":
             transcribe_job_info["VocabularyName"] = self.custom_vocab_name
 
+        # CLM is optional
+        if self.clm_name != "":
+            transcribe_job_info["CLMName"] = self.clm_name
+
         # Vocabulary filter is optional
         if self.vocab_filter_name != "":
             transcribe_job_info["VocabularyFilter"] = self.vocab_filter_name + " [" + self.vocab_filter_method + "]"
@@ -303,6 +308,8 @@ class TranscribeJobInfo:
         # Some of the following may not be in the JSON
         if "VocabularyName" in json_input:
             self.custom_vocab_name = json_input["VocabularyName"]
+        if "CLMName" in json_input:
+            self.clm_name = json_input["CLMName"]
         if "VocabularyFilter" in json_input:
             filter_string = json_input["VocabularyFilter"]
             self.vocab_filter_name = filter_string.split(" ")[0]

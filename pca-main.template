@@ -190,6 +190,11 @@ Parameters:
     Default: undefined
     Description: Name of the custom vocabulary to use for Transcribe (omit the language suffix, e.g. -en-US)
 
+  CustomLangModelName:
+    Type: String
+    Default: undefined
+    Description: Name of the custom language model to use for Transcribe (omit the language suffix, e.g. -en-US)
+
   TranscribeApiMode:
     Type: String
     Default: analytics
@@ -382,6 +387,7 @@ Metadata:
                   - VocabFilterMode
                   - VocabFilterName
                   - VocabularyName
+                  - CustomLangModelName
                   - SpeakerSeparationType
                   - SpeakerNames
                   - MaxSpeakers
@@ -672,6 +678,7 @@ Resources:
         VocabFilterName: !Ref VocabFilterName
         VocabFilterMode: !Ref VocabFilterMode
         VocabularyName: !Ref VocabularyName
+        CustomLangModelName: !Ref CustomLangModelName
         FilenameDatetimeRegex: !Ref FilenameDatetimeRegex
         FilenameDatetimeFieldMap: !Ref FilenameDatetimeFieldMap
         FilenameGUIDRegex: !Ref FilenameGUIDRegex
