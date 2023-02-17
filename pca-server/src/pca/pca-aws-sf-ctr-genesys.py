@@ -607,7 +607,7 @@ def lambda_handler(event, context):
 
             # Now that we potentially have multiple agents we should update the result header's
             # AGENTID field to show the agent that had the most interactions on the call
-            if unique_agents > 0:
+            if unique_agents != None and unique_agents > 0:
                 # Create a list of speaker identifiers that are not Agent channels
                 filtered_speakers = [IVR_CHANNEL_NAME, NON_TALK_LABEL,
                                      get_speaker_channel(pca_analytics.speaker_labels, CUST_CHANNEL_LC_NAME)]
