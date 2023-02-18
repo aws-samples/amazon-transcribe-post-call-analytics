@@ -407,6 +407,24 @@ def extract_ivr_lines(agent_channel, call_start_time, ctr_json, pca_analytics, p
                 if (ivr["Start"] <= segment.segmentStartTime <= ivr["End"]) and \
                         (ivr["End"] >= segment.segmentConfidence[0]["EndTime"]) and \
                         (segment.segmentSpeaker == agent_channel):
+                    # If this segment has speech after the IVR has finished then this
+                    # MIGHT be agent speech, so we need to split this segment up before
+                    # marking segments
+                    if segment.segmentEndTime > ivr["End"]:
+                        segments_to_split.append([segment, ivr["End"]])
+
+        # If we found any segments that we need to split then do that now
+        for split_segment in segments_to_split:
+            split_ivr_speech_segment(split_segment[0], split_segment[1], pca_results)
+
+        # Run through one more time but without splitting
+        for ivr in ivr_times:
+            for segment in pca_results.speech_segments:
+                # If this IVR block starts inside the segment, and it doesn't end before the
+                # first word in the segment, and it's an agent channel, then we have an IVR overlap
+                if (ivr["Start"] <= segment.segmentStartTime <= ivr["End"]) and \
+                        (ivr["End"] >= segment.segmentConfidence[0]["EndTime"]) and \
+                        (segment.segmentSpeaker == agent_channel):
                     # Mark this segment as an IVR segment
                     segment.segmentIVR = True
                     segment.segmentSpeaker = ivr_speaker_channel
@@ -415,15 +433,6 @@ def extract_ivr_lines(agent_channel, call_start_time, ctr_json, pca_analytics, p
                     segment.segmentIsNegative = False
                     segment.segmentIsPositive = False
                     segment.segmentAllSentiments = {"Positive": 0.0, "Negative": 0.0, "Neutral": 1.0}
-
-                    # If this segment has speech after the IVR has finished then this
-                    # will be agent speech, so we need to spit this segment up later
-                    if segment.segmentEndTime > ivr["End"]:
-                        segments_to_split.append([segment, ivr["End"]])
-
-        # If we found any segments that we need to split then do that now
-        for split_segment in segments_to_split:
-            split_ivr_speech_segment(split_segment[0], split_segment[1], pca_results)
 
         # Run through our IVR segments calculate the time that the IVR was speaking, and
         # whilst we're there remove any found entities (as they aren't relevant for BI)
