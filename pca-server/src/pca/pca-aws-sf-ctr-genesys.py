@@ -375,7 +375,7 @@ def extract_ivr_lines(agent_channel, call_start_time, ctr_json, pca_analytics, p
                                                                               call_start_time)
 
                         # If it starts BEFORE zero seconds then it's part of the conversation, but NOT this call
-                        if segment_start >= 0.00:
+                        if segment_start >= -0.5: # round to half a second to account for system time differences
                             ivr_times.append({"Start": segment_start, "End": segment_end})
 
         # We now need to do the same with ACD times - whilst these strictly-speaking aren't IVR entries
