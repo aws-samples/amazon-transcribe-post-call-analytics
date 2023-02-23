@@ -338,6 +338,16 @@ Parameters:
     Default: 'pca'
     Description: Glue catalog database name used to contain tables/views for SQL integration.
 
+  EnablePcaDashboards:
+    Type: String
+    Default: 'No'
+    AllowedValues:
+        - 'No'
+        - 'Yes'
+    Description: >
+      Optionally deploy advanced analytics pipeline and QuickSight dashboards. 
+      IMPORTANT: Additional manual setup required - see http://www.amazon.com/pca-dashboards - Deploy resources with AWS CloudFormation Steps 1-4.
+
 Metadata:
     AWS::CloudFormation::Interface:
         ParameterGroups:
@@ -412,6 +422,24 @@ Metadata:
               Parameters:
                   - MinSentimentNegative
                   - MinSentimentPositive
+            - Label:
+                default: Bulk upload
+              Parameters:
+                - BulkUploadMaxDripRate
+                - BulkUploadMaxTranscribeJobs
+                - BulkUploadStepFunctionName
+            - Label:
+                default: Advanced analytics and reporting
+              Parameters:
+                  - DatabaseName
+                  - EnablePcaDashboards
+            - Label:
+                default: Miscellaneous
+              Parameters:
+                - ConversationLocation
+                - Environment
+                - StepFunctionName
+                - ffmpegDownloadUrl 
 
 Conditions:
   ShouldCreateBulkUploadBucket: !Equals [!Ref BulkUploadBucketName, '']
@@ -420,6 +448,7 @@ Conditions:
   ShouldCreateSupportFilesBucket: !Equals [!Ref SupportFilesBucketName, '']
   ShouldEnableKendraSearch: !Not [!Equals [!Ref EnableTranscriptKendraSearch, 'No']]
   ShouldCreateKendraIndexDeveloperEdition: !Equals [!Ref EnableTranscriptKendraSearch, 'Yes, create new Kendra Index (Developer Edition)']
+  ShouldDeployPcaDashboards: !Equals [!Ref EnablePcaDashboards, 'Yes']
 
 Resources:
   ########################################################
@@ -736,6 +765,22 @@ Resources:
           - ShouldCreateInputBucket
           - !Ref InputBucket
           - !Ref InputBucketName
+
+  PcaDashboards:
+    Type: AWS::CloudFormation::Stack
+    Condition: ShouldDeployPcaDashboards
+    DependsOn: PCAServer
+    Properties:
+      TemplateURL: build/pca-dashboards.yaml
+      Parameters:
+        PcaGlueCatalogDatabaseName: !Ref DatabaseName
+        PcaOutputBucket: 
+          !If
+          - ShouldCreateOutputBucket
+          - !Ref OutputBucket
+          - !Ref OutputBucketName
+        PcaWebAppCallPathPrefix: !Sub "/dashboard/${OutputBucketParsedResults}/"
+        PcaWebAppHostAddress: !Select [1, !Split ["//", !GetAtt PCAUI.Outputs.WebUri]]
         
 Outputs:
 
@@ -809,4 +854,12 @@ Outputs:
       - ', '
       - - !Sub '${PCAUI.Outputs.RolesForKMSKey}'
         - !Sub '${PCAServer.Outputs.RolesForKMSKey}'
+
+  PcADashboards:
+    Description: See PCA Dashboards nested stack outputs for additional information. Also refer to blog - http://www.amazon.com/pca-dashboards.
+    Value:
+      !If
+      - ShouldDeployPcaDashboards
+      - !Sub "https://${AWS::Region}.console.aws.amazon.com/cloudformation/home?region=${AWS::Region}#/stacks/outputs?stackId=${PcaDashboards}"
+      - "PCA Dashboards not enabled - stack param 'EnablePcaDashboards'"
 

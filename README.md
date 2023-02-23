@@ -36,6 +36,8 @@ PCA currently supports the following features:
 * **Search**
     * Search on call attributes such as time range, sentiment, or entities
     * Search transcriptions
+* **Analytics Pipeline and Dashboards on Amazon QuickSight**
+    * Optionally deploy [Advanced reporting and analytics for the Post Call Analytics (PCA) solution with Amazon QuickSight](https://aws.amazon.com/blogs/big-data/advance-reporting-and-analytics-for-the-post-call-analytics-pca-solution-with-amazon-quicksight/) 
 * **Other**
     * Detects metadata from audio file names, such as call GUID, agent’s name, and call date time
     * Can ingest telephony contact trace record files (CTRs) for stereo to mark transcript speech segments as being from an **IVR** system, as well as identify multiple Agents in a single call
@@ -137,6 +139,8 @@ OR, if you opted to follow the steps above to Build and Publish PCA CloudFormati
 
 If you have previously used your [Amazon Kendra](https://aws.amazon.com/kendra/) Free Tier allowance, you incur an hourly cost for this index (more information on cost later in this post). Amazon Kendra transcript search is an optional feature, so if you don’t need it and are concerned about cost, use the default value of ``No``.
 
+* For **EnablePcaDashboards**, change the value to ``yes`` to install the optional analytics pipeline and Amazon QuickSight analysis and dashboards. 
+    * You must follow the manual steps 1-4 documented in the blog post [Advanced reporting and analytics for the Post Call Analytics (PCA) solution with Amazon QuickSight](https://aws.amazon.com/blogs/big-data/advance-reporting-and-analytics-for-the-post-call-analytics-pca-solution-with-amazon-quicksight/) section **Deploy resources with AWS CloudFormation** to enable Amazon Quicksight.
 
 * For all other parameters, use the default values. 
 
