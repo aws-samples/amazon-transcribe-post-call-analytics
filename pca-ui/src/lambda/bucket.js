@@ -52,7 +52,8 @@ exports.handler = function (event, context) {
                         },
                     },
                 });
-
+                // and enable EventBridge - used by pca-dashboards
+                data.EventBridgeConfiguration = {};
                 console.log("Added us:", JSON.stringify(data, null, 4));
             }
 
