@@ -140,7 +140,11 @@ OR, if you opted to follow the steps above to Build and Publish PCA CloudFormati
 If you have previously used your [Amazon Kendra](https://aws.amazon.com/kendra/) Free Tier allowance, you incur an hourly cost for this index (more information on cost later in this post). Amazon Kendra transcript search is an optional feature, so if you don’t need it and are concerned about cost, use the default value of ``No``.
 
 * For **EnablePcaDashboards**, change the value to ``yes`` to install the optional analytics pipeline and Amazon QuickSight analysis and dashboards. 
-    * You must follow the manual steps 1-4 documented in the blog post [Advanced reporting and analytics for the Post Call Analytics (PCA) solution with Amazon QuickSight](https://aws.amazon.com/blogs/big-data/advance-reporting-and-analytics-for-the-post-call-analytics-pca-solution-with-amazon-quicksight/) section **Deploy resources with AWS CloudFormation** to enable Amazon Quicksight.
+    * BEFORE INSTALLING: You **must** enable Amazon Quicksight in your account:
+        1. Navigate to the QuickSight service from the console.
+        2. Choose Sign up for QuickSight.
+        3. Select the edition.
+        4. Enter your account name and notification email address.
 
 * For all other parameters, use the default values. 
 
@@ -191,7 +195,7 @@ You’re now logged in to PCA. Because you set `loadSampleAudioFiles` to `true`,
 
 ### Optional: Open the transcription search web UI and set your permanent password 
 
-Follow these additional steps to log in to the companion transcript search web app, which is deployed only when you set ``EnableTranscriptKendraSearch``** **when you launch the stack.
+Follow these additional steps to log in to the companion transcript search web app, which is deployed only when you set `EnableTranscriptKendraSearch` when you launch the stack.
 
 
 * On the AWS CloudFormation console, choose the main stack, `PostCallAnalytics`, and choose the **Outputs** tab.
@@ -214,6 +218,18 @@ This email contains a generated temporary password that you can use to log in (a
 As before, your new password must have a length of at least 8 characters, and contain uppercase and lowercase characters, plus numbers and special characters.
 
 You’re now logged in to the transcript search Finder application. The sample audio files are indexed already, and ready for search.
+
+### Optional: Post deployment steps to enable Amazon QuickSight dashboards
+
+Follow these additional steps to enable Amazon QuickSight dashboards, deployed only when you set `EnablePcaDashboards` when you launch the stack.
+
+1. In the QuickSight console, choose the user icon (top right) to open the menu, and choose Manage QuickSight.
+2. On the admin page, choose "Security and Permissions", than add access to the Amazon S3 **OutputBucket** referenced in the deployed stack Outputs tab. 
+3. On the admin page, choose Manage assets, then choose Dashboards.
+   * Select <Stack Name>-PCA-Dashboard and choose Share. Enter the QuickSight user or group and choose Share again.
+   * Optionally, to customize the dashboard further, share <Stack Name>-PCA-Analysis under Asset type analyses and <Stack Name>-PCA-* under Datasets. Enter the QuickSight user or group and choose Share again.
+
+For additional information about the PCA advanced analytics and dashboards solution, see the companion blog post: http://www.amazon.com/pca-dashboards.
 
 ## Live Call Analytics and Agent Assist: Companion solution
 

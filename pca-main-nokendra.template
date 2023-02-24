@@ -351,8 +351,9 @@ Parameters:
         - 'No'
         - 'Yes'
     Description: >
-      Optionally deploy advanced analytics pipeline and QuickSight dashboards. 
-      IMPORTANT: Additional manual setup required - see http://www.amazon.com/pca-dashboards - Deploy resources with AWS CloudFormation Steps 1-4.
+      Optionally deploy advanced analytics pipeline and Amazon QuickSight dashboards. 
+      IMPORTANT: Your Amazon QuickSight account MUST be enabled before deploying this stack. See http://www.amazon.com/pca-dashboards for additional 
+      steps required in Amazon QuickSight to (1) enable S3 access to PCA OutputBucket and (2) share dashboard and analytis assets.
 
 Metadata:
     AWS::CloudFormation::Interface:
@@ -371,6 +372,11 @@ Metadata:
               Parameters:
                   - EnableTranscriptGui
                   - EnableTranscriptKendraSearch
+            - Label:
+                default: Advanced analytics and reporting
+              Parameters:
+                  - EnablePcaDashboards
+                  - DatabaseName
             - Label:
                 default: S3 Bucket Names and Retention Policy
               Parameters:
@@ -435,11 +441,6 @@ Metadata:
                 - BulkUploadMaxDripRate
                 - BulkUploadMaxTranscribeJobs
                 - BulkUploadStepFunctionName
-            - Label:
-                default: Advanced analytics and reporting
-              Parameters:
-                  - DatabaseName
-                  - EnablePcaDashboards
             - Label:
                 default: Miscellaneous
               Parameters:
@@ -648,7 +649,7 @@ Resources:
           - ShouldCreateOutputBucket
           - !Ref OutputBucket
           - !Ref OutputBucketName
-        PcaWebAppCallPathPrefix: !Sub "/dashboard/${OutputBucketParsedResults}/"
+        PcaWebAppCallPathPrefix: !Sub "dashboard/${OutputBucketParsedResults}/"
         PcaWebAppHostAddress: !Select [1, !Split ["//", !GetAtt PCAUI.Outputs.WebUri]]
 
 Outputs:
