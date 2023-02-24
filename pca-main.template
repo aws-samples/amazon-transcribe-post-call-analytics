@@ -817,6 +817,65 @@ Resources:
           - !Ref PcaDashboards
           - !Ref AWS::NoValue
 
+  # Custom resource to check that QuickSight has been enabled - if not, fail fast and prevent downstream failures  
+
+  QuickSightEnabledCheckFunctionRole:
+    Type: "AWS::IAM::Role"
+    Condition: ShouldDeployPcaDashboards
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+      Policies:
+        - PolicyName: s3-input-bucket-write-policy
+          PolicyDocument:
+            Statement:
+              Effect: Allow
+              Action:
+                - quicksight:ListDashboards
+              Resource: "*"
+
+  QuickSightEnabledCheckFunction:
+    Type: AWS::Lambda::Function
+    Condition: ShouldDeployPcaDashboards
+    Properties:
+      Handler: index.handler
+      Runtime: python3.8
+      Role: !GetAtt QuickSightEnabledCheckFunctionRole.Arn
+      Code: 
+        ZipFile: !Sub |
+          import cfnresponse
+          import boto3
+          def handler(event, context):
+            print(event)
+            client = boto3.client('quicksight')
+            status = cfnresponse.SUCCESS
+            reason = f"QuickSight is enabled - OK"
+            if event['RequestType'] != "Delete":
+              try:
+                response = client.list_dashboards(
+                    AwsAccountId='${AWS::AccountId}',
+                    )
+              except Exception as e:
+                print(e)
+                status = cfnresponse.FAILED
+                reason = f"No Amazon QuickSight account. To deploy PCA with Dashboards enabled, you must first create an account in the Amazon QuickSight console => {e}"
+            else:
+              reason = f"Request type is {event['RequestType']} - skipping"
+            cfnresponse.send(event, context, status, {}, reason=reason) 
+
+  IsQuickSightEnabled:
+    Type: Custom::QuickSightCheck
+    Condition: ShouldDeployPcaDashboards
+    Properties:
+      ServiceToken: !GetAtt QuickSightEnabledCheckFunction.Arn
+
 Outputs:
 
   BulkUploadBucket:
