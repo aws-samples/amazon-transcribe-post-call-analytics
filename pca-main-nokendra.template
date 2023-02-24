@@ -353,7 +353,7 @@ Parameters:
     Description: >
       Optionally deploy advanced analytics pipeline and Amazon QuickSight dashboards. 
       IMPORTANT: Your Amazon QuickSight account MUST be enabled before deploying this stack. See http://www.amazon.com/pca-dashboards for additional 
-      steps required in Amazon QuickSight to (1) enable S3 access to PCA OutputBucket and (2) share dashboard and analytis assets.
+      steps required in Amazon QuickSight to (1) enable S3 access to PCA OutputBucket and (2) share dashboard and analytics assets.
 
 Metadata:
     AWS::CloudFormation::Interface:
@@ -458,6 +458,8 @@ Conditions:
   ShouldEnableKendraSearch: !Not [!Equals [!Ref EnableTranscriptKendraSearch, 'No']]
   ShouldCreateKendraIndexDeveloperEdition: !Equals [!Ref EnableTranscriptKendraSearch, 'Yes, create new Kendra Index (Developer Edition)']
   ShouldDeployPcaDashboards: !Equals [!Ref EnablePcaDashboards, 'Yes']
+  ShouldLoadSampleFiles: !Equals [!Ref loadSampleAudioFiles, 'true']
+
 
 Resources:
   ########################################################
@@ -652,6 +654,19 @@ Resources:
         PcaWebAppCallPathPrefix: !Sub "dashboard/${OutputBucketParsedResults}/"
         PcaWebAppHostAddress: !Select [1, !Split ["//", !GetAtt PCAUI.Outputs.WebUri]]
 
+  CopySamples:
+    Type: AWS::CloudFormation::Stack
+    Condition: ShouldLoadSampleFiles
+    Properties:
+      TemplateURL: pca-samples/copy-samples.template
+      Parameters:
+        DependsOnPCAServer: !Ref PCAServer
+        DependsOnPCADashboards: !If
+          - ShouldDeployPcaDashboards
+          - !Ref PcaDashboards
+          - !Ref AWS::NoValue
+
+
 Outputs:
 
   BulkUploadBucket:
@@ -730,7 +745,7 @@ Outputs:
         - !Sub '${PCAServer.Outputs.RolesForKMSKey}'
 
   PcADashboards:
-    Description: See PCA Dashboards nested stack outputs for additional information. Also refer to blog - http://www.amazon.com/pca-dashboards.
+    Description: See PCA Dashboards nested stack outputs for additional information. Refer to blog - http://www.amazon.com/pca-dashboards.
     Value:
       !If
       - ShouldDeployPcaDashboards
