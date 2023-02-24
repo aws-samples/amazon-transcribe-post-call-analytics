@@ -76,7 +76,9 @@ Resources:
     Type: "AWS::CloudFormation::CustomResource"
     Properties:
       ServiceToken: !GetAtt CopySamplesFunction.Arn
-      SamplesVersion: 0.2
+      # trigger update to re-copy files when params below change
+      SamplesVersion: 0.3
+      DependsOnPCADashboards: !Ref DependsOnPCADashboards 
 
 Outputs:
 
