@@ -411,11 +411,8 @@ def extract_ivr_lines(agent_channel, call_start_time, ctr_json, pca_analytics, p
                     # MIGHT be agent speech, so we need to split this segment up before
                     # marking segments
                     if segment.segmentEndTime > ivr["End"]:
-                        segments_to_split.append([segment, ivr["End"]])
-
-        # If we found any segments that we need to split then do that now
-        for split_segment in segments_to_split:
-            split_ivr_speech_segment(split_segment[0], split_segment[1], pca_results)
+                        # If we found any segments that we need to split then do that now
+                        split_ivr_speech_segment(segment, ivr["End"], pca_results)
 
         # Run through one more time but without splitting
         for ivr in ivr_times:
