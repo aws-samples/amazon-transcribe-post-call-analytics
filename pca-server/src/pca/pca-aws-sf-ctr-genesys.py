@@ -31,6 +31,7 @@ CUST_CHANNEL_LC_NAME = "customer"
 FILE_SUFFIX_CONVERSATION = ""
 FILE_SUFFIX_CALL = ""
 
+TIMESTAMP_BUFFER = 0.2
 
 def load_ctr_files(original_file):
     """
@@ -244,6 +245,7 @@ def split_ivr_speech_segment(segment, ivr_end_time, pca_results):
         # TODO Sort out when this is the first or last item in the list
         lhs_segments = pca_results.speech_segments[0:split_index]
         rhs_segments = pca_results.speech_segments[split_index+1:]
+        orig_segment = copy.deepcopy(segment)
 
         # Create a duplicate of our source segment, mark as
         # "Agent" and then work out which words were theirs
@@ -254,15 +256,22 @@ def split_ivr_speech_segment(segment, ivr_end_time, pca_results):
         agent_segment.segmentSpeaker = get_speaker_channel(pca_results.analytics.speaker_labels, AGENT_CHANNEL_LC_NAME)
 
         # Split the words up correctly for both segments - IVR first
-        segment.segmentConfidence = list(filter(lambda x: x["EndTime"] < ivr_end_time, segment.segmentConfidence))
+        segment.segmentConfidence = list(filter(lambda x: x["EndTime"] < (ivr_end_time + TIMESTAMP_BUFFER), segment.segmentConfidence))
         segment.segmentEndTime = segment.segmentConfidence[-1]["EndTime"]
         segment.segmentText = regenerate_segment_text(segment)
 
         # Now get the words for the Agent half
-        agent_segment.segmentConfidence = list(filter(lambda x: x["StartTime"] > ivr_end_time, agent_segment.segmentConfidence))
-        agent_segment.segmentConfidence[0]["Text"] = agent_segment.segmentConfidence[0]["Text"].replace(" ", "")
-        agent_segment.segmentStartTime = agent_segment.segmentConfidence[0]["StartTime"]
-        agent_segment.segmentText = regenerate_segment_text(agent_segment)
+        agent_segment.segmentConfidence = list(filter(lambda x: x["StartTime"] > (ivr_end_time - TIMESTAMP_BUFFER), agent_segment.segmentConfidence))
+        if len(agent_segment.segmentConfidence) > 0:
+            agent_segment.segmentConfidence[0]["Text"] = agent_segment.segmentConfidence[0]["Text"].replace(" ", "")
+            agent_segment.segmentStartTime = agent_segment.segmentConfidence[0]["StartTime"]
+            agent_segment.segmentText = regenerate_segment_text(agent_segment)
+        else:
+            # we didnt really need to split this segment
+            pca_results.speech_segments = lhs_segments
+            pca_results.speech_segments.append(orig_segment)
+            pca_results.speech_segments.extend(rhs_segments)
+            return
 
         # Work out which custom entities belong to the agent and the IVR
         ivr_text_len = len(segment.segmentText)
@@ -375,7 +384,7 @@ def extract_ivr_lines(agent_channel, call_start_time, ctr_json, pca_analytics, p
                                                                               call_start_time)
 
                         # If it starts BEFORE zero seconds then it's part of the conversation, but NOT this call
-                        if segment_start >= -0.5: # round to half a second to account for system time differences
+                        if segment_start >= (-1 * TIMESTAMP_BUFFER): # round to half a second to account for system time differences
                             ivr_times.append({"Start": segment_start, "End": segment_end})
 
         # We now need to do the same with ACD times - whilst these strictly-speaking aren't IVR entries
