@@ -219,7 +219,21 @@ This email contains a generated temporary password that you can use to log in (a
 As before, your new password must have a length of at least 8 characters, and contain uppercase and lowercase characters, plus numbers and special characters.
 
 You’re now logged in to the transcript search Finder application. The sample audio files are indexed already, and ready for search.
+  
 
+### Optional: Post deployment steps to enable Amazon QuickSight dashboards
+
+Follow these additional steps to enable Amazon QuickSight dashboards, deployed only when you set `EnablePcaDashboards` when you launch the stack.
+
+1. In the QuickSight console, choose the user icon (top right) to open the menu, and choose Manage QuickSight.
+2. On the admin page, choose "Security and Permissions", than add access to the Amazon S3 **OutputBucket** referenced in the deployed stack Outputs tab. 
+3. On the admin page, choose Manage assets, then choose Dashboards.
+   * Select <Stack Name>-PCA-Dashboard and choose Share. Enter the QuickSight user or group and choose Share again.
+   * Optionally, to customize the dashboard further, share <Stack Name>-PCA-Analysis under Asset type analyses and <Stack Name>-PCA-* under Datasets. Enter the QuickSight user or group and choose Share again.
+
+For additional information about the PCA advanced analytics and dashboards solution, see the companion blog post: http://www.amazon.com/pca-dashboards.
+   
+   
 ### Update an existing stack
 
 1. Log into the [AWS console](https://console.aws.amazon.com/) if you are not already.
@@ -238,17 +252,6 @@ EU Central (Frankfurt) | eu-central-1 | https://s3.eu-central-1.amazonaws.com/aw
 7. Chose **Next** two more times.
 8. Check the blue boxes for creating IAM resources, and choose **Update stack** to start the update.
 
-### Optional: Post deployment steps to enable Amazon QuickSight dashboards
-
-Follow these additional steps to enable Amazon QuickSight dashboards, deployed only when you set `EnablePcaDashboards` when you launch the stack.
-
-1. In the QuickSight console, choose the user icon (top right) to open the menu, and choose Manage QuickSight.
-2. On the admin page, choose "Security and Permissions", than add access to the Amazon S3 **OutputBucket** referenced in the deployed stack Outputs tab. 
-3. On the admin page, choose Manage assets, then choose Dashboards.
-   * Select <Stack Name>-PCA-Dashboard and choose Share. Enter the QuickSight user or group and choose Share again.
-   * Optionally, to customize the dashboard further, share <Stack Name>-PCA-Analysis under Asset type analyses and <Stack Name>-PCA-* under Datasets. Enter the QuickSight user or group and choose Share again.
-
-For additional information about the PCA advanced analytics and dashboards solution, see the companion blog post: http://www.amazon.com/pca-dashboards.
 
 ## Live Call Analytics and Agent Assist: Companion solution
 
