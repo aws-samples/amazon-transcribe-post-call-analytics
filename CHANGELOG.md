@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2023-03-23
+### Added
+- Option to deploy Advanced reporting and analytics for the Post Call Analytics (PCA) solution with Amazon QuickSight
+- Supports Transcribe Custom Language Models (CLM)
+
+
 ## [0.4.0] - 2022-11-27
 ### Added
 - Supports ingestion of post-call output transcripts from Transcribe Real-time Call Analytics. 
@@ -96,8 +102,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial release
 
-[Unreleased]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/compare/v0.4.0...develop
-[0.4.0]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.3.4
+[Unreleased]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/compare/v0.5.0...develop
+[0.5.0]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.5.0
+[0.4.0]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.4.0
 [0.3.4]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.3.4
 [0.3.3]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.3.3
 [0.3.2]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.3.2
