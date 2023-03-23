@@ -336,6 +336,17 @@ Parameters:
     Default: 'pca'
     Description: Glue catalog database name used to contain tables/views for SQL integration.
 
+  EnablePcaDashboards:
+    Type: String
+    Default: 'No'
+    AllowedValues:
+        - 'No'
+        - 'Yes'
+    Description: >
+      Optionally deploy advanced analytics pipeline and Amazon QuickSight dashboards. 
+      IMPORTANT: Your Amazon QuickSight account MUST be enabled before deploying this stack. See http://www.amazon.com/pca-dashboards for additional 
+      steps required in Amazon QuickSight to (1) enable S3 access to PCA OutputBucket and (2) share dashboard and analytics assets.
+
 Metadata:
     AWS::CloudFormation::Interface:
         ParameterGroups:
@@ -352,6 +363,11 @@ Metadata:
                 default: Enable Call Transcript Search
               Parameters:
                   - EnableTranscriptKendraSearch
+            - Label:
+                default: Advanced analytics and reporting
+              Parameters:
+                  - EnablePcaDashboards
+                  - DatabaseName
             - Label:
                 default: S3 Bucket Names and Retention Policy
               Parameters:
@@ -410,6 +426,19 @@ Metadata:
               Parameters:
                   - MinSentimentNegative
                   - MinSentimentPositive
+            - Label:
+                default: Bulk upload
+              Parameters:
+                - BulkUploadMaxDripRate
+                - BulkUploadMaxTranscribeJobs
+                - BulkUploadStepFunctionName
+            - Label:
+                default: Miscellaneous
+              Parameters:
+                - ConversationLocation
+                - Environment
+                - StepFunctionName
+                - ffmpegDownloadUrl 
 
 Conditions:
   ShouldCreateBulkUploadBucket: !Equals [!Ref BulkUploadBucketName, '']
@@ -418,6 +447,9 @@ Conditions:
   ShouldCreateSupportFilesBucket: !Equals [!Ref SupportFilesBucketName, '']
   ShouldEnableKendraSearch: !Not [!Equals [!Ref EnableTranscriptKendraSearch, 'No']]
   ShouldCreateKendraIndexDeveloperEdition: !Equals [!Ref EnableTranscriptKendraSearch, 'Yes, create new Kendra Index (Developer Edition)']
+  ShouldDeployPcaDashboards: !Equals [!Ref EnablePcaDashboards, 'Yes']
+  ShouldLoadSampleFiles: !Equals [!Ref loadSampleAudioFiles, 'true']
+
 
 Resources:
   ########################################################
@@ -568,7 +600,6 @@ Resources:
       TemplateURL: pca-server/cfn/pca-server.template
       Parameters:
         ffmpegDownloadUrl: !Ref ffmpegDownloadUrl
-        loadSampleAudioFiles: !Ref loadSampleAudioFiles
       
   PCAUI:
     Type: AWS::CloudFormation::Stack
@@ -590,6 +621,93 @@ Resources:
           - !Ref OutputBucketName
         DataPrefix: !Ref OutputBucketParsedResults
         Environment: !Ref Environment
+
+  PcaDashboards:
+    Type: AWS::CloudFormation::Stack
+    Condition: ShouldDeployPcaDashboards
+    DependsOn: PCAServer
+    Properties:
+      TemplateURL: build/pca-dashboards.yaml
+      Parameters:
+        PcaGlueCatalogDatabaseName: !Ref DatabaseName
+        PcaOutputBucket: 
+          !If
+          - ShouldCreateOutputBucket
+          - !Ref OutputBucket
+          - !Ref OutputBucketName
+        PcaWebAppCallPathPrefix: !Sub "dashboard/${OutputBucketParsedResults}/"
+        PcaWebAppHostAddress: !Select [1, !Split ["//", !GetAtt PCAUI.Outputs.WebUri]]
+
+  CopySamples:
+    Type: AWS::CloudFormation::Stack
+    Condition: ShouldLoadSampleFiles
+    Properties:
+      TemplateURL: pca-samples/copy-samples.template
+      Parameters:
+        DependsOnPCAServer: !Ref PCAServer
+        DependsOnPCADashboards: !If
+          - ShouldDeployPcaDashboards
+          - !Ref PcaDashboards
+          - !Ref AWS::NoValue
+
+  # Custom resource to check that QuickSight has been enabled - if not, fail fast and prevent downstream failures  
+
+  QuickSightEnabledCheckFunctionRole:
+    Type: "AWS::IAM::Role"
+    Condition: ShouldDeployPcaDashboards
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+      Policies:
+        - PolicyName: s3-input-bucket-write-policy
+          PolicyDocument:
+            Statement:
+              Effect: Allow
+              Action:
+                - quicksight:ListDashboards
+              Resource: "*"
+
+  QuickSightEnabledCheckFunction:
+    Type: AWS::Lambda::Function
+    Condition: ShouldDeployPcaDashboards
+    Properties:
+      Handler: index.handler
+      Runtime: python3.8
+      Role: !GetAtt QuickSightEnabledCheckFunctionRole.Arn
+      Code: 
+        ZipFile: !Sub |
+          import cfnresponse
+          import boto3
+          def handler(event, context):
+            print(event)
+            client = boto3.client('quicksight')
+            status = cfnresponse.SUCCESS
+            reason = f"QuickSight is enabled - OK"
+            if event['RequestType'] != "Delete":
+              try:
+                response = client.list_dashboards(
+                    AwsAccountId='${AWS::AccountId}',
+                    )
+              except Exception as e:
+                print(e)
+                status = cfnresponse.FAILED
+                reason = f"No Amazon QuickSight account. To deploy PCA with Dashboards enabled, you must first create an account in the Amazon QuickSight console => {e}"
+            else:
+              reason = f"Request type is {event['RequestType']} - skipping"
+            cfnresponse.send(event, context, status, {}, reason=reason) 
+
+  IsQuickSightEnabled:
+    Type: Custom::QuickSightCheck
+    Condition: ShouldDeployPcaDashboards
+    Properties:
+      ServiceToken: !GetAtt QuickSightEnabledCheckFunction.Arn
 
 Outputs:
 
@@ -663,3 +781,12 @@ Outputs:
       - ', '
       - - !Sub '${PCAUI.Outputs.RolesForKMSKey}'
         - !Sub '${PCAServer.Outputs.RolesForKMSKey}'
+        - !If [ShouldLoadSampleFiles, !Sub '${CopySamples.Outputs.RolesForKMSKey}', !Ref AWS::NoValue]
+
+  PcADashboards:
+    Description: See PCA Dashboards nested stack outputs for additional information. Refer to blog - http://www.amazon.com/pca-dashboards.
+    Value:
+      !If
+      - ShouldDeployPcaDashboards
+      - !Sub "https://${AWS::Region}.console.aws.amazon.com/cloudformation/home?region=${AWS::Region}#/stacks/outputs?stackId=${PcaDashboards}"
+      - "PCA Dashboards not enabled - stack param 'EnablePcaDashboards'"
