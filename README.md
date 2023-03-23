@@ -126,7 +126,8 @@ To get PCA up and running in your own AWS account, follow these steps (if you do
 
 Region name | Region code | Launch
 --- | --- | ---
-US East (N. Virginia) | us-east-1 | [![Launch Stack](https://cdn.rawgit.com/buildkite/cloudformation-launch-stack-button-svg/master/launch-stack.svg)](https://us-east-1.console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/create/review?templateURL=https://s3.us-east-1.amazonaws.com/aws-ml-blog-us-east-1/artifacts/pca/pca-main.yaml&stackName=PostCallAnalytics)
+US East (N. Virginia) | us-east-1 | [![Launch Stack](https://cdn.rawgit.com/buildkite/cloudformation-launch-stack-button-svg/master/launch-stack.svg)](https://us-east-1.console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/create/review?templateURL=https://s3.us-east-1.amazonaws.com/aws-ml-blog-us-east-1/artifacts/pca/pca-main.yaml&stackName=PCA)
+EU Central (Frankfurt) | eu-central-1 | [![Launch Stack](https://eu-central-1.console.aws.amazon.com/cloudformation/home?region=eu-central-1#/stacks/create/review?templateURL=https://s3.eu-central-1.amazonaws.com/aws-ml-blog-eu-central-1/artifacts/pca/pca-main.yaml&stackName=PCA)
 
 OR, if you opted to follow the steps above to Build and Publish PCA CloudFormation artifacts, use your own published CloudFormation template instead.
 
@@ -218,6 +219,24 @@ This email contains a generated temporary password that you can use to log in (a
 As before, your new password must have a length of at least 8 characters, and contain uppercase and lowercase characters, plus numbers and special characters.
 
 You’re now logged in to the transcript search Finder application. The sample audio files are indexed already, and ready for search.
+
+### Update an existing stack
+
+1. Log into the [AWS console](https://console.aws.amazon.com/) if you are not already.
+*Note: If you are logged in as an IAM user, ensure your account has permissions to create and manage the necessary resources and components for this application.*
+2. Select your existing PostCallAnaytics stack
+3. Choose **Update**
+4. Choose **Replace current template**
+5. Use one of the **published template** below for your region, or use the **Template URL** output of the publish.sh script if you have build your own artifacts from the repository:
+
+Region name | Region code | Template URL
+--- | --- | ---
+US East (N. Virginia) | us-east-1 | https://s3.us-east-1.amazonaws.com/aws-ml-blog-us-east-1/artifacts/pca/pca-main.yaml
+EU Central (Frankfurt) | eu-central-1 | https://s3.eu-central-1.amazonaws.com/aws-ml-blog-eu-central-1/artifacts/pca/pca-main.yaml
+
+6. Choose **Next** and review the stack parameters. 
+7. Chose **Next** two more times.
+8. Check the blue boxes for creating IAM resources, and choose **Update stack** to start the update.
 
 ### Optional: Post deployment steps to enable Amazon QuickSight dashboards
 
