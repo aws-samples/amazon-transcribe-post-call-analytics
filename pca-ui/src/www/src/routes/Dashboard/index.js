@@ -57,6 +57,10 @@ function Dashboard({ setAlert }) {
     data?.ConversationAnalytics?.SourceInformation[0]?.TranscribeJobInfo
       ?.StreamingSession;
 
+  const usedCustomLanguageModel =
+    data?.ConversationAnalytics?.SourceInformation[0]?.TranscribeJobInfo
+        ?.CLMName;
+
   useDangerAlert(error, setAlert);
 
   const [speakerLabels, setSpeakerLabels] = useState({
@@ -123,8 +127,12 @@ function Dashboard({ setAlert }) {
       value: (d) => d?.ConversationAnalytics?.EntityRecognizerName,
     },
     {
-      label: "Language Code",
-      value: (d) => d?.ConversationAnalytics?.LanguageCode,
+      label: "Language Model",
+      value: (d) =>
+          usedCustomLanguageModel
+            ? d?.ConversationAnalytics?.LanguageCode + " [" +
+              d?.ConversationAnalytics?.SourceInformation[0]?.TranscribeJobInfo?.CLMName + "]"
+            : d?.ConversationAnalytics?.LanguageCode
     },
     {
       label: "Agent Sentiment",

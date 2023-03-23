@@ -80,17 +80,21 @@ npm install
 npm run build || exit 1
 popd
 
+# Build embedded QuickSight dashboards project
+cp pca-dashboards/pca-dashboards.yaml build/pca-dashboards.yaml
+
 echo "Packaging Cfn artifacts"
 aws cloudformation package --template-file pca-main-nokendra.template --output-template-file build/packaged.template --s3-bucket ${BUCKET} --s3-prefix ${PREFIX_AND_VERSION} --region ${region}|| exit 1
 aws s3 cp build/packaged.template "s3://${BUCKET}/${PREFIX}/pca-main.yaml" || exit 1
 
 if $PUBLIC; then
   echo "Setting public read ACLs on published artifacts"
-  files=$(aws s3api list-objects --bucket ${BUCKET} --prefix ${PREFIX} --query "(Contents)[].[Key]" --output text)
+  files=$(aws s3api list-objects --bucket ${BUCKET} --prefix ${PREFIX_AND_VERSION} --query "(Contents)[].[Key]" --output text)
   for file in $files
     do
     aws s3api put-object-acl --acl public-read --bucket ${BUCKET} --key $file
     done
+  aws s3api put-object-acl --acl public-read --bucket ${BUCKET} --key ${PREFIX}/pca-main.yaml
 fi
 
 echo "Validating Cfn artifacts"
