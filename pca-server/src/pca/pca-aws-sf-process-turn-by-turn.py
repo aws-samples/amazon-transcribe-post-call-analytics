@@ -12,7 +12,6 @@ from math import floor
 from pcakendrasearch import prepare_transcript, put_kendra_document
 from pcaresults import SpeechSegment, PCAResults
 import pcaconfiguration as cf
-import numpy as np
 import pcacommon
 import subprocess
 import copy
