@@ -3,28 +3,21 @@ import { Bar } from "react-chartjs-2";
 import { Placeholder } from "react-bootstrap";
 
 const getRenderOrder = (key) => {
-  console.log('order:', key);
   if (key === 'Interruptions') return 1;
-  if (key.indexOf('Customer') >= 0) return 2;
+  else if (key === 'Positive') return 2;
+  else if (key === 'Negative') return 1;
+  else if (key === 'Neutral') return 3;
+  else if (key.indexOf('Customer') >= 0) return 5;
   else return 10;
 }
 
 export const LoudnessChart = ({ loudnessData, speakerLabels }) => {
   if (loudnessData === undefined) {
-    console.log("NO LOUDNESS DATA");
     return <Placeholder />
-  } else {
-    console.log("Loudness data:");
-    console.log(loudnessData);
   }
-
-  /*const interruptions = loudnessData[0]
-    .filter((d) => d.interruption)
-    .map((d) => ({ y: d.interruption, x: d.x }));*/
 
   const datasets = [];
   Object.keys(speakerLabels).map((key, index) => {
-    console.log("Generating chart data for", key);
     if (key in loudnessData) {
       let dataset = {
         label: speakerLabels[key],
@@ -34,7 +27,7 @@ export const LoudnessChart = ({ loudnessData, speakerLabels }) => {
         /*barThickness: 1,*/
         barPercentage: 1.0,
         categoryPercentage: 1.0,
-        /*borderSkipped: true,*/
+        borderSkipped: true,
         order: getRenderOrder(speakerLabels[key]),
         type: "bar",
         xAxisID:'x'
@@ -42,8 +35,6 @@ export const LoudnessChart = ({ loudnessData, speakerLabels }) => {
       datasets.push(dataset);
     }
   });
-  console.log("output of chart dataset:");
-  console.log(datasets);
 
   return (
     <Bar
@@ -89,7 +80,20 @@ export const LoudnessChart = ({ loudnessData, speakerLabels }) => {
             title: { text: "Decibels", display: true },
           },
         },
-        plugins: { legend: { display: true } },
+        plugins: {
+          legend: {
+            display: true,
+            labels: {
+              filter: function (item, chart) {
+                if (item.text.includes('Positive') ||
+                  item.text.includes('Negative') ||
+                  item.text.includes('Neutral')
+                ) return false;
+                return true;
+              }
+            }
+          },
+        },
       }}
     />
   );

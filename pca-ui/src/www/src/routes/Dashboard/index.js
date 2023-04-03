@@ -27,12 +27,6 @@ const getSentimentTrends = (d, target, labels) => {
   return d?.ConversationAnalytics?.SentimentTrends[id];
 };
 
-const getSentimentLabel = (segment) => {
-  if (segment.SentimentScore > 0) return 'positive';
-  else if (segment.SentimentScore < 0) return 'negative';
-  return 'neutral';
-}
-
 const createLoudnessData = (segment) => {
   const start = Math.floor(segment.SegmentStartTime);
   const end = Math.floor(segment.SegmentEndTime);
@@ -41,7 +35,7 @@ const createLoudnessData = (segment) => {
     x: item,
     y: segment.LoudnessScores[i],
     interruption: segment.SegmentInterruption && item === start ? 100 : null,
-    sentiment: getSentimentLabel(segment),
+    sentiment: (segment.SentimentIsNegative ? -5 : (segment.SentimentIsPositive && segment.LoudnessScores[i] > 0 ? 5 : 0)),
     silence: (segment.LoudnessScores[i] === 0 ? true : false)
   }));
 };
@@ -81,12 +75,13 @@ function Dashboard({ setAlert }) {
     Object.entries(speakerLabels).find(([_, label]) => label === input)?.[0];
 
   useEffect(() => {
-    console.log("DATA:");
-    console.log(data);
     const labels = data?.ConversationAnalytics?.SpeakerLabels || [];
     const newSpeakerLabels = {
       NonTalkTime: "Silence",
-      Interruptions:"Interruptions",
+      Interruptions: "Interruptions",
+      Positive: "Positive",
+      Negative: "Negative",
+      Neutral: "Neutral"
     };
     labels.map(({ Speaker, DisplayText }) => {
       newSpeakerLabels[Speaker] = DisplayText;
@@ -98,6 +93,9 @@ function Dashboard({ setAlert }) {
     const loudness = {};
     let interruptions = [];
     let silence = [];
+    let positive = [];
+    let negative = [];
+    let neutral = [];
 
     Object.keys(speakerLabels).forEach(key => {
       let keyLoudness = (data?.SpeechSegments || [])
@@ -112,18 +110,26 @@ function Dashboard({ setAlert }) {
 
       let newSilence = keyLoudness.filter((d) => d.silence)
         .map((d) => ({ x: d.x, y: 100 }))
-      silence = silence.concat(newSilence)
+      silence = silence.concat(newSilence);
 
-      /*let lastItem = keyLoudness.slice(-1).pop();
-      console.log(lastItem);
-      if (lastItem)
-      {
-        if (oldestTime === undefined) oldestTime = lastItem;
-        else if (oldestTime.x < lastItem.x) oldestTime = lastItem;
-      }*/
+      keyLoudness.forEach((item) => {
+        let sentimentItem = {
+          x: item.x,
+          y: 10,
+          sentiment: item.sentiment
+        };
+        if (item.sentiment > 0) positive.push(sentimentItem)
+        else if (item.sentiment < 0) negative.push(sentimentItem)
+        else neutral.push(sentimentItem);
+      });
+
     });
     loudness['Interruptions'] = interruptions;
     loudness['NonTalkTime'] = silence;
+    loudness['Positive'] = positive;
+    loudness['Neutral'] = neutral;
+    loudness['Negative'] = negative;
+    
     setLoudnessData(loudness);
   }, [speakerLabels])
 
@@ -365,7 +371,7 @@ function Dashboard({ setAlert }) {
         </Card>
       </div>
       <Card>
-        <Card.Header>Loudness</Card.Header>
+        <Card.Header>Loudness/Sentiment</Card.Header>
         <Card.Body>
           {!loudnessData && !error ? (
             <div>No Speakers</div>
