@@ -7,6 +7,10 @@ export const colours = {
   spk_3: "hsl(27, 100%, 50%)",
   spk_4: "hsl(300, 75%, 50%)",
   spk_5: "hsl(152, 75%, 50%)",
+  Interruptions: "hsla(152, 75%, 50%, 0.5)",
+  negative: "rgb(255,0,0)",
+  positive: "rgb(0,255,0)",
+  neutral: "rgb(100,100,100)"
 };
 
 const Entities = {
