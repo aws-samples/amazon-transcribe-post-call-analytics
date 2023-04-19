@@ -115,6 +115,7 @@ Resources:
   ffmpegZip:
     Type: Custom::ffmpegZip
     Properties:
+      Downloadurl: !Ref ffmpegDownloadUrl
       ServiceToken: !GetAtt ffmpegZipFunction.Arn
       
 Outputs:
