@@ -110,7 +110,6 @@ Resources:
 
   PyUtilsLayer:
     Type: "AWS::Lambda::LayerVersion"
-    DependsOn: PyUtilsZip
     Properties:
       CompatibleArchitectures:
         - x86_64

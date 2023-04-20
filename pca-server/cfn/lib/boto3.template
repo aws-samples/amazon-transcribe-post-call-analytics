@@ -131,7 +131,6 @@ Resources:
 
   Boto3Layer:
     Type: "AWS::Lambda::LayerVersion"
-    DependsOn: boto3Zip
     Properties:
       Content:
         S3Bucket: !Ref SupportFilesBucketName
