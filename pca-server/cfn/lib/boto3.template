@@ -12,8 +12,12 @@ Parameters:
 
   Boto3ZipName:
     Type: String
-    Default: transcribeCallAnalyticsModels.zip
-
+    Default: transcribeCallAnalyticsModels
+  
+  Boto3Version:
+    Type: String
+    Default: 'boto3==1.24.2'
+  
 Resources:
 
   boto3ZipFunctionRole:
@@ -53,6 +57,7 @@ Resources:
         Variables:
           SUPPORT_FILES_BUCKET: !Ref SupportFilesBucketName
           BOTO3_ZIP_NAME: !Ref Boto3ZipName
+          BOTO3_VERSION: !Ref Boto3Version
       Code:
         ZipFile: |
           # Package up the Transcribe model version that we need from boto3 (missing from Lambda @ 10/1/2021)
@@ -66,8 +71,10 @@ Resources:
           import sys
           import shutil
           import subprocess
+          import uuid
           bucket = os.environ['SUPPORT_FILES_BUCKET']
           boto_zip_file_name = os.environ['BOTO3_ZIP_NAME']
+          boto_version = os.environ['BOTO3_VERSION']
           def handler(event, context):
             responseData={}
             status = cfnresponse.SUCCESS
@@ -90,13 +97,14 @@ Resources:
                   os.mkdir(root_path)
                 # Write out the requirements.txt file, which is the boto3 version we need
                 with open(reqs_file, 'w') as f:
-                  f.write("boto3==1.24.2")
+                  f.write(boto_version)
                   f.close()
                 # Install this version of boto3 locally and copy out Transcribe model
                 subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", reqs_file, "-t", pip_folder])
                 shutil.copy(f"{pip_folder}/botocore/data/{zip_subfolder_1}/{zip_subfolder_2}/service-2.json", "/".join(zip_folders))
                 # Zip up the models folder, maintaining the folder structure
-                with ZipFile(boto_zip_file_name, 'w') as zipObj:
+                output_zip_file_name = f"{boto_zip_file_name}-{str(uuid.uuid4())}.zip"
+                with ZipFile(output_zip_file_name, 'w') as zipObj:
                    for folderName, subfolders, filenames in os.walk(zip_folder):
                        for filename in filenames:
                            #create complete filepath of file in directory
@@ -105,9 +113,10 @@ Resources:
                            print(f"zipping {filePath}")
                            zipObj.write(filePath)
                 # Upload zipfile to S3
-                print(f"uploading {boto_zip_file_name} to s3 bucket {bucket}")
+                print(f"uploading {output_zip_file_name} to s3 bucket {bucket}")
                 s3_client = boto3.client('s3')
-                response = s3_client.upload_file(boto_zip_file_name, bucket, boto_zip_file_name)
+                response = s3_client.upload_file(output_zip_file_name, bucket, output_zip_file_name)
+                responseData["Boto3OutputZipFile"] = output_zip_file_name
               except Exception as e:
                   print(e)
                   responseData["Error"] = f"Exception thrown: {e}"
@@ -117,6 +126,7 @@ Resources:
   boto3Zip:
     Type: Custom::boto3Zip
     Properties:
+      Boto3Version: !Ref Boto3Version
       ServiceToken: !GetAtt boto3ZipFunction.Arn
 
   Boto3Layer:
@@ -125,10 +135,9 @@ Resources:
     Properties:
       Content:
         S3Bucket: !Ref SupportFilesBucketName
-        S3Key: !Ref Boto3ZipName
+        S3Key: !GetAtt boto3Zip.Boto3OutputZipFile
 
 Outputs:
-
   Boto3Layer:
     Description: Lambda layer for Boto3 that other Lambdas may need
     Value: !Ref Boto3Layer

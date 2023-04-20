@@ -12,7 +12,7 @@ Parameters:
     
   FFMPEGZipName:
     Type: String
-    Default: ffmpeg.zip
+    Default: ffmpeg
 
   ffmpegDownloadUrl:
     Type: String
@@ -66,6 +66,7 @@ Resources:
           import boto3
           import urllib.request
           import tarfile
+          import uuid
           from zipfile import ZipFile
           import cfnresponse
           url = os.environ['FFMPEG_DOWNLOAD_URL']
@@ -93,7 +94,8 @@ Resources:
                         tar.extract(member)
                 tar.close()
                 # zip the bin directory
-                with ZipFile(zip_file_name, 'w') as zipObj:
+                output_zip_file_name = f"{zip_file_name}-{str(uuid.uuid4())}.zip"
+                with ZipFile(output_zip_file_name, 'w') as zipObj:
                    for folderName, subfolders, filenames in os.walk(bin_dir):
                        for filename in filenames:
                            #create complete filepath of file in directory
@@ -102,9 +104,10 @@ Resources:
                            print(f"zipping {filePath}")
                            zipObj.write(filePath)
                 # Upload zipfile to S3
-                print(f"uploading {zip_file_name} to s3 bucket {bucket}")
+                print(f"uploading {output_zip_file_name} to s3 bucket {bucket}")
                 s3_client = boto3.client('s3')
-                response = s3_client.upload_file(zip_file_name, bucket, zip_file_name)
+                response = s3_client.upload_file(output_zip_file_name, bucket, output_zip_file_name)
+                responseData["FfmpeqOutputZipFile"] = output_zip_file_name
               except Exception as e:
                   print(e)
                   responseData["Error"] = f"Exception thrown: {e}"
@@ -120,4 +123,4 @@ Resources:
       
 Outputs:
   FFMPEGZipName:
-    Value: !Ref FFMPEGZipName
+    Value: !GetAtt ffmpegZip.FfmpeqOutputZipFile

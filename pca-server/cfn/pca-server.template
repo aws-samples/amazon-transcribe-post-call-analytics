@@ -7,6 +7,21 @@ Parameters:
     Type: String
     Default: https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz
     Description: URL for ffmpeg binary distribution tar file download - see https://www.johnvansickle.com/ffmpeg/
+  
+  Boto3Version:
+    Type: String
+    Default: 'boto3==1.24.2'
+    Description: AWS SDK(Boto3) version for Python.
+
+  PythonUtilPipCommand:
+    Type: String
+    Default: 'pip install filetype==1.0.13 -t python'
+    Description: pip install command to create PythonUtil layer
+
+  MatplotlibPipCommand:
+    Type: String
+    Default: 'pip install numpy==1.19.4 matplotlib==3.3.3 --target python --only-binary=:all: --platform manylinux1_x86_64 --python=3.8'
+    Description: pip install command to create Matplotlib layer
 
 Resources:
   FFMPEG:
@@ -20,16 +35,23 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: lib/matplotlib.template
+      Parameters:
+        MatplotlibPipCommand: !Ref MatplotlibPipCommand
 
   BOTO3:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: lib/boto3.template
+      Parameters:
+        Boto3Version: !Ref Boto3Version
+
 
   PYTHONUTILS:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: lib/python-utilities.template
+      Parameters:
+        PythonUtilPipCommand: !Ref PythonUtilPipCommand
 
   DDB:
     Type: AWS::CloudFormation::Stack

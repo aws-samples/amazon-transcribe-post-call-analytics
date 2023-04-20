@@ -240,6 +240,21 @@ Parameters:
     Default: https://www.johnvansickle.com/ffmpeg/old-releases/ffmpeg-4.4-amd64-static.tar.xz
     Description: URL for ffmpeg binary distribution tar file download - see https://www.johnvansickle.com/ffmpeg/
 
+  Boto3Version:
+    Type: String
+    Default: 'boto3==1.24.2'
+    Description: AWS SDK(Boto3) version for Python.
+
+  PythonUtilPipCommand:
+    Type: String
+    Default: 'pip install filetype==1.0.13 -t python'
+    Description: pip install command to create PythonUtil layer
+
+  MatplotlibPipCommand:
+    Type: String
+    Default: 'pip install numpy==1.19.4 matplotlib==3.3.3 --target python --only-binary=:all: --platform manylinux1_x86_64 --python=3.8'
+    Description: pip install command to create Matplotlib layer
+
   loadSampleAudioFiles:
     Type: String
     Default: false
@@ -731,6 +746,9 @@ Resources:
       TemplateURL: pca-server/cfn/pca-server.template
       Parameters:
         ffmpegDownloadUrl: !Ref ffmpegDownloadUrl
+        Boto3Version: !Ref Boto3Version
+        MatplotlibPipCommand: !Ref MatplotlibPipCommand
+        PythonUtilPipCommand: !Ref PythonUtilPipCommand
       
   PCAUI:
     Type: AWS::CloudFormation::Stack

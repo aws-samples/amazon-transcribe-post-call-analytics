@@ -12,7 +12,11 @@ Parameters:
     
   MPLZipName:
     Type: String
-    Default: matplotlib-layer.zip
+    Default: matplotlib-layer
+
+  MatplotlibPipCommand:
+    Type: String
+    Default: 'pip install numpy==1.19.4 matplotlib==3.3.3 --target python --only-binary=:all: --platform manylinux1_x86_64 --python=3.8'
 
 
 Resources:
@@ -54,6 +58,7 @@ Resources:
         Variables:
           SUPPORT_FILES_BUCKET: !Ref SupportFilesBucketName
           MPL_ZIP_NAME: !Ref MPLZipName
+          PIP_COMMAND: !Ref MatplotlibPipCommand
       Code:
         ZipFile: |
           import os
@@ -62,10 +67,12 @@ Resources:
           import subprocess
           import shutil
           import cfnresponse
+          import uuid
           def handler(event, context):
             # Read off our env values
             bucket = os.environ['SUPPORT_FILES_BUCKET']
             zip_file_name = os.environ['MPL_ZIP_NAME']
+            pip_command = os.environ['PIP_COMMAND']
             responseData = {}
             status = cfnresponse.SUCCESS
             if event['RequestType'] != 'Delete':
@@ -75,24 +82,21 @@ Resources:
                 shutil.rmtree("python", ignore_errors=True)
                 os.mkdir("python")
                 # Download the libraries we need via pip
-                subprocess.run(["pip", "install",
-                                "numpy==1.19.4", "matplotlib==3.3.3",
-                                "--target", "python",
-                                "--only-binary=:all:",
-                                "--platform", "manylinux1_x86_64",
-                                "--python=3.8"], check=True)
+                subprocess.run([*pip_command.split()], check=True)
                 # Zip up what we downloaded
-                with ZipFile(zip_file_name, 'w') as zipObj:
-                  print(f"Creating zip file {zip_file_name} for upload...")
+                output_zip_file_name = f"{zip_file_name}-{str(uuid.uuid4())}.zip"
+                with ZipFile(output_zip_file_name, 'w') as zipObj:
+                  print(f"Creating zip file {output_zip_file_name} for upload...")
                   for folderName, subfolders, filenames in os.walk("python"):
                     for filename in filenames:
                       # create complete filepath of file in directory
                       filePath = os.path.join(folderName, filename)
                       zipObj.write(filePath)
                 # Upload zipfile to S3
-                print(f"Uploading {zip_file_name} to s3 bucket {bucket}...")
+                print(f"Uploading {output_zip_file_name} to s3 bucket {bucket}...")
                 s3_client = boto3.client('s3')
-                response = s3_client.upload_file(zip_file_name, bucket, zip_file_name)
+                response = s3_client.upload_file(output_zip_file_name, bucket, output_zip_file_name)
+                responseData["MplOutputZipFile"] = output_zip_file_name
               except Exception as e:
                 print(e)
                 responseData["Error"] = f"Exception thrown: {e}"
@@ -104,7 +108,8 @@ Resources:
     Type: Custom::mplZip
     Properties:
       ServiceToken: !GetAtt mplZipFunction.Arn
+      PipCommand: !Ref MatplotlibPipCommand
       
 Outputs:
   MPLZipName:
-    Value: !Ref MPLZipName
+    Value: !GetAtt mplZip.MplOutputZipFile
