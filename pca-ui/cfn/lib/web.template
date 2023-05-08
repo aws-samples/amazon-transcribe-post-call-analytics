@@ -49,6 +49,9 @@ Resources:
           - ServerSideEncryptionByDefault:
               SSEAlgorithm: AES256
       AccessControl: LogDeliveryWrite
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: ObjectWriter
 
   WebBucketPolicy:
     Type: "AWS::S3::BucketPolicy"
