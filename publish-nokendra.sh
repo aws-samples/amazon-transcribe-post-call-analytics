@@ -88,6 +88,9 @@ aws cloudformation package --template-file pca-main-nokendra.template --output-t
 aws s3 cp build/packaged.template "s3://${BUCKET}/${PREFIX}/pca-main.yaml" || exit 1
 
 if $PUBLIC; then
+  echo "Enabling ACLs on bucket"
+  aws s3api put-public-access-block --bucket ${BUCKET} --public-access-block-configuration "BlockPublicPolicy=false"
+  aws s3api put-bucket-ownership-controls --bucket ${BUCKET} --ownership-controls="Rules=[{ObjectOwnership=BucketOwnerPreferred}]"
   echo "Setting public read ACLs on published artifacts"
   files=$(aws s3api list-objects --bucket ${BUCKET} --prefix ${PREFIX_AND_VERSION} --query "(Contents)[].[Key]" --output text)
   for file in $files
