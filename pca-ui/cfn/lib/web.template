@@ -48,8 +48,7 @@ Resources:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
               SSEAlgorithm: AES256
-      PublicAccessBlockConfiguration:
-        BlockPublicAcls: false
+      AccessControl: LogDeliveryWrite
       OwnershipControls:
         Rules:
           - ObjectOwnership: ObjectWriter
