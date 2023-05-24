@@ -61,7 +61,7 @@ Resources:
     Properties:
       Code:  ../../src/lambda
       Handler: bucket.handler
-      Runtime: nodejs12.x
+      Runtime: nodejs14.x
       Role: !GetAtt ConfigureDataBucketRole.Arn
       Environment:
         Variables:
@@ -122,7 +122,7 @@ Resources:
             TableName: !Ref Table
         - S3ReadPolicy:
             BucketName: !Ref DataBucket
-      Runtime: nodejs12.x
+      Runtime: nodejs14.x
 
 Outputs:
   TableName:
