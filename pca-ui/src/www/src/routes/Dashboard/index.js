@@ -35,6 +35,8 @@ const createLoudnessData = (segment) => {
     x: item,
     y: segment.LoudnessScores[i],
     interruption: segment.SegmentInterruption && item === start ? 100 : null,
+    sentiment: (segment.SentimentIsNegative ? -5 : (segment.SentimentIsPositive && segment.LoudnessScores[i] > 0 ? 5 : 0)),
+    silence: (segment.LoudnessScores[i] === 0 ? true : false)
   }));
 };
 
@@ -63,9 +65,9 @@ function Dashboard({ setAlert }) {
 
   useDangerAlert(error, setAlert);
 
-  const [speakerLabels, setSpeakerLabels] = useState({
-    NonTalkTime: "Silence",
-  });
+  const [speakerLabels, setSpeakerLabels] = useState({});
+
+  const [loudnessData, setLoudnessData] = useState({});
 
   const [isSwapping, setIsSwapping] = useState(false);
 
@@ -74,11 +76,64 @@ function Dashboard({ setAlert }) {
 
   useEffect(() => {
     const labels = data?.ConversationAnalytics?.SpeakerLabels || [];
+    const newSpeakerLabels = {
+      NonTalkTime: "Silence",
+      Interruptions: "Interruptions",
+      Positive: "Positive",
+      Negative: "Negative",
+      Neutral: "Neutral"
+    };
     labels.map(({ Speaker, DisplayText }) => {
-      return setSpeakerLabels((s) => ({ ...s, [Speaker]: DisplayText }));
+      newSpeakerLabels[Speaker] = DisplayText;
     });
+    setSpeakerLabels(newSpeakerLabels);
   }, [data]);
+  
+  useEffect(() => {
+    const loudness = {};
+    let interruptions = [];
+    let silence = [];
+    let positive = [];
+    let negative = [];
+    let neutral = [];
 
+    Object.keys(speakerLabels).forEach(key => {
+      let keyLoudness = (data?.SpeechSegments || [])
+      .filter((segment) => segment.SegmentSpeaker === key)
+      .map(createLoudnessData)
+      .flat();
+      
+      loudness[key] = keyLoudness;
+      let newInterruptions = keyLoudness.filter((d) => d.interruption)
+        .map((d) => ({ y: d.interruption, x: d.x }))
+      interruptions = interruptions.concat(newInterruptions)
+
+      let newSilence = keyLoudness.filter((d) => d.silence)
+        .map((d) => ({ x: d.x, y: 100 }))
+      silence = silence.concat(newSilence);
+
+      keyLoudness.forEach((item) => {
+        let sentimentItem = {
+          x: item.x,
+          y: 10,
+          sentiment: item.sentiment
+        };
+        if (item.sentiment > 0) positive.push(sentimentItem)
+        else if (item.sentiment < 0) negative.push(sentimentItem)
+        else neutral.push(sentimentItem);
+      });
+
+    });
+    loudness['Interruptions'] = interruptions;
+    loudness['NonTalkTime'] = silence;
+    loudness['Positive'] = positive;
+    loudness['Neutral'] = neutral;
+    loudness['Negative'] = negative;
+    
+    setLoudnessData(loudness);
+  }, [speakerLabels])
+
+  /*
   const agentLoudness = (data?.SpeechSegments || [])
     .filter((segment) => segment.SegmentSpeaker === getValueFor("Agent"))
     .map(createLoudnessData)
@@ -87,7 +142,7 @@ function Dashboard({ setAlert }) {
   const customerLoudness = (data?.SpeechSegments || [])
     .filter((segment) => segment.SegmentSpeaker === getValueFor("Customer"))
     .map(createLoudnessData)
-    .flat();
+    .flat();*/
 
   const swapAgent = async () => {
     try {
@@ -315,6 +370,17 @@ function Dashboard({ setAlert }) {
           </Card.Body>
         </Card>
       </div>
+      <Card>
+        <Card.Header>Loudness/Sentiment</Card.Header>
+        <Card.Body>
+          {!loudnessData && !error ? (
+            <div>No Speakers</div>
+          ) : (
+              <LoudnessChart loudnessData={loudnessData} speakerLabels={speakerLabels} />
+          )}
+        </Card.Body>
+      </Card>
+
       {data?.ConversationAnalytics?.CombinedAnalyticsGraph ? (
         <Card>
           {!data && !error ? (
