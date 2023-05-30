@@ -83,6 +83,9 @@ popd
 # Build and deploy embedded MediaSearch project
 pushd aws-kendra-transcribe-media-search
 if $PUBLIC; then
+  echo "Enabling ACLs on bucket"
+  aws s3api put-public-access-block --bucket ${BUCKET} --public-access-block-configuration "BlockPublicPolicy=false"
+  aws s3api put-bucket-ownership-controls --bucket ${BUCKET} --ownership-controls="Rules=[{ObjectOwnership=BucketOwnerPreferred}]"
   ./publish.sh ${BUCKET} ${PREFIX_AND_VERSION}/mediasearch | tee /tmp/mediasearch.out || exit 1
 else
    ./publish-privatebucket.sh ${BUCKET} ${PREFIX_AND_VERSION}/mediasearch | tee /tmp/mediasearch.out || exit 1
@@ -91,6 +94,9 @@ popd
 mediasearch_template="s3://${BUCKET}/${PREFIX_AND_VERSION}/mediasearch/msfinder.yaml"
 aws s3 cp $mediasearch_template build/pca-mediasearch-finder.yaml
 
+# Build embedded QuickSight dashboards project
+cp pca-dashboards/pca-dashboards.yaml build/pca-dashboards.yaml
+
 echo "Packaging Cfn artifacts"
 aws cloudformation package --template-file pca-main.template --output-template-file build/packaged.template --s3-bucket ${BUCKET} --s3-prefix ${PREFIX_AND_VERSION} --region ${region}|| exit 1
 
@@ -98,11 +104,12 @@ aws s3 cp build/packaged.template "s3://${BUCKET}/${PREFIX}/pca-main.yaml" || ex
 
 if $PUBLIC; then
   echo "Setting public read ACLs on published artifacts"
-  files=$(aws s3api list-objects --bucket ${BUCKET} --prefix ${PREFIX} --query "(Contents)[].[Key]" --output text)
+  files=$(aws s3api list-objects --bucket ${BUCKET} --prefix ${PREFIX_AND_VERSION} --query "(Contents)[].[Key]" --output text)
   for file in $files
     do
     aws s3api put-object-acl --acl public-read --bucket ${BUCKET} --key $file
     done
+  aws s3api put-object-acl --acl public-read --bucket ${BUCKET} --key ${PREFIX}/pca-main.yaml
 fi
 
 

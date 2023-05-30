@@ -36,6 +36,8 @@ PCA currently supports the following features:
 * **Search**
     * Search on call attributes such as time range, sentiment, or entities
     * Search transcriptions
+* **Analytics Pipeline and Dashboards on Amazon QuickSight**
+    * Optionally deploy [Advanced reporting and analytics for the Post Call Analytics (PCA) solution with Amazon QuickSight](https://aws.amazon.com/blogs/big-data/advance-reporting-and-analytics-for-the-post-call-analytics-pca-solution-with-amazon-quicksight/) 
 * **Other**
     * Detects metadata from audio file names, such as call GUID, agent’s name, and call date time
     * Can ingest telephony contact trace record files (CTRs) for stereo to mark transcript speech segments as being from an **IVR** system, as well as identify multiple Agents in a single call
@@ -124,7 +126,8 @@ To get PCA up and running in your own AWS account, follow these steps (if you do
 
 Region name | Region code | Launch
 --- | --- | ---
-US East (N. Virginia) | us-east-1 | [![Launch Stack](https://cdn.rawgit.com/buildkite/cloudformation-launch-stack-button-svg/master/launch-stack.svg)](https://us-east-1.console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/create/review?templateURL=https://s3.us-east-1.amazonaws.com/aws-ml-blog-us-east-1/artifacts/pca/pca-main.yaml&stackName=PostCallAnalytics)
+US East (N. Virginia) | us-east-1 | [![Launch Stack](https://cdn.rawgit.com/buildkite/cloudformation-launch-stack-button-svg/master/launch-stack.svg)](https://us-east-1.console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/create/review?templateURL=https://s3.us-east-1.amazonaws.com/aws-ml-blog-us-east-1/artifacts/pca/pca-main.yaml&stackName=PCA)
+EU Central (Frankfurt) | eu-central-1 | [![Launch Stack](https://cdn.rawgit.com/buildkite/cloudformation-launch-stack-button-svg/master/launch-stack.svg)](https://eu-central-1.console.aws.amazon.com/cloudformation/home?region=eu-central-1#/stacks/create/review?templateURL=https://s3.eu-central-1.amazonaws.com/aws-ml-blog-eu-central-1/artifacts/pca/pca-main.yaml&stackName=PCA)
 
 OR, if you opted to follow the steps above to Build and Publish PCA CloudFormation artifacts, use your own published CloudFormation template instead.
 
@@ -137,6 +140,12 @@ OR, if you opted to follow the steps above to Build and Publish PCA CloudFormati
 
 If you have previously used your [Amazon Kendra](https://aws.amazon.com/kendra/) Free Tier allowance, you incur an hourly cost for this index (more information on cost later in this post). Amazon Kendra transcript search is an optional feature, so if you don’t need it and are concerned about cost, use the default value of ``No``.
 
+* For **EnablePcaDashboards**, change the value to ``yes`` to install the optional analytics pipeline and Amazon QuickSight analysis and dashboards. 
+    * BEFORE INSTALLING: You **must** enable Amazon Quicksight in your account:
+        1. Navigate to the QuickSight service from the console.
+        2. Choose Sign up for QuickSight.
+        3. Select the edition.
+        4. Enter your account name and notification email address.
 
 * For all other parameters, use the default values. 
 
@@ -187,7 +196,7 @@ You’re now logged in to PCA. Because you set `loadSampleAudioFiles` to `true`,
 
 ### Optional: Open the transcription search web UI and set your permanent password 
 
-Follow these additional steps to log in to the companion transcript search web app, which is deployed only when you set ``EnableTranscriptKendraSearch``** **when you launch the stack.
+Follow these additional steps to log in to the companion transcript search web app, which is deployed only when you set `EnableTranscriptKendraSearch` when you launch the stack.
 
 
 * On the AWS CloudFormation console, choose the main stack, `PostCallAnalytics`, and choose the **Outputs** tab.
@@ -210,6 +219,39 @@ This email contains a generated temporary password that you can use to log in (a
 As before, your new password must have a length of at least 8 characters, and contain uppercase and lowercase characters, plus numbers and special characters.
 
 You’re now logged in to the transcript search Finder application. The sample audio files are indexed already, and ready for search.
+  
+
+### Optional: Post deployment steps to enable Amazon QuickSight dashboards
+
+Follow these additional steps to enable Amazon QuickSight dashboards, deployed only when you set `EnablePcaDashboards` when you launch the stack.
+
+1. In the QuickSight console, choose the user icon (top right) to open the menu, and choose Manage QuickSight.
+2. On the admin page, choose "Security and Permissions", than add access to the Amazon S3 **OutputBucket** referenced in the deployed stack Outputs tab. 
+3. On the admin page, choose Manage assets, then choose Dashboards.
+   * Select <Stack Name>-PCA-Dashboard and choose Share. Enter the QuickSight user or group and choose Share again.
+   * Optionally, to customize the dashboard further, share <Stack Name>-PCA-Analysis under Asset type analyses and <Stack Name>-PCA-* under Datasets. Enter the QuickSight user or group and choose Share again.
+
+For additional information about the PCA advanced analytics and dashboards solution, see the companion blog post: http://www.amazon.com/pca-dashboards.
+   
+   
+### Update an existing stack
+
+1. Log into the [AWS console](https://console.aws.amazon.com/) if you are not already.
+*Note: If you are logged in as an IAM user, ensure your account has permissions to create and manage the necessary resources and components for this application.*
+2. Select your existing PostCallAnaytics stack
+3. Choose **Update**
+4. Choose **Replace current template**
+5. Use one of the **published template** below for your region, or use the **Template URL** output of the publish.sh script if you have build your own artifacts from the repository:
+
+Region name | Region code | Template URL
+--- | --- | ---
+US East (N. Virginia) | us-east-1 | https://s3.us-east-1.amazonaws.com/aws-ml-blog-us-east-1/artifacts/pca/pca-main.yaml
+EU Central (Frankfurt) | eu-central-1 | https://s3.eu-central-1.amazonaws.com/aws-ml-blog-eu-central-1/artifacts/pca/pca-main.yaml
+
+6. Choose **Next** and review the stack parameters. 
+7. Chose **Next** two more times.
+8. Check the blue boxes for creating IAM resources, and choose **Update stack** to start the update.
+
 
 ## Live Call Analytics and Agent Assist: Companion solution
 

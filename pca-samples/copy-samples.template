@@ -6,7 +6,6 @@ Transform: AWS::Serverless-2016-10-31
 
 Parameters:
 
-
   SupportFilesBucketName:
     Type: AWS::SSM::Parameter::Value<String>
     Default: SupportFilesBucketName
@@ -18,6 +17,14 @@ Parameters:
   InputBucketRawAudio:
     Type: AWS::SSM::Parameter::Value<String>
     Default: InputBucketRawAudio
+  
+  # DependsOn parameters used only to force conditional dependency from main stack
+  DependsOnPCAServer:
+    Type: String
+    Default: NotRequired
+  DependsOnPCADashboards:
+    Type: String
+    Default: NotRequired
 
 Globals:
   Function:
@@ -54,7 +61,7 @@ Resources:
   CopySamplesFunction:
     Type: "AWS::Lambda::Function"
     Properties:
-      Code:  ../../src/copy-samples
+      Code:  ./src
       Handler: copy-samples.lambda_handler
       Runtime: python3.8
       Timeout: 300
@@ -69,7 +76,9 @@ Resources:
     Type: "AWS::CloudFormation::CustomResource"
     Properties:
       ServiceToken: !GetAtt CopySamplesFunction.Arn
-      SamplesVersion: 0.2
+      # trigger update to re-copy files when params below change
+      SamplesVersion: 0.3
+      DependsOnPCADashboards: !Ref DependsOnPCADashboards 
 
 Outputs:
 
