@@ -38,7 +38,7 @@ export const LoudnessChart = ({ loudnessData, speakerLabels }) => {
 
   return (
     <Bar
-      height={80}
+      height={70}
       data={{
         /*labels: Object.keys(speakerLabels),*/
         datasets: datasets,

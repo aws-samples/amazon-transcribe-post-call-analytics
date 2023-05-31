@@ -1,13 +1,14 @@
 //import { Table } from "react-bootstrap";
 import React from "react";
 import { useCollection } from '@cloudscape-design/collection-hooks';
-import { Table, TextFilter, Pagination, CollectionPreferences } from '@cloudscape-design/components';
+import { Table, TextFilter, Pagination, CollectionPreferences, PropertyFilter } from '@cloudscape-design/components';
 import { useHistory } from "react-router-dom";
 import { Formatter } from "../format";
 import { Placeholder } from "./Placeholder";
 import { SentimentIcon } from "./SentimentIcon";
 import { TrendIcon } from "./TrendIcon";
 import "./ContactTable.css";
+import { DateTimeForm, formatDateTime } from './DateTimeForm';
 
 const columns = [
   {
@@ -19,10 +20,12 @@ const columns = [
   },
   {
     header: "Timestamp",
+    sortingField: "timestamp",
     cell: (d) => Formatter.Timestamp(d.timestamp)
   },
   {
     header: "Cust Sent",
+    sortingField: "callerSentimentScore",
     cell: (d) => (
       <div className="d-flex justify-content-evenly">
         <SentimentIcon score={d?.callerSentimentScore} />
@@ -31,7 +34,6 @@ const columns = [
     ),
     width: 150
   },
-
   {
     header: <div className="col-header-wrapper text-left">Language Code</div>,
     cell: (d) => d.lang,
@@ -69,14 +71,50 @@ export const ContactTable = ({ data = [], loading = false, empty }) => {
     history.push(`/dashboard/${e.detail.item.key}`);
   };
   const [
-    filteringText,
-    setFilteringText
-  ] = React.useState("");
+    callQuery,
+    setCallQuery
+  ] = React.useState({
+    tokens: [],
+    operation: "and"
+  });
 
-  const { items, actions, filteredItemsCount, collectionProps, filterProps, paginationProps } = useCollection(
+  const { items, actions, filteredItemsCount, collectionProps, paginationProps, propertyFilterProps } = useCollection(
     data,
     {
-      filtering: {
+      propertyFiltering: {
+        filteringProperties: [
+            {
+              key: "jobName",
+              operators: ["=", "!=", ":", "!:"],
+              propertyLabel: "Job Name",
+              groupValuesLabel: "Job Names"
+            },
+            {
+              key: "timestamp",
+              defaultOperator: '>',
+              operators: ['<', '<=', '>', '>='].map(operator => ({
+                operator,
+                form: DateTimeForm,
+                format: formatDateTime,
+                match: 'datetime',
+              })),
+              propertyLabel: "Timestamp",
+              groupValuesLabel: "Timestamps"
+          },
+          {
+            key: "lang",
+            operators: ["=", "!=", ":", "!:"],
+            propertyLabel: "Language Code",
+            groupValuesLabel: "Languages Codes"
+          },
+          {
+            key: "duration",
+            defaultOperator: '>',
+            operators: ['<', '<=', '>', '>='],
+            propertyLabel: "Duration",
+            groupValuesLabel: "Durations"
+          }
+        ],
         empty: (
           <div>No Calls.</div>
         ),
@@ -84,7 +122,7 @@ export const ContactTable = ({ data = [], loading = false, empty }) => {
           <div>No matches.</div>
         )
       },
-      pagination: { pageSize: 30 },
+      pagination: { pageSize: 100000000 },
       sorting: {},
       selection: {},
     });
@@ -94,21 +132,60 @@ export const ContactTable = ({ data = [], loading = false, empty }) => {
       {...collectionProps}
       columnDefinitions={columns}
       items={items}
-      pagination={<Pagination {...paginationProps} />}
+      //pagination={<Pagination {...paginationProps} />}
       resizableColumns={true}
       loadingText="Loading Calls"
       onRowClick={onClick}
+      stickyHeader={true}
       filter={
-        <TextFilter
+        /*<TextFilter
           {...filterProps}
           countText={getMatchesCountText(filteredItemsCount)}
           filteringAriaLabel="Filter calls"
           filteringPlaceholder="Find calls"
           filteringClearAriaLabel="Clear"
-          /* filteringText={filteringText}
-          onChange={({ detail }) =>
-            setFilteringText(detail.filteringText)
-          }*/
+        />*/
+        <PropertyFilter
+          {...propertyFilterProps}
+          onChange={({ detail }) => {
+            console.log(detail);
+            //setCallQuery(detail);
+          }}
+          //query={callQuery}
+          i18nStrings={{
+            filteringAriaLabel: "your choice",
+            dismissAriaLabel: "Dismiss",
+            filteringPlaceholder: "Find calls",
+            groupValuesText: "Values",
+            groupPropertiesText: "Properties",
+            operatorsText: "Operators",
+            operationAndText: "and",
+            operationOrText: "or",
+            operatorLessText: "Less than",
+            operatorLessOrEqualText: "Less than or equal",
+            operatorGreaterText: "Greater than",
+            operatorGreaterOrEqualText:
+              "Greater than or equal",
+            operatorContainsText: "Contains",
+            operatorDoesNotContainText: "Does not contain",
+            operatorEqualsText: "Equals",
+            operatorDoesNotEqualText: "Does not equal",
+            editTokenHeader: "Edit filter",
+            propertyText: "Property",
+            operatorText: "Operator",
+            valueText: "Value",
+            cancelActionText: "Cancel",
+            applyActionText: "Apply",
+            allPropertiesLabel: "All properties",
+            tokenLimitShowMore: "Show more",
+            tokenLimitShowFewer: "Show fewer",
+            clearFiltersText: "Clear filters",
+            removeTokenButtonAriaLabel: token =>
+              `Remove token ${token.propertyKey} ${token.operator} ${token.value}`,
+            enteredTextLabel: text => `Use: "${text}"`
+          }}
+          countText={getMatchesCountText(filteredItemsCount)}
+          expandToViewport={true}
         />
       }
     />

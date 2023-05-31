@@ -4,7 +4,7 @@ import { Formatter } from "../../format";
 
 export const SpeakerTimeChart = ({ data = [] }) => {
   const options = {
-    aspectRatio: 1.2,
+    aspectRatio: 1.5,
     scales: {
       y: {
         stacked: true,
