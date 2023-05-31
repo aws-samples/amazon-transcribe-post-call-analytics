@@ -18,7 +18,7 @@ import { getEntityColor } from "./colours";
 import { TranscriptOverlay } from "./TranscriptOverlay";
 import { range } from "../../util";
 import { Sentiment } from "../../components/Sentiment";
-import { Button, ContentLayout, Link, Header, Grid, Container, SpaceBetween, Tabs } from '@cloudscape-design/components';
+import { Button, ContentLayout, Link, Header, Grid, Container, SpaceBetween, Input, FormField, TextContent } from '@cloudscape-design/components';
 
 const getSentimentTrends = (d, target, labels) => {
   const id = Object.entries(labels).find(([_, v]) => v === target)?.[0];
@@ -69,6 +69,8 @@ function Dashboard({ setAlert }) {
   const [loudnessData, setLoudnessData] = useState({});
 
   const [isSwapping, setIsSwapping] = useState(false);
+
+  const [genAiQuery, setGenAiQuery] = useState("");
 
   const getValueFor = (input) =>
     Object.entries(speakerLabels).find(([_, label]) => label === input)?.[0];
@@ -278,11 +280,11 @@ function Dashboard({ setAlert }) {
   ];
 
   const audioEndTimestamps = (data?.SpeechSegments || [])
-  .map(({WordConfidence}) => WordConfidence)
-  .flat()
-  .reduce((accumulator, item) => ([...accumulator, item.EndTime]),[]);
+    .map(({WordConfidence}) => WordConfidence)
+    .flat()
+    .reduce((accumulator, item) => ([...accumulator, item.EndTime]),[]);
 
-  const onAudioPLayTimeUpdate = () => {
+  const onAudioPlayTimeUpdate = () => {
     let elementEndTime = undefined;
     for (let i = 0; i < audioEndTimestamps.length; i++) {
       if (audioElem.current.currentTime < audioEndTimestamps[i]) {
@@ -346,6 +348,8 @@ function Dashboard({ setAlert }) {
     </div>
   }
 
+  
+
   return (
     <ContentLayout 
     header={
@@ -368,7 +372,8 @@ function Dashboard({ setAlert }) {
         { colspan: { l: 12, m: 12, default: 12 } },
         { colspan: { l: 6, m: 6, default: 12 } },
         { colspan: { l: 6, m: 6, default: 12 } },
-        { colspan: { l: 12, m: 12, default: 12 } },
+        { colspan: { l: 6, m: 6, default: 12 } },
+        { colspan: { l: 6, m: 6, default: 12 } },
         { colspan: { l: 12, m: 12, default: 12 } },
       ]}
       >
@@ -445,6 +450,7 @@ function Dashboard({ setAlert }) {
           )}
         </Container>
         <Container 
+          fitHeight={true}
           header={
             <Header variant="h2">
               Entities
@@ -460,6 +466,7 @@ function Dashboard({ setAlert }) {
 
         {isTranscribeCallAnalyticsMode && (
           <Container
+            fitHeight={true}
             header={
               <Header variant="h2">
                 Categories
@@ -475,14 +482,39 @@ function Dashboard({ setAlert }) {
               />
             )}
           </Container>
-      )}
+        )}
+        
+        <Container
+          fitHeight={true}
+          header={
+            <Header variant="h2">
+              GenAI Summary
+            </Header>
+          }
+          footer={
+            <Grid gridDefinition={[{ colspan: {default: 12, xxs: 9} }, {default: 12, xxs: 3}]}>
+              <Input
+              placeholder="Enter a question about the call."
+              onChange={({ detail }) => setGenAiQuery(detail.value)}
+              value={genAiQuery} />
+              <Button>
+                Submit
+              </Button>
+            </Grid>
+          }
+        >
+          <TextContent>The caller called about their rewards card, and the agent looked up the information.</TextContent>
+        </Container>
         {isTranscribeCallAnalyticsMode && (
           <Container
-           header={
-             <Header variant="h2">
-               Call Analytics Summary
-             </Header>
-         }>
+            
+            fitHeight={true}
+            header={
+                <Header variant="h2">
+                  Call Analytics Summary
+                </Header>
+            }
+          >
             {!data && !error ? (
               <h4>No summary available.</h4>
             ) : (
@@ -497,23 +529,6 @@ function Dashboard({ setAlert }) {
                     {outcomesTab()}
                   </ValueWithLabel>
                 </SpaceBetween>
-              /*<Tabs
-                tabs={[
-                    {
-                      label: "Issues",
-                      id: "issues",
-                      content: issuesTab()
-                    },{
-                      label: "Action Items",
-                      id: "action_items",
-                      content: actionItemsTab()
-                    },{
-                      label: "Outcomes",
-                      id: "outcomes",
-                      content: outcomesTab()
-                    },
-                  ]}
-                />*/
           )}
         </Container>
         )}
@@ -535,7 +550,7 @@ function Dashboard({ setAlert }) {
                         data?.ConversationAnalytics?.SourceInformation[0]
                           ?.TranscribeJobInfo?.MediaFileUri
                       }
-                      onTimeUpdate={onAudioPLayTimeUpdate}
+                      onTimeUpdate={onAudioPlayTimeUpdate}
                     >
                       Your browser does not support the
                       <code>audio</code> element.
