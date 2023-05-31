@@ -30,7 +30,7 @@ export const LoudnessChart = ({ loudnessData, speakerLabels }) => {
         borderSkipped: true,
         order: getRenderOrder(speakerLabels[key]),
         type: "bar",
-        xAxisID:'x'
+        xAxisID: 'x'
       }
       datasets.push(dataset);
     }
@@ -38,7 +38,7 @@ export const LoudnessChart = ({ loudnessData, speakerLabels }) => {
 
   return (
     <Bar
-      height={60}
+      height={80}
       data={{
         /*labels: Object.keys(speakerLabels),*/
         datasets: datasets,
