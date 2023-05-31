@@ -33,18 +33,15 @@ const routes = [
   },
   {
     path: "/dashboard/:key*",
-    name: "Dashboard",
+    name: "Call Details",
     hide: true,
     Component: Dashboard,
     Breadcrumb: () => {
       return <BreadcrumbGroup
         items={[
-          { text: "System", href: "#" },
-          { text: "Components", href: "#components" },
-          {
-            text: "Breadcrumb group",
-            href: "#components/breadcrumb-group"
-          }
+          { text: "Home", href: "../../" },
+          { text: "Call List", href: "../../" },
+          { text: "Call Details", href: "#" },
         ]}
         ariaLabel="Breadcrumbs"
       />

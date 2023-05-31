@@ -8,7 +8,6 @@ import { Entities } from "./Entities";
 import { ValueWithLabel } from "../../components/ValueWithLabel";
 import { Placeholder } from "../../components/Placeholder";
 import { Tag } from "../../components/Tag";
-import { Button, Card, Col, Row, Stack } from "react-bootstrap";
 import { SentimentChart } from "./SentimentChart";
 import { LoudnessChart } from "./LoudnessChart";
 import { SpeakerTimeChart } from "./SpeakerTimeChart";
@@ -19,7 +18,7 @@ import { getEntityColor } from "./colours";
 import { TranscriptOverlay } from "./TranscriptOverlay";
 import { range } from "../../util";
 import { Sentiment } from "../../components/Sentiment";
-import { Tabs, Tab } from "react-bootstrap";
+import { Button, ContentLayout, Link, Header, Grid, Container, SpaceBetween, Tabs } from '@cloudscape-design/components';
 
 const getSentimentTrends = (d, target, labels) => {
   const id = Object.entries(labels).find(([_, v]) => v === target)?.[0];
@@ -296,117 +295,176 @@ function Dashboard({ setAlert }) {
     transcriptElem.current.querySelector('span[data-end="'+elementEndTime+'"]')?.classList?.add("playing");
   };
 
+  const issuesTab = () => {
+    return <div>
+      {data?.ConversationAnalytics?.IssuesDetected?.length > 0 ? 
+        data?.ConversationAnalytics?.IssuesDetected?.map((issue, j) => (
+          <Tag key={j}
+            style={{
+              "--highlight-colour": "yellow",
+            }}
+          >
+            {issue.Text}
+          </Tag>
+        )) : <>No issues detected.</>
+      }
+    </div>
+  }
+  const actionItemsTab = () => {
+    return <div>
+      {data?.ConversationAnalytics?.ActionItemsDetected?.length > 0 ? 
+      data?.ConversationAnalytics?.ActionItemsDetected?.map(
+        (actionItem, j) => (
+          <Tag key={j}
+            style={{
+              "--highlight-colour": "LightPink",
+            }}
+          >
+            {actionItem.Text}
+          </Tag>
+        )
+        ) : <>No action items detected.</>
+      }
+    </div>
+  }
+
+  const outcomesTab = () => {
+    return <div>
+      {data?.ConversationAnalytics?.OutcomesDetected?.length > 0 ?
+        data?.ConversationAnalytics?.OutcomesDetected?.map(
+        (outcome, j ) => (
+          <Tag key={j}
+            style={{
+              "--highlight-colour": "Aquamarine",
+            }}
+          >
+            {outcome.Text}
+          </Tag>
+        )
+        ): <>No outcomes detected.</>
+    }
+    </div>
+  }
+
   return (
-    <Stack direction="vertical" gap={4}>
-      <div>
-        <h3 className="d-inline">Call Details </h3>
-        <Button onClick={swapAgent} disabled={isSwapping} className="float-end">
-          {isSwapping ? "Swapping..." : "Swap Agent/Caller"}
-        </Button>
-      </div>
-      <div className="d-flex gap-2 flex-wrap flex-lg-nowrap">
-        <Card className="call-details-col">
-          <Card.Header>Record Details</Card.Header>
-          <Card.Body>
-            <Row>
-              <Col>
-                {callDetailColumn.map((entry, j) => (
-                  <ValueWithLabel key={j} label={entry.label}>
-                    {!data && !error ? (
-                      <Placeholder />
-                    ) : (
-                      entry.value(data) || "-"
-                    )}
-                  </ValueWithLabel>
-                ))}
-              </Col>
-            </Row>
-          </Card.Body>
-        </Card>
-        <Card className="transcribe-col">
-          <Card.Header>Transcribe Details</Card.Header>
-          <Card.Body>
-            <Row>
-              <Col>
-                {transcribeDetailColumn.map((entry, i) => (
-                  <ValueWithLabel key={i} label={entry.label}>
-                    {!data && !error ? (
-                      <Placeholder />
-                    ) : (
-                      entry.value(data) || "-"
-                    )}
-                  </ValueWithLabel>
-                ))}
-              </Col>
-            </Row>
-          </Card.Body>
-        </Card>
-        <Card className="charts">
-          <Card.Body>
-            <Row>
-              <Col>
-                <div>
-                  <h5 className="text-muted">Sentiment</h5>
-                  <SentimentChart
-                    data={data?.ConversationAnalytics?.SentimentTrends}
-                    speakerOrder={speakerLabels}
-                  />
-                </div>
-                <div>
-                  <h5 className="text-muted">Speaker Time</h5>
-                  <SpeakerTimeChart
-                    data={Object.entries(
-                      data?.ConversationAnalytics?.SpeakerTime || {}
-                    ).map(([key, value]) => ({
-                      value: value.TotalTimeSecs,
-                      label: speakerLabels[key],
-                      channel: key
-                    }))}
-                    speakerOrder={speakerLabels}
-                  />
-                </div>
-              </Col>
-            </Row>
-          </Card.Body>
-        </Card>
-      </div>
-      <Card>
-        <Card.Header>Loudness/Sentiment</Card.Header>
-        <Card.Body>
+    <ContentLayout 
+    header={
+      <Header
+          variant="h1"
+          actions={[
+            <Button onClick={swapAgent} disabled={isSwapping} className="float-end">
+              {isSwapping ? "Swapping..." : "Swap Agent/Caller"}
+            </Button>
+          ]}
+        info={<Link variant="info" ariaLabel="Info goes here.">Info</Link>}>
+          Call Details
+      </Header>
+    }>
+    <Grid
+      gridDefinition={[
+        { colspan: { l: 4, m: 4, default: 12 } },
+        { colspan: { l: 4, m: 4, default: 12 } },
+        { colspan: { l: 4, m: 4, default: 12 } },
+        { colspan: { l: 12, m: 12, default: 12 } },
+        { colspan: { l: 6, m: 6, default: 12 } },
+        { colspan: { l: 6, m: 6, default: 12 } },
+        { colspan: { l: 12, m: 12, default: 12 } },
+        { colspan: { l: 12, m: 12, default: 12 } },
+      ]}
+      >
+
+        <Container
+          fitHeight={true}
+          header={
+            <Header variant="h2">
+              Call Metadata
+            </Header>
+          }
+        >
+          <SpaceBetween size="l">
+            {callDetailColumn.map((entry, j) => (
+              <ValueWithLabel key={j} label={entry.label}>
+                {!data && !error ? (
+                  <Placeholder />
+                ) : (
+                  entry.value(data) || "-"
+                )}
+              </ValueWithLabel>
+            ))}
+          </SpaceBetween>
+        </Container>
+        <Container
+          fitHeight={true}
+          header={
+            <Header variant="h2">
+              Transcribe Details
+            </Header>
+          }
+        >
+          <SpaceBetween size="l">
+            {transcribeDetailColumn.map((entry, i) => (
+              <ValueWithLabel key={i} label={entry.label}>
+                {!data && !error ? (
+                  <Placeholder />
+                ) : (
+                  entry.value(data) || "-"
+                )}
+              </ValueWithLabel>
+            ))}
+          </SpaceBetween>
+        </Container>
+        <Container>
+            <h2 className="text-muted">Sentiment</h2>
+            <SentimentChart
+              data={data?.ConversationAnalytics?.SentimentTrends}
+              speakerOrder={speakerLabels}
+            />
+            <h2 className="text-muted">Speaker Time</h2>
+            <SpeakerTimeChart
+              data={Object.entries(
+                data?.ConversationAnalytics?.SpeakerTime || {}
+              ).map(([key, value]) => ({
+                value: value.TotalTimeSecs,
+                label: speakerLabels[key],
+                channel: key
+              }))}
+              speakerOrder={speakerLabels}
+            />
+        </Container>
+        <Container
+          header={
+            <Header variant="h2">
+              Loudness/Sentiment
+            </Header>
+          }
+        >
           {!loudnessData && !error ? (
             <div>No Speakers</div>
           ) : (
               <LoudnessChart loudnessData={loudnessData} speakerLabels={speakerLabels} />
           )}
-        </Card.Body>
-      </Card>
-
-      {data?.ConversationAnalytics?.CombinedAnalyticsGraph ? (
-        <Card>
-          {!data && !error ? (
-            <Placeholder />
-          ) : (
-            <img
-              src={data?.ConversationAnalytics.CombinedAnalyticsGraph}
-              alt="Chart displaying the loudness of the agent and customer over time (available with Transcribe Call Analytics only)"
-            ></img>
-          )}
-        </Card>
-      ) : null}
-      <Card>
-        <Card.Header>Entities</Card.Header>
-        <Card.Body>
+        </Container>
+        <Container 
+          header={
+            <Header variant="h2">
+              Entities
+            </Header>
+          }
+        >
           {!data && !error ? (
             <Placeholder />
           ) : (
             <Entities data={data?.ConversationAnalytics?.CustomEntities} />
           )}
-        </Card.Body>
-      </Card>
-      {isTranscribeCallAnalyticsMode && (
-        <Card>
-          <Card.Header>Categories</Card.Header>
-          <Card.Body>
+        </Container>
+
+        {isTranscribeCallAnalyticsMode && (
+          <Container
+            header={
+              <Header variant="h2">
+                Categories
+              </Header>
+          }>
             {!data && !error ? (
               <Placeholder />
             ) : (
@@ -416,91 +474,79 @@ function Dashboard({ setAlert }) {
                 )}
               />
             )}
-          </Card.Body>
-        </Card>
+          </Container>
       )}
-      {isTranscribeCallAnalyticsMode && (
-        <Card>
-          <Card.Header>Summary</Card.Header>
-          <Card.Body>
+        {isTranscribeCallAnalyticsMode && (
+          <Container
+           header={
+             <Header variant="h2">
+               Call Analytics Summary
+             </Header>
+         }>
             {!data && !error ? (
-              <Placeholder />
+              <h4>No summary available.</h4>
             ) : (
-              <Tabs>
-                  { data?.ConversationAnalytics?.IssuesDetected? (
-                    <Tab title="Issues" eventKey="Issues" className="pt-4">
-                      {data?.ConversationAnalytics?.IssuesDetected?.map(
-                          (issue, j) => (
-                            <Tag key={j}
-                              style={{
-                                "--highlight-colour": "yellow",
-                              }}
-                            >
-                              {issue.Text}
-                            </Tag>
-                          )
-                        )}
-                    </Tab>
-                  ) : 
-                    (<Fragment/>)
-                  }
-                  { data?.ConversationAnalytics?.ActionItemsDetected? (
-                    <Tab title="Action Items"  eventKey="ActionItems" className="pt-4">
-                      {data?.ConversationAnalytics?.ActionItemsDetected?.map(
-                          (actionItem, j) => (
-                            <Tag key={j}
-                              style={{
-                                "--highlight-colour": "LightPink",
-                              }}
-                            >
-                              {actionItem.Text}
-                            </Tag>
-                          )
-                      )}
-                    </Tab>
-                    ) : (<Fragment/>)
-                  }
-                  {data?.ConversationAnalytics?.OutcomesDetected? (
-                    <Tab title="Outcomes" eventKey="Outcomes" className="pt-4">
-                      {data?.ConversationAnalytics?.OutcomesDetected?.map(
-                        (outcome, j ) => (
-                          <Tag key={j}
-                            style={{
-                              "--highlight-colour": "Aquamarine",
-                            }}
-                          >
-                            {outcome.Text}
-                          </Tag>
-                        )
-                      )}
-                  </Tab>
-                  ) : (<Fragment/>)}
-              </Tabs>
-              
-            )}
-          </Card.Body>
-        </Card>
-      )}
-      <Card>
-        <Card.Header className="sticky-top pt-3 bg-light">
-          <div className="d-inline-flex pb-3">Transcript</div>
-          {data && (
-            <audio
-              ref={audioElem}
-              className="float-end"
-              controls
-              src={
-                data?.ConversationAnalytics?.SourceInformation[0]
-                  ?.TranscribeJobInfo?.MediaFileUri
-              }
-              onTimeUpdate={onAudioPLayTimeUpdate}
-            >
-              Your browser does not support the
-              <code>audio</code> element.
-            </audio>
+                <SpaceBetween size="l">
+                  <ValueWithLabel label="Issue">
+                    {issuesTab()}
+                  </ValueWithLabel>
+                  <ValueWithLabel label="Action Items">
+                    {actionItemsTab()}
+                  </ValueWithLabel>
+                  <ValueWithLabel label="Outcomes">
+                    {outcomesTab()}
+                  </ValueWithLabel>
+                </SpaceBetween>
+              /*<Tabs
+                tabs={[
+                    {
+                      label: "Issues",
+                      id: "issues",
+                      content: issuesTab()
+                    },{
+                      label: "Action Items",
+                      id: "action_items",
+                      content: actionItemsTab()
+                    },{
+                      label: "Outcomes",
+                      id: "outcomes",
+                      content: outcomesTab()
+                    },
+                  ]}
+                />*/
           )}
-        </Card.Header>
-        <Card.Body className="pt-4" ref={transcriptElem}>
+        </Container>
+        )}
+        <Container
+          header={
+            <Header
+              variant="h2"
+              actions={
+                <SpaceBetween
+                  direction="horizontal"
+                  size="xs"
+                >
+                  {data && (
+                    <audio
+                      ref={audioElem}
+                      className="float-end"
+                      controls
+                      src={
+                        data?.ConversationAnalytics?.SourceInformation[0]
+                          ?.TranscribeJobInfo?.MediaFileUri
+                      }
+                      onTimeUpdate={onAudioPLayTimeUpdate}
+                    >
+                      Your browser does not support the
+                      <code>audio</code> element.
+                    </audio>
+                  )}
+                </SpaceBetween>
+              }
+            >
+              Transcript
+            </Header>
+        }>
           {!data && !error ? (
             <Placeholder />
           ) : (
@@ -609,9 +655,10 @@ function Dashboard({ setAlert }) {
               />
             ))
           )}
-        </Card.Body>
-      </Card>
-    </Stack>
+        </Container>
+      </Grid>
+    </ContentLayout>
+
   );
 }
 
