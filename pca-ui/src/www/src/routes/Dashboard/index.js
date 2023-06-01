@@ -278,6 +278,13 @@ function Dashboard({ setAlert }) {
         ),
     },
   ];
+  const genAiSummary = (data?.ConversationAnalytics?.Summary ?
+    Object.entries(data?.ConversationAnalytics?.Summary).map(([key, value]) => {
+    return {
+      label: key,
+      value
+    }
+  }) : []);
 
   const audioEndTimestamps = (data?.SpeechSegments || [])
     .map(({WordConfidence}) => WordConfidence)
@@ -386,7 +393,7 @@ function Dashboard({ setAlert }) {
             </Header>
           }
         >
-          <SpaceBetween size="l">
+          <SpaceBetween size="m">
             {callDetailColumn.map((entry, j) => (
               <ValueWithLabel key={j} label={entry.label}>
                 {!data && !error ? (
@@ -406,7 +413,7 @@ function Dashboard({ setAlert }) {
             </Header>
           }
         >
-          <SpaceBetween size="l">
+          <SpaceBetween size="m">
             {transcribeDetailColumn.map((entry, i) => (
               <ValueWithLabel key={i} label={entry.label}>
                 {!data && !error ? (
@@ -418,13 +425,17 @@ function Dashboard({ setAlert }) {
             ))}
           </SpaceBetween>
         </Container>
-        <Container>
-            <h2 className="text-muted">Sentiment</h2>
+        <Container
+          header={
+            <Header variant="h2">
+              Sentiment
+            </Header>
+          }>
             <SentimentChart
               data={data?.ConversationAnalytics?.SentimentTrends}
               speakerOrder={speakerLabels}
             />
-            <h2 className="text-muted">Speaker Time</h2>
+            <Header variant="h2">Speaker Time</Header>
             <SpeakerTimeChart
               data={Object.entries(
                 data?.ConversationAnalytics?.SpeakerTime || {}
@@ -488,9 +499,10 @@ function Dashboard({ setAlert }) {
           fitHeight={true}
           header={
             <Header variant="h2">
-              GenAI Summary
+              GenAI Transcript Summary
             </Header>
           }
+          /* For future use. :) 
           footer={
             <Grid gridDefinition={[{ colspan: {default: 12, xxs: 9} }, {default: 12, xxs: 3}]}>
               <Input
@@ -501,13 +513,18 @@ function Dashboard({ setAlert }) {
                 Submit
               </Button>
             </Grid>
-          }
+          }*/
         >
-          <TextContent>The caller called about their rewards card, and the agent looked up the information.</TextContent>
+          <SpaceBetween size="m">
+            {genAiSummary.map((entry, i) => (
+              <ValueWithLabel key={i} label={entry.label}>
+                {entry.value}
+              </ValueWithLabel>
+            ))}
+          </SpaceBetween>
         </Container>
         {isTranscribeCallAnalyticsMode && (
           <Container
-            
             fitHeight={true}
             header={
                 <Header variant="h2">

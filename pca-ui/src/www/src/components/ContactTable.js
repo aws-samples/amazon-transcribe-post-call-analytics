@@ -138,19 +138,12 @@ export const ContactTable = ({ data = [], loading = false, empty }) => {
       onRowClick={onClick}
       stickyHeader={true}
       filter={
-        /*<TextFilter
-          {...filterProps}
-          countText={getMatchesCountText(filteredItemsCount)}
-          filteringAriaLabel="Filter calls"
-          filteringPlaceholder="Find calls"
-          filteringClearAriaLabel="Clear"
-        />*/
         <PropertyFilter
           {...propertyFilterProps}
-          onChange={({ detail }) => {
+          /*onChange={({ detail }) => {
             console.log(detail);
             //setCallQuery(detail);
-          }}
+          }}*/
           //query={callQuery}
           i18nStrings={{
             filteringAriaLabel: "your choice",
