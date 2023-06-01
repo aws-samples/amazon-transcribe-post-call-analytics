@@ -278,6 +278,7 @@ function Dashboard({ setAlert }) {
         ),
     },
   ];
+
   const genAiSummary = (data?.ConversationAnalytics?.Summary ?
     Object.entries(data?.ConversationAnalytics?.Summary).map(([key, value]) => {
     return {
@@ -516,11 +517,11 @@ function Dashboard({ setAlert }) {
           }*/
         >
           <SpaceBetween size="m">
-            {genAiSummary.map((entry, i) => (
+            {genAiSummary.length > 0 ? genAiSummary.map((entry, i) => (
               <ValueWithLabel key={i} label={entry.label}>
                 {entry.value}
               </ValueWithLabel>
-            ))}
+            )) : "No Summary Available"}
           </SpaceBetween>
         </Container>
         {isTranscribeCallAnalyticsMode && (
