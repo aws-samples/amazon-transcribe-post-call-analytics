@@ -12,7 +12,7 @@ Parameters:
 
   PyZipName:
     Type: String
-    Default: python-utils-layer.zip
+    Default: python-utils-layer-v2.zip
 
 
 Resources:
@@ -78,6 +78,14 @@ Resources:
                 subprocess.run(["pip", "install",
                                 "filetype==1.0.13",
                                 "-t", "python"], check=True)
+                # PIP - Install requests
+                subprocess.run(["pip", "install",
+                                "requests",
+                                "-t", "python"], check=True)
+                # PIP - Install requests
+                subprocess.run(["pip", "install",
+                                "urllib3==1.26.16",
+                                "-t", "python"], check=True)
                 # Zip up everything that we downloaded
                 with ZipFile(zip_file_name, 'w') as zipObj:
                   print(f"Creating zip file {zip_file_name} for upload...")
@@ -100,6 +108,7 @@ Resources:
     Type: Custom::PyUtilsZip
     Properties:
       ServiceToken: !GetAtt PyUtilZipFunction.Arn
+      Version: 1.0
 
   PyUtilsLayer:
     Type: "AWS::Lambda::LayerVersion"

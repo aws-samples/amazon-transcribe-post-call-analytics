@@ -14,9 +14,11 @@ import boto3
 import pcaconfiguration as cf
 import pcacommon
 import filetype
+import os
 
 TMP_DIR = "/tmp/"
 VALID_MIME_TYPES = ["audio", "video"]
+SUMMARIZE = os.getenv("SUMMARIZE", "false")
 
 
 def get_invalid_mime_type(filename):
@@ -162,7 +164,8 @@ def invoke_step_function(bucket, key, file_type):
     sfnArn = sfnArnList[0]['stateMachineArn']
     parameters = '{\n  \"bucket\": \"' + bucket + '\",\n' + \
                  '  \"key\": \"' + key + '\",\n' + \
-                 '  \"inputType\": \"' + file_type + '\"\n' + \
+                 '  \"inputType\": \"' + file_type + '\",\n' + \
+                 '  \"summarize\": \"' + SUMMARIZE + '\"\n' + \
                  '}'
     sfnClient.start_execution(stateMachineArn=sfnArn, input=parameters)
 

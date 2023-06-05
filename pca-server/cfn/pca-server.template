@@ -8,6 +8,49 @@ Parameters:
     Default: https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz
     Description: URL for ffmpeg binary distribution tar file download - see https://www.johnvansickle.com/ffmpeg/
 
+  CallSummarization:
+    Default: 'DISABLED'
+    Type: String
+    AllowedValues:
+      - 'DISABLED'
+      - 'SAGEMAKER'
+      - 'LAMBDA'
+      - 'ANTHROPIC'
+    Description: >
+      Set to enable call summarization by a Large Language Model. The SAGEMAKER option uses a SageMaker endpoint with
+      the pretrained bart-large-cnn-samsum model with a ml.m5.xlarge instance type.  The LAMBDA option requires you 
+      to provide a function ARN below. The ANTHROPIC option is a third party service, and you must enter your Anthropic API key below.
+
+  SummarizationSageMakerInitialInstanceCount:
+    Type: Number
+    MinValue: 0
+    Default: 1
+    Description: >
+      (Optional) If 'CallSummarization' is SAGEMAKER, provide initial instance count. Set to '0' to enable Serverless Inference (for cold-start delay tolerant deployments only).
+
+  SummarizationLLMThirdPartyApiKey:
+    Type: String
+    Description: >
+      (Optional) If CallSummarization is ANTHROPIC, enter the provider API Key. ** Data will leave your AWS account **
+    Default: ''
+    NoEcho: true
+
+  SummarizationLambdaFunctionArn:
+    Default: ''
+    Type: String
+    AllowedPattern: '^(|arn:aws:lambda:.*)$'
+    Description: >
+      (Optional) If 'CallSummarization' is LAMBDA, provide ARN for a Lambda function. 
+
+Conditions:
+  ShouldDeploySageMakerSummarizer: !Equals [!Ref CallSummarization, "SAGEMAKER"]
+  ShouldEnableAnthropicSummarizer: !Equals [!Ref CallSummarization, "ANTHROPIC"]
+  ShouldEnableEndOfCallLambdaHookFunction: !Equals [!Ref CallSummarization, "LAMBDA"]
+  IsTranscriptSummaryEnabled: !Or
+    - !Condition ShouldEnableEndOfCallLambdaHookFunction
+    - !Condition ShouldDeploySageMakerSummarizer
+    - !Condition ShouldEnableAnthropicSummarizer
+
 Resources:
   FFMPEG:
     Type: AWS::CloudFormation::Stack
@@ -40,6 +83,13 @@ Resources:
         FFMPEGZipName: !GetAtt FFMPEG.Outputs.FFMPEGZipName
         Boto3Layer:  !GetAtt BOTO3.Outputs.Boto3Layer
         PyUtilsLayer: !GetAtt PYTHONUTILS.Outputs.PyUtilsLayer
+        CallSummarization: !Ref CallSummarization
+        SummarizationSagemakerEndpointName: !If 
+          - ShouldDeploySageMakerSummarizer
+          - !GetAtt SageMakerTranscriptSummaryStack.Outputs.EndpointName
+          - ''
+        SummarizationLLMThirdPartyApiKey: !Ref SummarizationLLMThirdPartyApiKey
+        SummarizationLambdaFunctionArn: !Ref SummarizationLambdaFunctionArn
 
   Trigger:
     Type: AWS::CloudFormation::Stack
@@ -49,6 +99,7 @@ Resources:
         TableName: !GetAtt DDB.Outputs.TableName
         Boto3Layer: !GetAtt BOTO3.Outputs.Boto3Layer
         PyUtilsLayer: !GetAtt PYTHONUTILS.Outputs.PyUtilsLayer
+        Summarize: !If [IsTranscriptSummaryEnabled, "true", "false"]
 
   BulkImport:
     Type: AWS::CloudFormation::Stack
@@ -59,6 +110,19 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: lib/glue-database.template
+
+  ##########################################################################
+  # Transcript Summary
+  ##########################################################################
+  SageMakerTranscriptSummaryStack:
+    Type: AWS::CloudFormation::Stack
+    Condition: ShouldDeploySageMakerSummarizer
+    Properties:
+      # yamllint disable rule:line-length
+      TemplateURL: lib/sagemaker-summary.template
+      # yamllint enable rule:line-length
+      Parameters:
+        InitialInstanceCount: !Ref SummarizationSageMakerInitialInstanceCount
 
 Outputs:
 
