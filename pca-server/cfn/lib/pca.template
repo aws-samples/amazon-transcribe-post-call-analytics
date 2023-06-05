@@ -30,11 +30,24 @@ Parameters:
     Type: AWS::SSM::Parameter::Value<String>
     Default: InputBucketName
 
+  CallSummarization: 
+    Type: String
+    Default: 'DISABLED'
+  SummarizationSagemakerEndpointName: 
+    Type: String
+  SummarizationLLMThirdPartyApiKey:
+    Type: String
+  SummarizationLambdaFunctionArn: 
+    Type: String
+
 Globals:
   Function:
     Runtime: python3.8
     MemorySize: 1024
     Timeout: 60
+
+Conditions:
+  ProvisionedSageMakerEndpoint: !Equals [!Ref CallSummarization, "SAGEMAKER"]
 
 Resources:
   FFMPEGLayer:
@@ -217,7 +230,43 @@ Resources:
       Policies:
         - arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess
         - arn:aws:iam::aws:policy/AmazonS3FullAccess
+  
+  SFSummarize:
+    Type: "AWS::Serverless::Function"
+    Properties:
+      CodeUri:  ../../src/pca
+      Handler: pca-aws-sf-summarize.lambda_handler
+      Timeout: 900
+      Layers:
+        - !Ref Boto3Layer
+        - !Ref 
         
+      Environment:
+        Variables:
+          AWS_DATA_PATH: "/opt/models"
+          SUMMARY_TYPE: !Ref CallSummarization
+          SUMMARY_SAGEMAKER_ENDPOINT: !Ref SummarizationSagemakerEndpointName
+          ANTHROPIC_API_KEY: !Ref SummarizationLLMThirdPartyApiKey
+          SUMMARY_LAMBDA_ARN: !Ref SummarizationLambdaFunctionArn
+          SUMMARY_PROMPT_TEMPLATE: "<br><br>Human:<br>{transcript}<br><br>Summarize the above transcript in no more than 5 sentences, using gender neutral pronouns. Were the caller's needs met during the call?<br><br>Assistant: Here is a summary in 5 sentences:"
+          ANTHROPIC_MODEL_IDENTIFIER: "claude-v1.3-100k"
+          ANTHROPIC_ENDPOINT_URL: "https://api.anthropic.com/v1/complete"
+          TOKEN_COUNT: !If 
+            - ProvisionedSageMakerEndpoint
+            - 1024
+            - 0
+
+      Policies:
+        - arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+        - Statement:
+          - Sid: InvokeSummarizer
+            Effect: Allow
+            Action:
+              - sagemaker:InvokeEndpoint
+            #Resource: !Sub 'arn:aws:sagemaker:${AWS::Region}:${AWS::AccountId}:endpoint/${SummarizationSagemakerEndpointName}'
+            Resource: !Sub 'arn:aws:sagemaker:${AWS::Region}:${AWS::AccountId}:endpoint/*'
+
   SFAwaitNotification:
     Type: "AWS::Serverless::Function"
     Properties:
@@ -272,6 +321,7 @@ Resources:
                   - !GetAtt SFFinalProcessing.Arn
                   - !GetAtt SFCTRGenesys.Arn
                   - !GetAtt SFPostCTRProcessing.Arn
+                  - !GetAtt SFSummarize.Arn
         - PolicyName: CloudWatchLogs
           PolicyDocument:
             Statement:
@@ -302,6 +352,7 @@ Resources:
         SFFinalProcessingArn: !GetAtt SFFinalProcessing.Arn
         SFCTRGenesysArn: !GetAtt SFCTRGenesys.Arn
         SFPostCTRProcessingArn: !GetAtt SFPostCTRProcessing.Arn
+        SFSummarizeArn: !GetAtt SFSummarize.Arn
       LoggingConfiguration:
         Level: ERROR
         IncludeExecutionData: true
