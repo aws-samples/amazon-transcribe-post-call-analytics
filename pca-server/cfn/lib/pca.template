@@ -239,8 +239,7 @@ Resources:
       Timeout: 900
       Layers:
         - !Ref Boto3Layer
-        - !Ref 
-        
+        - !Ref PyUtilsLayer
       Environment:
         Variables:
           AWS_DATA_PATH: "/opt/models"
