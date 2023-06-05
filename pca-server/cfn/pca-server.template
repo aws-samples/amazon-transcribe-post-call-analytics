@@ -88,6 +88,10 @@ Resources:
           - ShouldDeploySageMakerSummarizer
           - !GetAtt SageMakerTranscriptSummaryStack.Outputs.EndpointName
           - ''
+        SummarizationSagemakerEndpointArn: !If 
+          - ShouldDeploySageMakerSummarizer
+          - !GetAtt SageMakerTranscriptSummaryStack.Outputs.EndpointArn
+          - ''
         SummarizationLLMThirdPartyApiKey: !Ref SummarizationLLMThirdPartyApiKey
         SummarizationLambdaFunctionArn: !Ref SummarizationLambdaFunctionArn
 
