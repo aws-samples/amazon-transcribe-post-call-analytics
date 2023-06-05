@@ -27,6 +27,12 @@ Outputs:
       - ProvisionedSageMakerEndpoint
       - !GetAtt SMProvisionedSummarizationEndpoint.EndpointName
       - !GetAtt SMServerlessSummarizationEndpoint.EndpointName 
+  EndpointArn: 
+    Description: Summarizer Model Endpoint Arn
+    Value: !If
+      - ProvisionedSageMakerEndpoint
+      - !Ref SMProvisionedSummarizationEndpoint
+      - !Ref SMServerlessSummarizationEndpoint
 
 Resources:
   SMSummarizationModel:

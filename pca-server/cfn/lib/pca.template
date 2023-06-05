@@ -35,6 +35,8 @@ Parameters:
     Default: 'DISABLED'
   SummarizationSagemakerEndpointName: 
     Type: String
+  SummarizationSagemakerEndpointArn: 
+    Type: String
   SummarizationLLMThirdPartyApiKey:
     Type: String
   SummarizationLambdaFunctionArn: 
@@ -263,8 +265,7 @@ Resources:
             Effect: Allow
             Action:
               - sagemaker:InvokeEndpoint
-            #Resource: !Sub 'arn:aws:sagemaker:${AWS::Region}:${AWS::AccountId}:endpoint/${SummarizationSagemakerEndpointName}'
-            Resource: !Sub 'arn:aws:sagemaker:${AWS::Region}:${AWS::AccountId}:endpoint/*'
+            Resource: !Ref SummarizationSagemakerEndpointArn
 
   SFAwaitNotification:
     Type: "AWS::Serverless::Function"
