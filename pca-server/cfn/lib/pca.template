@@ -236,11 +236,11 @@ Resources:
   SFSummarize:
     Type: "AWS::Serverless::Function"
     Properties:
+      Runtime: python3.9
       CodeUri:  ../../src/pca
       Handler: pca-aws-sf-summarize.lambda_handler
       Timeout: 900
       Layers:
-        - !Ref Boto3Layer
         - !Ref PyUtilsLayer
       Environment:
         Variables:

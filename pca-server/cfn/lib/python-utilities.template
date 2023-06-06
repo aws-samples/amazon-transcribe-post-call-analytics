@@ -14,7 +14,6 @@ Parameters:
     Type: String
     Default: python-utils-layer-v2.zip
 
-
 Resources:
 
   PyUtilsZipFunctionRole:
@@ -80,11 +79,11 @@ Resources:
                                 "-t", "python"], check=True)
                 # PIP - Install requests
                 subprocess.run(["pip", "install",
-                                "requests",
+                                "requests==2.28.1",
                                 "-t", "python"], check=True)
                 # PIP - Install requests
                 subprocess.run(["pip", "install",
-                                "urllib3==1.26.16",
+                                "urllib3<2.0",
                                 "-t", "python"], check=True)
                 # Zip up everything that we downloaded
                 with ZipFile(zip_file_name, 'w') as zipObj:
@@ -108,7 +107,7 @@ Resources:
     Type: Custom::PyUtilsZip
     Properties:
       ServiceToken: !GetAtt PyUtilZipFunction.Arn
-      Version: 1.0
+      Version: 2 # only used as a way to force a custom resource update
 
   PyUtilsLayer:
     Type: "AWS::Lambda::LayerVersion"
