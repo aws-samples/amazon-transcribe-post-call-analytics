@@ -11,7 +11,7 @@ import pcaconfiguration as cf
 import pcaresults
 import json
 import re
-#import requests
+import requests
 
 SUMMARIZE_TYPE = os.getenv('SUMMARY_TYPE', 'DISABLED')
 ANTHROPIC_MODEL_IDENTIFIER = os.getenv('ANTHROPIC_MODEL_IDENTIFIER', 'claude-instant-v1-100k')
@@ -86,10 +86,9 @@ def generate_anthropic_summary(transcript):
     }
     response = requests.post(ANTHROPIC_ENDPOINT_URL, headers=headers, data=json.dumps(data))
     print("API Response:", response)
-    #summary = json.loads(response.text)["completion"].strip()
-    #print("Summary: ", summary)
-    #return summary
-    return ""
+    summary = json.loads(response.text)["completion"].strip()
+    print("Summary: ", summary)
+    return summary
 
 def lambda_handler(event, context):
     """
