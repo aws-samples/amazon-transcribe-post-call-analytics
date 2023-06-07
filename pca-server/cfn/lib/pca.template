@@ -50,6 +50,7 @@ Globals:
 
 Conditions:
   ProvisionedSageMakerEndpoint: !Equals [!Ref CallSummarization, "SAGEMAKER"]
+  HasCustomSummarizerLambda: !Equals [!Ref CallSummarization, "LAMBDA"]
 
 Resources:
   FFMPEGLayer:
@@ -272,17 +273,27 @@ Resources:
         - arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess
         - arn:aws:iam::aws:policy/AmazonS3FullAccess
         - Statement:
-          - Sid: InvokeSummarizer
-            Effect: Allow
-            Action:
-              - sagemaker:InvokeEndpoint
-            Resource: !Ref SummarizationSagemakerEndpointArn
-        - Statement:
           - Sid: InvokeGetTranscript
             Effect: Allow
             Action:
               - lambda:InvokeFunction
             Resource: !GetAtt SFFetchTranscript.Arn
+          - !If 
+            - ProvisionedSageMakerEndpoint
+            - Sid: InvokeSummarizer
+              Effect: Allow
+              Action:
+                - sagemaker:InvokeEndpoint
+              Resource: !Ref SummarizationSagemakerEndpointArn
+            - !Ref "AWS::NoValue"
+          - !If 
+            - HasCustomSummarizerLambda
+            - Sid: SummarizationLambda
+              Effect: Allow
+              Action:
+                - lambda:InvokeFunction
+              Resource: !Ref SummarizationLambdaFunctionArn
+            - !Ref "AWS::NoValue"
 
   SFAwaitNotification:
     Type: "AWS::Serverless::Function"
