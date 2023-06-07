@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import useSWR from "swr";
-import { Button, Form } from "react-bootstrap";
+/* import { Form } from "react-bootstrap";*/
 import DatePicker from "react-datepicker";
 import {
   entities as getEntities,
@@ -11,6 +11,8 @@ import { ContactTable } from "../components/ContactTable";
 import { useDangerAlert } from "../hooks/useAlert";
 import { MultiSelect } from "../components/MultiSelect";
 import { Select } from "../components/Select";
+import { ContentLayout } from "@cloudscape-design/components";
+import { Button, Link, Header, Form, Grid, Container, SpaceBetween, Input, FormField, TextContent } from '@cloudscape-design/components';
 
 
 const sentimentWhat = [
@@ -81,143 +83,153 @@ function Search({ setAlert }) {
   useDangerAlert(errorEntities || errorLanguageCodes || errorResults, setAlert);
 
   return (
-    <>
-      <h3>Search</h3>
-      <Form className="mb-5">
-        <Form.Group className="mb-5">
-          <Form.Label>
-            <h5>Language Code</h5>
-          </Form.Label>
-          <Select
-            onChange={(event) => handleQueryInput(event.value, "language")}
-            options={(languageCodes || []).map((code, i) => ({
-              label: code,
-              value: code,
-            }))}
-            isLoading={!languageCodes && !errorLanguageCodes}
-            value={
-              query.language
-                ? { label: query.language, value: query.language }
-                : null
-            }
-          />
-          <Button
-            className="mt-2"
-            variant="outline-secondary"
-            onClick={() => {
-              handleQueryInput(null, "language");
-            }}
-          >
-            Clear
-          </Button>
-        </Form.Group>
-
-        <Form.Group className="mb-5">
-          <Form.Label>
-            <h5>Date Range</h5>
-          </Form.Label>
-          <DatePicker
-            selectsRange
-            startDate={query.timestampFrom}
-            endDate={query.timestampTo}
-            dateFormat="yyyy-MM-dd"
-            onChange={handleDates}
-            maxDate={new Date()}
-            placeholderText="Select a start and end date"
-          />
-          <Button
-            className="mt-2"
-            variant="outline-secondary"
-            onClick={() => {
-              handleQueryInput(null, "timestampTo");
-              handleQueryInput(null, "timestampFrom");
-            }}
-          >
-            Clear
-          </Button>
-        </Form.Group>
-
-        <Form.Group className="mb-5">
-          <Form.Label>
-            <h5>Sentiment</h5>
-          </Form.Label>
-          <div className="d-flex  gap-3">
-            <p className="align-self-end mb-0">The</p>
-            <Select
-              className="flex-grow-1"
-              options={sentimentWhat}
-              onChange={(event) =>
-                handleQueryInput(event.value, "sentimentWhat")
-              }
-              value={
-                sentimentWhat.find((o) => o.value === query.sentimentWhat) ||
-                null
-              }
-            />
-            <p className="align-self-end mb-0"> sentiment of the</p>
-            <Select
-              className="flex-grow-1"
-              options={sentimentWho}
-              onChange={(event) =>
-                handleQueryInput(event.value, "sentimentWho")
-              }
-              value={
-                sentimentWho.find((o) => o.value === query.sentimentWho) || null
-              }
-            />
-            <p className="align-self-end mb-0">is</p>
-            <Select
-              className="flex-grow-1"
-              options={sentimentDirection}
-              onChange={(event) =>
-                handleQueryInput(event.value, "sentimentDirection")
-              }
-              value={
-                sentimentDirection.find(
-                  (o) => o.value === query.sentimentDirection
-                ) || null
-              }
-            />
-          </div>
-          <Button
-            className="mt-2"
-            variant="outline-secondary"
-            onClick={() => {
-              handleQueryInput(null, "sentimentWhat");
-              handleQueryInput(null, "sentimentWho");
-              handleQueryInput(null, "sentimentDirection");
-            }}
-          >
-            Clear
-          </Button>
-        </Form.Group>
-
-        <Form.Group className="mb-5">
-          <Form.Label>
-            <h5>Entities</h5>
-          </Form.Label>
-          <MultiSelect
-            options={(entities || []).map((entity) => ({
-              value: entity,
-              label: entity,
-            }))}
-            onChange={(value) => handleQueryInput(value, "entity")}
-            isLoading={!entities && !errorEntities}
-          />
-        </Form.Group>
-        <Button bg={"primary"} onClick={onClick}>
+  <ContentLayout 
+    header={
+      <Header
+        variant="h1"
+        info={<Link variant="info" ariaLabel="Info goes here.">Info</Link>}>
           Search
-        </Button>
-      </Form>
+      </Header>
+    }>
+      <Container>
+        <Form>
+          <SpaceBetween direction="vertical" size="l">
+            <FormField label="Language Code">
+              <SpaceBetween direction="horizontal" size="l">
+                <Select
+                  onChange={(event) => handleQueryInput(event.value, "language")}
+                  options={(languageCodes || []).map((code, i) => ({
+                    label: code,
+                    value: code,
+                  }))}
+                  isLoading={!languageCodes && !errorLanguageCodes}
+                  value={
+                    query.language
+                      ? { label: query.language, value: query.language }
+                      : null
+                  }
+                />
+                <Button
+                  className="mt-2"
+                  variant="outline-secondary"
+                  onClick={() => {
+                    handleQueryInput(null, "language");
+                  }}
+                >
+                Clear
+                </Button>
+              </SpaceBetween>
+            </FormField>
+            <FormField label="Date Range">
+              <SpaceBetween direction="horizontal" size="l">
+                <DatePicker
+                  selectsRange
+                  startDate={query.timestampFrom}
+                  endDate={query.timestampTo}
+                  dateFormat="yyyy-MM-dd"
+                  onChange={handleDates}
+                  maxDate={new Date()}
+                  placeholderText="Select a start and end date"
+                />
+                <Button
+                  className="mt-2"
+                  variant="outline-secondary"
+                  onClick={() => {
+                    handleQueryInput(null, "timestampTo");
+                    handleQueryInput(null, "timestampFrom");
+                  }}
+                >
+                  Clear
+                </Button>
+              </SpaceBetween>
+          </FormField>
+          <FormField label="Sentiment">
+            <SpaceBetween direction="horizontal" size="l">
+              <p className="align-self-end mb-0">The</p>
+              <Select
+                className="flex-grow-1"
+                options={sentimentWhat}
+                onChange={(event) =>
+                  handleQueryInput(event.value, "sentimentWhat")
+                }
+                value={
+                  sentimentWhat.find((o) => o.value === query.sentimentWhat) ||
+                  null
+                }
+              />
+              <p className="align-self-end mb-0"> sentiment of the</p>
+              <Select
+                className="flex-grow-1"
+                options={sentimentWho}
+                onChange={(event) =>
+                  handleQueryInput(event.value, "sentimentWho")
+                }
+                value={
+                  sentimentWho.find((o) => o.value === query.sentimentWho) || null
+                }
+              />
+              <p className="align-self-end mb-0">is</p>
+              <Select
+                className="flex-grow-1"
+                options={sentimentDirection}
+                onChange={(event) =>
+                  handleQueryInput(event.value, "sentimentDirection")
+                }
+                value={
+                  sentimentDirection.find(
+                    (o) => o.value === query.sentimentDirection
+                  ) || null
+                }
+              />
+              <Button
+                className="mt-2"
+                variant="outline-secondary"
+                onClick={() => {
+                  handleQueryInput(null, "sentimentWhat");
+                  handleQueryInput(null, "sentimentWho");
+                  handleQueryInput(null, "sentimentDirection");
+                }}
+              >
+                Clear
+              </Button>
+            </SpaceBetween>
+          </FormField>
+          <FormField label="Entities">
+            <SpaceBetween direction="horizontal" size="l">
+              <MultiSelect
+                options={(entities || []).map((entity) => ({
+                  value: entity,
+                  label: entity,
+                }))}
+                onChange={(value) => handleQueryInput(value, "entity")}
+                isLoading={!entities && !errorEntities}
+                />
+            </SpaceBetween>
+          </FormField>
 
+          <Button bg={"primary"} onClick={onClick}>
+            Search
+          </Button>
+            
+          <hr/>
+        </SpaceBetween>
+      </Form>
       {!editing && (
-        <ContactTable
+          <ContactTable
+            header={
+              <Header>
+              Search Results
+              </Header>
+            }
+    
+            variant="embedded"
           data={results}
           loading={!results && !errorResults}
           empty={<NoMatches />}
         />
       )}
-    </>
+      </Container>
+    </ContentLayout>
   );
 }
 const NoMatches = () => (

@@ -63,7 +63,7 @@ const NoMatches = ({ children }) => (
   </tr>
 );
 
-export const ContactTable = ({ data = [], loading = false, empty }) => {
+export const ContactTable = ({ data = [], loading = false, empty, header, variant='container' }) => {
   const history = useHistory();
 
   const onClick = (e) => {
@@ -129,7 +129,10 @@ export const ContactTable = ({ data = [], loading = false, empty }) => {
 
   return (
     <Table
+
       {...collectionProps}
+      header={header}
+      variant={variant}
       columnDefinitions={columns}
       items={items}
       //pagination={<Pagination {...paginationProps} />}

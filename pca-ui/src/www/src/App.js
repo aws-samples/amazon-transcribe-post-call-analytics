@@ -20,12 +20,8 @@ const routes = [
     Breadcrumb: () => {
       return <BreadcrumbGroup
         items={[
-          { text: "Home", href: "#" },
-          { text: "Components", href: "#components" },
-          {
-            text: "Breadcrumb group",
-            href: "#components/breadcrumb-group"
-          }
+          { text: "Home", href: "../" },
+          { text: "Search", href: "search" }
         ]}
         ariaLabel="Breadcrumbs"
       />
@@ -67,7 +63,7 @@ function Navigation({ userName, email }) {
   return (
     <TopNavigation
       identity={{
-        href: "#",
+        href: "/",
         title: "Amazon Transcribe Post-Call Analytics",
         iconName: "settings"
       }}
@@ -80,6 +76,13 @@ function Navigation({ userName, email }) {
         overflowMenuDismissIconAriaLabel: "Close menu"
       }}
       utilities={[
+        {
+          type: "button",
+          text: "Search",
+          iconName: "search",
+          href: "search",
+          externalIconAriaLabel: " (opens in a new tab)"
+        },
         {
           type: "button",
           text: "PCA Blog Post",
