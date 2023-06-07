@@ -20,36 +20,9 @@ ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY','')
 TOKEN_COUNT = int(os.getenv('TOKEN_COUNT', '0')) # default 0 - do not truncate.
 SUMMARY_PROMPT_TEMPLATE = os.getenv('SUMMARY_PROMPT_TEMPLATE',"<br><br>Human:<br>{transcript}<br><br>Summarize the above transcript in no more than 5 sentences, using gender neutral pronouns. Were the caller's needs met during the call?<br><br>Assistant: Here is a summary in 5 sentences:")
 SUMMARY_LAMBDA_ARN = os.getenv('SUMMARY_LAMBDA_ARN','')
+FETCH_TRANSCRIPT_LAMBDA_ARN = os.getenv('FETCH_TRANSCRIPT_LAMBDA_ARN','')
 
-def truncate_number_of_words(transcript_string, truncateLength):
-    #findall can retain carriage returns
-    data = re.findall(r'\S+|\n|.|,',transcript_string)
-    if truncateLength > 0:
-      data = data[0:truncateLength]
-    print('Token Count: ' + str(len(data)))
-    return ''.join(data)
-
-def generate_transcript_string(pca_results):
-    # generate a text transcript:
-    transcripts = []
-    speakers = {}
-    speech_segments = pca_results.create_output_speech_segments()
-    conversation_analytics = pca_results.get_conv_analytics()
-    
-    for speaker in conversation_analytics.speaker_labels:
-        speakers[speaker['Speaker']] = speaker['DisplayText']
-    
-    for segment in speech_segments:
-        speaker = 'Unknown'
-        if segment['SegmentSpeaker'] in speakers:
-            speaker = speakers[segment['SegmentSpeaker']]
-        transcripts.append(f"{speaker}: {segment['DisplayText']}\n")
-    
-    transcript_str = ''.join(transcripts)
-    print(transcript_str)
-    if TOKEN_COUNT > 0:
-        transcript_str = truncate_number_of_words(transcript_str, TOKEN_COUNT)
-    return transcript_str
+lambda_client = boto3.client('lambda')
 
 def generate_sagemaker_summary(transcript):
     summary = 'An error occurred generating Sagemaker summary.'
@@ -90,6 +63,23 @@ def generate_anthropic_summary(transcript):
     print("Summary: ", summary)
     return summary
 
+def get_transcript_str(interimResultsFile):
+    payload = {
+        'interimResultsFile': interimResultsFile,
+        'processTranscript': True, 
+        'tokenCount': TOKEN_COUNT 
+    }
+    print(payload)
+    transcript_response = lambda_client.invoke(
+        FunctionName=FETCH_TRANSCRIPT_LAMBDA_ARN,
+        InvocationType='RequestResponse',
+        Payload=json.dumps(payload)
+    )
+    transcript_data = transcript_response['Payload'].read().decode()
+    transcript_json = json.loads(transcript_data)
+    print(transcript_json)
+    return transcript_json['transcript']
+
 def lambda_handler(event, context):
     """
     Lambda function entrypoint
@@ -106,8 +96,7 @@ def lambda_handler(event, context):
 
     # --------- Summarize Here ----------
     summary = 'No Summary Available'
-    
-    transcript_str = generate_transcript_string(pca_results)
+    transcript_str = get_transcript_str(event["interimResultsFile"])
 
     if SUMMARIZE_TYPE == 'SAGEMAKER':
         try:
