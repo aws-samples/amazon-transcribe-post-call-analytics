@@ -414,6 +414,7 @@ Metadata:
                 - CallSummarization
                 - SummarizationSageMakerInitialInstanceCount
                 - SummarizationLLMThirdPartyApiKey
+                - SummarizationLambdaFunctionArn
             - Label:
                 default: Advanced analytics and reporting
               Parameters:

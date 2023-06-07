@@ -233,6 +233,17 @@ Resources:
         - arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess
         - arn:aws:iam::aws:policy/AmazonS3FullAccess
   
+  SFFetchTranscript:
+    Type: "AWS::Serverless::Function"
+    Properties:
+      Runtime: python3.9
+      CodeUri:  ../../src/pca
+      Handler: pca-aws-fetch-transcript.lambda_handler
+      Timeout: 900
+      Policies:
+        - arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+
   SFSummarize:
     Type: "AWS::Serverless::Function"
     Properties:
@@ -245,6 +256,7 @@ Resources:
       Environment:
         Variables:
           AWS_DATA_PATH: "/opt/models"
+          FETCH_TRANSCRIPT_LAMBDA_ARN: !GetAtt SFFetchTranscript.Arn
           SUMMARY_TYPE: !Ref CallSummarization
           SUMMARY_SAGEMAKER_ENDPOINT: !Ref SummarizationSagemakerEndpointName
           ANTHROPIC_API_KEY: !Ref SummarizationLLMThirdPartyApiKey
@@ -256,7 +268,6 @@ Resources:
             - ProvisionedSageMakerEndpoint
             - 1024
             - 0
-
       Policies:
         - arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess
         - arn:aws:iam::aws:policy/AmazonS3FullAccess
@@ -266,6 +277,12 @@ Resources:
             Action:
               - sagemaker:InvokeEndpoint
             Resource: !Ref SummarizationSagemakerEndpointArn
+        - Statement:
+          - Sid: InvokeGetTranscript
+            Effect: Allow
+            Action:
+              - lambda:InvokeFunction
+            Resource: !GetAtt SFFetchTranscript.Arn
 
   SFAwaitNotification:
     Type: "AWS::Serverless::Function"
