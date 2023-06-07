@@ -13,6 +13,14 @@ import json
 import re
 
 TOKEN_COUNT = int(os.getenv('TOKEN_COUNT', '0')) # default 0 - do not truncate.
+html_remover = re.compile('<[^>]*>')
+filler_remover = re.compile('(^| )([Uu]m|[Uu]h|[Ll]ike|[Mm]hm)[,]?')
+
+def remove_html(transcript_string):
+    return re.sub(html_remover, '', transcript_string)
+
+def remove_filler_words(transcript_string):
+    return re.sub(filler_remover, '', transcript_string)
 
 def truncate_number_of_words(transcript_string, truncateLength):
     #findall can retain carriage returns
@@ -63,6 +71,11 @@ def lambda_handler(event, context):
     if 'tokenCount' in event:
         tokenCount = int(event['tokenCount'])
         transcript_str = truncate_number_of_words(transcript_str, tokenCount)
+
+    if 'processTranscript' in event:
+        processTranscript = event['processTranscript']
+        if processTranscript:
+            transcript_str = remove_filler_words(transcript_str)
 
     return {
         'transcript': transcript_str
