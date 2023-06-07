@@ -80,6 +80,22 @@ def get_transcript_str(interimResultsFile):
     print(transcript_json)
     return transcript_json['transcript']
 
+def generate_custom_lambda_summary(interimResultsFile):
+    payload = {
+        'interimResultsFile': interimResultsFile,
+        'tokenCount': TOKEN_COUNT 
+    }
+    print(payload)
+    lambda_response = lambda_client.invoke(
+        FunctionName=SUMMARY_LAMBDA_ARN,
+        InvocationType='RequestResponse',
+        Payload=json.dumps(payload)
+    )
+    response_data = lambda_response['Payload'].read().decode()
+    response_json = json.loads(response_data)
+    print(response_json)
+    return response_json
+
 def lambda_handler(event, context):
     """
     Lambda function entrypoint
@@ -97,6 +113,7 @@ def lambda_handler(event, context):
     # --------- Summarize Here ----------
     summary = 'No Summary Available'
     transcript_str = get_transcript_str(event["interimResultsFile"])
+    summary_json = None
 
     if SUMMARIZE_TYPE == 'SAGEMAKER':
         try:
@@ -108,10 +125,18 @@ def lambda_handler(event, context):
             summary = generate_anthropic_summary(transcript_str)
         except:
             summary = 'An error occurred generating Anthropic summary.'
+    elif SUMMARIZE_TYPE == 'LAMBDA':
+        try:
+            summary_json = generate_custom_lambda_summary(event["interimResultsFile"])
+        except:
+            summary = 'An error occurred generating summary with custom Lambda function'
     else:
         summary = 'Summarization disabled.'
     
-    pca_results.analytics.summary['Summary'] = summary
+    if summary_json:
+        pca_results.analytics.summary = summary_json
+    else:
+        pca_results.analytics.summary['Summary'] = summary
     print("Summary: " + summary)
     
     # Write out back to interim file
