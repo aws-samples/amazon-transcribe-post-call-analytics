@@ -1007,3 +1007,6 @@ Outputs:
       - !Sub "https://${AWS::Region}.console.aws.amazon.com/cloudformation/home?region=${AWS::Region}#/stacks/outputs?stackId=${PcaDashboards}"
       - "PCA Dashboards not enabled - stack param 'EnablePcaDashboards'"
 
+  FetchTranscriptArn:
+    Description: Lambda function arn that will generate a string of the entire transcript for custom Lambda functions to use.
+    Value: !GetAtt PCAServer.Outputs.FetchTranscriptArn
