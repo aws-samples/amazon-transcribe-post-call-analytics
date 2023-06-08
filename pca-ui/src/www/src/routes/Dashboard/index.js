@@ -229,7 +229,7 @@ function Dashboard({ setAlert }) {
     {
       label: "Job Id",
       value: (d) => (
-        <div className="text-break">
+        <div key='jobIdKey' className="text-break">
           {
             d?.ConversationAnalytics?.SourceInformation[0]?.TranscribeJobInfo
               ?.TranscriptionJobName
@@ -306,7 +306,7 @@ function Dashboard({ setAlert }) {
   };
 
   const issuesTab = () => {
-    return <div>
+    return <div key='issuesTab'>
       {data?.ConversationAnalytics?.IssuesDetected?.length > 0 ? 
         data?.ConversationAnalytics?.IssuesDetected?.map((issue, j) => (
           <Tag key={j}
@@ -316,12 +316,12 @@ function Dashboard({ setAlert }) {
           >
             {issue.Text}
           </Tag>
-        )) : <>No issues detected.</>
+        )) : <div tag='no-issue'>No issues detected.</div>
       }
     </div>
   }
   const actionItemsTab = () => {
-    return <div>
+    return <div key='actionItemsTab'>
       {data?.ConversationAnalytics?.ActionItemsDetected?.length > 0 ? 
       data?.ConversationAnalytics?.ActionItemsDetected?.map(
         (actionItem, j) => (
@@ -333,13 +333,13 @@ function Dashboard({ setAlert }) {
             {actionItem.Text}
           </Tag>
         )
-        ) : <>No action items detected.</>
+        ) : <div tag='no-action-items'>No action items detected.</div>
       }
     </div>
   }
 
   const outcomesTab = () => {
-    return <div>
+    return <div key='outcomesTab'>
       {data?.ConversationAnalytics?.OutcomesDetected?.length > 0 ?
         data?.ConversationAnalytics?.OutcomesDetected?.map(
         (outcome, j ) => (
@@ -351,7 +351,7 @@ function Dashboard({ setAlert }) {
             {outcome.Text}
           </Tag>
         )
-        ): <>No outcomes detected.</>
+        ): <div tag='no-outcomes'>No outcomes detected.</div>
     }
     </div>
   }
@@ -362,14 +362,14 @@ function Dashboard({ setAlert }) {
     <ContentLayout 
     header={
       <Header
-          variant="h1"
+          variant="h2"
           actions={[
-            <Button onClick={swapAgent} disabled={isSwapping} className="float-end">
+            <Button key='swapAgent' onClick={swapAgent} disabled={isSwapping} className="float-end">
               {isSwapping ? "Swapping..." : "Swap Agent/Caller"}
             </Button>
           ]}
-        info={<Link variant="info" ariaLabel="Info goes here.">Info</Link>}>
-          Call Details
+      >
+        Call Details
       </Header>
     }>
     <Grid
@@ -456,7 +456,7 @@ function Dashboard({ setAlert }) {
           }
         >
           {!loudnessData && !error ? (
-            <div>No Speakers</div>
+            <div key='noSpeakers'>No Speakers</div>
           ) : (
               <LoudnessChart loudnessData={loudnessData} speakerLabels={speakerLabels} />
           )}
@@ -521,7 +521,7 @@ function Dashboard({ setAlert }) {
               <ValueWithLabel key={i} label={entry.label}>
                 {entry.value}
               </ValueWithLabel>
-            )) : "No Summary Available"}
+            )) : <ValueWithLabel key='nosummary'>No Summary Available</ValueWithLabel>}
           </SpaceBetween>
         </Container>
         {isTranscribeCallAnalyticsMode && (
@@ -537,13 +537,13 @@ function Dashboard({ setAlert }) {
               <h4>No summary available.</h4>
             ) : (
                 <SpaceBetween size="l">
-                  <ValueWithLabel label="Issue">
+                  <ValueWithLabel key='issues' label="Issue">
                     {issuesTab()}
                   </ValueWithLabel>
-                  <ValueWithLabel label="Action Items">
+                  <ValueWithLabel key='actionItems' label="Action Items">
                     {actionItemsTab()}
                   </ValueWithLabel>
-                  <ValueWithLabel label="Outcomes">
+                  <ValueWithLabel key='outcomes' label="Outcomes">
                     {outcomesTab()}
                   </ValueWithLabel>
                 </SpaceBetween>
@@ -555,12 +555,13 @@ function Dashboard({ setAlert }) {
             <Header
               variant="h2"
               actions={
-                <SpaceBetween
+                <SpaceBetween 
                   direction="horizontal"
                   size="xs"
                 >
                   {data && (
                     <audio
+                      key='audoiElem'
                       ref={audioElem}
                       className="float-end"
                       controls
@@ -580,6 +581,7 @@ function Dashboard({ setAlert }) {
               Transcript
             </Header>
         }>
+          <div ref={transcriptElem}>
           {!data && !error ? (
             <Placeholder />
           ) : (
@@ -687,7 +689,7 @@ function Dashboard({ setAlert }) {
                 categoryList={s.CategoriesDetected}
               />
             ))
-          )}
+          )}</div>
         </Container>
       </Grid>
     </ContentLayout>

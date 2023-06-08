@@ -6,7 +6,7 @@ export const ListItems = ({ data }) => {
     <ListGroup variant="flush">
       {data.map((v, i) => (
         <ListGroup.Item key={i}>
-          <div>{v}</div>
+          {v}
         </ListGroup.Item>
       ))}
     </ListGroup>
