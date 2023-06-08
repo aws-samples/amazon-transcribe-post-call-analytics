@@ -130,6 +130,9 @@ Resources:
 
 Outputs:
 
+  FetchTranscriptArn:
+    Value: !GetAtt PCA.Outputs.FetchTranscriptArn
+
   RolesForKMSKey:
     Value: !Join
       - ', '
