@@ -120,7 +120,6 @@ Resources:
                   - ssm:GetParameters
                 Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*
 
-
   SFStartTranscribeJob:
     Type: "AWS::Serverless::Function"
     Properties:
@@ -402,3 +401,5 @@ Outputs:
         - !Sub '"${SFTranscribeFailedRole.Arn}"'
         - !Sub '"${SFPostCTRProcessingRole.Arn}"'
 
+  FetchTranscriptArn:
+    Value: !GetAtt SFFetchTranscript.Arn

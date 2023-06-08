@@ -83,7 +83,6 @@ def get_transcript_str(interimResultsFile):
 def generate_custom_lambda_summary(interimResultsFile):
     payload = {
         'interimResultsFile': interimResultsFile,
-        'tokenCount': TOKEN_COUNT 
     }
     print(payload)
     lambda_response = lambda_client.invoke(
