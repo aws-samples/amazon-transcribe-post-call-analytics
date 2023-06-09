@@ -138,6 +138,32 @@
           "IntervalSeconds": 5,
           "ErrorEquals": ["Lambda.Unknown"]
       }],
+      "Next": "Summarize?"
+    }, 
+    "Summarize?" : {
+      "Type": "Choice",
+      "Comment": "Do we have to summarize the call?",
+      "Choices": [
+        {
+          "Variable": "$.summarize",
+          "StringEquals": "true",
+          "Next": "ProcessSummarize"
+        }
+      ],
+      "Default": "NoSummarize"
+    },
+    "NoSummarize": {
+      "Type": "Pass",
+      "Next": "FinalProcessing"
+    },
+    "ProcessSummarize":{
+      "Comment": "Performs summarization after the PostCTRProcessing is completed",
+      "Type": "Task",
+      "Resource":"${SFSummarizeArn}",
+      "Retry": [{
+          "IntervalSeconds": 5,
+          "ErrorEquals": ["Lambda.Unknown"]
+      }],
       "Next": "FinalProcessing"
     },
     "FinalProcessing": {

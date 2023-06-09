@@ -35,7 +35,8 @@ Contains header-level information around the analytics that have been generated,
   "ActionItemsDetected": [ ],
   "OutcomesDetected": [ ],
   "Telephony": [ ],
-  "SourceInformation": [ ]
+  "SourceInformation": [ ],
+  "Summary": { }
 }
 ```
 
@@ -60,6 +61,7 @@ Contains header-level information around the analytics that have been generated,
 | OutcomesDetected     | -        | A list of outcomes detected by *Call Analytics*              |
 | Telephony            | -        | *[Optional]* A list of telephony-specific metadata fields extract from the CTR files (only present if the chosen telephony CTR parser chooses to write this information out) |
 | SourceInformation    | -        | Source-specific details for the conversation.  Contains just one of any of the possible supported sources |
+| Summary    | -        | Key value pairs that define summary topics and values. These will be rendered inside the GenAI Call Summary panel in the user interface. The key will be rendered as the title, and the value is the body. |
 
 ###### SpeakerLabels
 
@@ -288,6 +290,29 @@ Present when the source of the conversation is Amazon Transcribe.  A mixture of 
 | ChannelIdentifcation   | bool   | Indicates whether the transcription job used channel- (true) or speaker-separation (false) |
 | AverageWordConfidence  | float  | Percentage value between 0.00 and 1.00 indicating overall word confidence score for this job |
 | CombinedAnalyticsGraph | string | S3 URL for the pre-generated combined Call Analytics chart   |
+
+###### Summary
+
+This is a set of key value pairs that make up the summary of the call. It is defined as zero or more key value pairs because summaries can be about more than one thing. For example, we can summarize the entire call and also summarize the next steps of the call. 
+
+```json
+"Summary": {
+  "Key1": "Value1",
+  ...
+}
+```
+
+Example:
+
+```json
+"Summary": {
+  "Summary": "The caller called to renew their drivers license.",
+  "Agent Sentiment": "Positive",
+  "Caller Sentiment": "Negative",
+  "Call Category": "DRIVERS_LICENSE_RENEWAL"
+  ...
+}
+```
 
 ### SpeechSegments
 

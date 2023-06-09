@@ -1,5 +1,5 @@
 export const colours = {
-  NonTalkTime: "hsl(190, 100%, 50%)",
+  NonTalkTime: "hsla(190, 100%, 50%,0.5)",
   IVR: "hsl(354, 50%, 50%)",
   spk_0: "hsl(272, 100%, 50%)",
   spk_1: "hsl(45, 100%, 50%)",
@@ -7,6 +7,10 @@ export const colours = {
   spk_3: "hsl(27, 100%, 50%)",
   spk_4: "hsl(300, 75%, 50%)",
   spk_5: "hsl(152, 75%, 50%)",
+  Interruptions: "hsla(152, 75%, 50%, 0.5)",
+  Negative: "rgb(255,0,0)",
+  Positive: "rgb(0,255,0)",
+  Neutral: "rgba(200,200,200,0.5)"
 };
 
 const Entities = {

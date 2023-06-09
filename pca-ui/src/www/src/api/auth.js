@@ -123,6 +123,7 @@ function store(data) {
 }
 
 export function logOut() {
+  console.log("logout clicked");
   localStorage.removeItem("id_token");
   localStorage.removeItem("access_token");
   localStorage.removeItem("refresh_token");

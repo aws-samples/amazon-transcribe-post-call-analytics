@@ -3,7 +3,8 @@ import useSWRInfinite from "swr/infinite";
 import { list } from "../api/api";
 import { ContactTable } from "../components/ContactTable";
 import { useDangerAlert } from "../hooks/useAlert";
-import { Button } from "react-bootstrap";
+import { Button, ContentLayout, Link, Header, BreadcrumbGroup, Grid } from '@cloudscape-design/components';
+
 
 const config = window.pcaSettings;
 
@@ -46,25 +47,41 @@ function Home({ setAlert }) {
   useDangerAlert(error, setAlert);
 
   return (
-    <div>
-      <h3>Home</h3>
-      <ContactTable
-        data={details}
-        loading={!data && !error}
-        empty={<Empty />}
-      />
-      <Button
-        variant="primary"
-        onClick={() => setSize(size + 1)}
-        disabled={isLoadingMore || isReachingEnd}
-      >
-        {isLoadingMore
-          ? "Loading..."
-          : isReachingEnd
-          ? "No more to load"
-          : "Load more"}
-      </Button>
-    </div>
+    <>
+      <ContentLayout 
+        header={
+          <Header
+            variant="h1"
+            description="Select a call record to view details."
+            info={<Link variant="info" ariaLabel="Info goes here.">Info</Link>}>
+            Call List
+          </Header>
+        }>
+        <Grid
+          gridDefinition={[
+            {colspan: { default:12} },
+            {colspan: { default:12} }
+          ]}
+        >
+          <ContactTable
+            data={details}
+            loading={!data && !error}
+            empty={<Empty />}
+          />
+          <Button
+            variant="primary"
+            onClick={() => setSize(size + 1)}
+            disabled={isLoadingMore || isReachingEnd}
+          >
+            {isLoadingMore
+              ? "Loading..."
+              : isReachingEnd
+              ? "No more to load"
+              : "Load more"}
+          </Button>
+        </Grid>
+      </ContentLayout>
+      </>
   );
 }
 
