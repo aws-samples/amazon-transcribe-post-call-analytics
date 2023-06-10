@@ -28,6 +28,20 @@ const routes = [
     }
   },
   {
+    path: "/dashboard/parsedFiles/search",
+    name: "Search",
+    Component: Search,
+    Breadcrumb: () => {
+      return <BreadcrumbGroup
+        items={[
+          { text: "Home", href: "../" },
+          { text: "Search", href: "search" }
+        ]}
+        ariaLabel="Breadcrumbs"
+      />
+    }
+  },
+  {
     path: "/dashboard/:key*",
     name: "Call Details",
     hide: true,
