@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.6.0] - 2023-06-12
 ### Added
-- Experimental generative transcript summarization provides a short paragraph with a synopsis of each completed call; use the built-in summarization model with runs on Amazon Sagemaker, or use Anthropic's Claude API with 100K token limit (eliminating transcript length limitations), or experiment with custom language models or APIs of your choice. See [Transcript Summarization](./README.md#optional-generative-ai-call-summarization)
+- Experimental generative transcript summarization provides a short paragraph with a synopsis of each completed call; use the built-in summarization model which runs on Amazon Sagemaker, or use Anthropic's Claude API with 100K token limit (eliminating transcript length limitations), or experiment with custom language models or APIs of your choice. See [Transcript Summarization](./README.md#optional-generative-ai-call-summarization)
 - User Interface updated to use the (Cloudscape)[https://cloudscape.design/] framework with improved functioanlity and appearance.
 
 ## [0.5.2] - 2023-05-25
