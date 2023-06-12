@@ -80,6 +80,7 @@ class ConversationAnalytics:
         self.issues_detected = []
         self.actions_detected = []
         self.outcomes_detected = []
+        self.summary = {}
         self.telephony = None
         self.transcribe_job = TranscribeJobInfo()
 
@@ -109,7 +110,8 @@ class ConversationAnalytics:
                             "SpeakerLabels": self.speaker_labels,
                             "CustomEntities": self.custom_entities,
                             "EntityRecognizerName": self.entity_recognizer,
-                            "SentimentTrends": self.sentiment_trends}
+                            "SentimentTrends": self.sentiment_trends,
+                            "Summary": self.summary}
 
         # If we don't have a set conversation time then copy the [ProcessTime] field
         if self.conversationTime == "":
@@ -163,6 +165,8 @@ class ConversationAnalytics:
             self.agent_list = json_input["Agents"]
         if "Telephony" in json_input:
             self.telephony = json_input["Telephony"]
+        if "Summary" in json_input:
+            self.summary = json_input["Summary"]
 
         # Load in all analytics data if it exists
         if "CategoriesDetected" in json_input:

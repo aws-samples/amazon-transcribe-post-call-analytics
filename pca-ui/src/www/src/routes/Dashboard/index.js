@@ -8,7 +8,6 @@ import { Entities } from "./Entities";
 import { ValueWithLabel } from "../../components/ValueWithLabel";
 import { Placeholder } from "../../components/Placeholder";
 import { Tag } from "../../components/Tag";
-import { Button, Card, Col, Row, Stack } from "react-bootstrap";
 import { SentimentChart } from "./SentimentChart";
 import { LoudnessChart } from "./LoudnessChart";
 import { SpeakerTimeChart } from "./SpeakerTimeChart";
@@ -19,7 +18,7 @@ import { getEntityColor } from "./colours";
 import { TranscriptOverlay } from "./TranscriptOverlay";
 import { range } from "../../util";
 import { Sentiment } from "../../components/Sentiment";
-import { Tabs, Tab } from "react-bootstrap";
+import { Button, ContentLayout, Link, Header, Grid, Container, SpaceBetween, Input, FormField, TextContent } from '@cloudscape-design/components';
 
 const getSentimentTrends = (d, target, labels) => {
   const id = Object.entries(labels).find(([_, v]) => v === target)?.[0];
@@ -35,6 +34,8 @@ const createLoudnessData = (segment) => {
     x: item,
     y: segment.LoudnessScores[i],
     interruption: segment.SegmentInterruption && item === start ? 100 : null,
+    sentiment: (segment.SentimentIsNegative ? -5 : (segment.SentimentIsPositive && segment.LoudnessScores[i] > 0 ? 5 : 0)),
+    silence: (segment.LoudnessScores[i] === 0 ? true : false)
   }));
 };
 
@@ -63,22 +64,77 @@ function Dashboard({ setAlert }) {
 
   useDangerAlert(error, setAlert);
 
-  const [speakerLabels, setSpeakerLabels] = useState({
-    NonTalkTime: "Silence",
-  });
+  const [speakerLabels, setSpeakerLabels] = useState({});
+
+  const [loudnessData, setLoudnessData] = useState({});
 
   const [isSwapping, setIsSwapping] = useState(false);
+
+  const [genAiQuery, setGenAiQuery] = useState("");
 
   const getValueFor = (input) =>
     Object.entries(speakerLabels).find(([_, label]) => label === input)?.[0];
 
   useEffect(() => {
     const labels = data?.ConversationAnalytics?.SpeakerLabels || [];
+    const newSpeakerLabels = {
+      NonTalkTime: "Silence",
+      Interruptions: "Interruptions",
+      Positive: "Positive",
+      Negative: "Negative",
+      Neutral: "Neutral"
+    };
     labels.map(({ Speaker, DisplayText }) => {
-      return setSpeakerLabels((s) => ({ ...s, [Speaker]: DisplayText }));
+      newSpeakerLabels[Speaker] = DisplayText;
     });
+    setSpeakerLabels(newSpeakerLabels);
   }, [data]);
+  
+  useEffect(() => {
+    const loudness = {};
+    let interruptions = [];
+    let silence = [];
+    let positive = [];
+    let negative = [];
+    let neutral = [];
 
+    Object.keys(speakerLabels).forEach(key => {
+      let keyLoudness = (data?.SpeechSegments || [])
+      .filter((segment) => segment.SegmentSpeaker === key)
+      .map(createLoudnessData)
+      .flat();
+      
+      loudness[key] = keyLoudness;
+      let newInterruptions = keyLoudness.filter((d) => d.interruption)
+        .map((d) => ({ y: d.interruption, x: d.x }))
+      interruptions = interruptions.concat(newInterruptions)
+
+      let newSilence = keyLoudness.filter((d) => d.silence)
+        .map((d) => ({ x: d.x, y: 100 }))
+      silence = silence.concat(newSilence);
+
+      keyLoudness.forEach((item) => {
+        let sentimentItem = {
+          x: item.x,
+          y: 10,
+          sentiment: item.sentiment
+        };
+        if (item.sentiment > 0) positive.push(sentimentItem)
+        else if (item.sentiment < 0) negative.push(sentimentItem)
+        else neutral.push(sentimentItem);
+      });
+
+    });
+    loudness['Interruptions'] = interruptions;
+    loudness['NonTalkTime'] = silence;
+    loudness['Positive'] = positive;
+    loudness['Neutral'] = neutral;
+    loudness['Negative'] = negative;
+    
+    setLoudnessData(loudness);
+  }, [speakerLabels])
+
+  /*
   const agentLoudness = (data?.SpeechSegments || [])
     .filter((segment) => segment.SegmentSpeaker === getValueFor("Agent"))
     .map(createLoudnessData)
@@ -87,7 +143,7 @@ function Dashboard({ setAlert }) {
   const customerLoudness = (data?.SpeechSegments || [])
     .filter((segment) => segment.SegmentSpeaker === getValueFor("Customer"))
     .map(createLoudnessData)
-    .flat();
+    .flat();*/
 
   const swapAgent = async () => {
     try {
@@ -173,7 +229,7 @@ function Dashboard({ setAlert }) {
     {
       label: "Job Id",
       value: (d) => (
-        <div className="text-break">
+        <div key='jobIdKey' className="text-break">
           {
             d?.ConversationAnalytics?.SourceInformation[0]?.TranscribeJobInfo
               ?.TranscriptionJobName
@@ -223,12 +279,20 @@ function Dashboard({ setAlert }) {
     },
   ];
 
-  const audioEndTimestamps = (data?.SpeechSegments || [])
-  .map(({WordConfidence}) => WordConfidence)
-  .flat()
-  .reduce((accumulator, item) => ([...accumulator, item.EndTime]),[]);
+  const genAiSummary = (data?.ConversationAnalytics?.Summary ?
+    Object.entries(data?.ConversationAnalytics?.Summary).map(([key, value]) => {
+    return {
+      label: key,
+      value
+    }
+  }) : []);
 
-  const onAudioPLayTimeUpdate = () => {
+  const audioEndTimestamps = (data?.SpeechSegments || [])
+    .map(({WordConfidence}) => WordConfidence)
+    .flat()
+    .reduce((accumulator, item) => ([...accumulator, item.EndTime]),[]);
+
+  const onAudioPlayTimeUpdate = () => {
     let elementEndTime = undefined;
     for (let i = 0; i < audioEndTimestamps.length; i++) {
       if (audioElem.current.currentTime < audioEndTimestamps[i]) {
@@ -241,106 +305,185 @@ function Dashboard({ setAlert }) {
     transcriptElem.current.querySelector('span[data-end="'+elementEndTime+'"]')?.classList?.add("playing");
   };
 
+  const issuesTab = () => {
+    return <div key='issuesTab'>
+      {data?.ConversationAnalytics?.IssuesDetected?.length > 0 ? 
+        data?.ConversationAnalytics?.IssuesDetected?.map((issue, j) => (
+          <Tag key={j}
+            style={{
+              "--highlight-colour": "yellow",
+            }}
+          >
+            {issue.Text}
+          </Tag>
+        )) : <div tag='no-issue'>No issues detected.</div>
+      }
+    </div>
+  }
+  const actionItemsTab = () => {
+    return <div key='actionItemsTab'>
+      {data?.ConversationAnalytics?.ActionItemsDetected?.length > 0 ? 
+      data?.ConversationAnalytics?.ActionItemsDetected?.map(
+        (actionItem, j) => (
+          <Tag key={j}
+            style={{
+              "--highlight-colour": "LightPink",
+            }}
+          >
+            {actionItem.Text}
+          </Tag>
+        )
+        ) : <div tag='no-action-items'>No action items detected.</div>
+      }
+    </div>
+  }
+
+  const outcomesTab = () => {
+    return <div key='outcomesTab'>
+      {data?.ConversationAnalytics?.OutcomesDetected?.length > 0 ?
+        data?.ConversationAnalytics?.OutcomesDetected?.map(
+        (outcome, j ) => (
+          <Tag key={j}
+            style={{
+              "--highlight-colour": "Aquamarine",
+            }}
+          >
+            {outcome.Text}
+          </Tag>
+        )
+        ): <div tag='no-outcomes'>No outcomes detected.</div>
+    }
+    </div>
+  }
+
+  
+
   return (
-    <Stack direction="vertical" gap={4}>
-      <div>
-        <h3 className="d-inline">Call Details </h3>
-        <Button onClick={swapAgent} disabled={isSwapping} className="float-end">
-          {isSwapping ? "Swapping..." : "Swap Agent/Caller"}
-        </Button>
-      </div>
-      <div className="d-flex gap-2 flex-wrap flex-lg-nowrap">
-        <Card className="call-details-col">
-          <Card.Header>Record Details</Card.Header>
-          <Card.Body>
-            <Row>
-              <Col>
-                {callDetailColumn.map((entry, j) => (
-                  <ValueWithLabel key={j} label={entry.label}>
-                    {!data && !error ? (
-                      <Placeholder />
-                    ) : (
-                      entry.value(data) || "-"
-                    )}
-                  </ValueWithLabel>
-                ))}
-              </Col>
-            </Row>
-          </Card.Body>
-        </Card>
-        <Card className="transcribe-col">
-          <Card.Header>Transcribe Details</Card.Header>
-          <Card.Body>
-            <Row>
-              <Col>
-                {transcribeDetailColumn.map((entry, i) => (
-                  <ValueWithLabel key={i} label={entry.label}>
-                    {!data && !error ? (
-                      <Placeholder />
-                    ) : (
-                      entry.value(data) || "-"
-                    )}
-                  </ValueWithLabel>
-                ))}
-              </Col>
-            </Row>
-          </Card.Body>
-        </Card>
-        <Card className="charts">
-          <Card.Body>
-            <Row>
-              <Col>
-                <div>
-                  <h5 className="text-muted">Sentiment</h5>
-                  <SentimentChart
-                    data={data?.ConversationAnalytics?.SentimentTrends}
-                    speakerOrder={speakerLabels}
-                  />
-                </div>
-                <div>
-                  <h5 className="text-muted">Speaker Time</h5>
-                  <SpeakerTimeChart
-                    data={Object.entries(
-                      data?.ConversationAnalytics?.SpeakerTime || {}
-                    ).map(([key, value]) => ({
-                      value: value.TotalTimeSecs,
-                      label: speakerLabels[key],
-                      channel: key
-                    }))}
-                    speakerOrder={speakerLabels}
-                  />
-                </div>
-              </Col>
-            </Row>
-          </Card.Body>
-        </Card>
-      </div>
-      {data?.ConversationAnalytics?.CombinedAnalyticsGraph ? (
-        <Card>
-          {!data && !error ? (
-            <Placeholder />
+    <ContentLayout 
+    header={
+      <Header
+          variant="h2"
+          actions={[
+            <Button key='swapAgent' onClick={swapAgent} disabled={isSwapping} className="float-end">
+              {isSwapping ? "Swapping..." : "Swap Agent/Caller"}
+            </Button>
+          ]}
+      >
+        Call Details
+      </Header>
+    }>
+    <Grid
+      gridDefinition={[
+        { colspan: { l: 4, m: 4, default: 12 } },
+        { colspan: { l: 4, m: 4, default: 12 } },
+        { colspan: { l: 4, m: 4, default: 12 } },
+        { colspan: { l: 12, m: 12, default: 12 } },
+        { colspan: { l: 6, m: 6, default: 12 } },
+        { colspan: { l: 6, m: 6, default: 12 } },
+        { colspan: { l: 6, m: 6, default: 12 } },
+        { colspan: { l: 6, m: 6, default: 12 } },
+        { colspan: { l: 12, m: 12, default: 12 } },
+      ]}
+      >
+
+        <Container
+          fitHeight={true}
+          header={
+            <Header variant="h2">
+              Call Metadata
+            </Header>
+          }
+        >
+          <SpaceBetween size="m">
+            {callDetailColumn.map((entry, j) => (
+              <ValueWithLabel key={j} label={entry.label}>
+                {!data && !error ? (
+                  <Placeholder />
+                ) : (
+                  entry.value(data) || "-"
+                )}
+              </ValueWithLabel>
+            ))}
+          </SpaceBetween>
+        </Container>
+        <Container
+          fitHeight={true}
+          header={
+            <Header variant="h2">
+              Transcribe Details
+            </Header>
+          }
+        >
+          <SpaceBetween size="m">
+            {transcribeDetailColumn.map((entry, i) => (
+              <ValueWithLabel key={i} label={entry.label}>
+                {!data && !error ? (
+                  <Placeholder />
+                ) : (
+                  entry.value(data) || "-"
+                )}
+              </ValueWithLabel>
+            ))}
+          </SpaceBetween>
+        </Container>
+        <Container
+          header={
+            <Header variant="h2">
+              Sentiment
+            </Header>
+          }>
+            <SentimentChart
+              data={data?.ConversationAnalytics?.SentimentTrends}
+              speakerOrder={speakerLabels}
+            />
+            <Header variant="h2">Speaker Time</Header>
+            <SpeakerTimeChart
+              data={Object.entries(
+                data?.ConversationAnalytics?.SpeakerTime || {}
+              ).map(([key, value]) => ({
+                value: value.TotalTimeSecs,
+                label: speakerLabels[key],
+                channel: key
+              }))}
+              speakerOrder={speakerLabels}
+            />
+        </Container>
+        <Container
+          header={
+            <Header variant="h2">
+              Loudness/Sentiment
+            </Header>
+          }
+        >
+          {!loudnessData && !error ? (
+            <div key='noSpeakers'>No Speakers</div>
           ) : (
-            <img
-              src={data?.ConversationAnalytics.CombinedAnalyticsGraph}
-              alt="Chart displaying the loudness of the agent and customer over time (available with Transcribe Call Analytics only)"
-            ></img>
+              <LoudnessChart loudnessData={loudnessData} speakerLabels={speakerLabels} />
           )}
-        </Card>
-      ) : null}
-      <Card>
-        <Card.Header>Entities</Card.Header>
-        <Card.Body>
+        </Container>
+        <Container 
+          fitHeight={true}
+          header={
+            <Header variant="h2">
+              Entities
+            </Header>
+          }
+        >
           {!data && !error ? (
             <Placeholder />
           ) : (
             <Entities data={data?.ConversationAnalytics?.CustomEntities} />
           )}
-        </Card.Body>
-      </Card>
-      {isTranscribeCallAnalyticsMode && (
-        <Card>
-          <Card.Header>Categories</Card.Header>
-          <Card.Body>
+        </Container>
+
+        {isTranscribeCallAnalyticsMode && (
+          <Container
+            fitHeight={true}
+            header={
+              <Header variant="h2">
+                Categories
+              </Header>
+          }>
             {!data && !error ? (
               <Placeholder />
             ) : (
@@ -350,91 +493,95 @@ function Dashboard({ setAlert }) {
                 )}
               />
             )}
-          </Card.Body>
-        </Card>
-      )}
-      {isTranscribeCallAnalyticsMode && (
-        <Card>
-          <Card.Header>Summary</Card.Header>
-          <Card.Body>
+          </Container>
+        )}
+        
+        <Container
+          fitHeight={true}
+          header={
+            <Header variant="h2">
+              GenAI Transcript Summary
+            </Header>
+          }
+          /* For future use. :) 
+          footer={
+            <Grid gridDefinition={[{ colspan: {default: 12, xxs: 9} }, {default: 12, xxs: 3}]}>
+              <Input
+              placeholder="Enter a question about the call."
+              onChange={({ detail }) => setGenAiQuery(detail.value)}
+              value={genAiQuery} />
+              <Button>
+                Submit
+              </Button>
+            </Grid>
+          }*/
+        >
+          <SpaceBetween size="m">
+            {genAiSummary.length > 0 ? genAiSummary.map((entry, i) => (
+              <ValueWithLabel key={i} label={entry.label}>
+                {entry.value}
+              </ValueWithLabel>
+            )) : <ValueWithLabel key='nosummary'>No Summary Available</ValueWithLabel>}
+          </SpaceBetween>
+        </Container>
+        {isTranscribeCallAnalyticsMode && (
+          <Container
+            fitHeight={true}
+            header={
+                <Header variant="h2">
+                  Call Analytics Summary
+                </Header>
+            }
+          >
             {!data && !error ? (
-              <Placeholder />
+              <h4>No summary available.</h4>
             ) : (
-              <Tabs>
-                  { data?.ConversationAnalytics?.IssuesDetected? (
-                    <Tab title="Issues" eventKey="Issues" className="pt-4">
-                      {data?.ConversationAnalytics?.IssuesDetected?.map(
-                          (issue, j) => (
-                            <Tag key={j}
-                              style={{
-                                "--highlight-colour": "yellow",
-                              }}
-                            >
-                              {issue.Text}
-                            </Tag>
-                          )
-                        )}
-                    </Tab>
-                  ) : 
-                    (<Fragment/>)
-                  }
-                  { data?.ConversationAnalytics?.ActionItemsDetected? (
-                    <Tab title="Action Items"  eventKey="ActionItems" className="pt-4">
-                      {data?.ConversationAnalytics?.ActionItemsDetected?.map(
-                          (actionItem, j) => (
-                            <Tag key={j}
-                              style={{
-                                "--highlight-colour": "LightPink",
-                              }}
-                            >
-                              {actionItem.Text}
-                            </Tag>
-                          )
-                      )}
-                    </Tab>
-                    ) : (<Fragment/>)
-                  }
-                  {data?.ConversationAnalytics?.OutcomesDetected? (
-                    <Tab title="Outcomes" eventKey="Outcomes" className="pt-4">
-                      {data?.ConversationAnalytics?.OutcomesDetected?.map(
-                        (outcome, j ) => (
-                          <Tag key={j}
-                            style={{
-                              "--highlight-colour": "Aquamarine",
-                            }}
-                          >
-                            {outcome.Text}
-                          </Tag>
-                        )
-                      )}
-                  </Tab>
-                  ) : (<Fragment/>)}
-              </Tabs>
-              
-            )}
-          </Card.Body>
-        </Card>
-      )}
-      <Card>
-        <Card.Header className="sticky-top pt-3 bg-light">
-          <div className="d-inline-flex pb-3">Transcript</div>
-          {data && (
-            <audio
-              ref={audioElem}
-              className="float-end"
-              controls
-              src={
-                data?.ConversationAnalytics?.SourceInformation[0]
-                  ?.TranscribeJobInfo?.MediaFileUri
-              }
-              onTimeUpdate={onAudioPLayTimeUpdate}
-            >
-              Your browser does not support the
-              <code>audio</code> element.
-            </audio>
+                <SpaceBetween size="l">
+                  <ValueWithLabel key='issues' label="Issue">
+                    {issuesTab()}
+                  </ValueWithLabel>
+                  <ValueWithLabel key='actionItems' label="Action Items">
+                    {actionItemsTab()}
+                  </ValueWithLabel>
+                  <ValueWithLabel key='outcomes' label="Outcomes">
+                    {outcomesTab()}
+                  </ValueWithLabel>
+                </SpaceBetween>
           )}
-        </Card.Header>
-        <Card.Body className="pt-4" ref={transcriptElem}>
+        </Container>
+        )}
+        <Container
+          header={
+            <Header
+              variant="h2"
+              actions={
+                <SpaceBetween 
+                  direction="horizontal"
+                  size="xs"
+                >
+                  {data && (
+                    <audio
+                      key='audoiElem'
+                      ref={audioElem}
+                      className="float-end"
+                      controls
+                      src={
+                        data?.ConversationAnalytics?.SourceInformation[0]
+                          ?.TranscribeJobInfo?.MediaFileUri
+                      }
+                      onTimeUpdate={onAudioPlayTimeUpdate}
+                    >
+                      Your browser does not support the
+                      <code>audio</code> element.
+                    </audio>
+                  )}
+                </SpaceBetween>
+              }
+            >
+              Transcript
+            </Header>
+        }>
+          <div ref={transcriptElem}>
           {!data && !error ? (
             <Placeholder />
           ) : (
@@ -542,10 +689,11 @@ function Dashboard({ setAlert }) {
                 categoryList={s.CategoriesDetected}
               />
             ))
-          )}
-        </Card.Body>
-      </Card>
-    </Stack>
+          )}</div>
+        </Container>
+      </Grid>
+    </ContentLayout>
+
   );
 }
 

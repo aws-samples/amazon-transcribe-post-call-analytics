@@ -12,10 +12,6 @@ Parameters:
     Type: String
     Default: ffmpeg.zip
 
-  MPLZipName:
-    Type: String
-    Default: matplotlib-layer.zip
-
   Boto3Layer:
     Type: String
 
@@ -34,11 +30,27 @@ Parameters:
     Type: AWS::SSM::Parameter::Value<String>
     Default: InputBucketName
 
+  CallSummarization: 
+    Type: String
+    Default: 'DISABLED'
+  SummarizationSagemakerEndpointName: 
+    Type: String
+  SummarizationSagemakerEndpointArn: 
+    Type: String
+  SummarizationLLMThirdPartyApiKey:
+    Type: String
+  SummarizationLambdaFunctionArn: 
+    Type: String
+
 Globals:
   Function:
     Runtime: python3.8
     MemorySize: 1024
     Timeout: 60
+
+Conditions:
+  ProvisionedSageMakerEndpoint: !Equals [!Ref CallSummarization, "SAGEMAKER"]
+  HasCustomSummarizerLambda: !Equals [!Ref CallSummarization, "LAMBDA"]
 
 Resources:
   FFMPEGLayer:
@@ -47,18 +59,6 @@ Resources:
       Content:
         S3Bucket: !Ref SupportFilesBucketName
         S3Key: !Ref FFMPEGZipName
-
-  MPLLayer:
-    Type: "AWS::Lambda::LayerVersion"
-    Properties:
-      CompatibleArchitectures:
-        - x86_64
-      CompatibleRuntimes:
-        - python3.8
-        - python3.9
-      Content:
-        S3Bucket: !Ref SupportFilesBucketName
-        S3Key: !Ref MPLZipName
 
   TranscribeRole:
     Type: "AWS::IAM::Role"
@@ -120,7 +120,6 @@ Resources:
                   - ssm:GetParameters
                 Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*
 
-
   SFStartTranscribeJob:
     Type: "AWS::Serverless::Function"
     Properties:
@@ -181,7 +180,6 @@ Resources:
       Timeout: 900
       Layers:
         - !Ref FFMPEGLayer
-        - !Ref MPLLayer
         - !Ref Boto3Layer
       Environment:
         Variables:
@@ -234,7 +232,68 @@ Resources:
       Policies:
         - arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess
         - arn:aws:iam::aws:policy/AmazonS3FullAccess
-        
+  
+  SFFetchTranscript:
+    Type: "AWS::Serverless::Function"
+    Properties:
+      Runtime: python3.9
+      CodeUri:  ../../src/pca
+      Handler: pca-aws-fetch-transcript.lambda_handler
+      Timeout: 900
+      Policies:
+        - arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+
+  SFSummarize:
+    Type: "AWS::Serverless::Function"
+    Properties:
+      Runtime: python3.9
+      CodeUri:  ../../src/pca
+      Handler: pca-aws-sf-summarize.lambda_handler
+      Timeout: 900
+      Layers:
+        - !Ref PyUtilsLayer
+      Environment:
+        Variables:
+          AWS_DATA_PATH: "/opt/models"
+          FETCH_TRANSCRIPT_LAMBDA_ARN: !GetAtt SFFetchTranscript.Arn
+          SUMMARY_TYPE: !Ref CallSummarization
+          SUMMARY_SAGEMAKER_ENDPOINT: !Ref SummarizationSagemakerEndpointName
+          ANTHROPIC_API_KEY: !Ref SummarizationLLMThirdPartyApiKey
+          SUMMARY_LAMBDA_ARN: !Ref SummarizationLambdaFunctionArn
+          SUMMARY_PROMPT_TEMPLATE: "<br><br>Human:<br>{transcript}<br><br>Summarize the above transcript in no more than 5 sentences, using gender neutral pronouns. Were the caller's needs met during the call?<br><br>Assistant: Here is a summary in 5 sentences:"
+          ANTHROPIC_MODEL_IDENTIFIER: "claude-v1.3-100k"
+          ANTHROPIC_ENDPOINT_URL: "https://api.anthropic.com/v1/complete"
+          TOKEN_COUNT: !If 
+            - ProvisionedSageMakerEndpoint
+            - 1024
+            - 0
+      Policies:
+        - arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+        - Statement:
+          - Sid: InvokeGetTranscript
+            Effect: Allow
+            Action:
+              - lambda:InvokeFunction
+            Resource: !GetAtt SFFetchTranscript.Arn
+          - !If 
+            - ProvisionedSageMakerEndpoint
+            - Sid: InvokeSummarizer
+              Effect: Allow
+              Action:
+                - sagemaker:InvokeEndpoint
+              Resource: !Ref SummarizationSagemakerEndpointArn
+            - !Ref "AWS::NoValue"
+          - !If 
+            - HasCustomSummarizerLambda
+            - Sid: SummarizationLambda
+              Effect: Allow
+              Action:
+                - lambda:InvokeFunction
+              Resource: !Ref SummarizationLambdaFunctionArn
+            - !Ref "AWS::NoValue"
+
   SFAwaitNotification:
     Type: "AWS::Serverless::Function"
     Properties:
@@ -289,6 +348,7 @@ Resources:
                   - !GetAtt SFFinalProcessing.Arn
                   - !GetAtt SFCTRGenesys.Arn
                   - !GetAtt SFPostCTRProcessing.Arn
+                  - !GetAtt SFSummarize.Arn
         - PolicyName: CloudWatchLogs
           PolicyDocument:
             Statement:
@@ -319,6 +379,7 @@ Resources:
         SFFinalProcessingArn: !GetAtt SFFinalProcessing.Arn
         SFCTRGenesysArn: !GetAtt SFCTRGenesys.Arn
         SFPostCTRProcessingArn: !GetAtt SFPostCTRProcessing.Arn
+        SFSummarizeArn: !GetAtt SFSummarize.Arn
       LoggingConfiguration:
         Level: ERROR
         IncludeExecutionData: true
@@ -340,3 +401,5 @@ Outputs:
         - !Sub '"${SFTranscribeFailedRole.Arn}"'
         - !Sub '"${SFPostCTRProcessingRole.Arn}"'
 
+  FetchTranscriptArn:
+    Value: !GetAtt SFFetchTranscript.Arn

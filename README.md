@@ -33,6 +33,8 @@ PCA currently supports the following features:
     * Discovers entities referenced in the call using Amazon Comprehend standard or custom entity detection models, or simple configurable string matching 
     * Detects when caller and agent interrupt each other
     * Speaker loudness
+* **Generative AI**
+    * Abstractive call summarization using [HuggingFace bart-large-cnn-samsum](https://huggingface.co/philschmid/bart-large-cnn-samsum) deployed on Sagemaker, [Anthropic Claude](https://www.anthropic.com/index/introducing-claude) (which is coming to [Amazon Bedrock](https://aws.amazon.com/bedrock/)), or a user-defined custom AWS Lambda function.
 * **Search**
     * Search on call attributes such as time range, sentiment, or entities
     * Search transcriptions
@@ -80,8 +82,59 @@ Once standard PCA processing is complete the telephony-specific CTR handler will
 - Identification of multiple Agents within the call, associating the telephony system's internal user identifier with their parts of the transcript and correctly allocating each agent's actual speaking time
 - Additional telephony-specific data, such as the Genesys queues involved in the call, is made available
 
+## (optional) Generative AI Call Summarization
 
-## Deployment instructions
+PCA contains a new step in the step functions that (if enabled) will generate a call summary. There are 3 choices for call summarization - Sagemaker Endpoint with HuggingFace bart-large-cnn-samsum, Anthropic Claude, or a custom AWS Lambda function.  
+
+### Summary Deployment instructions
+
+When deploying PCA, the CloudFormation parameter `CallSummarization` value defines whether summarization is `DISABLED`, `SAGEMAKER`, `ANTHROPIC`, or `LAMBDA`. 
+
+If `DISABLED` is chosen, the PCA step function will bypass the summarization step.
+
+If `SAGEMAKER` is chosen, PCA will be deployed with the [HuggingFace bart-large-cnn-samsum](https://huggingface.co/philschmid/bart-large-cnn-samsum) model on a `ml.m5.xlarge` instance type. By default, it is deployed as a single instance count, defined by the `SummarizationSageMakerInitialInstanceCount` parameter. If `SummarizationSageMakerInitialInstanceCount` is set to `0`, the endpoint will be deployed as a [SageMaker Serverless Inference](https://docs.aws.amazon.com/sagemaker/latest/dg/serverless-endpoints.html) endpoint.
+
+If `ANTHROPIC` is chosen, an Anthropic API key must be provided in the `SummarizationLLMThirdPartyApiKey` parameter. 
+**NOTE:Your call data will leave the AWS network if you choose Anthropic.** 
+
+If `LAMBDA` is chosen, the customer must provide a Lambda function ARN in the `SummarizationLambdaFunctionArn` parameter. IAM policies will be added to the step function that allow it to execute the function.
+
+### Custom Lambda function requirements and helper function
+
+If you choose to build a custom Lambda, it will be invoked by the `SFSummarize` Lambda in the PCA step function workflow. The invoke payload to the Lambda function will contain one parameter, `interimResultsFile`, that contains the S3 Key to the interim json file that contains all the processing up to this step in the workflow. This key can be used to fetch the call's JSON data for processing.
+
+### Expected response
+
+Your custom Lambda function should return a single json object with key value pairs that represent the summarization. This will be saved into the ConversationAnalytics.Summary field in the final call JSON output, and will be rendered in the user interface.  For example:
+
+```json
+"Summary": {
+  "Summary": "The caller called to renew their drivers license.",
+  "Agent Sentiment": "Positive",
+  "Caller Sentiment": "Negative",
+  "Call Category": "DRIVERS_LICENSE_RENEWAL"
+  ...
+}
+```
+
+To learn more about how PCA uses this json object, see the Summary section in [output_json_structure.md](output_json_structure.md).  
+
+### FetchTranscript helper function
+
+Rather than build a custom transcript string for an LLM to process, PCA contains a helper Lambda function that can do this for you, called `FetchTranscript`. The ARN for this Lambda function can be found in the PCA stack's outputs.  `FetchTranscript` requires 3 parameters: 
+
+`interimResultsFile`(string): The S3 key to the interim call JSON file. It can be found from the input to the Lambda. 
+
+`processTranscript`(boolean): Whether to remove 'uhh'/'umm' phrases from the Transcript, mainly used to reduce transcript token count for LLM processing.
+
+`tokenCount`(number): Max number of (estimated) tokens to return. This is used to crop the call to a given length.
+
+The result will be a json object with one key, `transcript`, with a single string containing the entire call transcript. It will have a format of `Speaker: Utterance`, one per line. For example:
+
+```
+Agent: Thanks for calling, how can I help you?
+Customer: Hi, I'm calling about my rewards card.
+```
 
 ## (optional) Build and Publish PCA CloudFormation artifacts
 _Note: Perform this step only if you want to create deployment artifacts in your own account. Otherwise, we have hosted a CloudFormation template for 1-click deployment in the [deploy](#deploy) section_.

@@ -30,6 +30,9 @@ Parameters:
     Type: AWS::SSM::Parameter::Value<String>
     Default: StepFunctionName
 
+  Summarize:
+    Type: String
+
 Globals:
   Function:
     Runtime: python3.8
@@ -40,6 +43,9 @@ Resources:
   FileDropTrigger:
     Type: "AWS::Serverless::Function"
     Properties:
+      Environment:
+        Variables:
+          SUMMARIZE: !Ref Summarize
       CodeUri:  ../../src/pca
       Handler: pca-aws-file-drop-trigger.lambda_handler
       Layers:

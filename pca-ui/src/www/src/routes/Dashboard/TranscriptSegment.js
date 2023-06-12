@@ -1,7 +1,8 @@
 import { SentimentIcon } from "../../components/SentimentIcon";
 import { Formatter } from "../../format";
-import { Badge } from "react-bootstrap";
 import {Tag} from "../../components/Tag";
+import { Box } from '@cloudscape-design/components';
+
 
 const getTranscriptDetails = (allSegments) => {
   let offsetStartValue = 0;
@@ -45,11 +46,11 @@ export const TranscriptSegment = ({
   ivr,
   categoryList,
 }) => (
-  <div className="mb-4 d-flex flex-row flex-nowrap gap-3">
-    <div className="d-flex align-items-center">
+  <div style={{display:"flex", paddingBottom:"1rem"}}>
+    <div style={{margin: "0.4rem"}}>
       <SentimentIcon score={score} size="2em" />
     </div>
-    <div className="flex-grow-1">
+    <div>
       <span className={"text-muted segment"}>
         {name} -{" "}
         <span
@@ -61,20 +62,20 @@ export const TranscriptSegment = ({
         </span>
       </span>
       {ivr && (
-        <Badge bg="danger" className="ms-2">
+        <Tag bg="danger" className="ms-2">
           IVR
-        </Badge>
+        </Tag>
       )}
       {interruption && (
-        <Badge bg="warning" text="dark" className="ms-2">
+        <Tag bg="warning" text="dark" className="ms-2">
           Interruption
-        </Badge>
+        </Tag>
       )}
       {categoryList.length > 0 && (
         categoryList.map((category) => (
-              <Badge bg="primary" className="ms-2">
+              <Tag bg="primary" className="ms-2">
                 {category}
-              </Badge>
+              </Tag>
             )
           )
         )}

@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@cloudscape-design/components": "^3.0.293",
+    "@cloudscape-design/global-styles": "^1.0.9",
     "bootstrap": "5.1.1",
     "chart.js": "^3.5.1",
     "luxon": "^2.5.2",

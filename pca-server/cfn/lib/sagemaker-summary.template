@@ -1,0 +1,97 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+
+Parameters:
+  InitialInstanceCount:
+    Type: Number
+    Description: Number of instances to launch initially. Specify 0 to provision a serverless endpoint.
+    Default: 1
+  InstanceType:
+    Type: String
+    Description: The ML compute instance type.
+    Default: ml.m5.xlarge
+
+Conditions:
+  ServerlessSageMakerEndpoint: !Equals
+    - !Ref 'InitialInstanceCount'
+    - 0
+  ProvisionedSageMakerEndpoint: !Not
+    - !Equals
+      - !Ref 'InitialInstanceCount'
+      - 0
+
+Outputs:
+  EndpointName: 
+    Description: Summarizer Model Endpoint Name
+    Value: !If
+      - ProvisionedSageMakerEndpoint
+      - !GetAtt SMProvisionedSummarizationEndpoint.EndpointName
+      - !GetAtt SMServerlessSummarizationEndpoint.EndpointName 
+  EndpointArn: 
+    Description: Summarizer Model Endpoint Arn
+    Value: !If
+      - ProvisionedSageMakerEndpoint
+      - !Ref SMProvisionedSummarizationEndpoint
+      - !Ref SMServerlessSummarizationEndpoint
+
+Resources:
+  SMSummarizationModel:
+    Type: AWS::SageMaker::Model
+    Properties:
+      PrimaryContainer:
+        # image resource found at https://github.com/aws/deep-learning-containers/blob/master/available_images.md
+        Image: !Sub 763104351884.dkr.ecr.${AWS::Region}.amazonaws.com/huggingface-pytorch-inference:1.7.1-transformers4.6.1-gpu-py36-cu110-ubuntu18.04
+        Mode: SingleModel
+        ModelDataUrl: !Sub s3://jumpstart-cache-prod-${AWS::Region}/huggingface-infer/infer-huggingface-summarization-bart-large-cnn-samsum.tar.gz
+      ExecutionRoleArn: !GetAtt SageMakerModelExecutionRole.Arn
+
+  SMProvisionedSummarizationEndpointConfig:
+    Type: AWS::SageMaker::EndpointConfig
+    Condition: ProvisionedSageMakerEndpoint
+    Properties:
+      ProductionVariants:
+        - ModelName: !GetAtt SMSummarizationModel.ModelName
+          InitialInstanceCount: !Ref InitialInstanceCount
+          InitialVariantWeight: 1
+          InstanceType: !Ref InstanceType
+          VariantName: AllTraffic
+
+  SMServerlessSummarizationEndpointConfig:
+    Type: AWS::SageMaker::EndpointConfig
+    Condition: ServerlessSageMakerEndpoint
+    Properties:
+      ProductionVariants:
+        - ModelName: !GetAtt SMSummarizationModel.ModelName
+          InitialVariantWeight: 1
+          VariantName: AllTraffic
+          ServerlessConfig:
+            MaxConcurrency: 50
+            MemorySizeInMB: 4096
+
+  SMProvisionedSummarizationEndpoint:
+    Type: AWS::SageMaker::Endpoint
+    Condition: ProvisionedSageMakerEndpoint
+    Properties:
+      EndpointConfigName: !GetAtt SMProvisionedSummarizationEndpointConfig.EndpointConfigName
+
+  SMServerlessSummarizationEndpoint:
+    Type: AWS::SageMaker::Endpoint
+    Condition: ServerlessSageMakerEndpoint
+    Properties:
+      EndpointConfigName: !GetAtt 'SMServerlessSummarizationEndpointConfig.EndpointConfigName'
+
+  SageMakerModelExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Action:
+          - sts:AssumeRole
+          Effect: Allow
+          Principal:
+            Service:
+            - sagemaker.amazonaws.com
+        Version: '2012-10-17'
+      Path: "/"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSageMakerFullAccess

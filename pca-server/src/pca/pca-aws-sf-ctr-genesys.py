@@ -31,6 +31,7 @@ CUST_CHANNEL_LC_NAME = "customer"
 FILE_SUFFIX_CONVERSATION = ""
 FILE_SUFFIX_CALL = ""
 
+TIMESTAMP_BUFFER = 0.2
 
 def load_ctr_files(original_file):
     """
@@ -244,6 +245,7 @@ def split_ivr_speech_segment(segment, ivr_end_time, pca_results):
         # TODO Sort out when this is the first or last item in the list
         lhs_segments = pca_results.speech_segments[0:split_index]
         rhs_segments = pca_results.speech_segments[split_index+1:]
+        orig_segment = copy.deepcopy(segment)
 
         # Create a duplicate of our source segment, mark as
         # "Agent" and then work out which words were theirs
@@ -254,15 +256,22 @@ def split_ivr_speech_segment(segment, ivr_end_time, pca_results):
         agent_segment.segmentSpeaker = get_speaker_channel(pca_results.analytics.speaker_labels, AGENT_CHANNEL_LC_NAME)
 
         # Split the words up correctly for both segments - IVR first
-        segment.segmentConfidence = list(filter(lambda x: x["EndTime"] < ivr_end_time, segment.segmentConfidence))
+        segment.segmentConfidence = list(filter(lambda x: x["EndTime"] < (ivr_end_time + TIMESTAMP_BUFFER), segment.segmentConfidence))
         segment.segmentEndTime = segment.segmentConfidence[-1]["EndTime"]
         segment.segmentText = regenerate_segment_text(segment)
 
         # Now get the words for the Agent half
-        agent_segment.segmentConfidence = list(filter(lambda x: x["StartTime"] > ivr_end_time, agent_segment.segmentConfidence))
-        agent_segment.segmentConfidence[0]["Text"] = agent_segment.segmentConfidence[0]["Text"].replace(" ", "")
-        agent_segment.segmentStartTime = agent_segment.segmentConfidence[0]["StartTime"]
-        agent_segment.segmentText = regenerate_segment_text(agent_segment)
+        agent_segment.segmentConfidence = list(filter(lambda x: x["StartTime"] > (ivr_end_time - TIMESTAMP_BUFFER), agent_segment.segmentConfidence))
+        if len(agent_segment.segmentConfidence) > 0:
+            agent_segment.segmentConfidence[0]["Text"] = agent_segment.segmentConfidence[0]["Text"].replace(" ", "")
+            agent_segment.segmentStartTime = agent_segment.segmentConfidence[0]["StartTime"]
+            agent_segment.segmentText = regenerate_segment_text(agent_segment)
+        else:
+            # we didnt really need to split this segment
+            pca_results.speech_segments = lhs_segments
+            pca_results.speech_segments.append(orig_segment)
+            pca_results.speech_segments.extend(rhs_segments)
+            return
 
         # Work out which custom entities belong to the agent and the IVR
         ivr_text_len = len(segment.segmentText)
@@ -375,7 +384,7 @@ def extract_ivr_lines(agent_channel, call_start_time, ctr_json, pca_analytics, p
                                                                               call_start_time)
 
                         # If it starts BEFORE zero seconds then it's part of the conversation, but NOT this call
-                        if segment_start >= 0.00:
+                        if segment_start >= (-1 * TIMESTAMP_BUFFER): # round to half a second to account for system time differences
                             ivr_times.append({"Start": segment_start, "End": segment_end})
 
         # We now need to do the same with ACD times - whilst these strictly-speaking aren't IVR entries
@@ -407,6 +416,21 @@ def extract_ivr_lines(agent_channel, call_start_time, ctr_json, pca_analytics, p
                 if (ivr["Start"] <= segment.segmentStartTime <= ivr["End"]) and \
                         (ivr["End"] >= segment.segmentConfidence[0]["EndTime"]) and \
                         (segment.segmentSpeaker == agent_channel):
+                    # If this segment has speech after the IVR has finished then this
+                    # MIGHT be agent speech, so we need to split this segment up before
+                    # marking segments
+                    if segment.segmentEndTime > ivr["End"]:
+                        # If we found any segments that we need to split then do that now
+                        split_ivr_speech_segment(segment, ivr["End"], pca_results)
+
+        # Run through one more time but without splitting
+        for ivr in ivr_times:
+            for segment in pca_results.speech_segments:
+                # If this IVR block starts inside the segment, and it doesn't end before the
+                # first word in the segment, and it's an agent channel, then we have an IVR overlap
+                if (ivr["Start"] <= segment.segmentStartTime <= ivr["End"]) and \
+                        (ivr["End"] >= segment.segmentConfidence[0]["EndTime"]) and \
+                        (segment.segmentSpeaker == agent_channel):
                     # Mark this segment as an IVR segment
                     segment.segmentIVR = True
                     segment.segmentSpeaker = ivr_speaker_channel
@@ -415,15 +439,6 @@ def extract_ivr_lines(agent_channel, call_start_time, ctr_json, pca_analytics, p
                     segment.segmentIsNegative = False
                     segment.segmentIsPositive = False
                     segment.segmentAllSentiments = {"Positive": 0.0, "Negative": 0.0, "Neutral": 1.0}
-
-                    # If this segment has speech after the IVR has finished then this
-                    # will be agent speech, so we need to spit this segment up later
-                    if segment.segmentEndTime > ivr["End"]:
-                        segments_to_split.append([segment, ivr["End"]])
-
-        # If we found any segments that we need to split then do that now
-        for split_segment in segments_to_split:
-            split_ivr_speech_segment(split_segment[0], split_segment[1], pca_results)
 
         # Run through our IVR segments calculate the time that the IVR was speaking, and
         # whilst we're there remove any found entities (as they aren't relevant for BI)
@@ -607,7 +622,7 @@ def lambda_handler(event, context):
 
             # Now that we potentially have multiple agents we should update the result header's
             # AGENTID field to show the agent that had the most interactions on the call
-            if unique_agents > 0:
+            if unique_agents != None and unique_agents > 0:
                 # Create a list of speaker identifiers that are not Agent channels
                 filtered_speakers = [IVR_CHANNEL_NAME, NON_TALK_LABEL,
                                      get_speaker_channel(pca_analytics.speaker_labels, CUST_CHANNEL_LC_NAME)]
