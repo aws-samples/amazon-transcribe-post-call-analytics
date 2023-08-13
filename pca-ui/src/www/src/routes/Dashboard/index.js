@@ -97,6 +97,7 @@ function Dashboard({ setAlert }) {
     let positive = [];
     let negative = [];
     let neutral = [];
+    let nonSilence = [];
 
     Object.keys(speakerLabels).forEach(key => {
       let keyLoudness = (data?.SpeechSegments || [])
@@ -122,15 +123,27 @@ function Dashboard({ setAlert }) {
         if (item.sentiment > 0) positive.push(sentimentItem)
         else if (item.sentiment < 0) negative.push(sentimentItem)
         else neutral.push(sentimentItem);
+        nonSilence[item.x.toString()] = sentimentItem;
       });
 
     });
+    
+    // generate the rest of the silence
+    if (data) {
+      const r = range(0, parseInt(data?.ConversationAnalytics.Duration));
+      r.map((item, i) => {
+        if (!(i in nonSilence)) {
+          silence = silence.concat({ x: i, y: 100 });
+        }
+      });
+    }
+
     loudness['Interruptions'] = interruptions;
     loudness['NonTalkTime'] = silence;
     loudness['Positive'] = positive;
     loudness['Neutral'] = neutral;
     loudness['Negative'] = negative;
-    
+    console.log(loudness);
     setLoudnessData(loudness);
   }, [speakerLabels])
 
