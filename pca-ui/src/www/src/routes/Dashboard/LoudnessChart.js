@@ -70,7 +70,7 @@ export const LoudnessChart = ({ loudnessData, speakerLabels }) => {
             offset: false,
             display: true,
             position: "left",
-            title: { text: "Minute", display: true },
+            title: { text: "Seconds", display: true },
           },
           y: {
             display: true,
