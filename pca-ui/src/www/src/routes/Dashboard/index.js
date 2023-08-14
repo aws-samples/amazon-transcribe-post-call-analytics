@@ -10,6 +10,7 @@ import { Placeholder } from "../../components/Placeholder";
 import { Tag } from "../../components/Tag";
 import { SentimentChart } from "./SentimentChart";
 import { LoudnessChart } from "./LoudnessChart";
+import { ComprehendSentimentChart } from "./ComprehendSentimentChart";
 import { SpeakerTimeChart } from "./SpeakerTimeChart";
 import { ListItems } from "./ListItems";
 import { useDangerAlert } from "../../hooks/useAlert";
@@ -35,9 +36,20 @@ const createLoudnessData = (segment) => {
     y: segment.LoudnessScores[i],
     interruption: segment.SegmentInterruption && item === start ? 100 : null,
     sentiment: (segment.SentimentIsNegative ? -5 : (segment.SentimentIsPositive && segment.LoudnessScores[i] > 0 ? 5 : 0)),
+    sentimentScore: segment.SentimentScore,
     silence: (segment.LoudnessScores[i] === 0 ? true : false)
   }));
 };
+
+const createSentimentData = (segment) => {
+  const start = Math.floor(segment.SegmentStartTime);
+  const end = Math.floor(segment.SegmentEndTime);
+  const r = range(start, end);
+  return r.map((item, i) => ({
+    x: item,
+    y: (segment.SentimentIsNegative === 1 ? segment.SentimentScore * -1 : segment.SentimentScore)
+  }));
+}
 
 function Dashboard({ setAlert }) {
   const { key } = useParams();
@@ -67,6 +79,7 @@ function Dashboard({ setAlert }) {
   const [speakerLabels, setSpeakerLabels] = useState({});
 
   const [loudnessData, setLoudnessData] = useState({});
+  const [comprehendSentimentData, setComprehendSentimentData] = useState({});
 
   const [isSwapping, setIsSwapping] = useState(false);
 
@@ -92,58 +105,74 @@ function Dashboard({ setAlert }) {
   
   useEffect(() => {
     const loudness = {};
-    let interruptions = [];
-    let silence = [];
-    let positive = [];
-    let negative = [];
-    let neutral = [];
-    let nonSilence = [];
 
-    Object.keys(speakerLabels).forEach(key => {
-      let keyLoudness = (data?.SpeechSegments || [])
-      .filter((segment) => segment.SegmentSpeaker === key)
-      .map(createLoudnessData)
-      .flat();
-      
-      loudness[key] = keyLoudness;
-      let newInterruptions = keyLoudness.filter((d) => d.interruption)
-        .map((d) => ({ y: d.interruption, x: d.x }))
-      interruptions = interruptions.concat(newInterruptions)
+    if (isTranscribeCallAnalyticsMode) {
+      // TCA mode
+      let interruptions = [];
+      let silence = [];
+      let positive = [];
+      let negative = [];
+      let neutral = [];
+      let nonSilence = [];
 
-      let newSilence = keyLoudness.filter((d) => d.silence)
-        .map((d) => ({ x: d.x, y: 100 }))
-      silence = silence.concat(newSilence);
+      Object.keys(speakerLabels).forEach(key => {
+        let keyLoudness = (data?.SpeechSegments || [])
+        .filter((segment) => segment.SegmentSpeaker === key)
+        .map(createLoudnessData)
+        .flat();
+        
+        loudness[key] = keyLoudness;
+        let newInterruptions = keyLoudness.filter((d) => d.interruption)
+          .map((d) => ({ y: d.interruption, x: d.x }))
+        interruptions = interruptions.concat(newInterruptions)
 
-      keyLoudness.forEach((item) => {
-        let sentimentItem = {
-          x: item.x,
-          y: 10,
-          sentiment: item.sentiment
-        };
-        if (item.sentiment > 0) positive.push(sentimentItem)
-        else if (item.sentiment < 0) negative.push(sentimentItem)
-        else neutral.push(sentimentItem);
-        nonSilence[item.x.toString()] = sentimentItem;
+        let newSilence = keyLoudness.filter((d) => d.silence)
+          .map((d) => ({ x: d.x, y: 100 }))
+        silence = silence.concat(newSilence);
+
+        keyLoudness.forEach((item) => {
+          let sentimentItem = {
+            x: item.x,
+            y: 10,
+            sentiment: item.sentiment
+          };
+          if (item.sentiment > 0) positive.push(sentimentItem)
+          else if (item.sentiment < 0) negative.push(sentimentItem)
+          else neutral.push(sentimentItem);
+          nonSilence[item.x.toString()] = sentimentItem;
+        });
+
       });
+      
+      // generate the rest of the silence
+      if (data) {
+        const r = range(0, parseInt(data?.ConversationAnalytics.Duration));
+        r.map((item, i) => {
+          if (!(i in nonSilence)) {
+            silence = silence.concat({ x: i, y: 100 });
+          }
+        });
+      }
 
-    });
-    
-    // generate the rest of the silence
-    if (data) {
-      const r = range(0, parseInt(data?.ConversationAnalytics.Duration));
-      r.map((item, i) => {
-        if (!(i in nonSilence)) {
-          silence = silence.concat({ x: i, y: 100 });
+      loudness['Interruptions'] = interruptions;
+      loudness['NonTalkTime'] = silence;
+      loudness['Positive'] = positive;
+      loudness['Neutral'] = neutral;
+      loudness['Negative'] = negative;
+    } else {
+      // this is transcribe standard
+      Object.keys(speakerLabels).forEach(key => {
+        if (key.indexOf('spk_') >= 0) {
+          let keyLoudness = (data?.SpeechSegments || [])
+          .filter((segment) => segment.SegmentSpeaker === key)
+          .map(createSentimentData)
+          .flat();
+          console.log('keyloudness', keyLoudness);
+          loudness[key] = keyLoudness;
         }
       });
     }
-
-    loudness['Interruptions'] = interruptions;
-    loudness['NonTalkTime'] = silence;
-    loudness['Positive'] = positive;
-    loudness['Neutral'] = neutral;
-    loudness['Negative'] = negative;
-    console.log(loudness);
+    console.log('Loudness', loudness);
     setLoudnessData(loudness);
   }, [speakerLabels])
 
@@ -461,19 +490,36 @@ function Dashboard({ setAlert }) {
               speakerOrder={speakerLabels}
             />
         </Container>
-        <Container
-          header={
-            <Header variant="h2">
-              Loudness/Sentiment
-            </Header>
-          }
-        >
-          {!loudnessData && !error ? (
-            <div key='noSpeakers'>No Speakers</div>
-          ) : (
+        {isTranscribeCallAnalyticsMode && (
+          <Container
+            header={
+              <Header variant="h2">
+                Loudness/Sentiment
+              </Header>
+            }
+          >
+            {!loudnessData && !error ? (
+              <div key='noSpeakers'>No Speakers</div>
+            ) : (
               <LoudnessChart loudnessData={loudnessData} speakerLabels={speakerLabels} />
-          )}
-        </Container>
+            )}
+          </Container>
+        )}
+        {!isTranscribeCallAnalyticsMode && (
+          <Container
+            header={
+              <Header variant="h2">
+                Comprehend Sentiment
+              </Header>
+            }
+          >
+            {!loudnessData && !error ? (
+              <div key='noSpeakers'>No Speakers</div>
+            ) : (
+              <ComprehendSentimentChart comprehendSentimentData={loudnessData} speakerLabels={speakerLabels} />
+            )}
+          </Container>
+        )}
         <Container 
           fitHeight={true}
           header={
