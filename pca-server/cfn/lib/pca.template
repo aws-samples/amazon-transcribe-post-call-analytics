@@ -261,7 +261,6 @@ Resources:
           SUMMARY_SAGEMAKER_ENDPOINT: !Ref SummarizationSagemakerEndpointName
           ANTHROPIC_API_KEY: !Ref SummarizationLLMThirdPartyApiKey
           SUMMARY_LAMBDA_ARN: !Ref SummarizationLambdaFunctionArn
-          SUMMARY_PROMPT_TEMPLATE: "<br><br>Human:<br>{transcript}<br><br>Summarize the above transcript in no more than 5 sentences, using gender neutral pronouns. Were the caller's needs met during the call?<br><br>Assistant: Here is a summary in 5 sentences:"
           ANTHROPIC_MODEL_IDENTIFIER: "claude-v1.3-100k"
           ANTHROPIC_ENDPOINT_URL: "https://api.anthropic.com/v1/complete"
           TOKEN_COUNT: !If 

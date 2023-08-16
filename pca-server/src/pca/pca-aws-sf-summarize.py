@@ -18,11 +18,11 @@ ANTHROPIC_MODEL_IDENTIFIER = os.getenv('ANTHROPIC_MODEL_IDENTIFIER', 'claude-ins
 ANTHROPIC_ENDPOINT_URL = os.getenv('ANTHROPIC_ENDPOINT_URL','')
 ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY','')
 TOKEN_COUNT = int(os.getenv('TOKEN_COUNT', '0')) # default 0 - do not truncate.
-SUMMARY_PROMPT_TEMPLATE = os.getenv('SUMMARY_PROMPT_TEMPLATE',"<br><br>Human:<br>{transcript}<br><br>Summarize the above transcript in no more than 5 sentences, using gender neutral pronouns. Were the caller's needs met during the call?<br><br>Assistant: Here is a summary in 5 sentences:")
 SUMMARY_LAMBDA_ARN = os.getenv('SUMMARY_LAMBDA_ARN','')
 FETCH_TRANSCRIPT_LAMBDA_ARN = os.getenv('FETCH_TRANSCRIPT_LAMBDA_ARN','')
 
 lambda_client = boto3.client('lambda')
+ssmClient = boto3.client("ssm")
 
 def generate_sagemaker_summary(transcript):
     summary = 'An error occurred generating Sagemaker summary.'
@@ -44,24 +44,51 @@ def generate_sagemaker_summary(transcript):
         summary = "No summary"
     return summary
 
+def get_templates_from_ssm():
+    templates = []
+    try:
+        SUMMARY_PROMPT_TEMPLATE = ssmClient.get_parameter(Name=cf.CONF_LLM_PROMPT_TEMPLATE)["Parameter"]["Value"]
+
+        prompt_templates = json.loads(SUMMARY_PROMPT_TEMPLATE)
+        for k, v in prompt_templates.items():
+            prompt = v.replace("<br>", "\n")
+            templates.append({ k:prompt })
+    except:
+        prompt = SUMMARY_PROMPT_TEMPLATE.replace("<br>", "\n")
+        templates.append({
+            "Summary": prompt
+        })
+        print("Prompt: ",prompt)
+    return templates
+
 def generate_anthropic_summary(transcript):
-    prompt = SUMMARY_PROMPT_TEMPLATE.replace("<br>", "\n").replace("{transcript}", transcript)
-    print("Prompt: ",prompt)
-    data = {
-        "prompt": prompt,
-        "model": ANTHROPIC_MODEL_IDENTIFIER,
-        "max_tokens_to_sample": 512,
-        "stop_sequences": ["Human:", "Assistant:"]
-    }
-    headers = {
-        "x-api-key": ANTHROPIC_API_KEY,
-        "content-type": "application/json"
-    }
-    response = requests.post(ANTHROPIC_ENDPOINT_URL, headers=headers, data=json.dumps(data))
-    print("API Response:", response)
-    summary = json.loads(response.text)["completion"].strip()
-    print("Summary: ", summary)
-    return summary
+
+    # first check to see if this is one prompt, or many prompts as a json
+    templates = get_templates_from_ssm()
+    result = {}
+    for item in templates:
+        key = list(item.keys())[0]
+        prompt = item[key]
+        prompt = prompt.replace("{transcript}", transcript)
+        data = {
+            "prompt": prompt,
+            "model": ANTHROPIC_MODEL_IDENTIFIER,
+            "max_tokens_to_sample": 512,
+            "stop_sequences": ["Human:", "Assistant:"]
+        }
+        headers = {
+            "x-api-key": ANTHROPIC_API_KEY,
+            "content-type": "application/json"
+        }
+        response = requests.post(ANTHROPIC_ENDPOINT_URL, headers=headers, data=json.dumps(data))
+        print("API Response:", response)
+        summary = json.loads(response.text)["completion"].strip()
+        result[key] = summary
+    if len(result.keys()) == 1:
+        # there's only one summary in here, so let's return just that.
+        # this may contain json or a string.
+        return result[list(result.keys())[0]]
+    return json.dumps(result)
 
 def get_transcript_str(interimResultsFile):
     payload = {
