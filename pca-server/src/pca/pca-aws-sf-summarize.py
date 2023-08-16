@@ -122,6 +122,10 @@ def lambda_handler(event, context):
     elif SUMMARIZE_TYPE == 'ANTHROPIC':
         try:
             summary = generate_anthropic_summary(transcript_str)
+            try: 
+                summary_json = json.loads(summary)
+            except:
+                print('no json detected in summary.')
         except:
             summary = 'An error occurred generating Anthropic summary.'
     elif SUMMARIZE_TYPE == 'LAMBDA':
