@@ -48,6 +48,7 @@ CONF_WEB_URI = "WebUri"
 CONF_TRANSCRIBE_API = "TranscribeApiMode"
 CONF_REDACTION_TRANSCRIPT = "CallRedactionTranscript"
 CONF_REDACTION_AUDIO = "CallRedactionAudio"
+CONF_LLM_PROMPT_TEMPLATE = "LLMPromptTemplate"
 
 # Parameter store fieldnames used by bulk import
 BULK_S3_BUCKET = "BulkUploadBucket"
