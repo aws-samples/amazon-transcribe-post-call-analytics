@@ -355,6 +355,40 @@ Parameters:
       IMPORTANT: Your Amazon QuickSight account MUST be enabled before deploying this stack. See http://www.amazon.com/pca-dashboards for additional 
       steps required in Amazon QuickSight to (1) enable S3 access to PCA OutputBucket and (2) share dashboard and analytics assets.
 
+  CallSummarization:
+    Default: 'DISABLED'
+    Type: String
+    AllowedValues:
+      - 'DISABLED'
+      - 'SAGEMAKER'
+      - 'LAMBDA'
+      - 'ANTHROPIC'
+    Description: >
+      Set to enable call summarization by a Large Language Model. The SAGEMAKER option uses a SageMaker endpoint with
+      the pretrained bart-large-cnn-samsum model with a ml.m5.xlarge instance type.  The LAMBDA option requires you 
+      to provide a function ARN below. The ANTHROPIC option is a third party service, and you must enter your Anthropic API key below.
+
+  SummarizationSageMakerInitialInstanceCount:
+    Type: Number
+    MinValue: 0
+    Default: 1
+    Description: >
+      (Optional) If 'CallSummarization' is SAGEMAKER, provide initial instance count. Set to '0' to enable Serverless Inference (for cold-start delay tolerant deployments only).
+
+  SummarizationLLMThirdPartyApiKey:
+    Type: String
+    Description: >
+      (Optional) If CallSummarization is ANTHROPIC, enter the provider API Key. ** Data will leave your AWS account **
+    Default: ''
+    NoEcho: true
+
+  SummarizationLambdaFunctionArn:
+    Default: ''
+    Type: String
+    AllowedPattern: '^(|arn:aws:lambda:.*)$'
+    Description: >
+      (Optional) If 'CallSummarization' is LAMBDA, provide ARN for a Lambda function.
+
 Metadata:
     AWS::CloudFormation::Interface:
         ParameterGroups:
@@ -372,6 +406,13 @@ Metadata:
               Parameters:
                   - EnableTranscriptGui
                   - EnableTranscriptKendraSearch
+            - Label:
+                default: Call Summarization
+              Parameters:
+                - CallSummarization
+                - SummarizationSageMakerInitialInstanceCount
+                - SummarizationLLMThirdPartyApiKey
+                - SummarizationLambdaFunctionArn
             - Label:
                 default: Advanced analytics and reporting
               Parameters:
@@ -459,7 +500,6 @@ Conditions:
   ShouldCreateKendraIndexDeveloperEdition: !Equals [!Ref EnableTranscriptKendraSearch, 'Yes, create new Kendra Index (Developer Edition)']
   ShouldDeployPcaDashboards: !Equals [!Ref EnablePcaDashboards, 'Yes']
   ShouldLoadSampleFiles: !Equals [!Ref loadSampleAudioFiles, 'true']
-
 
 Resources:
   ########################################################
@@ -614,7 +654,11 @@ Resources:
       TemplateURL: pca-server/cfn/pca-server.template
       Parameters:
         ffmpegDownloadUrl: !Ref ffmpegDownloadUrl
-      
+        CallSummarization: !Ref CallSummarization
+        SummarizationSageMakerInitialInstanceCount: !Ref SummarizationSageMakerInitialInstanceCount
+        SummarizationLLMThirdPartyApiKey: !Ref SummarizationLLMThirdPartyApiKey
+        SummarizationLambdaFunctionArn: !Ref SummarizationLambdaFunctionArn
+
   PCAUI:
     Type: AWS::CloudFormation::Stack
     Condition: ShouldEnableGui
@@ -809,3 +853,7 @@ Outputs:
       - ShouldDeployPcaDashboards
       - !Sub "https://${AWS::Region}.console.aws.amazon.com/cloudformation/home?region=${AWS::Region}#/stacks/outputs?stackId=${PcaDashboards}"
       - "PCA Dashboards not enabled - stack param 'EnablePcaDashboards'"
+
+  FetchTranscriptArn:
+    Description: Lambda function arn that will generate a string of the entire transcript for custom Lambda functions to use.
+    Value: !GetAtt PCAServer.Outputs.FetchTranscriptArn
