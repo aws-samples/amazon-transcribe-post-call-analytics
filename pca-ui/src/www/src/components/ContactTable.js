@@ -9,21 +9,82 @@ import { SentimentIcon } from "./SentimentIcon";
 import { TrendIcon } from "./TrendIcon";
 import "./ContactTable.css";
 import { DateTimeForm, formatDateTime } from './DateTimeForm';
+import { ContactTablePreferences, DEFAULT_PREFERENCES } from './ContactTablePreferences'
+import { useLocalStorage } from '../common/localStorage';
 
-const columns = [
+const COLUMN_DEFINITIONS = [
   {
+    id: "timestamp",
+    header: "Timestamp",
+    sortingField: "timestamp",
+    cell: (d) => Formatter.Timestamp(d.timestamp),
+    width: 160
+  },
+  {
+    id: "jobName",
     header: "Job Name",
     cell: (d) => d.jobName,
     isRowHeader: true,
     sortingField: "jobName",
-    minWidth:300
   },
   {
-    header: "Timestamp",
-    sortingField: "timestamp",
-    cell: (d) => Formatter.Timestamp(d.timestamp)
+    id: "guid",
+    header: "GUID",
+    cell: (d) => d.guid,
+    isRowHeader: true,
+    sortingField: "guid",
+    width:150
   },
   {
+    id: "agent",
+    header: "Agent",
+    cell: (d) => d.agent,
+    isRowHeader: true,
+    sortingField: "agent",
+    width:150
+  },
+  {
+    id: "cust",
+    header: "Customer",
+    cell: (d) => d.cust,
+    isRowHeader: true,
+    sortingField: "cust",
+    width:150
+  },
+  {
+    id: "queue",
+    header: "Queue",
+    cell: (d) => d.queue,
+    isRowHeader: true,
+    sortingField: "queue",
+    Width:150
+  },
+  {
+    id: "resolved",
+    header: "Resolved",
+    cell: (d) => d.resolved,
+    isRowHeader: true,
+    sortingField: "resolved",
+    Width:170
+  },
+  {
+    id: "topic",
+    header: "Topic",
+    cell: (d) => d.topic,
+    isRowHeader: true,
+    sortingField: "topic",
+    Width:150
+  },
+  {
+    id: "summary",
+    header: "Summary",
+    cell: (d) => d.summary,
+    isRowHeader: true,
+    sortingField: "summary",
+    Width:150
+  },
+  {
+    id: "callerSentimentScore",
     header: "Cust Sent",
     sortingField: "callerSentimentScore",
     cell: (d) => (
@@ -32,15 +93,19 @@ const columns = [
         <TrendIcon trend={d.callerSentimentChange} />
       </div>
     ),
-    width: 150
+    width: 130
   },
   {
-    header: <div className="col-header-wrapper text-left">Language Code</div>,
+    id: "langCode",
+    header: <div className="col-header-wrapper text-left">Lang Code</div>,
     cell: (d) => d.lang,
+    width: 130,
   },
   {
-    header: <div className="col-header-wrapper text-left">Call Duration</div>,
+    id: "duration",
+    header: <div className="col-header-wrapper text-left">Duration</div>,
     cell: (d) => Formatter.Time(d.duration),
+    width: 130,
   },
 ];
 
@@ -49,7 +114,7 @@ const getMatchesCountText = function getMatchesCountText(count) {
 }
 
 const Loading = () =>
-  columns.map((c, i) => (
+  COLUMN_DEFINITIONS.map((c, i) => (
     <td key={i}>
       <Placeholder />
     </td>
@@ -57,7 +122,7 @@ const Loading = () =>
 
 const NoMatches = ({ children }) => (
   <tr>
-    <td colSpan={columns.length}>
+    <td colSpan={COLUMN_DEFINITIONS.length}>
       <div className="d-flex justify-content-center py-4">{children}</div>
     </td>
   </tr>
@@ -65,6 +130,11 @@ const NoMatches = ({ children }) => (
 
 export const ContactTable = ({ data = [], loading = false, empty, header, variant='container' }) => {
   const history = useHistory();
+  
+  const [preferences, setPreferences] = useLocalStorage(
+    'contact-table-preferences',
+    DEFAULT_PREFERENCES,
+  );
 
   const onClick = (e) => {
     console.log(e);
@@ -78,28 +148,65 @@ export const ContactTable = ({ data = [], loading = false, empty, header, varian
     operation: "and"
   });
 
+
   const { items, actions, filteredItemsCount, collectionProps, paginationProps, propertyFilterProps } = useCollection(
     data,
     {
       propertyFiltering: {
         filteringProperties: [
-            {
-              key: "jobName",
-              operators: ["=", "!=", ":", "!:"],
-              propertyLabel: "Job Name",
-              groupValuesLabel: "Job Names"
-            },
-            {
-              key: "timestamp",
-              defaultOperator: '>',
-              operators: ['<', '<=', '>', '>='].map(operator => ({
-                operator,
-                form: DateTimeForm,
-                format: formatDateTime,
-                match: 'datetime',
-              })),
-              propertyLabel: "Timestamp",
-              groupValuesLabel: "Timestamps"
+          {
+            key: "timestamp",
+            defaultOperator: '>',
+            operators: ['<', '<=', '>', '>='].map(operator => ({
+              operator,
+              form: DateTimeForm,
+              format: formatDateTime,
+              match: 'datetime',
+            })),
+            propertyLabel: "Timestamp",
+            groupValuesLabel: "Timestamps"
+          },
+          {
+            key: "jobName",
+            operators: ["=", "!=", ":", "!:"],
+            propertyLabel: "Job Name",
+            groupValuesLabel: "Job Names"
+          },
+          {
+            key: "guid",
+            operators: ["=", "!=", ":", "!:"],
+            propertyLabel: "GUID",
+            groupValuesLabel: "GUIDs"
+          },
+          {
+            key: "agent",
+            operators: ["=", "!=", ":", "!:"],
+            propertyLabel: "Agent",
+            groupValuesLabel: "Agents"
+          },
+          {
+            key: "cust",
+            operators: ["=", "!=", ":", "!:"],
+            propertyLabel: "Customer",
+            groupValuesLabel: "Customers"
+          },
+          {
+            key: "queue",
+            operators: ["=", "!=", ":", "!:"],
+            propertyLabel: "Queue",
+            groupValuesLabel: "Queues"
+          },
+          {
+            key: "resolved",
+            operators: ["=", "!=", ":", "!:"],
+            propertyLabel: "Resolved",
+            groupValuesLabel: "Resolved"
+          },
+          {
+            key: "topic",
+            operators: ["=", "!=", ":", "!:"],
+            propertyLabel: "Topic",
+            groupValuesLabel: "Topics"
           },
           {
             key: "lang",
@@ -129,11 +236,10 @@ export const ContactTable = ({ data = [], loading = false, empty, header, varian
 
   return (
     <Table
-
       {...collectionProps}
       header={header}
       variant={variant}
-      columnDefinitions={columns}
+      columnDefinitions={COLUMN_DEFINITIONS}
       items={items}
       //pagination={<Pagination {...paginationProps} />}
       resizableColumns={true}
@@ -184,6 +290,11 @@ export const ContactTable = ({ data = [], loading = false, empty, header, varian
           expandToViewport={true}
         />
       }
+
+      preferences={
+        <ContactTablePreferences preferences={preferences} setPreferences={setPreferences} />
+      }
+      visibleColumns={['jobName', ...preferences.visibleContent]}
     />
   );
 };
