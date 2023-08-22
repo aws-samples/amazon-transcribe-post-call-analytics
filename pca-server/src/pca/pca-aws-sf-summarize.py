@@ -13,6 +13,7 @@ import json
 import re
 import requests
 
+AWS_REGION = os.environ["AWS_REGION_OVERRIDE"] if "AWS_REGION_OVERRIDE" in os.environ else os.environ["AWS_REGION"]
 SUMMARIZE_TYPE = os.getenv('SUMMARY_TYPE', 'DISABLED')
 ANTHROPIC_MODEL_IDENTIFIER = os.getenv('ANTHROPIC_MODEL_IDENTIFIER', 'claude-instant-v1-100k')
 ANTHROPIC_ENDPOINT_URL = os.getenv('ANTHROPIC_ENDPOINT_URL','')
@@ -20,9 +21,76 @@ ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY','')
 TOKEN_COUNT = int(os.getenv('TOKEN_COUNT', '0')) # default 0 - do not truncate.
 SUMMARY_LAMBDA_ARN = os.getenv('SUMMARY_LAMBDA_ARN','')
 FETCH_TRANSCRIPT_LAMBDA_ARN = os.getenv('FETCH_TRANSCRIPT_LAMBDA_ARN','')
+BEDROCK_MODEL_ID = os.environ.get("BEDROCK_MODEL_ID","amazon.titan-tg1-large")
+BEDROCK_ENDPOINT_URL = os.environ.get("ENDPOINT_URL", f'https://bedrock.{AWS_REGION}.amazonaws.com')
+
+MAX_TOKENS = int(os.getenv('MAX_TOKENS','256'))
 
 lambda_client = boto3.client('lambda')
 ssmClient = boto3.client("ssm")
+bedrock_client = None
+
+def get_bedrock_client():
+    print("Connecting to Bedrock Service: ", BEDROCK_ENDPOINT_URL)
+    client = boto3.client(service_name='bedrock', region_name=AWS_REGION, endpoint_url=BEDROCK_ENDPOINT_URL)
+    return client
+    
+def get_bedrock_request_body(modelId, parameters, prompt):
+    provider = modelId.split(".")[0]
+    request_body = None
+    if provider == "anthropic":
+        request_body = {
+            "prompt": prompt,
+            "max_tokens_to_sample": MAX_TOKENS
+        } 
+        request_body.update(parameters)
+    elif provider == "ai21":
+        request_body = {
+            "prompt": prompt,
+            "maxTokens": MAX_TOKENS
+        }
+        request_body.update(parameters)
+    elif provider == "amazon":
+        textGenerationConfig = {
+            "maxTokenCount": MAX_TOKENS
+        }
+        textGenerationConfig.update(parameters)
+        request_body = {
+            "inputText": prompt,
+            "textGenerationConfig": textGenerationConfig
+        }
+    else:
+        raise Exception("Unsupported provider: ", provider)
+    return request_body
+
+def get_bedrock_generate_text(modelId, response):
+    print("generating response with ", modelId)
+    provider = modelId.split(".")[0]
+    generated_text = None
+    if provider == "anthropic":
+        response_body = json.loads(response.get("body").read().decode())
+        generated_text = response_body.get("completion")
+    elif provider == "ai21":
+        response_body = json.loads(response.get("body").read())
+        generated_text = response_body.get("completions")[0].get("data").get("text")
+    elif provider == "amazon":
+        response_body = json.loads(response.get("body").read())
+        generated_text = response_body.get("results")[0].get("outputText")
+    else:
+        raise Exception("Unsupported provider: ", provider)
+    generated_text = generated_text.replace('```','')
+    return generated_text
+
+def call_bedrock(parameters, prompt):
+    global bedrock_client
+    modelId = BEDROCK_MODEL_ID
+    body = get_bedrock_request_body(modelId, parameters, prompt)
+    print("ModelId", modelId, "-  Body: ", body)
+    if (bedrock_client is None):
+        bedrock_client = get_bedrock_client()
+    response = bedrock_client.invoke_model(body=json.dumps(body), modelId=modelId, accept='application/json', contentType='application/json')
+    generated_text = get_bedrock_generate_text(modelId, response)
+    return generated_text
 
 def generate_sagemaker_summary(transcript):
     summary = 'An error occurred generating Sagemaker summary.'
@@ -90,6 +158,27 @@ def generate_anthropic_summary(transcript):
         return result[list(result.keys())[0]]
     return json.dumps(result)
 
+def generate_bedrock_summary(transcript):
+
+    # first check to see if this is one prompt, or many prompts as a json
+    templates = get_templates_from_ssm()
+    result = {}
+    for item in templates:
+        key = list(item.keys())[0]
+        prompt = item[key]
+        prompt = prompt.replace("{transcript}", transcript)
+        parameters = {
+            "temperature": 0
+        }
+        generated_text = call_bedrock(parameters, prompt)
+        result[key] = generated_text
+    if len(result.keys()) == 1:
+        # there's only one summary in here, so let's return just that.
+        # this may contain json or a string.
+        return result[list(result.keys())[0]]
+    return json.dumps(result)
+
+
 def get_transcript_str(interimResultsFile):
     payload = {
         'interimResultsFile': interimResultsFile,
@@ -153,21 +242,34 @@ def lambda_handler(event, context):
                 summary_json = json.loads(summary)
             except:
                 print('no json detected in summary.')
-        except:
+        except Exception as err:
             summary = 'An error occurred generating Anthropic summary.'
+            print(err)
+    elif SUMMARIZE_TYPE == 'BEDROCK':
+        try:
+            summary = generate_bedrock_summary(transcript_str)
+            try: 
+                summary_json = json.loads(summary)
+            except:
+                print('no json detected in summary.')
+        except Exception as err:
+            summary = 'An error occurred generating Bedrock summary.'
+            print(err)
     elif SUMMARIZE_TYPE == 'LAMBDA':
         try:
             summary_json = generate_custom_lambda_summary(event["interimResultsFile"])
-        except:
+        except Exception as err:
             summary = 'An error occurred generating summary with custom Lambda function'
+            print(err)
     else:
         summary = 'Summarization disabled.'
     
     if summary_json:
         pca_results.analytics.summary = summary_json
+        print("Summary JSON: " + summary)
     else:
         pca_results.analytics.summary['Summary'] = summary
-    print("Summary: " + summary)
+        print("Summary: " + summary)
     
     # Write out back to interim file
     pca_results.write_results_to_s3(bucket=cf.appConfig[cf.CONF_S3BUCKET_OUTPUT],

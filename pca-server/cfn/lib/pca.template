@@ -41,6 +41,8 @@ Parameters:
     Type: String
   SummarizationLambdaFunctionArn: 
     Type: String
+  SummarizationBedrockModelId:
+    Type: String
 
 Globals:
   Function:
@@ -236,7 +238,7 @@ Resources:
   SFFetchTranscript:
     Type: "AWS::Serverless::Function"
     Properties:
-      Runtime: python3.9
+      Runtime: python3.10
       CodeUri:  ../../src/pca
       Handler: pca-aws-fetch-transcript.lambda_handler
       Timeout: 900
@@ -247,16 +249,18 @@ Resources:
   SFSummarize:
     Type: "AWS::Serverless::Function"
     Properties:
-      Runtime: python3.9
+      Runtime: python3.10
       CodeUri:  ../../src/pca
       Handler: pca-aws-sf-summarize.lambda_handler
       Timeout: 900
       Layers:
         - !Ref PyUtilsLayer
+        - !Ref Boto3Layer
       Environment:
         Variables:
           AWS_DATA_PATH: "/opt/models"
           FETCH_TRANSCRIPT_LAMBDA_ARN: !GetAtt SFFetchTranscript.Arn
+          BEDROCK_MODEL_ID: !Ref SummarizationBedrockModelId
           SUMMARY_TYPE: !Ref CallSummarization
           SUMMARY_SAGEMAKER_ENDPOINT: !Ref SummarizationSagemakerEndpointName
           ANTHROPIC_API_KEY: !Ref SummarizationLLMThirdPartyApiKey
@@ -276,6 +280,13 @@ Resources:
             Action:
               - lambda:InvokeFunction
             Resource: !GetAtt SFFetchTranscript.Arn
+          - Sid: InvokeBedrock
+            Effect: Allow
+            Action: 
+              - bedrock:InvokeModel
+            Resource:
+              - !Sub "arn:${AWS::Partition}:bedrock:*::foundation-model/*"
+              - !Sub "arn:${AWS::Partition}:bedrock:*:${AWS::AccountId}:custom-model/*"
           - !If 
             - ProvisionedSageMakerEndpoint
             - Sid: InvokeSummarizer

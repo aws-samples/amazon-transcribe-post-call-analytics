@@ -14,12 +14,25 @@ Parameters:
     AllowedValues:
       - 'DISABLED'
       - 'SAGEMAKER'
+      - 'BEDROCK'
       - 'LAMBDA'
       - 'ANTHROPIC'
     Description: >
       Set to enable call summarization by a Large Language Model. The SAGEMAKER option uses a SageMaker endpoint with
       the pretrained bart-large-cnn-samsum model with a ml.m5.xlarge instance type.  The LAMBDA option requires you 
       to provide a function ARN below. The ANTHROPIC option is a third party service, and you must enter your Anthropic API key below.
+  
+  SummarizationBedrockModelId:
+    Type: String
+    Default: anthropic.claude-v2
+    AllowedValues:
+      - amazon.titan-tg1-large
+      #- ai21.j2-grande-instruct
+      #- ai21.j2-jumbo-instruct
+      - anthropic.claude-v1
+      - anthropic.claude-instant-v1
+      - anthropic.claude-v2
+    Description: (Optional) If 'CallSummarization' is BEDROCK, which Bedrock model to use. (Bedrock preview access only)
 
   SummarizationSageMakerInitialInstanceCount:
     Type: Number
@@ -42,7 +55,13 @@ Parameters:
     Description: >
       (Optional) If 'CallSummarization' is LAMBDA, provide ARN for a Lambda function. 
 
+  Boto3LayerArn:
+    Default: ''
+    Type: String
+    Description: External Boto3 Layer Arn to use. If none is provided, one will be created automatically via boto3.template
+
 Conditions:
+  ShouldCreateBoto3Layer: !Equals [!Ref Boto3LayerArn, '']
   ShouldDeploySageMakerSummarizer: !Equals [!Ref CallSummarization, "SAGEMAKER"]
   ShouldEnableAnthropicSummarizer: !Equals [!Ref CallSummarization, "ANTHROPIC"]
   ShouldEnableEndOfCallLambdaHookFunction: !Equals [!Ref CallSummarization, "LAMBDA"]
@@ -60,6 +79,7 @@ Resources:
         ffmpegDownloadUrl: !Ref ffmpegDownloadUrl
 
   BOTO3:
+    Condition: ShouldCreateBoto3Layer
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: lib/boto3.template
@@ -81,9 +101,13 @@ Resources:
       Parameters:
         TableName: !GetAtt DDB.Outputs.TableName
         FFMPEGZipName: !GetAtt FFMPEG.Outputs.FFMPEGZipName
-        Boto3Layer:  !GetAtt BOTO3.Outputs.Boto3Layer
+        Boto3Layer:  !If 
+          - ShouldCreateBoto3Layer
+          - !GetAtt BOTO3.Outputs.Boto3Layer
+          - !Ref Boto3LayerArn
         PyUtilsLayer: !GetAtt PYTHONUTILS.Outputs.PyUtilsLayer
         CallSummarization: !Ref CallSummarization
+        SummarizationBedrockModelId: !Ref SummarizationBedrockModelId
         SummarizationSagemakerEndpointName: !If 
           - ShouldDeploySageMakerSummarizer
           - !GetAtt SageMakerTranscriptSummaryStack.Outputs.EndpointName
@@ -101,7 +125,10 @@ Resources:
       TemplateURL: lib/trigger.template
       Parameters:
         TableName: !GetAtt DDB.Outputs.TableName
-        Boto3Layer: !GetAtt BOTO3.Outputs.Boto3Layer
+        Boto3Layer: !If 
+          - ShouldCreateBoto3Layer
+          - !GetAtt BOTO3.Outputs.Boto3Layer
+          - !Ref Boto3LayerArn
         PyUtilsLayer: !GetAtt PYTHONUTILS.Outputs.PyUtilsLayer
         Summarize: !If [IsTranscriptSummaryEnabled, "true", "false"]
 
