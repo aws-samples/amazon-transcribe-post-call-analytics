@@ -14,7 +14,7 @@ const VISIBLE_CONTENT_OPTIONS = [{
     { id: "jobName", label: "Job Name", visible: true },
     { id: "guid", label: "Guid",  visible: false },
     { id: "agent", label: "Agent",  visible: false },
-    { id: "cust", label: "Customer",  visible: false },
+    { id: "customer", label: "Customer",  visible: false },
     { id: "queue", label: "Queue", visible: false },
     { id: "resolved", label: "Resolved", visible: false },
     { id: "topic", label: "Topic", visible: false },
@@ -54,6 +54,7 @@ export const ContactTablePreferences = ({
     onConfirm={({ detail }) => setPreferences(detail)}
     preferences={preferences}
     disabled={disabled}
+    stickyColumnsPreference={{}}
     /*pageSizePreference={{
       title: "Page Size",
       options: pageSizeOptions

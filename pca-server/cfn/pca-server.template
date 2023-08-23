@@ -62,10 +62,12 @@ Parameters:
 
 Conditions:
   ShouldCreateBoto3Layer: !Equals [!Ref Boto3LayerArn, '']
+  ShouldDeployBedrockSummarizer: !Equals [!Ref CallSummarization, "BEDROCK"]
   ShouldDeploySageMakerSummarizer: !Equals [!Ref CallSummarization, "SAGEMAKER"]
   ShouldEnableAnthropicSummarizer: !Equals [!Ref CallSummarization, "ANTHROPIC"]
   ShouldEnableEndOfCallLambdaHookFunction: !Equals [!Ref CallSummarization, "LAMBDA"]
   IsTranscriptSummaryEnabled: !Or
+    - !Condition ShouldDeployBedrockSummarizer
     - !Condition ShouldEnableEndOfCallLambdaHookFunction
     - !Condition ShouldDeploySageMakerSummarizer
     - !Condition ShouldEnableAnthropicSummarizer

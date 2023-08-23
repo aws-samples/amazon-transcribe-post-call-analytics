@@ -57,20 +57,29 @@ async function createRecord(record) {
         (labelObj) => labelObj.DisplayText === "Customer"
       ).Speaker || defaultId;
 
-    let data = JSON.stringify({
-      key: key,
-      jobName: jobInfo.TranscriptionJobName,
-      confidence: jobInfo.AverageWordConfidence,
-      lang: parsed.ConversationAnalytics.LanguageCode,
-      duration:
-        parsed.SpeechSegments[parsed.SpeechSegments.length - 1].SegmentEndTime,
-      timestamp: timestamp,
-      location: parsed.ConversationAnalytics.ConversationLocation,
-      callerSentimentScore:
-        parsed.ConversationAnalytics.SentimentTrends[callerId].SentimentScore,
-      callerSentimentChange:
-        parsed.ConversationAnalytics.SentimentTrends[callerId].SentimentChange,
-    });
+    let dataJson = {
+        key: key,
+        jobName: jobInfo.TranscriptionJobName,
+        confidence: jobInfo.AverageWordConfidence,
+        lang: parsed.ConversationAnalytics.LanguageCode,
+        duration:
+            parsed.SpeechSegments[parsed.SpeechSegments.length - 1].SegmentEndTime,
+        timestamp: timestamp,
+        location: parsed.ConversationAnalytics.ConversationLocation,
+        callerSentimentScore:
+            parsed.ConversationAnalytics.SentimentTrends[callerId].SentimentScore,
+        callerSentimentChange:
+            parsed.ConversationAnalytics.SentimentTrends[callerId].SentimentChange,
+        agent: parsed.ConversationAnalytics.Agent,
+        customer: parsed.ConversationAnalytics.Cust,
+        guid: parsed.ConversationAnalytics.GUID,
+    };
+
+    if (parsed.ConversationAnalytics.Summary !== undefined) {
+        dataJson["summary"] = parsed.ConversationAnalytics.Summary;
+    }
+    
+    let data = JSON.stringify(dataJson);
     console.log("Data:", data);
 
     const callId = `call#${key}`;

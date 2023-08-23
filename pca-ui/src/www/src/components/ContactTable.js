@@ -44,11 +44,11 @@ const COLUMN_DEFINITIONS = [
     width:150
   },
   {
-    id: "cust",
+    id: "customer",
     header: "Customer",
-    cell: (d) => d.cust,
+    cell: (d) => d.customer,
     isRowHeader: true,
-    sortingField: "cust",
+    sortingField: "customer",
     width:150
   },
   {
@@ -62,7 +62,7 @@ const COLUMN_DEFINITIONS = [
   {
     id: "resolved",
     header: "Resolved",
-    cell: (d) => d.resolved,
+    cell: (d) => d.summary?.Resolved,
     isRowHeader: true,
     sortingField: "resolved",
     Width:170
@@ -70,7 +70,7 @@ const COLUMN_DEFINITIONS = [
   {
     id: "topic",
     header: "Topic",
-    cell: (d) => d.topic,
+    cell: (d) => d.summary?.Topic,
     isRowHeader: true,
     sortingField: "topic",
     Width:150
@@ -78,7 +78,14 @@ const COLUMN_DEFINITIONS = [
   {
     id: "summary",
     header: "Summary",
-    cell: (d) => d.summary,
+    cell: (d) => {
+      if (d.summary?.Summary !== undefined) {
+        return d.summary.Summary;
+      } else if (d.summary !== undefined) {
+        return d.summary;
+      }
+      return 'n/a';
+    },
     isRowHeader: true,
     sortingField: "summary",
     Width:150
@@ -185,7 +192,7 @@ export const ContactTable = ({ data = [], loading = false, empty, header, varian
             groupValuesLabel: "Agents"
           },
           {
-            key: "cust",
+            key: "customer",
             operators: ["=", "!=", ":", "!:"],
             propertyLabel: "Customer",
             groupValuesLabel: "Customers"
@@ -240,6 +247,7 @@ export const ContactTable = ({ data = [], loading = false, empty, header, varian
       header={header}
       variant={variant}
       columnDefinitions={COLUMN_DEFINITIONS}
+      columnDisplay={preferences.contentDisplay}
       items={items}
       //pagination={<Pagination {...paginationProps} />}
       resizableColumns={true}
