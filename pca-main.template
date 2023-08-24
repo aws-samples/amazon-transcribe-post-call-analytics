@@ -237,7 +237,7 @@ Parameters:
 
   ffmpegDownloadUrl:
     Type: String
-    Default: https://www.johnvansickle.com/ffmpeg/old-releases/ffmpeg-4.4-amd64-static.tar.xz
+    Default: http://www.johnvansickle.com/ffmpeg/old-releases/ffmpeg-4.4-amd64-static.tar.xz
     Description: URL for ffmpeg binary distribution tar file download - see https://www.johnvansickle.com/ffmpeg/
 
   loadSampleAudioFiles:
@@ -357,6 +357,27 @@ Parameters:
       IMPORTANT: Your Amazon QuickSight account MUST be enabled before deploying this stack. See http://www.amazon.com/pca-dashboards for additional 
       steps required in Amazon QuickSight to (1) enable S3 access to PCA OutputBucket and (2) share dashboard and analytics assets.
 
+  GenAIQuery:
+    Default: 'DISABLED'
+    Type: String
+    AllowedValues:
+      - 'DISABLED'
+      - 'BEDROCK'
+      - 'ANTHROPIC'
+    Description: >
+      If enabled, gives the ability to query an individual call for information. 
+      If you choose Anthropic, it will use the same API Key as the call summarization
+
+  GenAIQueryBedrockModelId:
+    Type: String
+    Default: anthropic.claude-v2
+    AllowedValues:
+      - amazon.titan-tg1-large
+      - anthropic.claude-v1
+      - anthropic.claude-instant-v1
+      - anthropic.claude-v2
+    Description: (Optional) If 'GenAIQuery' is BEDROCK, which Bedrock model to use. (Bedrock preview access only)
+
   CallSummarization:
     Default: 'DISABLED'
     Type: String
@@ -429,6 +450,11 @@ Metadata:
                 - SummarizationSageMakerInitialInstanceCount
                 - SummarizationLLMThirdPartyApiKey
                 - SummarizationLambdaFunctionArn
+            - Label:
+                default: Generative AI Query
+              Parameters:
+                - GenAIQuery
+                - GenAIQueryBedrockModelId
             - Label:
                 default: Advanced analytics and reporting
               Parameters:
@@ -844,6 +870,9 @@ Resources:
           - !Ref OutputBucketName
         DataPrefix: !Ref OutputBucketParsedResults
         Environment: !Ref Environment
+        GenAIQueryType: !Ref GenAIQuery
+        GenAIQueryBedrockModelId: !Ref GenAIQueryBedrockModelId
+        FetchTranscriptArn: !GetAtt PCAServer.Outputs.FetchTranscriptArn
 
   MediaSearchFinder:
     Type: AWS::CloudFormation::Stack

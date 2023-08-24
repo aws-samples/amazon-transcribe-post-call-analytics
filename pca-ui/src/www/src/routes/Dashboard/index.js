@@ -1,7 +1,7 @@
 import { useState, useEffect, Fragment, useRef } from "react";
 import { useParams } from "react-router";
 import useSWR, { useSWRConfig } from "swr";
-import { get, swap } from "../../api/api";
+import { get,genaiquery, swap } from "../../api/api";
 import { Formatter } from "../../format";
 import { TranscriptSegment } from "./TranscriptSegment";
 import { Entities } from "./Entities";
@@ -19,7 +19,8 @@ import { getEntityColor } from "./colours";
 import { TranscriptOverlay } from "./TranscriptOverlay";
 import { range } from "../../util";
 import { Sentiment } from "../../components/Sentiment";
-import { Button, ContentLayout, Link, Header, Grid, Container, SpaceBetween, Input, FormField, TextContent } from '@cloudscape-design/components';
+import { ChatInput } from "../../components/ChatInput";
+import { Button, ContentLayout, Spinner, Link, Header, Grid, Container, SpaceBetween, Input, FormField, TextContent } from '@cloudscape-design/components';
 
 const getSentimentTrends = (d, target, labels) => {
   const id = Object.entries(labels).find(([_, v]) => v === target)?.[0];
@@ -83,7 +84,9 @@ function Dashboard({ setAlert }) {
 
   const [isSwapping, setIsSwapping] = useState(false);
 
+  const [genAiQueries, setGenAiQueries] = useState([]);
   const [genAiQuery, setGenAiQuery] = useState("");
+  const [genAiQueryStatus, setGenAiQueryStatus] = useState(false);
 
   const getValueFor = (input) =>
     Object.entries(speakerLabels).find(([_, label]) => label === input)?.[0];
@@ -101,6 +104,16 @@ function Dashboard({ setAlert }) {
       newSpeakerLabels[Speaker] = DisplayText;
     });
     setSpeakerLabels(newSpeakerLabels);
+
+    /*setGenAiQueries(
+      (data?.ConversationAnalytics?.GenAiQuery ?
+        Object.entries(data?.ConversationAnalytics?.GenAiQuery).map(([key, value]) => {
+          return {
+            label: key,
+            value: (value instanceof Array ? value.join(', ') : value)
+          }
+        }) : [])
+    );*/
   }, [data]);
   
   useEffect(() => {
@@ -186,6 +199,56 @@ function Dashboard({ setAlert }) {
     .filter((segment) => segment.SegmentSpeaker === getValueFor("Customer"))
     .map(createLoudnessData)
     .flat();*/
+  
+  const getElementByIdAsync = id => new Promise(resolve => {
+    const getElement = () => {
+      const element = document.getElementById(id);
+      if(element) {
+        resolve(element);
+      } else {
+        requestAnimationFrame(getElement);
+      }
+    };
+    getElement();
+  });
+
+  const scrollToBottomOfChat = async () => {
+    const chatDiv = await getElementByIdAsync("chatDiv");
+    chatDiv.scrollTop = chatDiv.scrollHeight + 200;
+  }
+
+  const submitQuery = (query) => {
+    if (genAiQueryStatus === true) {
+      return;
+    }
+
+    setGenAiQueryStatus(true);
+    
+    let responseData = {
+      label: query,
+      value: '...'
+    }
+    const currentQueries = genAiQueries.concat(responseData);
+    setGenAiQueries(currentQueries);
+    scrollToBottomOfChat(); 
+
+    let query_response = genaiquery(key, query);
+    query_response.then((data) => {
+      const queries = currentQueries.map(query => {
+        if (query.value !== '...') {
+          return query;
+        } else {
+          return {
+            label: query.label,
+            value: data.response
+          }
+        }
+      });
+      setGenAiQueries(queries);
+      scrollToBottomOfChat();
+    });
+    setGenAiQueryStatus(false);
+  }
 
   const swapAgent = async () => {
     try {
@@ -325,9 +388,9 @@ function Dashboard({ setAlert }) {
     Object.entries(data?.ConversationAnalytics?.Summary).map(([key, value]) => {
     return {
       label: key,
-      value
+      value: (value instanceof Array ? value.join(', ') : value)
     }
-  }) : []);
+    }) : []);
 
   const audioEndTimestamps = (data?.SpeechSegments || [])
     .map(({WordConfidence}) => WordConfidence)
@@ -415,17 +478,51 @@ function Dashboard({ setAlert }) {
       </Header>
     }>
     <Grid
-      gridDefinition={[
-        { colspan: { l: 4, m: 4, default: 12 } },
-        { colspan: { l: 4, m: 4, default: 12 } },
-        { colspan: { l: 4, m: 4, default: 12 } },
-        { colspan: { l: 12, m: 12, default: 12 } },
-        { colspan: { l: 6, m: 6, default: 12 } },
-        { colspan: { l: 6, m: 6, default: 12 } },
-        { colspan: { l: 6, m: 6, default: 12 } },
-        { colspan: { l: 6, m: 6, default: 12 } },
-        { colspan: { l: 12, m: 12, default: 12 } },
-      ]}
+        gridDefinition={
+          (
+            window.pcaSettings.genai.query && isTranscribeCallAnalyticsMode ?
+            [
+              { colspan: { l: 4, m: 4, default: 12 } },
+              { colspan: { l: 4, m: 4, default: 12 } },
+              { colspan: { l: 4, m: 4, default: 12 } },
+              { colspan: { l: 12, m: 12, default: 12 } },
+              { colspan: { l: 6, m: 6, default: 12 } },
+              { colspan: { l: 6, m: 6, default: 12 } },
+              { colspan: { l: 4, m: 4, default: 12 } },
+              { colspan: { l: 4, m: 4, default: 12 } },
+              { colspan: { l: 4, m: 4, default: 12 } },
+              { colspan: { l: 12, m: 12, default: 12 } },
+            ] : !window.pcaSettings.genai.query && isTranscribeCallAnalyticsMode ?
+            [
+              { colspan: { l: 4, m: 4, default: 12 } },
+              { colspan: { l: 4, m: 4, default: 12 } },
+              { colspan: { l: 4, m: 4, default: 12 } },
+              { colspan: { l: 12, m: 12, default: 12 } },
+              { colspan: { l: 6, m: 6, default: 12 } },
+              { colspan: { l: 6, m: 6, default: 12 } },
+              { colspan: { l: 6, m: 6, default: 12 } },
+              { colspan: { l: 6, m: 6, default: 12 } },
+              { colspan: { l: 12, m: 12, default: 12 } },
+            ] : window.pcaSettings.genai.query && !isTranscribeCallAnalyticsMode ?
+            [
+              { colspan: { l: 4, m: 4, default: 12 } },
+              { colspan: { l: 4, m: 4, default: 12 } },
+              { colspan: { l: 4, m: 4, default: 12 } },
+              { colspan: { l: 12, m: 12, default: 12 } },
+              { colspan: { l: 12, m: 12, default: 12 } },
+              { colspan: { l: 6, m: 6, default: 12 } },
+              { colspan: { l: 6, m: 6, default: 12 } },
+              { colspan: { l: 12, m: 12, default: 12 } },
+            ] : [
+              { colspan: { l: 4, m: 4, default: 12 } },
+              { colspan: { l: 4, m: 4, default: 12 } },
+              { colspan: { l: 4, m: 4, default: 12 } },
+              { colspan: { l: 12, m: 12, default: 12 } },
+              { colspan: { l: 6, m: 6, default: 12 } },
+              { colspan: { l: 6, m: 6, default: 12 } },
+              { colspan: { l: 12, m: 12, default: 12 } },
+            ]
+          )}
       >
 
         <Container
@@ -554,35 +651,48 @@ function Dashboard({ setAlert }) {
             )}
           </Container>
         )}
-        
         <Container
           fitHeight={true}
           header={
             <Header variant="h2">
-              GenAI Transcript Summary
+              Generative AI Insights
             </Header>
           }
-          /* For future use. :) 
-          footer={
-            <Grid gridDefinition={[{ colspan: {default: 12, xxs: 9} }, {default: 12, xxs: 3}]}>
-              <Input
-              placeholder="Enter a question about the call."
-              onChange={({ detail }) => setGenAiQuery(detail.value)}
-              value={genAiQuery} />
-              <Button>
-                Submit
-              </Button>
-            </Grid>
-          }*/
         >
           <SpaceBetween size="m">
             {genAiSummary.length > 0 ? genAiSummary.map((entry, i) => (
               <ValueWithLabel key={i} label={entry.label}>
-                {entry.value}
+                { entry.value }
               </ValueWithLabel>
             )) : <ValueWithLabel key='nosummary'>No Summary Available</ValueWithLabel>}
           </SpaceBetween>
         </Container>
+
+        {window.pcaSettings.genai.query && (
+          <Container
+            fitHeight={true}
+            header={
+              <Header variant="h2">
+                Generative AI Query
+              </Header>
+            }
+            /* For future use. :) */
+            footer={
+              <ChatInput submitQuery={submitQuery} />
+            }
+          >
+            <div id="chatDiv" style={{overflow: "hidden", overflowY:'auto', maxHeight:'30em'}}>
+              <SpaceBetween size="m">
+                {genAiQueries.length > 0 ? genAiQueries.map((entry, i) => (
+                    <ValueWithLabel key={i} label={entry.label}>
+                      {entry.value === '...' ? <div style={{height:'30px'}}><Spinner/></div> : entry.value}
+                    </ValueWithLabel>
+                )) : <ValueWithLabel key='nosummary'>Ask a question below.</ValueWithLabel>}
+              </SpaceBetween>
+            </div>
+          </Container>
+        )}
+        
         {isTranscribeCallAnalyticsMode && (
           <Container
             fitHeight={true}

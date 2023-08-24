@@ -5,7 +5,7 @@ Description: Amazon Transcribe Post Call Analytics - PCA Server
 Parameters:
   ffmpegDownloadUrl:
     Type: String
-    Default: https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz
+    Default: http://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz
     Description: URL for ffmpeg binary distribution tar file download - see https://www.johnvansickle.com/ffmpeg/
 
   CallSummarization:

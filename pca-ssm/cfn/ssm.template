@@ -84,7 +84,7 @@ Parameters:
       Folder that holds Transcripts from other applications (e.g. Live Call Analytics) that are to be
       processed as if PCA had processed that audio
 
-  LLMPromptTemplate:
+  LLMPromptSummaryTemplate:
     Type: String
     Description: >-
       Prompt to use to generate insights for a call. This can be a single string where an LLM returns a string,
@@ -106,6 +106,17 @@ Parameters:
       <br>{transcript}
       <br></transcript>
       <br>Assistant: Here is the JSON object with the answers to the questions: 
+
+  LLMPromptQueryTemplate:
+    Type: String
+    Description: This is the LLM prompt template to use when querying an individual call transcript.
+    Default: >-
+      Human: Answer the following question in 1 sentence based on the transcript. If the question is not relevant to the transcript, reply with I'm sorry, this is not relevant.
+      <br><question>{question}</question>
+      <br><transcript>
+      <br>{transcript}
+      <br></transcript>
+      <br>Assistant: "
 
   MaxSpeakers:
     Type: String
@@ -407,17 +418,17 @@ Resources:
         processed as if PCA had processed that audio
       Value: !Ref InputBucketOrigTranscripts
 
-  LLMPromptTemplateParameter:
+  LLMPromptSummaryTemplateParameter:
     Type: "AWS::SSM::Parameter"
     Properties:
-      Name: LLMPromptTemplate
+      Name: LLMPromptSummaryTemplate
       Type: String
       Description: >
         Prompt to use to generate insights for a call. This can be a single string where an LLM returns a string,
         or a single string where the LLM returns a JSON object with key/value pairs, or a string that contains
         a JSON Object with key/value pairs, where the LLM will run one inference on each key/value pair with the value
         containing the prompt. Use {transcript} as a placeholder for where the call transcript will be injected.
-      Value: !Ref LLMPromptTemplate
+      Value: !Ref LLMPromptSummaryTemplate
 
   MaxSpeakersParameter:
     Type: "AWS::SSM::Parameter"
