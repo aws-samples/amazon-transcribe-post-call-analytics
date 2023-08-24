@@ -286,9 +286,9 @@ Parameters:
     Type: String
     Description: Kendra Index ID, or empty string if call transcription indexing is not enabled 
     
-  WebUri:
-    Type: String
-    Description: PCA Web Application URI
+  #WebUri:
+  #  Type: String
+  #  Description: PCA Web Application URI
     
   DatabaseName:
     Type: String
@@ -675,13 +675,13 @@ Resources:
       Value: !Ref KendraIndexId
       Description: Kendra Index ID, or empty string if call transcription indexing is not enabled
       
-  WebUriParameter:
-    Type: "AWS::SSM::Parameter"
-    Properties:
-      Name: WebUri
-      Type: String
-      Value: !Ref WebUri
-      Description: PCA Web Application URI
+  #WebUriParameter:
+  #  Type: "AWS::SSM::Parameter"
+  #  Properties:
+  #    Name: WebUri
+  #    Type: String
+  #    Value: !Ref WebUri
+  #    Description: PCA Web Application URI
 
   DatabaseNameParameter:
     Type: "AWS::SSM::Parameter"

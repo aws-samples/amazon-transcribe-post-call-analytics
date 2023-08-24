@@ -129,6 +129,9 @@ Resources:
 
 
 Outputs:
+  DistributionId:
+    Value: !Ref Distribution
+
   Uri:
     Value: !Sub "https://${Distribution.DomainName}/"
 

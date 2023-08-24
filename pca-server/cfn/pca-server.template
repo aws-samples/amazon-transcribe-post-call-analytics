@@ -60,6 +60,10 @@ Parameters:
     Type: String
     Description: External Boto3 Layer Arn to use. If none is provided, one will be created automatically via boto3.template
 
+  PyUtilsLayerArn:
+    Type: String
+    Description: PyUtils layer arn from main stack.
+
 Conditions:
   ShouldCreateBoto3Layer: !Equals [!Ref Boto3LayerArn, '']
   ShouldDeployBedrockSummarizer: !Equals [!Ref CallSummarization, "BEDROCK"]
@@ -86,11 +90,6 @@ Resources:
     Properties:
       TemplateURL: lib/boto3.template
 
-  PYTHONUTILS:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: lib/python-utilities.template
-
   DDB:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -107,7 +106,7 @@ Resources:
           - ShouldCreateBoto3Layer
           - !GetAtt BOTO3.Outputs.Boto3Layer
           - !Ref Boto3LayerArn
-        PyUtilsLayer: !GetAtt PYTHONUTILS.Outputs.PyUtilsLayer
+        PyUtilsLayer: !Ref PyUtilsLayerArn
         CallSummarization: !Ref CallSummarization
         SummarizationBedrockModelId: !Ref SummarizationBedrockModelId
         SummarizationSagemakerEndpointName: !If 
@@ -131,7 +130,7 @@ Resources:
           - ShouldCreateBoto3Layer
           - !GetAtt BOTO3.Outputs.Boto3Layer
           - !Ref Boto3LayerArn
-        PyUtilsLayer: !GetAtt PYTHONUTILS.Outputs.PyUtilsLayer
+        PyUtilsLayer: !Ref PyUtilsLayerArn
         Summarize: !If [IsTranscriptSummaryEnabled, "true", "false"]
 
   BulkImport:
@@ -158,7 +157,7 @@ Resources:
         InitialInstanceCount: !Ref SummarizationSageMakerInitialInstanceCount
 
 Outputs:
-
+  
   FetchTranscriptArn:
     Value: !GetAtt PCA.Outputs.FetchTranscriptArn
 

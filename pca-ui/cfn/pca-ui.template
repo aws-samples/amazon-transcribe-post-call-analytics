@@ -63,7 +63,17 @@ Parameters:
     Type: String
     AllowedPattern: '^(|arn:aws:lambda:.*)$'
     Description: Arn to use for the GenAIQuery to fetch transcript
+
+  Boto3LayerArn:
+    Default: ''
+    Type: String
+    Description: External Boto3 Layer Arn to use. If none is provided, one will be created automatically via boto3.template
     
+  PyUtilsLayerArn:
+    Default: ''
+    Type: String
+    Description: External PyUtils Layer Arn to use.
+
 Conditions:
   isMainStackNameEmpty: !Equals [!Ref MainStackName, '']
   ShouldEnableGenAIQuery: !Not [!Equals [!Ref GenAIQueryType, 'DISABLED']]
@@ -118,6 +128,9 @@ Resources:
         UserPoolId: !GetAtt Cognito.Outputs.UserPoolId
         GenAIQueryType: !Ref GenAIQueryType
         GenAIQueryBedrockModelId: !Ref GenAIQueryBedrockModelId
+        FetchTranscriptArn: !Ref FetchTranscriptArn
+        Boto3LayerArn: !Ref Boto3LayerArn
+        PyUtilsLayerArn: !Ref PyUtilsLayerArn
 
   Deploy:
     Type: AWS::CloudFormation::Stack
@@ -130,10 +143,19 @@ Resources:
         ApiUri: !GetAtt Api.Outputs.Uri
         DeployCountName: !Ref DeployCount
         DeployCountValue: !Ref DeployCount
+        # DistributionId: !GetAtt Web.Outputs.DistributionId
         EnableGenAIQuery: !If 
           - ShouldEnableGenAIQuery
           - 'true'
           - 'false'
+
+  WebUriParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: WebUri
+      Type: String
+      Value: !GetAtt Web.Outputs.Uri
+      Description: PCA Web Application URI
 
 Outputs:
   DataBucket:
