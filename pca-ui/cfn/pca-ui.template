@@ -37,9 +37,36 @@ Parameters:
 
   Environment:
     Type: String
+
+  GenAIQueryType:
+    Default: 'DISABLED'
+    Type: String
+    AllowedValues:
+      - 'DISABLED'
+      # - 'SAGEMAKER'
+      - 'BEDROCK'
+      - 'LAMBDA'
+      - 'ANTHROPIC'
+    Description: This is what model to use for GenAIQuery.
+  
+  GenAIQueryBedrockModelId:
+    Type: String
+    Default: anthropic.claude-v2
+    AllowedValues:
+      - amazon.titan-tg1-large
+      - anthropic.claude-v1
+      - anthropic.claude-instant-v1
+      - anthropic.claude-v2
+    Description: (Optional) If 'GenAIQuery' is BEDROCK, which Bedrock model to use. (Bedrock preview access only)
+
+  FetchTranscriptArn:
+    Type: String
+    AllowedPattern: '^(|arn:aws:lambda:.*)$'
+    Description: Arn to use for the GenAIQuery to fetch transcript
     
 Conditions:
   isMainStackNameEmpty: !Equals [!Ref MainStackName, '']
+  ShouldEnableGenAIQuery: !Not [!Equals [!Ref GenAIQueryType, 'DISABLED']]
 
 Resources:
   DeployCount:
@@ -89,6 +116,8 @@ Resources:
         DataBucket: !Ref DataBucket
         TableName: !GetAtt Indexer.Outputs.TableName
         UserPoolId: !GetAtt Cognito.Outputs.UserPoolId
+        GenAIQueryType: !Ref GenAIQueryType
+        GenAIQueryBedrockModelId: !Ref GenAIQueryBedrockModelId
 
   Deploy:
     Type: AWS::CloudFormation::Stack
@@ -101,6 +130,10 @@ Resources:
         ApiUri: !GetAtt Api.Outputs.Uri
         DeployCountName: !Ref DeployCount
         DeployCountValue: !Ref DeployCount
+        EnableGenAIQuery: !If 
+          - ShouldEnableGenAIQuery
+          - 'true'
+          - 'false'
 
 Outputs:
   DataBucket:

@@ -64,7 +64,7 @@ const COLUMN_DEFINITIONS = [
     header: "Resolved",
     cell: (d) => d.summary?.Resolved,
     isRowHeader: true,
-    sortingField: "resolved",
+    sortingField: "summary?.Resolved",
     Width:170
   },
   {
@@ -73,6 +73,14 @@ const COLUMN_DEFINITIONS = [
     cell: (d) => d.summary?.Topic,
     isRowHeader: true,
     sortingField: "topic",
+    Width:150
+  },
+  {
+    id: "product",
+    header: "Product",
+    cell: (d) => d.summary?.Product,
+    isRowHeader: true,
+    sortingField: "product",
     Width:150
   },
   {
@@ -214,6 +222,12 @@ export const ContactTable = ({ data = [], loading = false, empty, header, varian
             operators: ["=", "!=", ":", "!:"],
             propertyLabel: "Topic",
             groupValuesLabel: "Topics"
+          },
+          {
+            key: "product",
+            operators: ["=", "!=", ":", "!:"],
+            propertyLabel: "Product",
+            groupValuesLabel: "Products"
           },
           {
             key: "lang",

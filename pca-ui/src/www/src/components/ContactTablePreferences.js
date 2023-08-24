@@ -18,6 +18,7 @@ const VISIBLE_CONTENT_OPTIONS = [{
     { id: "queue", label: "Queue", visible: false },
     { id: "resolved", label: "Resolved", visible: false },
     { id: "topic", label: "Topic", visible: false },
+    { id: "product", label: "Product", visible: false },
     { id: "summary", label: "Summary", visible: false },
     { id: "callerSentimentScore",  label: "Cust Sentiment", visible: true },
     { id: "langCode", label: "Lang Code", visible: true },
@@ -34,6 +35,7 @@ export const DEFAULT_PREFERENCES = {
   visibleContent: [
     'timestamp',
     'jobName',
+    'agent',
     'callerSentimentScore',
     'langCode',
     'duration'

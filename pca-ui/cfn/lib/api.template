@@ -17,6 +17,32 @@ Parameters:
   UserPoolId:
     Type: String
 
+  GenAIQueryType:
+    Default: 'DISABLED'
+    Type: String
+    AllowedValues:
+      - 'DISABLED'
+      # - 'SAGEMAKER'
+      - 'BEDROCK'
+      - 'LAMBDA'
+      - 'ANTHROPIC'
+    Description: This is what model to use for GenAIQuery.
+  
+  GenAIQueryBedrockModelId:
+    Type: String
+    Default: anthropic.claude-v2
+    AllowedValues:
+      - amazon.titan-tg1-large
+      - anthropic.claude-v1
+      - anthropic.claude-instant-v1
+      - anthropic.claude-v2
+    Description: (Optional) If 'GenAIQuery' is BEDROCK, which Bedrock model to use. (Bedrock preview access only)
+
+  FetchTranscriptArn:
+    Type: String
+    AllowedPattern: '^(|arn:aws:lambda:.*)$'
+    Description: Arn to use for the GenAIQuery to fetch transcript
+
 Resources:
   Api:
     Type: AWS::Serverless::Api
@@ -194,6 +220,45 @@ Resources:
         - DynamoDBCrudPolicy:
             TableName: !Ref TableName
       Runtime: nodejs14.x
+  
+  GenAIQueryFunction:
+    Type: "AWS::Serverless::Function"
+    Properties:
+      CodeUri:  ../../src/genai
+      Handler: index.lambda_handler
+      Environment:
+        Variables:
+          QUERY_TYPE: !Ref GenAIQueryType
+          BEDROCK_MODEL_ID: !Ref GenAIQueryBedrockModelId
+          FETCH_TRANSCRIPT_LAMBDA_ARN: !Ref FetchTranscriptArn
+          ANTHROPIC_MODEL_IDENTIFIER: "claude-v1.3-100k"
+          ANTHROPIC_ENDPOINT_URL: "https://api.anthropic.com/v1/complete"
+      Events:
+        APIEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Method: GET
+            Path: /genaiquery
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref DataBucket
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TableName
+        - Statement:
+          - Sid: InvokeGetTranscript
+            Effect: Allow
+            Action:
+              - lambda:InvokeFunction
+            Resource: !Ref FetchTranscriptArn
+          - Sid: InvokeBedrock
+            Effect: Allow
+            Action: 
+              - bedrock:InvokeModel
+            Resource:
+              - !Sub "arn:${AWS::Partition}:bedrock:*::foundation-model/*"
+              - !Sub "arn:${AWS::Partition}:bedrock:*:${AWS::AccountId}:custom-model/*"
+      Runtime: python3.10
 
 Outputs:
   Uri:

@@ -21,6 +21,11 @@ Parameters:
   DeployCountValue:
     Type: AWS::SSM::Parameter::Value<String>
 
+  EnableGenAIQuery:
+    Type: String
+    AllowedValues: [true, false]
+    Description: true or false to enable or disable the genai query prompt
+
 Resources:
   Layer:
     Type: "AWS::Lambda::LayerVersion"
@@ -98,6 +103,7 @@ Resources:
       AuthClientId: !Ref AuthClientId
       ApiUri: !Ref ApiUri
       Region: !Ref AWS::Region
+      GenAIQuery: !Ref EnableGenAIQuery
 
 Outputs:
 

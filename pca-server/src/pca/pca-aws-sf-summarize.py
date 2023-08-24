@@ -115,7 +115,7 @@ def generate_sagemaker_summary(transcript):
 def get_templates_from_ssm():
     templates = []
     try:
-        SUMMARY_PROMPT_TEMPLATE = ssmClient.get_parameter(Name=cf.CONF_LLM_PROMPT_TEMPLATE)["Parameter"]["Value"]
+        SUMMARY_PROMPT_TEMPLATE = ssmClient.get_parameter(Name=cf.CONF_LLM_PROMPT_SUMMARY_TEMPLATE)["Parameter"]["Value"]
 
         prompt_templates = json.loads(SUMMARY_PROMPT_TEMPLATE)
         for k, v in prompt_templates.items():
