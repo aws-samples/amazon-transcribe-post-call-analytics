@@ -260,6 +260,7 @@ Resources:
             Method: GET
             Path: /genaiquery
       Policies:
+        - arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess
         - S3CrudPolicy:
             BucketName: !Ref DataBucket
         - DynamoDBCrudPolicy:
