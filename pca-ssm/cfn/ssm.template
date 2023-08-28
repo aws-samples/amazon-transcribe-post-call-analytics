@@ -430,6 +430,14 @@ Resources:
         containing the prompt. Use {transcript} as a placeholder for where the call transcript will be injected.
       Value: !Ref LLMPromptSummaryTemplate
 
+  LLMPromptQueryTemplateParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: LLMPromptQueryTemplate
+      Type: String
+      Description: This is the LLM prompt template to use when querying an individual call transcript.
+      Value: !Ref LLMPromptQueryTemplate
+
   MaxSpeakersParameter:
     Type: "AWS::SSM::Parameter"
     Properties:
