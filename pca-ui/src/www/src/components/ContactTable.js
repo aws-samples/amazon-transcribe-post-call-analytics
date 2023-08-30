@@ -73,7 +73,7 @@ const COLUMN_DEFINITIONS = [
     minWidth:150
   },
   {
-    id: "resolved",
+    id: "summary_resolved",
     header: "Resolved",
     cell: (d) => d.summary_resolved,
     isRowHeader: true,
@@ -81,7 +81,7 @@ const COLUMN_DEFINITIONS = [
     minWidth:170
   },
   {
-    id: "topic",
+    id: "summary_topic",
     header: "Topic",
     cell: (d) => d.summary_topic,
     isRowHeader: true,
@@ -89,7 +89,7 @@ const COLUMN_DEFINITIONS = [
     Width:150
   },
   {
-    id: "product",
+    id: "summary_product",
     header: "Product",
     cell: (d) => d.summary_product,
     isRowHeader: true,
@@ -97,7 +97,7 @@ const COLUMN_DEFINITIONS = [
     minWidth:150
   },
   {
-    id: "summary",
+    id: "summary_summary",
     header: "Summary",
     cell: (d) => {
       console.log(d);
