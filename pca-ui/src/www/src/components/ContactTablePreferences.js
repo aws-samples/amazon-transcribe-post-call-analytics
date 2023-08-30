@@ -10,19 +10,20 @@ const PAGE_SIZE_OPTIONS = [
 const VISIBLE_CONTENT_OPTIONS = [{
   label: 'Call list properties',
   options: [
-    { id: "timestamp", label: "Timestamp", visible: true },
-    { id: "jobName", label: "Job Name", visible: true },
+    /*{ id: "timestamp", label: "Timestamp", visible: true },
+    { id: "jobName", label: "Job Name", visible: true },*/
     { id: "guid", label: "Guid",  visible: false },
     { id: "agent", label: "Agent",  visible: false },
     { id: "customer", label: "Customer",  visible: false },
     { id: "queue", label: "Queue", visible: false },
-    { id: "resolved", label: "Resolved", visible: false },
-    { id: "topic", label: "Topic", visible: false },
-    { id: "product", label: "Product", visible: false },
-    { id: "summary", label: "Summary", visible: false },
+    { id: "summary_resolved", label: "Resolved", visible: false },
+    { id: "summary_topic", label: "Topic", visible: false },
+    { id: "summary_product", label: "Product", visible: false },
+    { id: "summary_summary", label: "Summary", visible: false },
     { id: "callerSentimentScore",  label: "Cust Sentiment", visible: true },
     { id: "langCode", label: "Lang Code", visible: true },
-    { id: "duration", label: "Duration", visible: true }
+    { id: "duration", label: "Duration", visible: true },
+    /*{ id: "menu", label: "Menu", visible: true }*/
   ]
 }];
 
@@ -31,7 +32,7 @@ export const DEFAULT_PREFERENCES = {
   wrapLines: false,
   stripedRows: false,
   contentDensity: 'comfortable',
-  stickyColumns: { first: 0, last: 1 },
+  /* stickyColumns: { first: 0, last: 0 },*/
   visibleContent: [
     'timestamp',
     'jobName',

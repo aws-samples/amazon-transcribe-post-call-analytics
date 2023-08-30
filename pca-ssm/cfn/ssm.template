@@ -111,12 +111,12 @@ Parameters:
     Type: String
     Description: This is the LLM prompt template to use when querying an individual call transcript.
     Default: >-
-      Human: Answer the following question in 1 sentence based on the transcript. If the question is not relevant to the transcript, reply with I'm sorry, this is not relevant.
+      Human: You are an AI chatbot. Carefully read the following transcript and then provide a short answer to the question. If the answer cannot be determined from the transcript or the context, then reply saying Sorry, I don't know. 
       <br><question>{question}</question>
       <br><transcript>
       <br>{transcript}
       <br></transcript>
-      <br>Assistant: "
+      <br>Assistant:
 
   MaxSpeakers:
     Type: String
