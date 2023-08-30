@@ -11,19 +11,32 @@ import "./ContactTable.css";
 import { DateTimeForm, formatDateTime } from './DateTimeForm';
 import { ContactTablePreferences, DEFAULT_PREFERENCES } from './ContactTablePreferences'
 import { useLocalStorage } from '../common/localStorage';
+import Popover from "@cloudscape-design/components/popover";
+import Button from "@cloudscape-design/components/button";
+import StatusIndicator from "@cloudscape-design/components/status-indicator";
+import Icon from "@cloudscape-design/components/icon";
+import Link from "@cloudscape-design/components/link";
 
 const COLUMN_DEFINITIONS = [
   {
     id: "timestamp",
     header: "Timestamp",
     sortingField: "timestamp",
-    cell: (d) => Formatter.Timestamp(d.timestamp),
-    width: 160
+    cell: (d) => {
+      return (
+        <Link href={`/dashboard/${d.key}`}>{Formatter.Timestamp(d.timestamp)}</Link>
+      )      
+    },
+    minWidth: 160
   },
   {
     id: "jobName",
     header: "Job Name",
-    cell: (d) => d.jobName,
+    cell: (d) => {
+      return (
+        <Link variant="primary" href={`/dashboard/${d.key}`}>{d.jobName}</Link>
+      )      
+    },
     isRowHeader: true,
     sortingField: "jobName",
   },
@@ -33,7 +46,7 @@ const COLUMN_DEFINITIONS = [
     cell: (d) => d.guid,
     isRowHeader: true,
     sortingField: "guid",
-    width:150
+    minWidth:150
   },
   {
     id: "agent",
@@ -41,7 +54,7 @@ const COLUMN_DEFINITIONS = [
     cell: (d) => d.agent,
     isRowHeader: true,
     sortingField: "agent",
-    width:150
+    minWidth:150
   },
   {
     id: "customer",
@@ -49,7 +62,7 @@ const COLUMN_DEFINITIONS = [
     cell: (d) => d.customer,
     isRowHeader: true,
     sortingField: "customer",
-    width:150
+    minWidth:150
   },
   {
     id: "queue",
@@ -57,46 +70,59 @@ const COLUMN_DEFINITIONS = [
     cell: (d) => d.queue,
     isRowHeader: true,
     sortingField: "queue",
-    Width:150
+    minWidth:150
   },
   {
     id: "resolved",
     header: "Resolved",
-    cell: (d) => d.summary?.Resolved,
+    cell: (d) => d.summary_resolved,
     isRowHeader: true,
-    sortingField: "summary?.Resolved",
-    Width:170
+    sortingField: "summary_resolved",
+    minWidth:170
   },
   {
     id: "topic",
     header: "Topic",
-    cell: (d) => d.summary?.Topic,
+    cell: (d) => d.summary_topic,
     isRowHeader: true,
-    sortingField: "topic",
+    sortingField: "summary_topic",
     Width:150
   },
   {
     id: "product",
     header: "Product",
-    cell: (d) => d.summary?.Product,
+    cell: (d) => d.summary_product,
     isRowHeader: true,
-    sortingField: "product",
-    Width:150
+    sortingField: "summary_product",
+    minWidth:150
   },
   {
     id: "summary",
     header: "Summary",
     cell: (d) => {
-      if (d.summary?.Summary !== undefined) {
-        return d.summary.Summary;
-      } else if (d.summary !== undefined) {
-        return d.summary;
+      console.log(d);
+      if (d.summary_summary !== undefined) {
+        return (
+          <Popover
+            dismissButton={false}
+            position="top"
+            size="large"
+            triggerType="text"
+            content={d.summary_summary}
+          >
+            {(d.summary_summary.length > 20 ? d.summary_summary.substring(0, 20) + "..." : d.summary_summary)}
+          </Popover>
+          /*
+          <ExpandableSection headerText={(d.summary_summary.length > 50 ? d.summary_summary.substring(0,50) + "..." : d.summary_summary )}>
+            {d.summary_summary}
+          </ExpandableSection>*/
+        )
       }
       return 'n/a';
     },
     isRowHeader: true,
-    sortingField: "summary",
-    Width:150
+    sortingField: "summary_summary",
+    minWidth:200
   },
   {
     id: "callerSentimentScore",
@@ -108,20 +134,20 @@ const COLUMN_DEFINITIONS = [
         <TrendIcon trend={d.callerSentimentChange} />
       </div>
     ),
-    width: 130
+    minWidth: 130
   },
   {
     id: "langCode",
     header: <div className="col-header-wrapper text-left">Lang Code</div>,
     cell: (d) => d.lang,
-    width: 130,
+    minWidth: 130,
   },
   {
     id: "duration",
     header: <div className="col-header-wrapper text-left">Duration</div>,
     cell: (d) => Formatter.Time(d.duration),
-    width: 130,
-  },
+    minWidth: 130,
+  }
 ];
 
 const getMatchesCountText = function getMatchesCountText(count) {
@@ -155,6 +181,7 @@ export const ContactTable = ({ data = [], loading = false, empty, header, varian
     console.log(e);
     history.push(`/dashboard/${e.detail.item.key}`);
   };
+
   const [
     callQuery,
     setCallQuery
@@ -212,19 +239,19 @@ export const ContactTable = ({ data = [], loading = false, empty, header, varian
             groupValuesLabel: "Queues"
           },
           {
-            key: "resolved",
+            key: "summary_resolved",
             operators: ["=", "!=", ":", "!:"],
             propertyLabel: "Resolved",
             groupValuesLabel: "Resolved"
           },
           {
-            key: "topic",
+            key: "summary_topic",
             operators: ["=", "!=", ":", "!:"],
             propertyLabel: "Topic",
             groupValuesLabel: "Topics"
           },
           {
-            key: "product",
+            key: "summary_product",
             operators: ["=", "!=", ":", "!:"],
             propertyLabel: "Product",
             groupValuesLabel: "Products"
@@ -266,8 +293,11 @@ export const ContactTable = ({ data = [], loading = false, empty, header, varian
       //pagination={<Pagination {...paginationProps} />}
       resizableColumns={true}
       loadingText="Loading Calls"
-      onRowClick={onClick}
+      // onSelectionChange={onClick}
+      // onRowClick={onClick}
+      // selectionType="single"
       stickyHeader={true}
+      stickyColumns={{ first: 2, last: 0 }}
       filter={
         <PropertyFilter
           {...propertyFilterProps}

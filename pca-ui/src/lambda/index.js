@@ -1,6 +1,7 @@
 const AWS = require("aws-sdk");
 const s3 = new AWS.S3();
 const ddb = new AWS.DynamoDB();
+//const { readFile } = require('fs/promises')
 
 const tableName = process.env.TableName;
 
@@ -39,6 +40,8 @@ async function createRecord(record) {
     console.log("Res:", res);
 
     const body = res.Body.toString();
+    //const body = await readFile('redacted-Auto0_GUID_000_AGENT_ChrisL_DT_2023-02-19T06-01-22_Mono.wav.json', 'utf8')
+    //const key = 'redacted-Auto0_GUID_000_AGENT_ChrisL_DT_2023-02-19T06-01-22_Mono.wav.json';
 
     const parsed = JSON.parse(body);
     console.log("Parsed:", parsed);
@@ -75,9 +78,20 @@ async function createRecord(record) {
         guid: parsed.ConversationAnalytics.GUID,
     };
 
+    
     if (parsed.ConversationAnalytics.Summary !== undefined) {
-        dataJson["summary"] = parsed.ConversationAnalytics.Summary;
+        if (typeof parsed.ConversationAnalytics.Summary === 'string' || parsed.ConversationAnalytics.Summary instanceof String)
+        {
+            dataJson["summary"] = parsed.ConversationAnalytics.Summary;
+        }
+        else {
+            for (const [key, value] of Object.entries(parsed.ConversationAnalytics.Summary)) {
+                console.log(`${key}: ${value}`);
+                dataJson['summary_' + key.toLowerCase().replace(' ','_')] = value;
+            }
+        }
     }
+
     
     let data = JSON.stringify(dataJson);
     console.log("Data:", data);
@@ -244,3 +258,5 @@ exports.handler = async function (event, context) {
 
     return await Promise.all(promises);
 };
+
+// const test = createRecord('nothing');
