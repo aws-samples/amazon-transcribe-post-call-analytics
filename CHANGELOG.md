@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bedrock summarization support
 - Support for multiple summarization prompts
 - Bedrock and Anthropic Chat support
+- Additional configurable columns in call list
 
 ## [0.6.0] - 2023-06-12
 ### Added
