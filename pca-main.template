@@ -74,7 +74,7 @@ Parameters:
   InputBucketAudioPlayback:
     Type: String
     Default: playbackAudio
-    Description: Folder that holds the audio files to playback in the browser
+    Description: Folder that holds the audio files to playback in the browser.
 
   InputBucketFailedTranscriptions:
     Type: String

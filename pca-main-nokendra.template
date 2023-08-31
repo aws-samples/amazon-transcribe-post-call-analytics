@@ -237,7 +237,7 @@ Parameters:
 
   ffmpegDownloadUrl:
     Type: String
-    Default: https://www.johnvansickle.com/ffmpeg/old-releases/ffmpeg-4.4-amd64-static.tar.xz
+    Default: http://www.johnvansickle.com/ffmpeg/old-releases/ffmpeg-4.4-amd64-static.tar.xz
     Description: URL for ffmpeg binary distribution tar file download - see https://www.johnvansickle.com/ffmpeg/
 
   loadSampleAudioFiles:
@@ -347,18 +347,54 @@ Parameters:
       IMPORTANT: Your Amazon QuickSight account MUST be enabled before deploying this stack. See http://www.amazon.com/pca-dashboards for additional 
       steps required in Amazon QuickSight to (1) enable S3 access to PCA OutputBucket and (2) share dashboard and analytics assets.
 
+  GenAIQuery:
+    Default: 'DISABLED'
+    Type: String
+    AllowedValues:
+      - 'DISABLED'
+      - 'BEDROCK'
+      - 'ANTHROPIC'
+    Description: >
+      If enabled, gives the ability to query an individual call for information. 
+      The ANTHROPIC option is a third party service, and you must enter your Anthropic API key in the 
+      Third Party LLM API Key section.
+
+  GenAIQueryBedrockModelId:
+    Type: String
+    Default: anthropic.claude-v2
+    AllowedValues:
+      - amazon.titan-tg1-large
+      - anthropic.claude-v1
+      - anthropic.claude-instant-v1
+      - anthropic.claude-v2
+    Description: (Optional) If 'GenAIQuery' is BEDROCK, which Bedrock model to use. (Bedrock preview access only)
+
   CallSummarization:
     Default: 'DISABLED'
     Type: String
     AllowedValues:
       - 'DISABLED'
+      - 'BEDROCK'
       - 'SAGEMAKER'
-      - 'LAMBDA'
       - 'ANTHROPIC'
+      - 'LAMBDA'
     Description: >
       Set to enable call summarization by a Large Language Model. The SAGEMAKER option uses a SageMaker endpoint with
       the pretrained bart-large-cnn-samsum model with a ml.m5.xlarge instance type.  The LAMBDA option requires you 
-      to provide a function ARN below. The ANTHROPIC option is a third party service, and you must enter your Anthropic API key below.
+      to provide a function ARN below. The ANTHROPIC option is a third party service, and you must enter your 
+      Anthropic API key in the Third Party LLM API Key section.
+
+  SummarizationBedrockModelId:
+    Type: String
+    Default: anthropic.claude-v2
+    AllowedValues:
+      - amazon.titan-tg1-large
+      #- ai21.j2-grande-instruct
+      #- ai21.j2-jumbo-instruct
+      - anthropic.claude-v1
+      - anthropic.claude-instant-v1
+      - anthropic.claude-v2
+    Description: (Optional) If 'CallSummarization' is BEDROCK, which Bedrock model to use. (Bedrock preview access only)
 
   SummarizationSageMakerInitialInstanceCount:
     Type: Number
@@ -370,7 +406,7 @@ Parameters:
   SummarizationLLMThirdPartyApiKey:
     Type: String
     Description: >
-      (Optional) If CallSummarization is ANTHROPIC, enter the provider API Key. ** Data will leave your AWS account **
+      (Optional) If 'CallSummarization' or 'GenAIQuery' is ANTHROPIC, enter the provider API Key. ** Data will leave your AWS account **
     Default: ''
     NoEcho: true
 
@@ -401,9 +437,18 @@ Metadata:
                 default: Call Summarization
               Parameters:
                 - CallSummarization
+                - SummarizationBedrockModelId
                 - SummarizationSageMakerInitialInstanceCount
-                - SummarizationLLMThirdPartyApiKey
                 - SummarizationLambdaFunctionArn
+            - Label:
+                default: Third Party LLM API Key
+              Parameters:
+                - SummarizationLLMThirdPartyApiKey
+            - Label:
+                default: Generative AI Query
+              Parameters:
+                - GenAIQuery
+                - GenAIQueryBedrockModelId
             - Label:
                 default: Advanced analytics and reporting
               Parameters:
@@ -490,6 +535,7 @@ Conditions:
   ShouldCreateKendraIndexDeveloperEdition: !Equals [!Ref EnableTranscriptKendraSearch, 'Yes, create new Kendra Index (Developer Edition)']
   ShouldDeployPcaDashboards: !Equals [!Ref EnablePcaDashboards, 'Yes']
   ShouldLoadSampleFiles: !Equals [!Ref loadSampleAudioFiles, 'true']
+  ShouldDeployBedrockBoto3Layer: !Or [!Equals [!Ref CallSummarization, 'BEDROCK'], !Equals [!Ref GenAIQuery, 'BEDROCK'],]
 
 Resources:
   ########################################################
@@ -629,21 +675,50 @@ Resources:
           - ShouldEnableKendraSearch
           - 'None'
           - 'None'
-        WebUri: !GetAtt PCAUI.Outputs.WebUri
+        # WebUri: !GetAtt PCAUI.Outputs.WebUri
         DatabaseName: !Ref DatabaseName
 
+  PythonUtilsLayer:
+    DependsOn: SSM
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: pca-server/cfn/lib/python-utilities.template
+
+  BedrockBoto3Layer:
+    Type: AWS::CloudFormation::Stack
+    Condition: ShouldDeployBedrockBoto3Layer
+    Properties:
+      TemplateURL: pca-boto3-bedrock/template.yaml
+
+  LLMThirdPartyApiKeySecret:
+    Type: AWS::SecretsManager::Secret
+    Properties: 
+      Description: API Key
+      Name: !Sub '${AWS::StackName}-ThirdPartyApiKey'
+      SecretString: !Ref SummarizationLLMThirdPartyApiKey
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W77
+            reason: No requirement for custom CMK, secret will not be shared cross-account.
 
   PCAServer:
     Type: AWS::CloudFormation::Stack
-    DependsOn: SSM
+    # DependsOn: SSM
     Properties:
       TemplateURL: pca-server/cfn/pca-server.template
       Parameters:
         ffmpegDownloadUrl: !Ref ffmpegDownloadUrl
         CallSummarization: !Ref CallSummarization
+        SummarizationBedrockModelId: !Ref SummarizationBedrockModelId
         SummarizationSageMakerInitialInstanceCount: !Ref SummarizationSageMakerInitialInstanceCount
-        SummarizationLLMThirdPartyApiKey: !Ref SummarizationLLMThirdPartyApiKey
+        SummarizationLLMThirdPartyApiKey: !Ref LLMThirdPartyApiKeySecret
         SummarizationLambdaFunctionArn: !Ref SummarizationLambdaFunctionArn
+        PyUtilsLayerArn: !GetAtt PythonUtilsLayer.Outputs.PyUtilsLayer
+        Boto3LayerArn: !If
+          - ShouldDeployBedrockBoto3Layer
+          - !GetAtt BedrockBoto3Layer.Outputs.Boto3Layer
+          - ''
 
   PCAUI:
     Type: AWS::CloudFormation::Stack
@@ -665,6 +740,15 @@ Resources:
           - !Ref OutputBucketName
         DataPrefix: !Ref OutputBucketParsedResults
         Environment: !Ref Environment
+        GenAIQueryType: !Ref GenAIQuery
+        GenAIQueryBedrockModelId: !Ref GenAIQueryBedrockModelId
+        FetchTranscriptArn: !GetAtt PCAServer.Outputs.FetchTranscriptArn
+        LLMThirdPartyApiKey: !Ref LLMThirdPartyApiKeySecret
+        PyUtilsLayerArn: !GetAtt PythonUtilsLayer.Outputs.PyUtilsLayer
+        Boto3LayerArn: !If
+          - ShouldDeployBedrockBoto3Layer
+          - !GetAtt BedrockBoto3Layer.Outputs.Boto3Layer
+          - ''
 
   PcaDashboards:
     Type: AWS::CloudFormation::Stack
