@@ -358,6 +358,7 @@ Parameters:
       - 'ANTHROPIC'
     Description: >
       If enabled, gives the ability to query an individual call for information. 
+      The BEDROCK option requires your account to have Amazon Bedrock preview access.
       The ANTHROPIC option is a third party service, and you must enter your Anthropic API key in the 
       Third Party LLM API Key section.
 
@@ -384,7 +385,8 @@ Parameters:
       Set to enable call summarization by a Large Language Model. The SAGEMAKER option uses a SageMaker endpoint with
       the pretrained bart-large-cnn-samsum model with a ml.m5.xlarge instance type.  The LAMBDA option requires you 
       to provide a function ARN below. The ANTHROPIC option is a third party service, and you must enter your 
-      Anthropic API key in the Third Party LLM API Key section.
+      Anthropic API key in the Third Party LLM API Key section. The BEDROCK option requires your account to have 
+      Amazon Bedrock preview access.
 
   SummarizationBedrockModelId:
     Type: String
