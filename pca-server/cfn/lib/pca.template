@@ -35,14 +35,21 @@ Parameters:
     Default: 'DISABLED'
   SummarizationSagemakerEndpointName: 
     Type: String
+    Default: ''
   SummarizationSagemakerEndpointArn: 
     Type: String
+    Default: ''
   SummarizationLLMThirdPartyApiKey:
     Type: String
+    Description: >
+      Secrets manager secret Arn containing the third party LLM API key
+    Default: ''
   SummarizationLambdaFunctionArn: 
     Type: String
+    Default: ''
   SummarizationBedrockModelId:
     Type: String
+    Default: ''
 
 Globals:
   Function:
@@ -53,6 +60,7 @@ Globals:
 Conditions:
   ProvisionedSageMakerEndpoint: !Equals [!Ref CallSummarization, "SAGEMAKER"]
   HasCustomSummarizerLambda: !Equals [!Ref CallSummarization, "LAMBDA"]
+  HasAnthropicSummary: !Equals [!Ref CallSummarization, "ANTHROPIC"]
 
 Resources:
   FFMPEGLayer:
@@ -287,6 +295,17 @@ Resources:
             Resource:
               - !Sub "arn:${AWS::Partition}:bedrock:*::foundation-model/*"
               - !Sub "arn:${AWS::Partition}:bedrock:*:${AWS::AccountId}:custom-model/*"
+          - !If 
+            - HasAnthropicSummary
+            - Sid: SecretsManagerPolicy
+              Effect: Allow
+              Action:
+                - 'secretsmanager:GetResourcePolicy'
+                - 'secretsmanager:GetSecretValue'
+                - 'secretsmanager:DescribeSecret'
+                - 'secretsmanager:ListSecretVersionIds'
+              Resource: !Ref SummarizationLLMThirdPartyApiKey
+            - !Ref "AWS::NoValue"
           - !If 
             - ProvisionedSageMakerEndpoint
             - Sid: InvokeSummarizer

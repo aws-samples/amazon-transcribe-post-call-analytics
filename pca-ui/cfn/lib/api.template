@@ -43,6 +43,12 @@ Parameters:
     AllowedPattern: '^(|arn:aws:lambda:.*)$'
     Description: Arn to use for the GenAIQuery to fetch transcript
 
+  LLMThirdPartyApiKey:
+    Type: String
+    Description: >
+      Secrets manager secret Arn containing the third party LLM API key
+    Default: ''
+
   Boto3LayerArn:
     Default: ''
     Type: String
@@ -54,6 +60,7 @@ Parameters:
 
 Conditions:
   ShouldAddBoto3Layer: !Not [!Equals [!Ref Boto3LayerArn, '']]
+  HasAnthropicSummary: !Equals [!Ref GenAIQueryType, 'ANTHROPIC']
 
 Resources:
   Api:
@@ -252,6 +259,7 @@ Resources:
           FETCH_TRANSCRIPT_LAMBDA_ARN: !Ref FetchTranscriptArn
           ANTHROPIC_MODEL_IDENTIFIER: "claude-v1.3-100k"
           ANTHROPIC_ENDPOINT_URL: "https://api.anthropic.com/v1/complete"
+          ANTHROPIC_API_KEY: !Ref LLMThirdPartyApiKey
       Events:
         APIEvent:
           Type: Api
@@ -278,6 +286,17 @@ Resources:
             Resource:
               - !Sub "arn:${AWS::Partition}:bedrock:*::foundation-model/*"
               - !Sub "arn:${AWS::Partition}:bedrock:*:${AWS::AccountId}:custom-model/*"
+          - !If 
+              - HasAnthropicSummary
+              - Sid: SecretsManagerPolicy
+                Effect: Allow
+                Action:
+                  - 'secretsmanager:GetResourcePolicy'
+                  - 'secretsmanager:GetSecretValue'
+                  - 'secretsmanager:DescribeSecret'
+                  - 'secretsmanager:ListSecretVersionIds'
+                Resource: !Ref LLMThirdPartyApiKey
+              - !Ref "AWS::NoValue"
       Runtime: python3.10
 
 Outputs:

@@ -44,9 +44,8 @@ Parameters:
   SummarizationLLMThirdPartyApiKey:
     Type: String
     Description: >
-      (Optional) If CallSummarization is ANTHROPIC, enter the provider API Key. ** Data will leave your AWS account **
+      Secrets manager secret Arn containing the third party LLM API key
     Default: ''
-    NoEcho: true
 
   SummarizationLambdaFunctionArn:
     Default: ''
