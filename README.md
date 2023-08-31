@@ -84,7 +84,9 @@ Once standard PCA processing is complete the telephony-specific CTR handler will
 
 ## (optional) Generative AI Call Summarization
 
-PCA contains a new step in the step functions that (if enabled) will generate a call summary. There are 3 choices for call summarization - Sagemaker Endpoint with HuggingFace bart-large-cnn-samsum, Anthropic Claude, or a custom AWS Lambda function.  
+PCA contains a new step in the step functions that (if enabled) will generate a call summary. There are 4 choices for call summarization - Sagemaker Endpoint with HuggingFace bart-large-cnn-samsum, Amazon Bedrock (preview access only) Anthropic Claude, or a custom AWS Lambda function.  
+
+Learn more about the features in the [Generative AI readme](./docs/generative_ai.md)
 
 ### Summary Deployment instructions
 
@@ -117,7 +119,7 @@ Your custom Lambda function should return a single json object with key value pa
 }
 ```
 
-To learn more about how PCA uses this json object, see the Summary section in [output_json_structure.md](output_json_structure.md).  
+To learn more about how PCA uses this json object, see the Summary section in [output_json_structure.md](./docs/output_json_structure.md).  
 
 ### FetchTranscript helper function
 
