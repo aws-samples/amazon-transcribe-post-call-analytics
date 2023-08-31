@@ -12,6 +12,7 @@ import pcaresults
 import json
 import re
 import requests
+from botocore.exceptions import ClientError
 
 AWS_REGION = os.environ["AWS_REGION_OVERRIDE"] if "AWS_REGION_OVERRIDE" in os.environ else os.environ["AWS_REGION"]
 SUMMARIZE_TYPE = os.getenv('SUMMARY_TYPE', 'DISABLED')
@@ -29,6 +30,18 @@ MAX_TOKENS = int(os.getenv('MAX_TOKENS','256'))
 lambda_client = boto3.client('lambda')
 ssmClient = boto3.client("ssm")
 bedrock_client = None
+
+def get_third_party_llm_secret():
+    print("Getting API key from Secrets Manager")
+    secrets_client = boto3.client('secretsmanager')
+    try:
+        response = secrets_client.get_secret_value(
+            SecretId=ANTHROPIC_API_KEY
+        )
+    except ClientError as e:
+        raise e
+    api_key = response['SecretString']
+    return api_key
 
 def get_bedrock_client():
     print("Connecting to Bedrock Service: ", BEDROCK_ENDPOINT_URL)
@@ -145,7 +158,7 @@ def generate_anthropic_summary(transcript):
             "stop_sequences": ["Human:", "Assistant:"]
         }
         headers = {
-            "x-api-key": ANTHROPIC_API_KEY,
+            "x-api-key": get_third_party_llm_secret(),
             "content-type": "application/json"
         }
         response = requests.post(ANTHROPIC_ENDPOINT_URL, headers=headers, data=json.dumps(data))

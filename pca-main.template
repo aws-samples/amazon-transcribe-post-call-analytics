@@ -358,7 +358,8 @@ Parameters:
       - 'ANTHROPIC'
     Description: >
       If enabled, gives the ability to query an individual call for information. 
-      If you choose Anthropic, it will use the same API Key as the call summarization
+      The ANTHROPIC option is a third party service, and you must enter your Anthropic API key in the 
+      Third Party LLM API Key section.
 
   GenAIQueryBedrockModelId:
     Type: String
@@ -382,7 +383,8 @@ Parameters:
     Description: >
       Set to enable call summarization by a Large Language Model. The SAGEMAKER option uses a SageMaker endpoint with
       the pretrained bart-large-cnn-samsum model with a ml.m5.xlarge instance type.  The LAMBDA option requires you 
-      to provide a function ARN below. The ANTHROPIC option is a third party service, and you must enter your Anthropic API key below.
+      to provide a function ARN below. The ANTHROPIC option is a third party service, and you must enter your 
+      Anthropic API key in the Third Party LLM API Key section.
 
   SummarizationBedrockModelId:
     Type: String
@@ -406,7 +408,7 @@ Parameters:
   SummarizationLLMThirdPartyApiKey:
     Type: String
     Description: >
-      (Optional) If CallSummarization is ANTHROPIC, enter the provider API Key. ** Data will leave your AWS account **
+      (Optional) If 'CallSummarization' or 'GenAIQuery' is ANTHROPIC, enter the provider API Key. ** Data will leave your AWS account **
     Default: ''
     NoEcho: true
 
@@ -438,9 +440,12 @@ Metadata:
               Parameters:
                 - CallSummarization
                 - SummarizationBedrockModelId
-                - SummarizationSageMakerInitialInstanceCount
-                - SummarizationLLMThirdPartyApiKey
+                - SummarizationSageMakerInitialInstanceCount 
                 - SummarizationLambdaFunctionArn
+            - Label:
+                default: Third Party LLM API Key
+              Parameters:
+                - SummarizationLLMThirdPartyApiKey
             - Label:
                 default: Generative AI Query
               Parameters:
@@ -817,6 +822,18 @@ Resources:
     Properties:
       TemplateURL: pca-boto3-bedrock/template.yaml
 
+  LLMThirdPartyApiKeySecret:
+    Type: AWS::SecretsManager::Secret
+    Properties: 
+      Description: API Key
+      Name: !Sub '${AWS::StackName}-ThirdPartyApiKey'
+      SecretString: !Ref SummarizationLLMThirdPartyApiKey
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W77
+            reason: No requirement for custom CMK, secret will not be shared cross-account.
+
   PCAServer:
     Type: AWS::CloudFormation::Stack
     # DependsOn: SSM
@@ -827,7 +844,7 @@ Resources:
         CallSummarization: !Ref CallSummarization
         SummarizationBedrockModelId: !Ref SummarizationBedrockModelId
         SummarizationSageMakerInitialInstanceCount: !Ref SummarizationSageMakerInitialInstanceCount
-        SummarizationLLMThirdPartyApiKey: !Ref SummarizationLLMThirdPartyApiKey
+        SummarizationLLMThirdPartyApiKey: !Ref LLMThirdPartyApiKeySecret
         SummarizationLambdaFunctionArn: !Ref SummarizationLambdaFunctionArn
         PyUtilsLayerArn: !GetAtt PythonUtilsLayer.Outputs.PyUtilsLayer
         Boto3LayerArn: !If
@@ -858,6 +875,7 @@ Resources:
         GenAIQueryType: !Ref GenAIQuery
         GenAIQueryBedrockModelId: !Ref GenAIQueryBedrockModelId
         FetchTranscriptArn: !GetAtt PCAServer.Outputs.FetchTranscriptArn
+        LLMThirdPartyApiKey: !Ref LLMThirdPartyApiKeySecret
         PyUtilsLayerArn: !GetAtt PythonUtilsLayer.Outputs.PyUtilsLayer
         Boto3LayerArn: !If
           - ShouldDeployBedrockBoto3Layer

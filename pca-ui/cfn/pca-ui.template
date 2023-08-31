@@ -59,6 +59,12 @@ Parameters:
       - anthropic.claude-v2
     Description: (Optional) If 'GenAIQuery' is BEDROCK, which Bedrock model to use. (Bedrock preview access only)
 
+  LLMThirdPartyApiKey:
+    Type: String
+    Description: >
+      Secrets manager secret Arn containing the third party LLM API key
+    Default: ''
+
   FetchTranscriptArn:
     Type: String
     AllowedPattern: '^(|arn:aws:lambda:.*)$'
@@ -77,6 +83,7 @@ Parameters:
 Conditions:
   isMainStackNameEmpty: !Equals [!Ref MainStackName, '']
   ShouldEnableGenAIQuery: !Not [!Equals [!Ref GenAIQueryType, 'DISABLED']]
+  HasAnthropicQuery: !Equals [!Ref GenAIQueryType, "ANTHROPIC"]
 
 Resources:
   DeployCount:
@@ -128,6 +135,7 @@ Resources:
         UserPoolId: !GetAtt Cognito.Outputs.UserPoolId
         GenAIQueryType: !Ref GenAIQueryType
         GenAIQueryBedrockModelId: !Ref GenAIQueryBedrockModelId
+        LLMThirdPartyApiKey: !Ref LLMThirdPartyApiKey
         FetchTranscriptArn: !Ref FetchTranscriptArn
         Boto3LayerArn: !Ref Boto3LayerArn
         PyUtilsLayerArn: !Ref PyUtilsLayerArn
