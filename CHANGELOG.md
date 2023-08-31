@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support for multiple summarization prompts
 - Bedrock and Anthropic Chat support
 - Additional configurable columns in call list
+- Migrate 3P LLM API Key to Secrets Manager
 
 ## [0.6.0] - 2023-06-12
 ### Added
