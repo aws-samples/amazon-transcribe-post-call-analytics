@@ -62,18 +62,18 @@ export const TranscriptSegment = ({
         </span>
       </span>
       {ivr && (
-        <Tag bg="danger" className="ms-2">
+        <Tag key="ivr" bg="danger" className="ms-2">
           IVR
         </Tag>
       )}
       {interruption && (
-        <Tag bg="warning" text="dark" className="ms-2">
+        <Tag key="warning" bg="warning" text="dark" className="ms-2">
           Interruption
         </Tag>
       )}
       {categoryList.length > 0 && (
-        categoryList.map((category) => (
-              <Tag bg="primary" className="ms-2">
+        categoryList.map((category, j) => (
+              <Tag key={j} bg="primary" className="ms-2">
                 {category}
               </Tag>
             )

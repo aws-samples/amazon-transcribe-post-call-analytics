@@ -82,3 +82,10 @@ export async function entities(key) {
 export async function languages(key) {
   return getRequest("languages");
 }
+
+export async function genaiquery(filename, query) {
+  return getRequest(`genaiquery`, {
+    "filename": filename,
+    "query": query
+  } );
+}

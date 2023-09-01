@@ -84,6 +84,40 @@ Parameters:
       Folder that holds Transcripts from other applications (e.g. Live Call Analytics) that are to be
       processed as if PCA had processed that audio
 
+  LLMPromptSummaryTemplate:
+    Type: String
+    Description: >-
+      Prompt to use to generate insights for a call. This can be a single string where an LLM returns a string,
+      or a single string where the LLM returns a JSON object with key/value pairs, or a string that contains
+      a JSON Object with key/value pairs, where the LLM will run one inference on each key/value pair with the value
+      containing the prompt. Use {transcript} as a placeholder for where the call transcript will be injected.
+    Default: >-
+      Human: Answer all the questions below as a json object with key value pairs, the key is provided, and answer as the value, based on the transcript. Only return json.
+      <br><questions>
+      <br>Summary: Summarize the call.
+      <br>Topic: Topic of the call. Choose from one of these or make one up (iphone issue, billing issue, cancellation)
+      <br>Product: What product did the customer call about? (internet, broadband, mobile phone, mobile plans)
+      <br>Resolved: Did the agent resolve the customer's questions? (yes or no) 
+      <br>Callback: Was this a callback? (yes or no) 
+      <br>Politeness: Was the agent polite and professional? (yes or no)
+      <br>Actions: What actions did the Agent take? 
+      <br></questions> 
+      <br><transcript>
+      <br>{transcript}
+      <br></transcript>
+      <br>Assistant: Here is the JSON object with the answers to the questions: 
+
+  LLMPromptQueryTemplate:
+    Type: String
+    Description: This is the LLM prompt template to use when querying an individual call transcript.
+    Default: >-
+      Human: You are an AI chatbot. Carefully read the following transcript and then provide a short answer to the question. If the answer cannot be determined from the transcript or the context, then reply saying Sorry, I don't know. 
+      <br><question>{question}</question>
+      <br><transcript>
+      <br>{transcript}
+      <br></transcript>
+      <br>Assistant:
+
   MaxSpeakers:
     Type: String
     Default: "2"
@@ -252,9 +286,9 @@ Parameters:
     Type: String
     Description: Kendra Index ID, or empty string if call transcription indexing is not enabled 
     
-  WebUri:
-    Type: String
-    Description: PCA Web Application URI
+  #WebUri:
+  #  Type: String
+  #  Description: PCA Web Application URI
     
   DatabaseName:
     Type: String
@@ -383,6 +417,26 @@ Resources:
         Folder that holds Transcripts from other applications (e.g. Live Call Analytics) that are to be
         processed as if PCA had processed that audio
       Value: !Ref InputBucketOrigTranscripts
+
+  LLMPromptSummaryTemplateParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: LLMPromptSummaryTemplate
+      Type: String
+      Description: >
+        Prompt to use to generate insights for a call. This can be a single string where an LLM returns a string,
+        or a single string where the LLM returns a JSON object with key/value pairs, or a string that contains
+        a JSON Object with key/value pairs, where the LLM will run one inference on each key/value pair with the value
+        containing the prompt. Use {transcript} as a placeholder for where the call transcript will be injected.
+      Value: !Ref LLMPromptSummaryTemplate
+
+  LLMPromptQueryTemplateParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: LLMPromptQueryTemplate
+      Type: String
+      Description: This is the LLM prompt template to use when querying an individual call transcript.
+      Value: !Ref LLMPromptQueryTemplate
 
   MaxSpeakersParameter:
     Type: "AWS::SSM::Parameter"
@@ -629,13 +683,13 @@ Resources:
       Value: !Ref KendraIndexId
       Description: Kendra Index ID, or empty string if call transcription indexing is not enabled
       
-  WebUriParameter:
-    Type: "AWS::SSM::Parameter"
-    Properties:
-      Name: WebUri
-      Type: String
-      Value: !Ref WebUri
-      Description: PCA Web Application URI
+  #WebUriParameter:
+  #  Type: "AWS::SSM::Parameter"
+  #  Properties:
+  #    Name: WebUri
+  #    Type: String
+  #    Value: !Ref WebUri
+  #    Description: PCA Web Application URI
 
   DatabaseNameParameter:
     Type: "AWS::SSM::Parameter"
