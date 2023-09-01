@@ -94,6 +94,8 @@ When deploying PCA, the CloudFormation parameter `CallSummarization` value defin
 
 If `DISABLED` is chosen, the PCA step function will bypass the summarization step.
 
+If `BEDROCK` is chosen, you must have access to the Amazon Bedrock service, currently in private preview. Also select the Bedrock model `SummarizationBedrockModelId` parameter. 
+
 If `SAGEMAKER` is chosen, PCA will be deployed with the [HuggingFace bart-large-cnn-samsum](https://huggingface.co/philschmid/bart-large-cnn-samsum) model on a `ml.m5.xlarge` instance type. By default, it is deployed as a single instance count, defined by the `SummarizationSageMakerInitialInstanceCount` parameter. If `SummarizationSageMakerInitialInstanceCount` is set to `0`, the endpoint will be deployed as a [SageMaker Serverless Inference](https://docs.aws.amazon.com/sagemaker/latest/dg/serverless-endpoints.html) endpoint.
 
 If `ANTHROPIC` is chosen, an Anthropic API key must be provided in the `SummarizationLLMThirdPartyApiKey` parameter. 
