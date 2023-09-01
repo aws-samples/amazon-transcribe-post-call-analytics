@@ -257,7 +257,7 @@ Resources:
           QUERY_TYPE: !Ref GenAIQueryType
           BEDROCK_MODEL_ID: !Ref GenAIQueryBedrockModelId
           FETCH_TRANSCRIPT_LAMBDA_ARN: !Ref FetchTranscriptArn
-          ANTHROPIC_MODEL_IDENTIFIER: "claude-v1.3-100k"
+          ANTHROPIC_MODEL_IDENTIFIER: "claude-2"
           ANTHROPIC_ENDPOINT_URL: "https://api.anthropic.com/v1/complete"
           ANTHROPIC_API_KEY: !Ref LLMThirdPartyApiKey
       Events:
