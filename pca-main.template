@@ -838,7 +838,7 @@ Resources:
 
   PCAServer:
     Type: AWS::CloudFormation::Stack
-    # DependsOn: SSM
+    DependsOn: SSM
     Properties:
       TemplateURL: pca-server/cfn/pca-server.template
       Parameters:
@@ -921,6 +921,7 @@ Resources:
       TemplateURL: pca-samples/copy-samples.template
       Parameters:
         DependsOnPCAServer: !Ref PCAServer
+        DependsOnPCAUI: !Ref PCAUI
         DependsOnPCADashboards: !If
           - ShouldDeployPcaDashboards
           - !Ref PcaDashboards
