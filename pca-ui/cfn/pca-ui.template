@@ -160,7 +160,7 @@ Resources:
   WebUriParameter:
     Type: "AWS::SSM::Parameter"
     Properties:
-      Name: WebUri
+      Name: WebUiUri
       Type: String
       Value: !GetAtt Web.Outputs.Uri
       Description: PCA Web Application URI
