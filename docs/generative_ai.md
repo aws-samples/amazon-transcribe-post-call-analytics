@@ -1,7 +1,7 @@
 # PCA and Generative AI
 
 Post-Call Analytics has an optional step in the step function workflow to generate insights with generative AI. 
-PCA supports [Amazon Bedrock](https://aws.amazon.com/bedrock/) (Titan or Anthropic models) and [Anthropic](https://www.anthropic.com/) (3rd party) foundational models. Customers may also write a Lambda function and provide PCA the ARN, and use any FM of their choice.
+PCA supports [Amazon Bedrock](https://aws.amazon.com/bedrock/) (Titan or Anthropic models) and [Anthropic](https://www.anthropic.com/) (3rd party) foundational models (FMs). Customers may also write a Lambda function and provide PCA the ARN, and use any FM of their choice.
 
 PCA also supports 'Generative AI Queries' - which simply means you can ask questions about a specific call. These queries appear in a chat-like window from within the call details page.
 
@@ -22,7 +22,7 @@ Human: Answer all the questions below as a json object with key value pairs, the
 <br><questions> 
 <br>Summary: Summarize the call. 
 <br>Topic: Topic of the call. Choose from one of these or make one up (iphone issue, billing issue, cancellation) 
-<br>Product: What product did they customer call about? (internet, broadband, mobile phone, mobile plans) 
+<br>Product: What product did the customer call about? (internet, broadband, mobile phone, mobile plans) 
 <br>Resolved: Did the agent resolve the customer's questions? (yes or no)  
 <br>Callback: Was this a callback? (yes or no)  
 <br>Politeness: Was the agent polite and professional? (yes or no) 
@@ -36,7 +36,7 @@ Human: Answer all the questions below as a json object with key value pairs, the
 
 The `<br>` tags are replaced with newlines, and  `{transcript}` is replaced with the call transcript.
 
-**Note:** This prompt generates 6 insights in a single inference - summary, topic, product, resolved, callback, and agent politeness.
+**Note:** This prompt generates 7 insights in a single inference - summary, topic, product, resolved, callback, agent politeness, and actions.
 
 The expected output of the inference should be a single JSON object with key-value pairs, similar to the below:
 
