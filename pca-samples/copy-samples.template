@@ -22,6 +22,9 @@ Parameters:
   DependsOnPCAServer:
     Type: String
     Default: NotRequired
+  DependsOnPCAUI:
+    Type: String
+    Default: NotRequired
   DependsOnPCADashboards:
     Type: String
     Default: NotRequired
