@@ -29,6 +29,9 @@ window.pcaSettings = {
     dashboard: {
         uri: "https://${props.Region}.quicksight.aws.amazon.com/sn/start",
     },
+    genai: {
+        query: ${props.GenAIQuery}
+    }
 };`;
 
   s3.upload({

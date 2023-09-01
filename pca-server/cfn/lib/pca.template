@@ -35,12 +35,21 @@ Parameters:
     Default: 'DISABLED'
   SummarizationSagemakerEndpointName: 
     Type: String
+    Default: ''
   SummarizationSagemakerEndpointArn: 
     Type: String
+    Default: ''
   SummarizationLLMThirdPartyApiKey:
     Type: String
+    Description: >
+      Secrets manager secret Arn containing the third party LLM API key
+    Default: ''
   SummarizationLambdaFunctionArn: 
     Type: String
+    Default: ''
+  SummarizationBedrockModelId:
+    Type: String
+    Default: ''
 
 Globals:
   Function:
@@ -51,6 +60,7 @@ Globals:
 Conditions:
   ProvisionedSageMakerEndpoint: !Equals [!Ref CallSummarization, "SAGEMAKER"]
   HasCustomSummarizerLambda: !Equals [!Ref CallSummarization, "LAMBDA"]
+  HasAnthropicSummary: !Equals [!Ref CallSummarization, "ANTHROPIC"]
 
 Resources:
   FFMPEGLayer:
@@ -236,7 +246,7 @@ Resources:
   SFFetchTranscript:
     Type: "AWS::Serverless::Function"
     Properties:
-      Runtime: python3.9
+      Runtime: python3.10
       CodeUri:  ../../src/pca
       Handler: pca-aws-fetch-transcript.lambda_handler
       Timeout: 900
@@ -247,21 +257,22 @@ Resources:
   SFSummarize:
     Type: "AWS::Serverless::Function"
     Properties:
-      Runtime: python3.9
+      Runtime: python3.10
       CodeUri:  ../../src/pca
       Handler: pca-aws-sf-summarize.lambda_handler
       Timeout: 900
       Layers:
         - !Ref PyUtilsLayer
+        - !Ref Boto3Layer
       Environment:
         Variables:
           AWS_DATA_PATH: "/opt/models"
           FETCH_TRANSCRIPT_LAMBDA_ARN: !GetAtt SFFetchTranscript.Arn
+          BEDROCK_MODEL_ID: !Ref SummarizationBedrockModelId
           SUMMARY_TYPE: !Ref CallSummarization
           SUMMARY_SAGEMAKER_ENDPOINT: !Ref SummarizationSagemakerEndpointName
           ANTHROPIC_API_KEY: !Ref SummarizationLLMThirdPartyApiKey
           SUMMARY_LAMBDA_ARN: !Ref SummarizationLambdaFunctionArn
-          SUMMARY_PROMPT_TEMPLATE: "<br><br>Human:<br>{transcript}<br><br>Summarize the above transcript in no more than 5 sentences, using gender neutral pronouns. Were the caller's needs met during the call?<br><br>Assistant: Here is a summary in 5 sentences:"
           ANTHROPIC_MODEL_IDENTIFIER: "claude-v1.3-100k"
           ANTHROPIC_ENDPOINT_URL: "https://api.anthropic.com/v1/complete"
           TOKEN_COUNT: !If 
@@ -277,6 +288,24 @@ Resources:
             Action:
               - lambda:InvokeFunction
             Resource: !GetAtt SFFetchTranscript.Arn
+          - Sid: InvokeBedrock
+            Effect: Allow
+            Action: 
+              - bedrock:InvokeModel
+            Resource:
+              - !Sub "arn:${AWS::Partition}:bedrock:*::foundation-model/*"
+              - !Sub "arn:${AWS::Partition}:bedrock:*:${AWS::AccountId}:custom-model/*"
+          - !If 
+            - HasAnthropicSummary
+            - Sid: SecretsManagerPolicy
+              Effect: Allow
+              Action:
+                - 'secretsmanager:GetResourcePolicy'
+                - 'secretsmanager:GetSecretValue'
+                - 'secretsmanager:DescribeSecret'
+                - 'secretsmanager:ListSecretVersionIds'
+              Resource: !Ref SummarizationLLMThirdPartyApiKey
+            - !Ref "AWS::NoValue"
           - !If 
             - ProvisionedSageMakerEndpoint
             - Sid: InvokeSummarizer

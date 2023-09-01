@@ -1,5 +1,5 @@
 import { colours } from "./colours";
-import { Bar } from "react-chartjs-2";
+import { Line } from "react-chartjs-2";
 import { Placeholder } from "react-bootstrap";
 
 const getRenderOrder = (key) => {
@@ -11,35 +11,39 @@ const getRenderOrder = (key) => {
   else return 10;
 }
 
-export const LoudnessChart = ({ loudnessData, speakerLabels }) => {
-  if (loudnessData === undefined) {
+export const ComprehendSentimentChart = ({ comprehendSentimentData, speakerLabels }) => {
+  if (comprehendSentimentData === undefined) {
     return <Placeholder />
   }
 
   const datasets = [];
   Object.keys(speakerLabels).map((key, index) => {
-    if (key in loudnessData) {
+    if (key in comprehendSentimentData) {
       let dataset = {
         label: speakerLabels[key],
-        data: loudnessData[key],
+        data: comprehendSentimentData[key],
         backgroundColor: colours[key],
         borderColor: colours[key],
-        /*barThickness: 1,*/
+        /*barThickness: 1,
         barPercentage: 1.0,
         categoryPercentage: 1.0,
-        borderSkipped: true,
+        borderSkipped: true,*/
         order: getRenderOrder(speakerLabels[key]),
-        type: "bar",
-        xAxisID: 'x'
+        type: "line",
+        tension: 0.1,
+        pointRadius: 0,
+        //xAxisID: 'x',
       }
       datasets.push(dataset);
     }
   });
+  console.log("Datasets:", datasets);
 
   return (
-    <Bar
+    <Line
       height={70}
       data={{
+        type: 'line',
         /*labels: Object.keys(speakerLabels),*/
         datasets: datasets,
         /*datasets: [
@@ -77,7 +81,9 @@ export const LoudnessChart = ({ loudnessData, speakerLabels }) => {
             stacked: false,
             offset: false,
             position: "left",
-            title: { text: "Decibels", display: true },
+            title: { text: "Sentiment (-5 to 5)", display: true },
+            suggestedMin: -5,
+            suggestedMax: 5
           },
         },
         plugins: {

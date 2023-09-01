@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - Unreleased
+### Added
+- Bedrock summarization support
+- Support for multiple summarization prompts
+- Bedrock and Anthropic chat/generative query support
+- Additional configurable columns in call list
+- Migrate 3P LLM API Key to Secrets Manager
+
 ## [0.6.0] - 2023-06-12
 ### Added
 - Experimental generative transcript summarization provides a short paragraph with a synopsis of each completed call; use the built-in summarization model which runs on Amazon Sagemaker, or use Anthropic's Claude API with 100K token limit (eliminating transcript length limitations), or experiment with custom language models or APIs of your choice. See [Transcript Summarization](./README.md#optional-generative-ai-call-summarization)
@@ -115,7 +123,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial release
 
-[Unreleased]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/compare/v0.6.0...develop
+[Unreleased]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/compare/v0.7.0...develop
+[0.7.0]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.7.0
 [0.6.0]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.6.0
 [0.5.2]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.5.2
 [0.5.1]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.5.1
