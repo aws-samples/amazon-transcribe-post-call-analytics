@@ -96,7 +96,7 @@ Parameters:
       <br><questions>
       <br>Summary: Summarize the call.
       <br>Topic: Topic of the call. Choose from one of these or make one up (iphone issue, billing issue, cancellation)
-      <br>Product: What product did they customer call about? (internet, broadband, mobile phone, mobile plans)
+      <br>Product: What product did the customer call about? (internet, broadband, mobile phone, mobile plans)
       <br>Resolved: Did the agent resolve the customer's questions? (yes or no) 
       <br>Callback: Was this a callback? (yes or no) 
       <br>Politeness: Was the agent polite and professional? (yes or no)
