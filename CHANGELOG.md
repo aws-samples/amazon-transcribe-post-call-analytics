@@ -123,7 +123,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial release
 
-[Unreleased]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/compare/v0.6.0...develop
+[Unreleased]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/compare/v0.7.0...develop
+[0.7.0]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.7.0
 [0.6.0]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.6.0
 [0.5.2]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.5.2
 [0.5.1]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.5.1
