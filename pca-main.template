@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 
-Description: Amazon Transcribe Post Call Analytics - PCA (v0.7.0) (uksb-1sn29lk73)
+Description: Amazon Transcribe Post Call Analytics - PCA (v0.7.1) (uksb-1sn29lk73)
 
 Parameters:
 
@@ -419,7 +419,7 @@ Parameters:
     Type: String
     Description: >
       (Optional) If 'CallSummarization' or 'GenAIQuery' is ANTHROPIC, enter the provider API Key. ** Data will leave your AWS account **
-    Default: ''
+    Default: undefined
     NoEcho: true
 
   SummarizationLambdaFunctionArn:
