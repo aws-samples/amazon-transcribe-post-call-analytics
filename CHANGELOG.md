@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.1] - 2023-09-05
+### Fixed
+- Stack deploy failure (unable to create secret in SecretsManager) when SummarizationLLMThirdPartyApiKey is left empty. Changed default value to 'undefined'.
+
 ## [0.7.0] - 2023-09-01
 ### Added
 - Bedrock summarization support
@@ -123,7 +127,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial release
 
-[Unreleased]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/compare/v0.7.0...develop
+[Unreleased]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/compare/v0.7.1...develop
+[0.7.1]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.7.0
 [0.7.0]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.7.0
 [0.6.0]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.6.0
 [0.5.2]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.5.2
