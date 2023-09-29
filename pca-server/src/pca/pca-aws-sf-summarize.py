@@ -22,8 +22,8 @@ ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY','')
 TOKEN_COUNT = int(os.getenv('TOKEN_COUNT', '0')) # default 0 - do not truncate.
 SUMMARY_LAMBDA_ARN = os.getenv('SUMMARY_LAMBDA_ARN','')
 FETCH_TRANSCRIPT_LAMBDA_ARN = os.getenv('FETCH_TRANSCRIPT_LAMBDA_ARN','')
-BEDROCK_MODEL_ID = os.environ.get("BEDROCK_MODEL_ID","amazon.titan-tg1-large")
-BEDROCK_ENDPOINT_URL = os.environ.get("ENDPOINT_URL", f'https://bedrock.{AWS_REGION}.amazonaws.com')
+BEDROCK_MODEL_ID = os.environ.get("BEDROCK_MODEL_ID","amazon.titan-text-express-v1")
+BEDROCK_ENDPOINT_URL = os.environ.get("ENDPOINT_URL", f'https://bedrock-runtime.{AWS_REGION}.amazonaws.com')
 
 MAX_TOKENS = int(os.getenv('MAX_TOKENS','256'))
 
@@ -45,7 +45,7 @@ def get_third_party_llm_secret():
 
 def get_bedrock_client():
     print("Connecting to Bedrock Service: ", BEDROCK_ENDPOINT_URL)
-    client = boto3.client(service_name='bedrock', region_name=AWS_REGION, endpoint_url=BEDROCK_ENDPOINT_URL)
+    client = boto3.client(service_name='bedrock-runtime', region_name=AWS_REGION, endpoint_url=BEDROCK_ENDPOINT_URL)
     return client
     
 def get_bedrock_request_body(modelId, parameters, prompt):

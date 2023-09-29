@@ -11,14 +11,14 @@ PCA also supports 'Generative AI Queries' - which simply means you can ask quest
 
 ## Generative AI Insights
 
-When enabled, PCA can run one or more FM inferences against Bedrock or Anthropic APIs. The prompt used to generate the insights is configured in a [AWS Systems Manager Parameter Store](https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-parameter-store.html). The name of the parameter is `LLMPromptSummaryTemplate`.
+When enabled, PCA can run one or more FM inferences against Amazon Bedrock or Anthropic APIs. The prompt used to generate the insights is configured in a [AWS Systems Manager Parameter Store](https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-parameter-store.html). The name of the parameter is `LLMPromptSummaryTemplate`.
 
 ### Single FM Inference
 
 The default value for the prompt parameter provides one single prompt:
 
 ```
-Human: Answer all the questions below as a json object with key value pairs, the key is provided, and answer as the value, based on the transcript. Only return json. 
+Human: Answer all the questions below as a json object with key value pairs, based on the transcript. Use the text before the colon as the key. Only return json. Use gender neutral pronouns. Skip the preamble; go straight into the json.
 <br><questions> 
 <br>Summary: Summarize the call. 
 <br>Topic: Topic of the call. Choose from one of these or make one up (iphone issue, billing issue, cancellation) 
@@ -31,7 +31,7 @@ Human: Answer all the questions below as a json object with key value pairs, the
 <br><transcript> 
 <br>{transcript} 
 <br></transcript> 
-<br>Assistant: Here is the JSON object with the answers to the questions:
+<br>Assistant: 
 ```
 
 The `<br>` tags are replaced with newlines, and  `{transcript}` is replaced with the call transcript.

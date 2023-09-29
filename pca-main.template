@@ -358,7 +358,7 @@ Parameters:
       steps required in Amazon QuickSight to (1) enable S3 access to PCA OutputBucket and (2) share dashboard and analytics assets.
 
   GenAIQuery:
-    Default: 'DISABLED'
+    Default: 'BEDROCK'
     Type: String
     AllowedValues:
       - 'DISABLED'
@@ -366,7 +366,7 @@ Parameters:
       - 'ANTHROPIC'
     Description: >
       If enabled, gives the ability to query an individual call for information. 
-      The BEDROCK option requires your account to have Amazon Bedrock preview access.
+      The BEDROCK option requires you to choose one of the supported model IDs from the provided list (GenAIQueryBedrockModelId).
       The ANTHROPIC option is a third party service, and you must enter your Anthropic API key in the 
       Third Party LLM API Key section.
 
@@ -374,14 +374,14 @@ Parameters:
     Type: String
     Default: anthropic.claude-v2
     AllowedValues:
-      - amazon.titan-tg1-large
+      - amazon.titan-text-express-v1
       - anthropic.claude-v1
       - anthropic.claude-instant-v1
       - anthropic.claude-v2
-    Description: (Optional) If 'GenAIQuery' is BEDROCK, which Bedrock model to use. (Bedrock preview access only)
+    Description: (Optional) If 'GenAIQuery' is BEDROCK, which Bedrock model to use.
 
   CallSummarization:
-    Default: 'DISABLED'
+    Default: 'BEDROCK'
     Type: String
     AllowedValues:
       - 'DISABLED'
@@ -390,23 +390,21 @@ Parameters:
       - 'ANTHROPIC'
       - 'LAMBDA'
     Description: >
-      Set to enable call summarization by a Large Language Model. The SAGEMAKER option uses a SageMaker endpoint with
-      the pretrained bart-large-cnn-samsum model with a ml.m5.xlarge instance type.  The LAMBDA option requires you 
-      to provide a function ARN below. The ANTHROPIC option is a third party service, and you must enter your 
-      Anthropic API key in the Third Party LLM API Key section. The BEDROCK option requires your account to have 
-      Amazon Bedrock preview access.
+      Set to enable call summarization by a Large Language Model. 
+      The BEDROCK option requires you to choose one of the supported model IDs from the provided list (SummarizationBedrockModelId).
+      The SAGEMAKER option uses a SageMaker endpoint with the pretrained bart-large-cnn-samsum model with a ml.m5.xlarge instance type.  
+      The LAMBDA option requires you to provide a function ARN below. 
+      The ANTHROPIC option is a third party service, and you must enter your Anthropic API key in the Third Party LLM API Key section. 
 
   SummarizationBedrockModelId:
     Type: String
-    Default: anthropic.claude-v2
+    Default: anthropic.claude-instant-v1
     AllowedValues:
-      - amazon.titan-tg1-large
-      #- ai21.j2-grande-instruct
-      #- ai21.j2-jumbo-instruct
+      - amazon.titan-text-express-v1
       - anthropic.claude-v1
       - anthropic.claude-instant-v1
       - anthropic.claude-v2
-    Description: (Optional) If 'CallSummarization' is BEDROCK, which Bedrock model to use. (Bedrock preview access only)
+    Description: (Optional) If 'CallSummarization' is BEDROCK, which Bedrock model to use. 
 
   SummarizationSageMakerInitialInstanceCount:
     Type: Number
