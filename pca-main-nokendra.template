@@ -622,7 +622,7 @@ Resources:
 
   ########################################################
   # If Bedrock Models are selected, verify that Bedrock 
-  # is avialble in the region, and that models are enabled
+  # is available in the region, and that models are enabled
   ########################################################
 
   TestBedrockModelFunctionRole:
