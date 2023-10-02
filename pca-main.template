@@ -350,7 +350,7 @@ Parameters:
       steps required in Amazon QuickSight to (1) enable S3 access to PCA OutputBucket and (2) share dashboard and analytics assets.
 
   GenAIQuery:
-    Default: 'DISABLED'
+    Default: 'BEDROCK'
     Type: String
     AllowedValues:
       - 'DISABLED'
@@ -374,7 +374,7 @@ Parameters:
     Description: (Optional) If 'GenAIQuery' is BEDROCK, which Bedrock model to use.
 
   CallSummarization:
-    Default: 'DISABLED'
+    Default: 'BEDROCK'
     Type: String
     AllowedValues:
       - 'DISABLED'
