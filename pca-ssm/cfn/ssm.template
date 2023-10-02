@@ -106,10 +106,9 @@ Parameters:
     Type: String
     Description: This is the LLM prompt template to use when querying an individual call transcript.
     Default: >-
-      <br><br>Human: You are an AI chatbot. Carefully read the following transcript within <transcript></transcript> 
-      and then provide a short answer to the question. If the answer cannot be determined from the transcript or 
-      the context, then reply saying Sorry, I don't know. Use gender neutral pronouns. Skip the preamble; when you reply, only 
-      respond with the answer.<br><br><question>{question}</question><br><br><transcript><br>{transcript}<br></transcript><br><br>Assistant:
+      <br><br>Human: You are an AI chatbot. Carefully read the following transcript within <transcript></transcript> tags. Provide a 
+      short answer to the question at the end. If the answer cannot be determined from the transcript, then reply saying Sorry, 
+      I don't know. Use gender neutral pronouns. Do not use XML tags in the answer. <br><transcript><br>{transcript}<br></transcript><br>{question}<br><br>Assistant:
 
   MaxSpeakers:
     Type: String
