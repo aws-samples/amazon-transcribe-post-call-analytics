@@ -7,7 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.7.2] - Unreleased
 ### Fixed
 - Bedrock GA support
-- Prompt updates for Bedrock GA release, updated GenerativeAI readme
+- Prompt updates for Bedrock GA release (formatting, multiple prompts per call)
+- Updated GenerativeAI README and main README with model access details
 - Links to the LLM Parameter Store Prompts from the CloudFormation Output
 - Adaptive retries for SSM GetParameter and InvokeModel to prevent throttling errors
 

@@ -3,6 +3,8 @@
 Post-Call Analytics has an optional step in the step function workflow to generate insights with generative AI. 
 PCA supports [Amazon Bedrock](https://aws.amazon.com/bedrock/) (Titan or Anthropic models) and [Anthropic](https://www.anthropic.com/) (3rd party) foundational models (FMs). Customers may also write a Lambda function and provide PCA the ARN, and use any FM of their choice. The prompts below are based on Anthropic's prompt formats. Learn more about prompt design at Anthropic's [Introduction to Prompt Design].(https://docs.anthropic.com/claude/docs/introduction-to-prompt-design). 
 
+For Amazon Bedrock models, you must [request model access](https://docs.aws.amazon.com/bedrock/latest/userguide/model-access.html) for the models selected.
+
 PCA also supports 'Generative AI Queries' - which simply means you can ask questions about a specific call. These queries appear in a chat-like window from within the call details page.
 
 *All the prompts below were tested with Amazon Titan and Anthropic FMs.*
