@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.2] - 2023-10-03
+### Fixed
+- Enable Bedrock GA by default for call summarization and chat/generative query
+- Prompt updates for Bedrock GA release (formatting, multiple prompts per call)
+- Updated GenerativeAI README and main README with model access details
+- Links to the LLM Parameter Store Prompts from the CloudFormation Output
+- Adaptive retries for SSM GetParameter and InvokeModel to prevent throttling errors
+
 ## [0.7.1] - 2023-09-05
 ### Fixed
 - Stack deploy failure (unable to create secret in SecretsManager) when SummarizationLLMThirdPartyApiKey is left empty. Changed default value to 'undefined'.
@@ -127,8 +135,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial release
 
-[Unreleased]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/compare/v0.7.1...develop
-[0.7.1]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.7.0
+[Unreleased]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/compare/v0.7.2...develop
+[0.7.2]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.7.2
+[0.7.1]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.7.1
 [0.7.0]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.7.0
 [0.6.0]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.6.0
 [0.5.2]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.5.2

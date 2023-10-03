@@ -34,7 +34,7 @@ PCA currently supports the following features:
     * Detects when caller and agent interrupt each other
     * Speaker loudness
 * **Generative AI**
-    * Abstractive call summarization using [HuggingFace bart-large-cnn-samsum](https://huggingface.co/philschmid/bart-large-cnn-samsum) deployed on Sagemaker, [Anthropic Claude](https://www.anthropic.com/index/introducing-claude) (which is coming to [Amazon Bedrock](https://aws.amazon.com/bedrock/)), or a user-defined custom AWS Lambda function.
+    * Abstractive call summarization using [Amazon Bedrock](https://aws.amazon.com/bedrock/), [HuggingFace bart-large-cnn-samsum](https://huggingface.co/philschmid/bart-large-cnn-samsum) deployed on Sagemaker, [Anthropic Claude](https://www.anthropic.com/index/introducing-claude) (third party API), or a user-defined custom AWS Lambda function.
 * **Search**
     * Search on call attributes such as time range, sentiment, or entities
     * Search transcriptions
@@ -84,7 +84,7 @@ Once standard PCA processing is complete the telephony-specific CTR handler will
 
 ## (optional) Generative AI Call Summarization
 
-PCA contains a new step in the step functions that (if enabled) will generate a call summary. There are 4 choices for call summarization - Sagemaker Endpoint with HuggingFace bart-large-cnn-samsum, Amazon Bedrock (preview access only) Anthropic Claude, or a custom AWS Lambda function.  
+PCA contains a new step in the step functions that (if enabled) will generate a call summary. There are 4 choices for call summarization - Amazon Bedrock, Sagemaker Endpoint with HuggingFace bart-large-cnn-samsum, Anthropic Claude, or a custom AWS Lambda function.
 
 Learn more about the features in the [Generative AI readme](./docs/generative_ai.md)
 
@@ -94,7 +94,7 @@ When deploying PCA, the CloudFormation parameter `CallSummarization` value defin
 
 If `DISABLED` is chosen, the PCA step function will bypass the summarization step.
 
-If `BEDROCK` is chosen, you must have access to the Amazon Bedrock service, currently in private preview. Also select the Bedrock model `SummarizationBedrockModelId` parameter. 
+If `BEDROCK` is chosen, you must select the Bedrock model `SummarizationBedrockModelId` parameter. You must [request model access](https://docs.aws.amazon.com/bedrock/latest/userguide/model-access.html) for the model selected.
 
 If `SAGEMAKER` is chosen, PCA will be deployed with the [HuggingFace bart-large-cnn-samsum](https://huggingface.co/philschmid/bart-large-cnn-samsum) model on a `ml.m5.xlarge` instance type. By default, it is deployed as a single instance count, defined by the `SummarizationSageMakerInitialInstanceCount` parameter. If `SummarizationSageMakerInitialInstanceCount` is set to `0`, the endpoint will be deployed as a [SageMaker Serverless Inference](https://docs.aws.amazon.com/sagemaker/latest/dg/serverless-endpoints.html) endpoint.
 

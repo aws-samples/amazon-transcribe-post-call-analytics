@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 
-Description: Amazon Transcribe Post Call Analytics - PCA (v0.7.1) (uksb-1sn29lk73)
+Description: Amazon Transcribe Post Call Analytics - PCA (v0.7.2) (uksb-1sn29lk73)
 
 Parameters:
 
@@ -350,7 +350,7 @@ Parameters:
       steps required in Amazon QuickSight to (1) enable S3 access to PCA OutputBucket and (2) share dashboard and analytics assets.
 
   GenAIQuery:
-    Default: 'DISABLED'
+    Default: 'BEDROCK'
     Type: String
     AllowedValues:
       - 'DISABLED'
@@ -358,7 +358,8 @@ Parameters:
       - 'ANTHROPIC'
     Description: >
       If enabled, gives the ability to query an individual call for information. 
-      The BEDROCK option requires your account to have Amazon Bedrock preview access.
+      The BEDROCK option requires you to choose one of the supported model IDs from the provided list (GenAIQueryBedrockModelId).
+      You must also accept access to that model in the Amazon Bedrock > Model Access console.
       The ANTHROPIC option is a third party service, and you must enter your Anthropic API key in the 
       Third Party LLM API Key section.
 
@@ -366,14 +367,14 @@ Parameters:
     Type: String
     Default: anthropic.claude-v2
     AllowedValues:
-      - amazon.titan-tg1-large
+      - amazon.titan-text-express-v1
       - anthropic.claude-v1
       - anthropic.claude-instant-v1
       - anthropic.claude-v2
-    Description: (Optional) If 'GenAIQuery' is BEDROCK, which Bedrock model to use. (Bedrock preview access only)
+    Description: (Optional) If 'GenAIQuery' is BEDROCK, which Bedrock model to use.
 
   CallSummarization:
-    Default: 'DISABLED'
+    Default: 'BEDROCK'
     Type: String
     AllowedValues:
       - 'DISABLED'
@@ -382,23 +383,22 @@ Parameters:
       - 'ANTHROPIC'
       - 'LAMBDA'
     Description: >
-      Set to enable call summarization by a Large Language Model. The SAGEMAKER option uses a SageMaker endpoint with
-      the pretrained bart-large-cnn-samsum model with a ml.m5.xlarge instance type.  The LAMBDA option requires you 
-      to provide a function ARN below. The ANTHROPIC option is a third party service, and you must enter your 
-      Anthropic API key in the Third Party LLM API Key section. The BEDROCK option requires your account to have 
-      Amazon Bedrock preview access.
+      Set to enable call summarization by a Large Language Model. 
+      The BEDROCK option requires you to choose one of the supported model IDs from the provided list (SummarizationBedrockModelId).
+      You must also accept access to that model in the Amazon Bedrock > Model Access console.
+      The SAGEMAKER option uses a SageMaker endpoint with the pretrained bart-large-cnn-samsum model with a ml.m5.xlarge instance type.  
+      The LAMBDA option requires you to provide a function ARN below. 
+      The ANTHROPIC option is a third party service, and you must enter your Anthropic API key in the Third Party LLM API Key section. 
 
   SummarizationBedrockModelId:
     Type: String
-    Default: anthropic.claude-v2
+    Default: anthropic.claude-instant-v1
     AllowedValues:
-      - amazon.titan-tg1-large
-      #- ai21.j2-grande-instruct
-      #- ai21.j2-jumbo-instruct
+      - amazon.titan-text-express-v1
       - anthropic.claude-v1
       - anthropic.claude-instant-v1
       - anthropic.claude-v2
-    Description: (Optional) If 'CallSummarization' is BEDROCK, which Bedrock model to use. (Bedrock preview access only)
+    Description: (Optional) If 'CallSummarization' is BEDROCK, which Bedrock model to use. 
 
   SummarizationSageMakerInitialInstanceCount:
     Type: Number
@@ -540,6 +540,11 @@ Conditions:
   ShouldDeployPcaDashboards: !Equals [!Ref EnablePcaDashboards, 'Yes']
   ShouldLoadSampleFiles: !Equals [!Ref loadSampleAudioFiles, 'true']
   ShouldDeployBedrockBoto3Layer: !Or [!Equals [!Ref CallSummarization, 'BEDROCK'], !Equals [!Ref GenAIQuery, 'BEDROCK'],]
+  ShouldDeployLLMThirdPartyApiKey: !And [!Not [!Equals [!Ref SummarizationLLMThirdPartyApiKey, '']], !Not [!Equals [!Ref SummarizationLLMThirdPartyApiKey, undefined]]]
+  ShouldTestBedrockModelId: !Or [!Equals [!Ref CallSummarization, 'BEDROCK'], !Equals [!Ref GenAIQuery, 'BEDROCK'],]
+  ShouldTestGenAIQueryBedrockModelId: !Equals [!Ref GenAIQuery, 'BEDROCK']
+  ShouldTestSummarizationBedrockModelId: !Equals [!Ref CallSummarization, 'BEDROCK']
+
 
 Resources:
   ########################################################
@@ -737,7 +742,153 @@ Resources:
             Facetable: true
           Type: 'STRING_LIST_VALUE'
 
+  ########################################################
+  # If Bedrock Models are selected, verify that Bedrock 
+  # is available in the region, and that models are enabled
+  ########################################################
 
+  TestBedrockModelFunctionRole:
+    Type: AWS::IAM::Role
+    Condition: ShouldTestBedrockModelId
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "bedrock:InvokeModel"
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:bedrock:*::foundation-model/*"
+                  - !Sub "arn:${AWS::Partition}:bedrock:*:${AWS::AccountId}:custom-model/*"
+          PolicyName: BedrockPolicy
+
+  TestBedrockModelFunction:
+    Type: AWS::Lambda::Function
+    Condition: ShouldTestBedrockModelId
+    Properties:
+      Handler: index.lambda_handler
+      Role: !GetAtt 'TestBedrockModelFunctionRole.Arn'
+      Runtime: python3.11
+      Timeout: 60
+      MemorySize: 128
+      Code: 
+        ZipFile: !Sub |
+          import cfnresponse
+          import json
+          import subprocess
+          import os
+          import sys
+          print("install latest boto3 to get bedrock service support")
+          subprocess.check_call([sys.executable, '-m', 'pip', 'install', '--target', '/tmp', 'boto3'])
+          sys.path.insert(0,'/tmp')
+          import boto3
+
+          # Defaults
+          AWS_REGION = os.environ["AWS_REGION_OVERRIDE"] if "AWS_REGION_OVERRIDE" in os.environ else os.environ["AWS_REGION"]
+          ENDPOINT_URL = os.environ.get("ENDPOINT_URL", f'https://bedrock-runtime.{AWS_REGION}.amazonaws.com')
+          DEFAULT_MAX_TOKENS = 128
+
+          def get_request_body(modelId, parameters, prompt):
+              provider = modelId.split(".")[0]
+              request_body = None
+              if provider == "anthropic":
+                  request_body = {
+                      "prompt": prompt,
+                      "max_tokens_to_sample": DEFAULT_MAX_TOKENS
+                  } 
+                  request_body.update(parameters)
+              elif provider == "ai21":
+                  request_body = {
+                      "prompt": prompt,
+                      "maxTokens": DEFAULT_MAX_TOKENS
+                  }
+                  request_body.update(parameters)
+              elif provider == "amazon":
+                  textGenerationConfig = {
+                      "maxTokenCount": DEFAULT_MAX_TOKENS
+                  }
+                  textGenerationConfig.update(parameters)
+                  request_body = {
+                      "inputText": prompt,
+                      "textGenerationConfig": textGenerationConfig
+                  }
+              else:
+                  raise Exception("Unsupported provider: ", provider)
+              return request_body
+
+          def get_generate_text(modelId, response):
+              provider = modelId.split(".")[0]
+              generated_text = None
+              if provider == "anthropic":
+                  response_body = json.loads(response.get("body").read().decode())
+                  generated_text = response_body.get("completion")
+              elif provider == "ai21":
+                  response_body = json.loads(response.get("body").read())
+                  generated_text = response_body.get("completions")[0].get("data").get("text")
+              elif provider == "amazon":
+                  response_body = json.loads(response.get("body").read())
+                  generated_text = response_body.get("results")[0].get("outputText")
+              else:
+                  raise Exception("Unsupported provider: ", provider)
+              return generated_text
+
+          def call_llm(parameters, prompt):
+              modelId = parameters.pop("modelId")
+              body = get_request_body(modelId, parameters, prompt)
+              print("ModelId", modelId, "-  Body: ", body)
+              client = boto3.client(service_name='bedrock-runtime', region_name=AWS_REGION, endpoint_url=ENDPOINT_URL)
+              response = client.invoke_model(body=json.dumps(body), modelId=modelId, accept='application/json', contentType='application/json')
+              generated_text = get_generate_text(modelId, response)
+              return generated_text
+
+          def lambda_handler(event, context):
+              print("Event: ", json.dumps(event))
+              global client
+              status = cfnresponse.SUCCESS
+              responseData = {}
+              reason = "Success"
+              modelId = ""
+              if event['RequestType'] != 'Delete':
+                  prompt = "\n\nHuman: Why is the sky blue?\n\nAssistant:"
+                  try:
+                      # Test LLMModel
+                      llmModelId = event['ResourceProperties'].get('LLMModelId', '')
+                      modelId = llmModelId
+                      parameters = {
+                          "modelId": modelId,
+                          "temperature": 0
+                      }
+                      print(f"Testing {modelId}")
+                      call_llm(parameters, prompt)            
+                  except Exception as e:
+                      status = cfnresponse.FAILED
+                      reason = f"Exception thrown testing ModelId='{modelId}'. Check that Amazon Bedrock is available in your region, and that model is activated in your Amazon Bedrock account - {e}"
+              print(f"Status: {status}, Reason: {reason}")        
+              cfnresponse.send(event, context, status, responseData, reason=reason)
+
+  TestGenAIQueryBedrockModelId:
+    Type: Custom::TestGenAIQueryBedrockModelId
+    Condition: ShouldTestGenAIQueryBedrockModelId
+    Properties:
+      ServiceToken: !GetAtt TestBedrockModelFunction.Arn
+      LLMModelId: !Ref GenAIQueryBedrockModelId
+
+  TestSummarizationBedrockModelId:
+    Type: Custom::SummarizationBedrockModelId
+    Condition: ShouldTestSummarizationBedrockModelId
+    Properties:
+      ServiceToken: !GetAtt TestBedrockModelFunction.Arn
+      LLMModelId: !Ref SummarizationBedrockModelId
   
   ########################################################
   # SSM Stack
@@ -825,6 +976,7 @@ Resources:
       TemplateURL: pca-boto3-bedrock/template.yaml
 
   LLMThirdPartyApiKeySecret:
+    Condition: ShouldDeployLLMThirdPartyApiKey
     Type: AWS::SecretsManager::Secret
     Properties: 
       Description: API Key
@@ -846,7 +998,10 @@ Resources:
         CallSummarization: !Ref CallSummarization
         SummarizationBedrockModelId: !Ref SummarizationBedrockModelId
         SummarizationSageMakerInitialInstanceCount: !Ref SummarizationSageMakerInitialInstanceCount
-        SummarizationLLMThirdPartyApiKey: !Ref LLMThirdPartyApiKeySecret
+        SummarizationLLMThirdPartyApiKey: !If 
+          - ShouldDeployLLMThirdPartyApiKey
+          - !Ref LLMThirdPartyApiKeySecret
+          - ''
         SummarizationLambdaFunctionArn: !Ref SummarizationLambdaFunctionArn
         PyUtilsLayerArn: !GetAtt PythonUtilsLayer.Outputs.PyUtilsLayer
         Boto3LayerArn: !If
@@ -877,7 +1032,10 @@ Resources:
         GenAIQueryType: !Ref GenAIQuery
         GenAIQueryBedrockModelId: !Ref GenAIQueryBedrockModelId
         FetchTranscriptArn: !GetAtt PCAServer.Outputs.FetchTranscriptArn
-        LLMThirdPartyApiKey: !Ref LLMThirdPartyApiKeySecret
+        LLMThirdPartyApiKey: !If 
+          - ShouldDeployLLMThirdPartyApiKey
+          - !Ref LLMThirdPartyApiKeySecret
+          - ''
         PyUtilsLayerArn: !GetAtt PythonUtilsLayer.Outputs.PyUtilsLayer
         Boto3LayerArn: !If
           - ShouldDeployBedrockBoto3Layer
@@ -1071,3 +1229,11 @@ Outputs:
   FetchTranscriptArn:
     Description: Lambda function arn that will generate a string of the entire transcript for custom Lambda functions to use.
     Value: !GetAtt PCAServer.Outputs.FetchTranscriptArn
+
+  LLMPromptSummaryTemplateParameter:
+    Description: The LLM summary prompt template in SSM Parameter Store - open to customise call summary prompts.
+    Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/systems-manager/parameters/${SSM.Outputs.LLMPromptSummaryTemplateParameter}"
+  
+  LLMPromptQueryTemplateParameter:
+    Description: The LLM query prompt template in SSM Parameter Store - open to customise query prompts.
+    Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/systems-manager/parameters/${SSM.Outputs.LLMPromptQueryTemplateParameter}"

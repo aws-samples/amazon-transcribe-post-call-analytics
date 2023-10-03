@@ -670,7 +670,7 @@ function Dashboard({ setAlert }) {
 
         {window.pcaSettings.genai.query && (
           <Container
-            fitHeight={true}
+            fitHeight={false}
             header={
               <Header variant="h2">
                 Generative AI Query
@@ -681,7 +681,7 @@ function Dashboard({ setAlert }) {
               <ChatInput submitQuery={submitQuery} />
             }
           >
-            <div id="chatDiv" style={{overflow: "hidden", overflowY:'auto', maxHeight:'30em'}}>
+            <div id="chatDiv" style={{overflow: "hidden", overflowY:'auto', height:'30em'}}>
               <SpaceBetween size="m">
                 {genAiQueries.length > 0 ? genAiQueries.map((entry, i) => (
                     <ValueWithLabel key={i} label={entry.label}>
@@ -695,28 +695,31 @@ function Dashboard({ setAlert }) {
         
         {isTranscribeCallAnalyticsMode && (
           <Container
-            fitHeight={true}
+            fitHeight={false}
             header={
                 <Header variant="h2">
                   Call Analytics Summary
                 </Header>
             }
+            
           >
-            {!data && !error ? (
-              <h4>No summary available.</h4>
-            ) : (
-                <SpaceBetween size="l">
-                  <ValueWithLabel key='issues' label="Issue">
-                    {issuesTab()}
-                  </ValueWithLabel>
-                  <ValueWithLabel key='actionItems' label="Action Items">
-                    {actionItemsTab()}
-                  </ValueWithLabel>
-                  <ValueWithLabel key='outcomes' label="Outcomes">
-                    {outcomesTab()}
-                  </ValueWithLabel>
-                </SpaceBetween>
-          )}
+            <div style={{minHeight:'38em'}}>
+              {!data && !error ? (
+                <h4>No summary available.</h4>
+              ) : (
+                  <SpaceBetween size="l">
+                    <ValueWithLabel key='issues' label="Issue">
+                      {issuesTab()}
+                    </ValueWithLabel>
+                    <ValueWithLabel key='actionItems' label="Action Items">
+                      {actionItemsTab()}
+                    </ValueWithLabel>
+                    <ValueWithLabel key='outcomes' label="Outcomes">
+                      {outcomesTab()}
+                    </ValueWithLabel>
+                  </SpaceBetween>
+              )}
+            </div>
         </Container>
         )}
         <Container
