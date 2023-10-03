@@ -54,7 +54,7 @@ const COLUMN_DEFINITIONS = [
     cell: (d) => d.agent,
     isRowHeader: true,
     sortingField: "agent",
-    minWidth:150
+    minWidth:130
   },
   {
     id: "customer",
@@ -62,7 +62,7 @@ const COLUMN_DEFINITIONS = [
     cell: (d) => d.customer,
     isRowHeader: true,
     sortingField: "customer",
-    minWidth:150
+    minWidth:130
   },
   {
     id: "queue",
@@ -70,7 +70,7 @@ const COLUMN_DEFINITIONS = [
     cell: (d) => d.queue,
     isRowHeader: true,
     sortingField: "queue",
-    minWidth:150
+    minWidth:130
   },
   {
     id: "summary_resolved",
@@ -78,7 +78,7 @@ const COLUMN_DEFINITIONS = [
     cell: (d) => d.summary_resolved,
     isRowHeader: true,
     sortingField: "summary_resolved",
-    minWidth:170
+    minWidth:130
   },
   {
     id: "summary_topic",
@@ -86,7 +86,7 @@ const COLUMN_DEFINITIONS = [
     cell: (d) => d.summary_topic,
     isRowHeader: true,
     sortingField: "summary_topic",
-    Width:150
+    Width:130
   },
   {
     id: "summary_product",
@@ -94,7 +94,7 @@ const COLUMN_DEFINITIONS = [
     cell: (d) => d.summary_product,
     isRowHeader: true,
     sortingField: "summary_product",
-    minWidth:150
+    minWidth:130
   },
   {
     id: "summary_summary",
@@ -140,7 +140,7 @@ const COLUMN_DEFINITIONS = [
     id: "langCode",
     header: <div className="col-header-wrapper text-left">Lang Code</div>,
     cell: (d) => d.lang,
-    minWidth: 130,
+    minWidth: 100,
   },
   {
     id: "duration",
