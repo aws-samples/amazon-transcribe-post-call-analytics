@@ -45,7 +45,7 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       Handler: index.handler
-      Runtime: python3.8
+      Runtime: python3.11
       Role: !GetAtt 'PyUtilsZipFunctionRole.Arn'
       Timeout: 300
       MemorySize: 1024
@@ -116,9 +116,7 @@ Resources:
       CompatibleArchitectures:
         - x86_64
       CompatibleRuntimes:
-        - python3.8
-        - python3.9
-        - python3.10
+        - python3.11
       Content:
         S3Bucket: !Ref SupportFilesBucketName
         S3Key: !Ref PyZipName

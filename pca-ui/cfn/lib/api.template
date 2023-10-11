@@ -297,7 +297,7 @@ Resources:
                   - 'secretsmanager:ListSecretVersionIds'
                 Resource: !Ref LLMThirdPartyApiKey
               - !Ref "AWS::NoValue"
-      Runtime: python3.10
+      Runtime: python3.11
 
 Outputs:
   Uri:
