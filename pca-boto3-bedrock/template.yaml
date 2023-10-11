@@ -141,6 +141,7 @@ Resources:
       ServiceToken: !GetAtt BedrockBoto3ZipFunction.Arn
       # Rerun BedrockBoto3ZipFunction if any of the following parameters change
       BOTO3_BUCKET: !Ref BedrockBoto3Bucket
+      VERSION: 1
 
   BedrockBoto3Layer:
     Type: "AWS::Lambda::LayerVersion"
