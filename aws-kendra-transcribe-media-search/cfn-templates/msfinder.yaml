@@ -144,7 +144,7 @@ Resources:
               - Effect: Allow
                 Resource:
                   - !GetAtt
-                    - Repository
+                    - FinderRepository
                     - Arn
                 Action:
                   - 'codecommit:GitPull'
@@ -219,7 +219,7 @@ Resources:
           PolicyName: AWSMediaAppCredsPolicy
       
   ##Create CodeCommit Repository for the code of the application
-  Repository:
+  FinderRepository:
     Type: 'AWS::CodeCommit::Repository'
     Properties:
       Code:
@@ -233,7 +233,7 @@ Resources:
       RepositoryName: !Join
         - ''
         - - !Ref 'AWS::StackName'
-          - '-Repo'
+          - '-FinderRepo'
           
   ##Create an App for our application in the Amplify Console
   AmplifyApp:
@@ -293,7 +293,7 @@ Resources:
         - - !Ref 'AWS::StackName'
           - '-App'
       Repository: !GetAtt
-        - Repository
+        - FinderRepository
         - CloneUrlHttp
   ##Create a branch for the App to be built
   AmplifyBranch:
@@ -331,7 +331,7 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       Handler: lambda_function.lambda_handler
-      Runtime: python3.8
+      Runtime: python3.11
       Role: !GetAtt 'MediaLambdaRole.Arn'
       Timeout: 300
       Code:
@@ -392,7 +392,7 @@ Resources:
     Condition: EnableAccess
     Properties:
       Handler: lambda_function.lambda_handler
-      Runtime: python3.8
+      Runtime: python3.11
       Role: !GetAtt 'TokenEnablerLambdaRole.Arn'
       Timeout: 900
       MemorySize: 1024

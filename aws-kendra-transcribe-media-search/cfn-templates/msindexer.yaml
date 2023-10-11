@@ -162,7 +162,7 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       Handler: crawler.lambda_handler
-      Runtime: python3.8
+      Runtime: python3.11
       Role: !GetAtt 'CrawlerLambdaRole.Arn'
       Timeout: 900
       MemorySize: 1024
@@ -232,7 +232,7 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       Handler: jobcomplete.lambda_handler
-      Runtime: python3.8
+      Runtime: python3.11
       Role: !GetAtt 'JobCompleteLambdaRole.Arn'
       Timeout: 300
       MemorySize: 1024
