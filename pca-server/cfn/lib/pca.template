@@ -53,7 +53,7 @@ Parameters:
 
 Globals:
   Function:
-    Runtime: python3.8
+    Runtime: python3.11
     MemorySize: 1024
     Timeout: 60
 
@@ -246,7 +246,7 @@ Resources:
   SFFetchTranscript:
     Type: "AWS::Serverless::Function"
     Properties:
-      Runtime: python3.10
+      Runtime: python3.11
       CodeUri:  ../../src/pca
       Handler: pca-aws-fetch-transcript.lambda_handler
       Timeout: 900
@@ -257,7 +257,7 @@ Resources:
   SFSummarize:
     Type: "AWS::Serverless::Function"
     Properties:
-      Runtime: python3.10
+      Runtime: python3.11
       CodeUri:  ../../src/pca
       Handler: pca-aws-sf-summarize.lambda_handler
       Timeout: 900
