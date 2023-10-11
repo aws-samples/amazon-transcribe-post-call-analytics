@@ -45,7 +45,7 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       Handler: index.handler
-      Runtime: python3.8
+      Runtime: python3.11
       Role: !GetAtt 'boto3ZipFunctionRole.Arn'
       Timeout: 60
       MemorySize: 512

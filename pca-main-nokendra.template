@@ -968,7 +968,7 @@ Resources:
     Condition: ShouldDeployPcaDashboards
     Properties:
       Handler: index.handler
-      Runtime: python3.8
+      Runtime: python3.11
       Role: !GetAtt QuickSightEnabledCheckFunctionRole.Arn
       Code: 
         ZipFile: !Sub |
