@@ -102,7 +102,10 @@ Resources:
             physicalResourceId = event.get("PhysicalResourceId", None)
             existingZip = None
             if physicalResourceId:
-              existingZip = json.loads(physicalResourceId)
+              try:
+                existingZip = json.loads(physicalResourceId)
+              except:
+                existingZip = ""
             responseData={}
             reason=""
             status = cfnresponse.SUCCESS
