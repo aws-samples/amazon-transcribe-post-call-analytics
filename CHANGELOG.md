@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - #187 - Got error message in PostCallAnalyticsWorkflow step function
 - #189 - Uploading some MP3 files fails to trigger workflow - files remain unprocessed
 - #190 - Transcription search web UI opens with an error page after deployment
+- #199 - BedrockBoto3 stack update failure when lambda function is replaced during update
 
 ## [0.7.2] - 2023-10-03
 ### Fixed
