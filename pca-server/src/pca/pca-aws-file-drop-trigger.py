@@ -42,6 +42,12 @@ def get_invalid_mime_type(filename):
     if base_mime in VALID_MIME_TYPES:
         mime_type = None
 
+    # add workaround for audio files with no mime_type
+    suffix = filename.split(".")[-1]
+    if suffix.lower() in ["mp3","wav"]:
+        print(f"Filename has {suffix} suffix - assuming valid file type")
+        mime_type = None 
+
     return mime_type
 
 
