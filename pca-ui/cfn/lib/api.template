@@ -43,6 +43,11 @@ Parameters:
     AllowedPattern: '^(|arn:aws:lambda:.*)$'
     Description: Arn to use for the GenAIQuery to fetch transcript
 
+  SummarizerArn:
+    Type: String
+    AllowedPattern: '^(|arn:aws:lambda:.*)$'
+    Description: Arn to use to refresh the GenAI Summaries
+
   LLMThirdPartyApiKey:
     Type: String
     Description: >
@@ -297,6 +302,37 @@ Resources:
                   - 'secretsmanager:ListSecretVersionIds'
                 Resource: !Ref LLMThirdPartyApiKey
               - !Ref "AWS::NoValue"
+      Runtime: python3.11
+
+  GenAIRefreshSummaryFunction:
+    Type: "AWS::Serverless::Function"
+    Properties:
+      CodeUri:  ../../src/genai
+      Handler: refresh_summary.lambda_handler
+      Timeout: 900
+      Layers:
+        - !Ref PyUtilsLayerArn
+        - !If
+          - ShouldAddBoto3Layer
+          - !Ref Boto3LayerArn
+          - !Ref AWS::NoValue
+      Environment:
+        Variables:
+          SUMMARIZER_ARN: !Ref SummarizerArn
+      Events:
+        APIEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Method: GET
+            Path: /genai/refreshsummary
+      Policies:
+        - Statement:
+          - Sid: InvokeGetSummary
+            Effect: Allow
+            Action:
+              - lambda:InvokeFunction
+            Resource: !Ref SummarizerArn
       Runtime: python3.11
 
 Outputs:

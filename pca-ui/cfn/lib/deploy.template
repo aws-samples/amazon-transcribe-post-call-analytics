@@ -6,6 +6,9 @@ Parameters:
   Bucket:
     Type: String
 
+  AudioBucket:
+    Type: String
+
   AuthUri:
     Type: String
 
@@ -98,6 +101,7 @@ Resources:
     DependsOn: Deploy
     Properties:
       Bucket: !Ref Bucket
+      AudioBucket: !Ref AudioBucket
       ServiceToken: !GetAtt ConfigureFunction.Arn
       AuthUri: !Ref AuthUri
       AuthClientId: !Ref AuthClientId

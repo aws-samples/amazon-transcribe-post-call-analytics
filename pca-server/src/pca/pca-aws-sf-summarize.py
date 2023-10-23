@@ -290,6 +290,7 @@ def lambda_handler(event, context):
         pca_results.analytics.summary = summary_json
         print("Summary JSON: " + summary)
     else:
+        pca_results.analytics.summary = {}
         pca_results.analytics.summary['Summary'] = summary
         print("Summary: " + summary)
     
