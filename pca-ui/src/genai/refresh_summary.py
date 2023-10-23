@@ -33,7 +33,7 @@ def lambda_handler(event, context):
     print(payload)
     lambda_client.invoke(
         FunctionName=SUMMARIZER_ARN,
-        InvocationType=' Event',
+        InvocationType='RequestResponse',
         Payload=json.dumps(payload)
     )
 

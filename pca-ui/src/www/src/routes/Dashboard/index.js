@@ -253,14 +253,12 @@ function Dashboard({ setAlert }) {
   const SummaryRefresh = () => {
     const [disabled, setDisabled] = useState(false);
 
-    const onSubmit = (e) => {
+    const onSubmit = async (e) => {
       e.preventDefault();
       setDisabled(true);
-      genairefresh(key);
-      setTimeout(() => {
-        setDisabled(false);
-        mutate(`/get/${key}`);
-      }, 15000)
+      await genairefresh(key);
+      setDisabled(false);
+      mutate(`/get/${key}`);
 
       return true;
     }
