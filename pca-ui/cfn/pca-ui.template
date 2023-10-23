@@ -70,6 +70,11 @@ Parameters:
     AllowedPattern: '^(|arn:aws:lambda:.*)$'
     Description: Arn to use for the GenAIQuery to fetch transcript
 
+  SummarizerArn:
+    Type: String
+    AllowedPattern: '^(|arn:aws:lambda:.*)$'
+    Description: Arn to use to refresh the GenAI Summaries
+
   Boto3LayerArn:
     Default: ''
     Type: String
@@ -137,6 +142,7 @@ Resources:
         GenAIQueryBedrockModelId: !Ref GenAIQueryBedrockModelId
         LLMThirdPartyApiKey: !Ref LLMThirdPartyApiKey
         FetchTranscriptArn: !Ref FetchTranscriptArn
+        SummarizerArn: !Ref SummarizerArn
         Boto3LayerArn: !Ref Boto3LayerArn
         PyUtilsLayerArn: !Ref PyUtilsLayerArn
 
@@ -146,6 +152,7 @@ Resources:
       TemplateURL: lib/deploy.template
       Parameters:
         Bucket: !GetAtt Web.Outputs.Bucket
+        AudioBucket: !Ref AudioBucket
         AuthUri: !GetAtt Cognito.Outputs.BaseUri
         AuthClientId: !GetAtt Cognito.Outputs.UserPoolClientId
         ApiUri: !GetAtt Api.Outputs.Uri

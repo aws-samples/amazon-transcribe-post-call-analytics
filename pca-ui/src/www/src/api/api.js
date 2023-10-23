@@ -89,3 +89,9 @@ export async function genaiquery(filename, query) {
     "query": query
   } );
 }
+
+export async function genairefresh(filename) {
+  return getRequest("genai/refreshsummary", {
+    "filename": filename,
+  } );
+}

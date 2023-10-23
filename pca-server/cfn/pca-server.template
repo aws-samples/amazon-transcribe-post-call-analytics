@@ -160,6 +160,9 @@ Outputs:
   FetchTranscriptArn:
     Value: !GetAtt PCA.Outputs.FetchTranscriptArn
 
+  SummarizerArn:
+    Value: !GetAtt PCA.Outputs.SummarizerArn
+
   RolesForKMSKey:
     Value: !Join
       - ', '
