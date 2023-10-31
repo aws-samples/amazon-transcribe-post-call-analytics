@@ -599,6 +599,16 @@ Resources:
             Transitions:
               - TransitionInDays: 1
                 StorageClass: INTELLIGENT_TIERING
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders:
+              - '*'
+            AllowedMethods:
+              - PUT
+            AllowedOrigins:
+              - '*'
+            ExposedHeaders: []
+            MaxAge: 3000
 
   OutputBucket:
     Condition: ShouldCreateOutputBucket
@@ -1040,6 +1050,7 @@ Resources:
           - ShouldCreateInputBucket
           - !Ref InputBucket
           - !Ref InputBucketName 
+        AudioBucketPrefix: !Ref InputBucketRawAudio
         DataBucket:
           !If
           - ShouldCreateOutputBucket

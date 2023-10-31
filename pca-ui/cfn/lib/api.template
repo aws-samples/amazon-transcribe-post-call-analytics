@@ -8,6 +8,9 @@ Parameters:
   AudioBucket:
     Type: String
 
+  AudioBucketPrefix:
+    Type: String
+
   DataBucket:
     Type: String
 
@@ -334,6 +337,27 @@ Resources:
               - lambda:InvokeFunction
             Resource: !Ref SummarizerArn
       Runtime: python3.11
+
+  GeneratePresignedURLFunction:
+    Type: "AWS::Serverless::Function"
+    Properties:
+      CodeUri:  ../../src/lambda
+      Handler: presign.handler
+      Environment:
+        Variables:
+          AudioBucket: !Ref AudioBucket
+          AudioBucketPrefix: !Ref AudioBucketPrefix
+      Events:
+        APIEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Method: GET
+            Path: /presign
+      Policies:
+        - S3WritePolicy:
+            BucketName: !Ref AudioBucket
+      Runtime: nodejs14.x
 
 Outputs:
   Uri:
