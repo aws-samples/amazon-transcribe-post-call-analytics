@@ -1,10 +1,26 @@
 import React from "react";
 import useSWRInfinite from "swr/infinite";
+import axios from 'axios';
 import { list } from "../api/api";
 import { ContactTable } from "../components/ContactTable";
-import { useDangerAlert } from "../hooks/useAlert";
-import { Button, ContentLayout, Link, Header, BreadcrumbGroup, Grid } from '@cloudscape-design/components';
+import { Upload } from "../components/Upload";
 
+
+import { useDangerAlert } from "../hooks/useAlert";
+import { presign } from "../api/api";
+import {
+  Button,
+  ContentLayout,
+  Link,
+  Header,
+  BreadcrumbGroup,
+  Grid,
+  FileUpload,
+  FormField,
+  Form,
+  SpaceBetween,
+  Spinner
+} from '@cloudscape-design/components';
 
 const config = window.pcaSettings;
 
@@ -33,6 +49,7 @@ function Home({ setAlert }) {
   };
 
   const { data, error, size, setSize } = useSWRInfinite(getKey, fetcher);
+  const [value, setValue] = React.useState([]);
 
   const isLoadingInitialData = !data && !error;
   const isLoadingMore =
@@ -60,6 +77,7 @@ function Home({ setAlert }) {
         <Grid
           gridDefinition={[
             {colspan: { default:12} },
+            {colspan: { default:12} },
             {colspan: { default:12} }
           ]}
         >
@@ -79,6 +97,7 @@ function Home({ setAlert }) {
               ? "No more to load"
               : "Load more"}
           </Button>
+          <Upload/>
         </Grid>
       </ContentLayout>
       </>

@@ -21,6 +21,10 @@ Parameters:
     Default: InputBucketName
     Description: S3 bucket containing audio files. Audio object names must be prefixed with nci/
 
+  AudioBucketPrefix:
+    Type: String
+    Description: Prefix/Folder that holds the audio files to be ingested into the system
+
   DataBucket:
     Type: String
     Default: OutputBucketName
@@ -135,6 +139,7 @@ Resources:
       TemplateURL: lib/api.template
       Parameters:
         AudioBucket: !Ref AudioBucket
+        AudioBucketPrefix: !Ref AudioBucketPrefix
         DataBucket: !Ref DataBucket
         TableName: !GetAtt Indexer.Outputs.TableName
         UserPoolId: !GetAtt Cognito.Outputs.UserPoolId

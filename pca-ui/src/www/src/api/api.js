@@ -95,3 +95,9 @@ export async function genairefresh(filename) {
     "filename": filename,
   } );
 }
+
+export async function presign(filename) {
+  return getRequest("presign", {
+    "filename": filename,
+  } );
+}
