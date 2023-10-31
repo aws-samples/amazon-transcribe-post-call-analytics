@@ -432,3 +432,6 @@ Outputs:
 
   FetchTranscriptArn:
     Value: !GetAtt SFFetchTranscript.Arn
+
+  SummarizerArn:
+    Value: !GetAtt SFSummarize.Arn

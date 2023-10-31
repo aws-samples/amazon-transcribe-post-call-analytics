@@ -1,7 +1,7 @@
 import { useState, useEffect, Fragment, useRef } from "react";
 import { useParams } from "react-router";
 import useSWR, { useSWRConfig } from "swr";
-import { get,genaiquery, swap } from "../../api/api";
+import { get, genaiquery, swap, genairefresh } from "../../api/api";
 import { Formatter } from "../../format";
 import { TranscriptSegment } from "./TranscriptSegment";
 import { Entities } from "./Entities";
@@ -59,7 +59,7 @@ function Dashboard({ setAlert }) {
   const transcriptElem = useRef();
 
   const { data, error } = useSWR(`/get/${key}`, () => get(key), {
-    revalidateIfStale: false,
+    revalidateIfStale: true,
     revalidateOnFocus: false,
     revalidateOnReconnect: false
   });
@@ -249,6 +249,29 @@ function Dashboard({ setAlert }) {
     });
     setGenAiQueryStatus(false);
   }
+
+  const SummaryRefresh = () => {
+    const [disabled, setDisabled] = useState(false);
+
+    const onSubmit = async (e) => {
+      e.preventDefault();
+      setDisabled(true);
+      await genairefresh(key);
+      setDisabled(false);
+      mutate(`/get/${key}`);
+
+      return true;
+    }
+
+    return (
+        <form onSubmit={onSubmit}>
+          <Grid gridDefinition={[{ colspan: { default: 12, xxs: 9 } }, { default: 12, xxs: 3 }]}>
+            {disabled ? <Spinner size="big" variant="disabled"/> : <Button disabled={disabled} iconName="refresh" variant="normal" ariaLabel="refresh">
+            </Button>}
+          </Grid>
+        </form>
+    );
+  };
 
   const swapAgent = async () => {
     try {
@@ -654,10 +677,17 @@ function Dashboard({ setAlert }) {
         <Container
           fitHeight={true}
           header={
-            <Header variant="h2">
+            <Header variant="h2"
+              actions = {
+                <SpaceBetween direction="horizontal" size="xs">
+                  <SummaryRefresh/>
+                </SpaceBetween>
+              }
+            >
               Generative AI Insights
             </Header>
           }
+
         >
           <SpaceBetween size="m">
             {genAiSummary.length > 0 ? genAiSummary.map((entry, i) => (
