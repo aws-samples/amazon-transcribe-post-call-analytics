@@ -224,7 +224,16 @@ Resources:
                             'categoriesdetected': [item['Name'] for item in conversationAnalytics['CategoriesDetected']] if "CategoriesDetected" in conversationAnalytics else None,
 
                             'url_to_display': urlPrefix + conversationAnalytics['SourceInformation'][0]['TranscribeJobInfo']['TranscriptionJobName'] + ".json" if "SourceInformation" in conversationAnalytics else None,
+
+                            'summary': conversationAnalytics['Summary']['Summary'] if "Summary" in conversationAnalytics and 'Summary' in conversationAnalytics['Summary'] else None,
+                            'topic': conversationAnalytics['Summary']['Topic'] if "Summary" in conversationAnalytics and 'Topic' in conversationAnalytics['Summary'] else None,
+                            'product': conversationAnalytics['Summary']['Product'] if "Summary" in conversationAnalytics and 'Product' in conversationAnalytics['Summary'] else None,
+                            'resolved': conversationAnalytics['Summary']['Resolved'] if "Summary" in conversationAnalytics and 'Resolved' in conversationAnalytics['Summary'] else None,
+                            'callback': conversationAnalytics['Summary']['Callback'] if "Summary" in conversationAnalytics and 'Callback' in conversationAnalytics['Summary'] else None,
+                            'politeness': conversationAnalytics['Summary']['Politeness'] if "Summary" in conversationAnalytics and 'Politeness' in conversationAnalytics['Summary'] else None,
+                            'actions': conversationAnalytics['Summary']['Actions'] if "Summary" in conversationAnalytics and 'Actions' in conversationAnalytics['Summary'] else None,
                         }
+
                         #print (transformedRecord)
                         encodedData = base64.b64encode(json.dumps(transformedRecord).encode("utf-8"))
                         partitiontime = datetime.strptime(conversationTime, '%Y-%m-%d %H:%M:%S').strftime(partitionFormat)
@@ -521,6 +530,27 @@ Resources:
                       -
                         Name: "url_to_display"
                         Type: "string"
+                      -
+                        Name: "summary"
+                        Type: "string"
+                      -
+                        Name: "topic"
+                        Type: "string"
+                      -
+                        Name: "product"
+                        Type: "string"
+                      -
+                        Name: "resolved"
+                        Type: "string"
+                      -
+                        Name: "callback"
+                        Type: "string"
+                      -
+                        Name: "politeness"
+                        Type: "string"
+                      -
+                        Name: "actions"
+                        Type: "string"
                     Location: !Sub "s3://${PcaOutputBucket}/pca-output-base"
                     InputFormat: "org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat"
                     OutputFormat: "org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat"
@@ -555,7 +585,7 @@ Resources:
                   - - '/* Presto View: '
                     - Fn::Base64: 
                         Fn::Sub: |
-                          {"originalSql":"SELECT\n  partitiontimestamp\n, guid\n, agent\n, cust\n, conversationtime\n, conversationlocation\n, processtime\n, languagecode\n, duration\n, customer_sentimentscore\n, agent_sentimentscore\n, customer_totaltimesecs\n, agent_totaltimesecs\n, nontalktime\n, category\n, url_to_display\nFROM\n  (\"pca_output\"\nCROSS JOIN UNNEST(categoriesdetected) t (category))\n","catalog":"awsdatacatalog","schema":"${PcaGlueCatalogDatabaseName}","columns":[{"name":"partitiontimestamp","type":"varchar"},{"name":"guid","type":"varchar"},{"name":"agent","type":"varchar"},{"name":"cust","type":"varchar"},{"name":"conversationtime","type":"varchar"},{"name":"conversationlocation","type":"varchar"},{"name":"processtime","type":"varchar"},{"name":"languagecode","type":"varchar"},{"name":"duration","type":"real"},{"name":"customer_sentimentscore","type":"real"},{"name":"agent_sentimentscore","type":"real"},{"name":"customer_totaltimesecs","type":"real"},{"name":"agent_totaltimesecs","type":"real"},{"name":"nontalktime","type":"real"},{"name":"category","type":"varchar"},{"name":"url_to_display","type":"varchar"}]}
+                          {"originalSql":"SELECT\n  partitiontimestamp\n, guid\n, agent\n, cust\n, conversationtime\n, conversationlocation\n, processtime\n, languagecode\n, duration\n, customer_sentimentscore\n, agent_sentimentscore\n, customer_totaltimesecs\n, agent_totaltimesecs\n, nontalktime\n, category\n, url_to_display\nFROM\n  (\"pca_output\"\nCROSS JOIN UNNEST(categoriesdetected) t (category))\n","catalog":"awsdatacatalog","schema":"${PcaGlueCatalogDatabaseName}","columns":[{"name":"partitiontimestamp","type":"varchar"},{"name":"guid","type":"varchar"},{"name":"agent","type":"varchar"},{"name":"cust","type":"varchar"},{"name":"conversationtime","type":"varchar"},{"name":"conversationlocation","type":"varchar"},{"name":"processtime","type":"varchar"},{"name":"languagecode","type":"varchar"},{"name":"duration","type":"real"},{"name":"customer_sentimentscore","type":"real"},{"name":"agent_sentimentscore","type":"real"},{"name":"customer_totaltimesecs","type":"real"},{"name":"agent_totaltimesecs","type":"real"},{"name":"nontalktime","type":"real"},{"name":"category","type":"varchar"},{"name":"url_to_display","type":"varchar"},]}
                     - ' */'
                 TableType: "VIRTUAL_VIEW"
                 Parameters: 
@@ -778,6 +808,27 @@ Resources:
                             Name: "url_to_display"
                             Type: "STRING"
                           - 
+                            Name: "summary"
+                            Type: "STRING"
+                          - 
+                            Name: "topic"
+                            Type: "STRING"
+                          - 
+                            Name: "product"
+                            Type: "STRING"
+                          - 
+                            Name: "resolved"
+                            Type: "STRING"
+                          - 
+                            Name: "callback"
+                            Type: "STRING"
+                          - 
+                            Name: "politeness"
+                            Type: "STRING"
+                          - 
+                            Name: "actions"
+                            Type: "STRING"
+                          - 
                             Name: "customentity_name"
                             Type: "STRING"
                           - 
@@ -820,6 +871,13 @@ Resources:
                               - "agent_totaltimesecs"
                               - "nontalktime"
                               - "url_to_display"
+                              - "summary"
+                              - "topic"
+                              - "product"
+                              - "resolved"
+                              - "callback"
+                              - "politeness"
+                              - "actions"
                               - "customentity_name"
                               - "customentity_value"
                     Source: 
@@ -1006,6 +1064,27 @@ Resources:
                             Name: "url_to_display"
                             Type: "STRING"
                           - 
+                            Name: "summary"
+                            Type: "STRING"
+                          - 
+                            Name: "topic"
+                            Type: "STRING"
+                          - 
+                            Name: "product"
+                            Type: "STRING"
+                          - 
+                            Name: "resolved"
+                            Type: "STRING"
+                          - 
+                            Name: "callback"
+                            Type: "STRING"
+                          - 
+                            Name: "politness"
+                            Type: "STRING"
+                          - 
+                            Name: "actions"
+                            Type: "STRING"
+                          - 
                             Name: "partitiontimestamp"
                             Type: "STRING"
             LogicalTableMap: 
@@ -1055,6 +1134,13 @@ Resources:
                               - "outcomesdetectedtext"
                               - "categoriesdetectedtext"
                               - "url_to_display"
+                              - "summary"
+                              - "topic"
+                              - "product"
+                              - "resolved"
+                              - "callback"
+                              - "politeness"
+                              - "actions"
                               - "partitiontimestamp"
                     Source: 
                         PhysicalTableId: "e0f38318-b3d3-4c0d-8904-55b88566c401"
