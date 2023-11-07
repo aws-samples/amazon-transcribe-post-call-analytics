@@ -582,6 +582,9 @@ Resources:
             Transitions:
               - TransitionInDays: 1
                 StorageClass: INTELLIGENT_TIERING
+      NotificationConfiguration:
+        EventBridgeConfiguration:
+          EventBridgeEnabled: true
       CorsConfiguration:
         CorsRules:
           - AllowedHeaders:

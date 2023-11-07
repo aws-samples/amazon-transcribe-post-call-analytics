@@ -11,6 +11,12 @@ Parameters:
   DataPrefix:
     Type: String
 
+  AudioBucket:
+    Type: String
+
+  AudioBucketPrefix:
+    Type: String
+
 Resources:
   Queue:
     Type: "AWS::SQS::Queue"
@@ -122,6 +128,37 @@ Resources:
             TableName: !Ref Table
         - S3ReadPolicy:
             BucketName: !Ref DataBucket
+      Runtime: nodejs14.x
+
+  InputBucketTriggerFunction:
+    Type: "AWS::Serverless::Function"
+    Properties:
+      CodeUri:  ../../src/lambda
+      Handler: input_bucket_trigger.handler
+      Timeout: 300
+      Environment:
+        Variables:
+          TableName: !Ref Table
+          AudioBucketPrefix: !Ref AudioBucketPrefix
+          DataPrefix: !Ref DataPrefix
+      Events:
+        StandardEventBridge:
+          Type: EventBridgeRule
+          Properties:
+            Pattern:
+              detail-type:
+                - "Object Created"
+              source:
+                - aws.s3
+              detail:
+                bucket:
+                  name:
+                    - !Ref AudioBucket
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName: !Ref Table
+      - S3ReadPolicy:
+          BucketName: !Ref AudioBucket
       Runtime: nodejs14.x
 
 Outputs:

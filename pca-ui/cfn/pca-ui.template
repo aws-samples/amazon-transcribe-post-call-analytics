@@ -132,6 +132,8 @@ Resources:
       Parameters:
         DataBucket: !Ref DataBucket
         DataPrefix: !Ref DataPrefix
+        AudioBucket: !Ref AudioBucket
+        AudioBucketPrefix: !Ref AudioBucketPrefix
 
   Api:
     Type: AWS::CloudFormation::Stack

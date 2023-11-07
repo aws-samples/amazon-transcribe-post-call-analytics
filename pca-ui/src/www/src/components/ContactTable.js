@@ -23,9 +23,16 @@ const COLUMN_DEFINITIONS = [
     header: "Timestamp",
     sortingField: "timestamp",
     cell: (d) => {
-      return (
-        <Link href={`/dashboard/${d.key}`}>{Formatter.Timestamp(d.timestamp)}</Link>
-      )      
+      if(d.status !== undefined && d.status === "In progress") {
+        return (
+            Formatter.Timestamp(d.timestamp)
+        )
+      }
+      else {
+        return (
+            <Link href={`/dashboard/${d.key}`}>{Formatter.Timestamp(d.timestamp)}</Link>
+        )
+      }
     },
     minWidth: 160
   },
@@ -33,12 +40,27 @@ const COLUMN_DEFINITIONS = [
     id: "jobName",
     header: "Job Name",
     cell: (d) => {
-      return (
-        <Link variant="primary" href={`/dashboard/${d.key}`}>{d.jobName}</Link>
-      )      
+      if(d.status !== undefined && d.status === "In progress") {
+        return (
+            d.jobName
+        )
+      }
+      else {
+        return (
+            <Link variant="primary" href={`/dashboard/${d.key}`}>{d.jobName}</Link>
+        )
+      }
     },
     isRowHeader: true,
     sortingField: "jobName",
+  },
+  {
+    id: "status",
+    header: "Status",
+    cell: (d) => d.status,
+    isRowHeader: true,
+    sortingField: "status",
+    minWidth:130
   },
   {
     id: "guid",
