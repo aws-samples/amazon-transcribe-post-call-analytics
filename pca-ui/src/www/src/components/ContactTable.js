@@ -191,7 +191,7 @@ const NoMatches = ({ children }) => (
   </tr>
 );
 
-export const ContactTable = ({ data = [], loading = false, empty, header, variant='container' }) => {
+export const ContactTable = ({ data = [], loading = false, empty, header, variant='embedded' }) => {
   const history = useHistory();
   
   const [preferences, setPreferences] = useLocalStorage(
