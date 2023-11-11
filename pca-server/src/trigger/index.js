@@ -48,6 +48,8 @@ exports.handler = function (event, context) {
                         },
                     },
                 });
+                // enable eventbridge configuration for the ui
+                data.EventBridgeConfiguration = {};
 
                 console.log("Adding us:", JSON.stringify(data, null, 4));
             }

@@ -134,6 +134,7 @@ Resources:
         DataPrefix: !Ref DataPrefix
         AudioBucket: !Ref AudioBucket
         AudioBucketPrefix: !Ref AudioBucketPrefix
+        WebUri: !GetAtt Web.Outputs.Uri
 
   Api:
     Type: AWS::CloudFormation::Stack

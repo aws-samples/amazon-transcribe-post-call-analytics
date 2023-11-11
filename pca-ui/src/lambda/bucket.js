@@ -11,15 +11,40 @@ exports.handler = function (event, context) {
     const prefix = props.Prefix;
     const queueArn = props.QueueArn;
 
+    const audioBucket = props.AudioBucket;
+    const audioBucketPrefix = props.AudioBucketPrefix;
+    const webUri = props.WebUri.replace(/\/$/, "");
+
     const resourceId = `${stackName}::${bucketName}/${prefix}`
 
     console.log("Event:", JSON.stringify(event, null, 4));
 
-    s3.getBucketNotificationConfiguration({
-        Bucket: bucketName,
-    })
-        .promise()
-        .then((data) => {
+    const corsConfiguration = {
+        CORSRules: [{
+        AllowedHeaders: [
+            "Authorization"
+        ], 
+        AllowedMethods: [
+            "PUT"
+        ], 
+        AllowedOrigins: [
+            webUri,
+            "http://localhost:3000"
+        ], 
+        MaxAgeSeconds: 3000
+        }]
+    }
+
+    // Configure input bucket CORS configuration
+    s3.putBucketCors({
+        Bucket: audioBucket,
+        CORSConfiguration: corsConfiguration
+    }).promise().then(() => 
+    {
+        // Configure output bucket
+        s3.getBucketNotificationConfiguration({
+            Bucket: bucketName,
+        }).promise().then((data) => {
             console.log("Existing config:", JSON.stringify(data, null, 4));
 
             // Remove our config
@@ -57,23 +82,28 @@ exports.handler = function (event, context) {
                 console.log("Added us:", JSON.stringify(data, null, 4));
             }
 
-            return s3
-                .putBucketNotificationConfiguration({
-                    Bucket: bucketName,
-                    NotificationConfiguration: data,
-                })
-                .promise();
-        })
-        .then((data) => {
+            return s3.putBucketNotificationConfiguration({
+                Bucket: bucketName,
+                NotificationConfiguration: data,
+            }).promise();
+        }).then((data) => {
             console.log("Win:", JSON.stringify(data, null, 4));
 
             response.send(event, context, response.SUCCESS, {}, resourceId);
-        })
-        .catch((err) => {
+        }).catch((err) => {
             console.log("Lose:", err);
 
             response.send(event, context, response.FAILED, {
                 error: err,
             }, resourceId);
         });
+    }).catch((err) => {
+        console.log("Lose:", err);
+
+        response.send(event, context, response.FAILED, {
+            error: err,
+        }, resourceId);
+    });
+
+    
 };
