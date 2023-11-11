@@ -4,6 +4,7 @@ import axios from 'axios';
 import { list } from "../api/api";
 import { ContactTable } from "../components/ContactTable";
 import { Upload } from "../components/Upload";
+import ExpandableSection from "@cloudscape-design/components/expandable-section";
 
 
 import { useDangerAlert } from "../hooks/useAlert";
@@ -19,7 +20,9 @@ import {
   FormField,
   Form,
   SpaceBetween,
-  Spinner
+  Spinner,
+  ColumnLayout,
+  Container
 } from '@cloudscape-design/components';
 
 const config = window.pcaSettings;
@@ -67,38 +70,43 @@ function Home({ setAlert }) {
     <>
       <ContentLayout 
         header={
-          <Header
-            variant="h1"
-            description="Select a call record to view details."
-            info={<Link variant="info" ariaLabel="Info goes here.">Info</Link>}>
-            Call List
-          </Header>
+            <Header
+              variant="h1"
+              description="Select a call record to view details."
+              info={<Link variant="info" ariaLabel="Info goes here.">Info</Link>}>
+              Call List
+            </Header>
         }>
-        <Grid
-          gridDefinition={[
-            {colspan: { default:12} },
-            {colspan: { default:12} },
-            {colspan: { default:12} }
-          ]}
-        >
-          <ContactTable
-            data={details}
-            loading={!data && !error}
-            empty={<Empty />}
-          />
-          <Button
-            variant="primary"
-            onClick={() => setSize(size + 1)}
-            disabled={isLoadingMore || isReachingEnd}
+        <Container>
+          <Grid
+            gridDefinition={[
+              {colspan: { default:12} },
+              {colspan: { default:12} },
+              {colspan: { default:12} }
+            ]}
           >
-            {isLoadingMore
-              ? "Loading..."
-              : isReachingEnd
-              ? "No more to load"
-              : "Load more"}
-          </Button>
-          <Upload/>
-        </Grid>
+            <ExpandableSection headerText="Upload call recordings">
+                <Upload/>
+            </ExpandableSection>
+            <ContactTable
+              data={details}
+              loading={!data && !error}
+              empty={<Empty />}
+            />
+            <Button
+              variant="primary"
+              onClick={() => setSize(size + 1)}
+              disabled={isLoadingMore || isReachingEnd}
+            >
+              {isLoadingMore
+                ? "Loading..."
+                : isReachingEnd
+                ? "No more to load"
+                : "Load more"}
+            </Button>
+          </Grid>
+        </Container>
+        
       </ContentLayout>
       </>
   );
