@@ -24,9 +24,9 @@ function makeItem(pk, sk, tk, data) {
 }
 
 async function createRecord(record) {
-    const jobName = record.object.key.split("/")[1];
+    const jobName = record.object.key.split("/").pop();
     const k = record.object.key.replace(objectKey, outputKey);
-    const key = k.concat('.json')
+    const key = k.concat('.json');
 
     console.log("Creating:", key);
 
@@ -54,8 +54,6 @@ async function createRecord(record) {
         TableName: tableName,
         Item: item,
     }).promise();
-
-    return ;
 }
 
 exports.handler = async function (event, context) {
