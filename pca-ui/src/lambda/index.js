@@ -23,6 +23,16 @@ function makeItem(pk, sk, tk, data) {
 
 async function createRecord(record) {
     const key = record.s3.object.key;
+
+    const jobName = key.split('/').pop();
+    if (jobName.startsWith("redacted-")) {
+        console.log("starts with redacted, need to delete old record");
+        // Transcribe standard will prefix redacted files with 'redacted-' as part of their key
+        // but the ddb wont have that 'in-progress' record, so we must delete the record that 
+        // does not contain 'redacted-' or else we'll have two records in ddb and the ui
+        await deleteKey(key.slice(0, key.lastIndexOf('/') + 1) + jobName.slice(9));
+    }
+
     console.log("Creating:", key);
 
     let res;
@@ -162,7 +172,11 @@ async function createRecord(record) {
 async function deleteRecord(record) {
     const key = record.s3.object.key;
     console.log("Deleting:", key);
+    return deleteKey(key);
+}
 
+async function deleteKey(key) {
+    console.log("Deleting key:", key);
     let records;
     try {
         records = await ddb
