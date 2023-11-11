@@ -579,19 +579,6 @@ Resources:
             Transitions:
               - TransitionInDays: 1
                 StorageClass: INTELLIGENT_TIERING
-      NotificationConfiguration:
-        EventBridgeConfiguration:
-          EventBridgeEnabled: true
-      CorsConfiguration:
-        CorsRules:
-          - AllowedHeaders:
-              - '*'
-            AllowedMethods:
-              - PUT
-            AllowedOrigins:
-              - '*'
-            ExposedHeaders: []
-            MaxAge: 3000
 
   OutputBucket:
     Condition: ShouldCreateOutputBucket

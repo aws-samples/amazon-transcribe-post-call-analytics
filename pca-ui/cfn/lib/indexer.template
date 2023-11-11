@@ -17,6 +17,9 @@ Parameters:
   AudioBucketPrefix:
     Type: String
 
+  WebUri:
+    Type: String
+
 Resources:
   Queue:
     Type: "AWS::SQS::Queue"
@@ -61,6 +64,13 @@ Resources:
                 - s3:GetBucketNotification
                 - s3:PutBucketNotification
               Resource: !Sub arn:aws:s3:::${DataBucket}
+        - PolicyName: set-audio-bucket-cors
+          PolicyDocument:
+            Statement:
+              Effect: Allow
+              Action:
+                - s3:PutBucketCORS
+              Resource: !Sub arn:aws:s3:::${AudioBucket}
 
   ConfigureDataBucketFunction:
     Type: "AWS::Lambda::Function"
@@ -80,6 +90,9 @@ Resources:
       BucketName: !Ref DataBucket
       Prefix: !Ref DataPrefix
       QueueArn: !GetAtt Queue.Arn
+      AudioBucket: !Ref AudioBucket
+      AudioBucketPrefix: !Ref AudioBucketPrefix
+      WebUri: !Ref WebUri
 
   Table:
     Type: "AWS::DynamoDB::Table"
