@@ -10,7 +10,7 @@ async function getPresignedURL(key) {
         const url = await s3.getSignedUrlPromise('putObject', {
             Bucket: audioBucket,
             Key: audioBucketPrefix + "/" + key,
-            Expires: 60
+            Expires: 900
         });
         return {
             statusCode: 200,
