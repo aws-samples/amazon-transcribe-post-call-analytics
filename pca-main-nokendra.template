@@ -890,6 +890,7 @@ Resources:
           - ShouldCreateInputBucket
           - !Ref InputBucket
           - !Ref InputBucketName 
+        AudioBucketPrefix: !Ref InputBucketRawAudio
         DataBucket:
           !If
           - ShouldCreateOutputBucket
