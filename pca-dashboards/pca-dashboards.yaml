@@ -225,13 +225,7 @@ Resources:
 
                             'url_to_display': urlPrefix + conversationAnalytics['SourceInformation'][0]['TranscribeJobInfo']['TranscriptionJobName'] + ".json" if "SourceInformation" in conversationAnalytics else None,
 
-                            'summary': conversationAnalytics['Summary']['Summary'] if "Summary" in conversationAnalytics and 'Summary' in conversationAnalytics['Summary'] else None,
-                            'topic': conversationAnalytics['Summary']['Topic'] if "Summary" in conversationAnalytics and 'Topic' in conversationAnalytics['Summary'] else None,
-                            'product': conversationAnalytics['Summary']['Product'] if "Summary" in conversationAnalytics and 'Product' in conversationAnalytics['Summary'] else None,
-                            'resolved': conversationAnalytics['Summary']['Resolved'] if "Summary" in conversationAnalytics and 'Resolved' in conversationAnalytics['Summary'] else None,
-                            'callback': conversationAnalytics['Summary']['Callback'] if "Summary" in conversationAnalytics and 'Callback' in conversationAnalytics['Summary'] else None,
-                            'politeness': conversationAnalytics['Summary']['Politeness'] if "Summary" in conversationAnalytics and 'Politeness' in conversationAnalytics['Summary'] else None,
-                            'actions': conversationAnalytics['Summary']['Actions'] if "Summary" in conversationAnalytics and 'Actions' in conversationAnalytics['Summary'] else None,
+                            'summary': conversationAnalytics['Summary'] if "Summary" in conversationAnalytics else None,
                         }
 
                         #print (transformedRecord)
@@ -533,24 +527,6 @@ Resources:
                       -
                         Name: "summary"
                         Type: "string"
-                      -
-                        Name: "topic"
-                        Type: "string"
-                      -
-                        Name: "product"
-                        Type: "string"
-                      -
-                        Name: "resolved"
-                        Type: "string"
-                      -
-                        Name: "callback"
-                        Type: "string"
-                      -
-                        Name: "politeness"
-                        Type: "string"
-                      -
-                        Name: "actions"
-                        Type: "string"
                     Location: !Sub "s3://${PcaOutputBucket}/pca-output-base"
                     InputFormat: "org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat"
                     OutputFormat: "org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat"
@@ -811,24 +787,6 @@ Resources:
                             Name: "summary"
                             Type: "STRING"
                           - 
-                            Name: "topic"
-                            Type: "STRING"
-                          - 
-                            Name: "product"
-                            Type: "STRING"
-                          - 
-                            Name: "resolved"
-                            Type: "STRING"
-                          - 
-                            Name: "callback"
-                            Type: "STRING"
-                          - 
-                            Name: "politeness"
-                            Type: "STRING"
-                          - 
-                            Name: "actions"
-                            Type: "STRING"
-                          - 
                             Name: "customentity_name"
                             Type: "STRING"
                           - 
@@ -872,12 +830,6 @@ Resources:
                               - "nontalktime"
                               - "url_to_display"
                               - "summary"
-                              - "topic"
-                              - "product"
-                              - "resolved"
-                              - "callback"
-                              - "politeness"
-                              - "actions"
                               - "customentity_name"
                               - "customentity_value"
                     Source: 
@@ -1067,24 +1019,6 @@ Resources:
                             Name: "summary"
                             Type: "STRING"
                           - 
-                            Name: "topic"
-                            Type: "STRING"
-                          - 
-                            Name: "product"
-                            Type: "STRING"
-                          - 
-                            Name: "resolved"
-                            Type: "STRING"
-                          - 
-                            Name: "callback"
-                            Type: "STRING"
-                          - 
-                            Name: "politness"
-                            Type: "STRING"
-                          - 
-                            Name: "actions"
-                            Type: "STRING"
-                          - 
                             Name: "partitiontimestamp"
                             Type: "STRING"
             LogicalTableMap: 
@@ -1135,12 +1069,6 @@ Resources:
                               - "categoriesdetectedtext"
                               - "url_to_display"
                               - "summary"
-                              - "topic"
-                              - "product"
-                              - "resolved"
-                              - "callback"
-                              - "politeness"
-                              - "actions"
                               - "partitiontimestamp"
                     Source: 
                         PhysicalTableId: "e0f38318-b3d3-4c0d-8904-55b88566c401"
