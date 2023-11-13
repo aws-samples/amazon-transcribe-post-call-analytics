@@ -1,7 +1,7 @@
 //import { Table } from "react-bootstrap";
 import React from "react";
 import {
-    Form, SpaceBetween, FormField, FileUpload, Flashbar
+    Form, SpaceBetween, FormField, FileUpload, Flashbar, Alert
 } from '@cloudscape-design/components';
 import Box from "@cloudscape-design/components/button";
 import { presign } from "../api/api";
@@ -10,6 +10,7 @@ import {useDropzone} from "react-dropzone";
 import {useCallback, useMemo } from 'react';
 import Button from "@cloudscape-design/components/button";
 import { Header, Container, TokenGroup } from '@cloudscape-design/components';
+import { useDangerAlert } from "../hooks/useAlert";
 
 const baseStyle = {
     flex: 1,
@@ -48,6 +49,7 @@ export const Upload = () => {
     const [uploadStatus, setUploadStatus] = React.useState(false);
     const [items, setItems] = React.useState([]);
     const [uploaded, setUploaded] = React.useState(false);
+    const [uploadError, setUploadError] = React.useState("");
     const successMessage = [{
         type: "success",
         content: "Files uploaded successfully.",
@@ -90,16 +92,21 @@ export const Upload = () => {
     const onUpload = async (e) => {
         e.preventDefault();
         setUploadStatus(true);
-
-        for (let i = 0; i < items.length; i++) {
-            console.log("File uploaded=", items[i].file.name);
-            const response = await presign(items[i].file.name);
-            const r = await axios.put(response.url, items[i].file);
+        try {
+            for (let i = 0; i < items.length; i++) {
+                console.log("File uploaded=", items[i].file.name);
+                const response = await presign(items[i].file.name);
+                
+                const r = await axios.put(response.url, items[i].file);
+            }
+            setItems((prevState) => []);
+            setUploaded(true);
+        } catch (err) {
+            setUploadError("An error occurred uploading file(s): " + err.toLocaleString());
+        } finally {
+            setUploadStatus(false);
         }
 
-        setItems((prevState) => []);
-        setUploadStatus(false);
-        setUploaded(true);
     };
 
     const style = useMemo(() => ({
@@ -129,7 +136,12 @@ export const Upload = () => {
                         </Header>
                     }
                     footer={
-                        uploaded ? <div><Flashbar items={successMessage}/></div> : ""
+                        <div>
+                            { uploaded ? <div><Flashbar items={successMessage}/></div> : "" }
+                            { uploadError !== "" ? <div><Alert dismissible onDismiss={() => {
+                                setUploadError("");
+                            }} type="error">{uploadError}</Alert></div> : "" }
+                        </div>
                     }
                 >
                     <div className="container">

@@ -178,7 +178,7 @@ function App() {
                   variant={alert.variant}
                   dismissible
                   header={alert.heading}
-                  onClose={onDismiss}
+                  onDismiss={onDismiss}
                 >
                   {alert.text}
                 </Alert>
