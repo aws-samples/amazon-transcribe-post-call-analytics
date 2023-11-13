@@ -3,8 +3,7 @@ import * as auth from "./auth.js";
 const config = window.pcaSettings;
 
 function handleError(err) {
-  console.error(err);
-
+  if(err) console.error(err);
   throw err;
 }
 
@@ -24,7 +23,6 @@ async function request(url, method, body) {
   let response;
   try {
     console.debug("Request opts:", JSON.stringify(options, null, 4));
-
     response = await fetch(url, options);
   } catch (err) {
     return handleError(err);
