@@ -714,7 +714,7 @@ function Dashboard({ setAlert }) {
             <div id="chatDiv" style={{overflow: "hidden", overflowY:'auto', height:'30em'}}>
               <SpaceBetween size="m">
                 {genAiQueries.length > 0 ? genAiQueries.map((entry, i) => (
-                    <ValueWithLabel key={i} label={entry.label}>
+                  <ValueWithLabel key={i} index={i} label={entry.label}>
                       {entry.value === '...' ? <div style={{height:'30px'}}><Spinner/></div> : entry.value}
                     </ValueWithLabel>
                 )) : <ValueWithLabel key='nosummary'>Ask a question below.</ValueWithLabel>}

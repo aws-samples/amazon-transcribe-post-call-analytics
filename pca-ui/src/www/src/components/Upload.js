@@ -23,7 +23,7 @@ const baseStyle = {
     borderColor: '#eeeeee',
     borderStyle: 'dashed',
     backgroundColor: '#fafafa',
-    color: '#bdbdbd',
+    color: '#737373',
     outline: 'none',
     transition: 'border .24s ease-in-out'
 };

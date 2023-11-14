@@ -20,7 +20,7 @@ img.sentiment {
 }
 
 span.segment {
-  color: cadetblue;
+  color: #4c7f81;
   cursor: pointer;
 }
 
@@ -33,6 +33,6 @@ tr.contact-table {
 }
 
 span.audio-start {
-  color: cadetblue;
+  color: #4c7f81;
   cursor: pointer;
 }

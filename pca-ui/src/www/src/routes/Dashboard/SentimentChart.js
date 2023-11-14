@@ -4,6 +4,7 @@ import { colours } from "./colours";
 export const SentimentChart = ({ data = {}, speakerOrder = {} }) => {
   return (
     <Line
+      aria-label="This is a chart showing speaker and caller sentiment by quartile."
       data={{
         labels: ["Q1", "Q2", "Q3", "Q4"],
         datasets: Object.keys(data).map((speakerId) => {
