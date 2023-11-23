@@ -62,7 +62,7 @@ Clicking on the URL will open the application's UI in your preferred browser, br
 
 You are now logged into the application, and as you set the initial configuration parameter **loadSampleAudioFiles** to `true` you should be able to see the following three processed calls.
 
-![Application home screen](../images/initial-screen.en.png)
+![Application home screen](../images/initial-screen-2.png)
 
 
 #### Running Costs
