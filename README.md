@@ -318,7 +318,7 @@ Our companion solution, Live Call Analytics and Agent Assist (LCA), offers real-
 
 Check out the AWS blog post: [Post call analytics for your contact center with Amazon language AI services](https://www.amazon.com/post-call-analytics)
 
-PCA documentation and tutorials are available here: [Post Call Analytics](https://catalog.us-east-1.prod.workshops.aws/v2/workshops/2031cf73-22de-40c4-899a-5e4abd940e9a/en-US) 
+PCA documentation and tutorials are available here: [Post Call Analytics](./docs) 
 
 Also check out the companion sample solution - [Live call analytics for your contact center with Amazon language AI services](https://www.amazon.com/live-call-analytics). Live Call Analytics (LCA), offers real time-transcription and analytics capabilities by using the Amazon Transcribe and Amazon Comprehend real-time APIs. Unlike PCA, which transcribes and analyzes recorded audio after the call has ended, LCA transcribes and analyzes your calls as they are happening and provides real-time updates to supervisors and agents. You can configure LCA to store call recordings to the PCA’s ingestion S3 bucket, and use the two solutions together to get the best of both worlds. See Live call analytics for your contact center with Amazon language AI services for more information.
 

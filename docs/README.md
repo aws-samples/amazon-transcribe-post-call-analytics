@@ -2,8 +2,6 @@
 
 ![CCI headline banner](./images/banner.png)
 
-[
-
 #### Why do we need Post-Call Analytics?!
 
 The AWS CCI Post-Call Analytics solution helps drive deeper quality management insights through automatic analysis of contact-center conversations, generating actionable insights such as product and service feedback loops that can be used to benefit the rest of the organization, or the best performing interactions such as those ending with a positive sentiment score.
@@ -22,8 +20,6 @@ Today every experience we face is defined by the best consumer experiences we kn
 -   Development of better scorecards to assess agent performance
 -   Targetted agent training and reinforcement
 
-[
-
 #### Documentation structure
 
 The documentation is split into the following sections, walking through the installaion, configuration and running of the solution. It then continues into deeper-dives behind the scenes around how it works, how to further customise it, and then information about the underlying architecture and solution workflows.
@@ -35,11 +31,11 @@ The documentation is split into the following sections, walking through the inst
 | User interface | Walkthrough of various user interface screens, as well as discussing application user management |
 | [Audio ingestion](./ingestion/README.md) | How to ingest audio files into the solution and how any errors will be handled, |
 | [Customization](./customization/README.md) | How to improve the accuracy of the transcriptions with your domain-specific words, and how to identify entities of interest |
-| System architecture | An overview of the server-side architectural components and data flows, along with details of the operational workflows |
-| Search and Reporting | How to configure and use both the Amazon Kendra companion search application and Amazon QuickSight to help give you further insights into your customer call data |
-
-[
+| [Generative AI](./generative_ai.md) | How you can use Amazon Bedrock to generate customized insights and detect topics without training a machine learning model |
+| [Output JSON structure](./output_json_structure.md) | Documentation on the main PCA JSON data format |
+| System architecture (WIP) | An overview of the server-side architectural components and data flows, along with details of the operational workflows |
+| Search and Reporting (WIP) | How to configure and use both the Amazon Kendra companion search application and Amazon QuickSight to help give you further insights into your customer call data |
 
 #### AWS Contact Center Intelligence
 
-For further details on every aspect of the AWS Contact Centre Intelligence solutions, including additional resources, Partner information and customer references, please visit the dedicated web page [here](https://aws.amazon.com/machine-learning/contact-center-intelligence/) .
+For further details on every aspect of the AWS Contact Centre Intelligence solutions, including additional resources, Partner information and customer references, please visit the dedicated web page [here](https://aws.amazon.com/machine-learning/contact-center-intelligence/).
