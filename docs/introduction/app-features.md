@@ -1,7 +1,5 @@
 #### Application features 
 
-](https://studio.us-east-1.prod.workshops.aws/preview/2031cf73-22de-40c4-899a-5e4abd940e9a/builds/36aedf9e-2590-4fca-9a96-7902ed26ca07/en-US#application-features)
-
 This solution will perform automatic speech recognition on your audio files with a fully-automated workflow, which is initiated when an audio file is delivered to a configured Amazon S3 bucket. After just a few minutes the transcription will be produced, which is available in another Amazon S3 bucket and can be accessed by your preferred business intelligence (BI) solution. Please see the **Application architecture** section for full details on the processing steps involved in this workflow.
 
 A user interface is provided, allowing you to easily visualize a single call and perform some level of searching and filtering across all of the calls in the system. It is expected that customers will use Amazon Quicksight or their preferred BI solution, with this application's user interface being used to allow users to easily read the transcripts, playback the calls and review the other analytics datapoints in a particular call.
