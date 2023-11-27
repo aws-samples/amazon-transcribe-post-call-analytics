@@ -110,6 +110,11 @@ Parameters:
       short answer to the question at the end. If the answer cannot be determined from the transcript, then reply saying Sorry, 
       I don't know. Use gender neutral pronouns. Do not use XML tags in the answer. <br><transcript><br>{transcript}<br></transcript><br>{question}<br><br>Assistant:
 
+  MainStackName:
+    Type: String
+    Default: ""
+    Description: Name of the main CloudFormation stack, can be used to give resources in the nested stacks unique names
+
   MaxSpeakers:
     Type: String
     Default: "2"
@@ -291,7 +296,7 @@ Resources:
   BulkUploadBucketParameter:
     Type: "AWS::SSM::Parameter"
     Properties:
-      Name: !Sub "(!GetAtt PCAServer.Outputs.MainStackName)-BulkUploadBucket"
+      Name: !Sub "'${MainStackName}'-BulkUploadBucket"
       Type: String
       Description: Bucket where files can be dropped, and a secondary Step Function can be manually enabled to drip feed them into the system
       Value: !Ref BulkUploadBucketName

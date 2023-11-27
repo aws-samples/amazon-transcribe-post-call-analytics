@@ -921,6 +921,7 @@ Resources:
           - !Ref InputBucketName        
         InputBucketRawAudio: !Ref InputBucketRawAudio
         InputBucketOrigTranscripts: !Ref InputBucketOrigTranscripts
+        MainStackName: !Ref AWS::StackName
         MaxSpeakers: !Ref MaxSpeakers
         MinSentimentNegative: !Ref MinSentimentNegative
         MinSentimentPositive: !Ref MinSentimentPositive
