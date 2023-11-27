@@ -291,7 +291,7 @@ Resources:
   BulkUploadBucketParameter:
     Type: "AWS::SSM::Parameter"
     Properties:
-      Name: BulkUploadBucket
+      Name: !Sub "(!GetAtt PCAServer.Outputs.MainStackName)-BulkUploadBucket"
       Type: String
       Description: Bucket where files can be dropped, and a secondary Step Function can be manually enabled to drip feed them into the system
       Value: !Ref BulkUploadBucketName
