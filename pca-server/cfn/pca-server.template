@@ -157,9 +157,6 @@ Resources:
 
 Outputs:
 
-  MainStackName:
-    Value: !GetAtt PCA.StackName
-
   FetchTranscriptArn:
     Value: !GetAtt PCA.Outputs.FetchTranscriptArn
 
