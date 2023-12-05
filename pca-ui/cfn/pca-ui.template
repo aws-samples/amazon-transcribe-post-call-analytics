@@ -55,13 +55,13 @@ Parameters:
   
   GenAIQueryBedrockModelId:
     Type: String
-    Default: anthropic.claude-v2
+    Default: anthropic.claude-instant-v1
     AllowedValues:
-      - amazon.titan-tg1-large
+      - amazon.titan-text-express-v1
       - anthropic.claude-v1
       - anthropic.claude-instant-v1
       - anthropic.claude-v2
-    Description: (Optional) If 'GenAIQuery' is BEDROCK, which Bedrock model to use. (Bedrock preview access only)
+    Description: (Optional) If 'GenAIQuery' is BEDROCK, which Bedrock model to use.
 
   LLMThirdPartyApiKey:
     Type: String
