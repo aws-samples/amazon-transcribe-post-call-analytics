@@ -24,15 +24,13 @@ Parameters:
   
   SummarizationBedrockModelId:
     Type: String
-    Default: anthropic.claude-v2
+    Default: anthropic.claude-instant-v1
     AllowedValues:
-      - amazon.titan-tg1-large
-      #- ai21.j2-grande-instruct
-      #- ai21.j2-jumbo-instruct
+      - amazon.titan-text-express-v1
       - anthropic.claude-v1
       - anthropic.claude-instant-v1
       - anthropic.claude-v2
-    Description: (Optional) If 'CallSummarization' is BEDROCK, which Bedrock model to use. (Bedrock preview access only)
+    Description: (Optional) If 'CallSummarization' is BEDROCK, which Bedrock model to use.
 
   SummarizationSageMakerInitialInstanceCount:
     Type: Number
