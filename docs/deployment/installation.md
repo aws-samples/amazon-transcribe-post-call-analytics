@@ -9,7 +9,7 @@ Start your PCA experience by using AWS CloudFormation to deploy the solution wit
 
 This will bring up the standard AWS CloudFormation screen - it will initially prompt you for a name for the application stack, and it is recommended that you name it `PostCallAnalytics`. You can then proceed to set the installation parameters required for an initial deployment.
 
-For information on the costs for running this application, please see the [Running Costs](https://studio.us-east-1.prod.workshops.aws/preview/2031cf73-22de-40c4-899a-5e4abd940e9a/builds/36aedf9e-2590-4fca-9a96-7902ed26ca07/en-US/deployment/installation#running-costs) section at the bottom of this page.
+For information on the costs for running this application, please see the [Running Costs](./installation.md#running-costs) section at the bottom of this page.
  
 ##### Installation parameters 
 
