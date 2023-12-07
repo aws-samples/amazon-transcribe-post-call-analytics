@@ -1,7 +1,7 @@
 
 #### Application Configuration 
 
-There are a large number of configuration parameters that allow you to change the behaviour of the application, although as you saw in the [Installation guide](https://studio.us-east-1.prod.workshops.aws/preview/2031cf73-22de-40c4-899a-5e4abd940e9a/builds/36aedf9e-2590-4fca-9a96-7902ed26ca07/en-US/deployment/installation#installation-parameters) you can install the application with just a few parameters. Such an install will allow you to generate transcripts via Amazon Transcribe, using all of the Call Analytics features of that service, but would not take advantage of the following features:
+There are a large number of configuration parameters that allow you to change the behaviour of the application, although as you saw in the [Installation guide](./installation.md#installation-parameters) you can install the application with just a few parameters. Such an install will allow you to generate transcripts via Amazon Transcribe, using all of the Call Analytics features of that service, but would not take advantage of the following features:
 
 -   Custom vocabulary to improve transcription accuracy of your domain-specific terms
 -   Language identification of the incoming audio
@@ -15,12 +15,12 @@ The other configuration parameters are structured into the following logical sec
 
 | SECTION | PURPOSE |
 | --- | --- |
-| [S3 Bucket Names and Retention Policy](https://studio.us-east-1.prod.workshops.aws/preview/2031cf73-22de-40c4-899a-5e4abd940e9a/builds/36aedf9e-2590-4fca-9a96-7902ed26ca07/en-US/deployment/configuration#s3-bucket-names-and-retention-policy) | Allows the definition of which S3 buckets are used by the workflows. You are able to re-use existing buckets or automatically create new ones and specify the retention policy used |
-| [S3 Bucket Prefixes](https://studio.us-east-1.prod.workshops.aws/preview/2031cf73-22de-40c4-899a-5e4abd940e9a/builds/36aedf9e-2590-4fca-9a96-7902ed26ca07/en-US/deployment/configuration#s3-bucket-prefixes) | Within the various S3 buckets the application may use a folder structure to hold certain types of files, and you can specify your own prefixes if you wish |
-| [Filename metadata parsing](https://studio.us-east-1.prod.workshops.aws/preview/2031cf73-22de-40c4-899a-5e4abd940e9a/builds/36aedf9e-2590-4fca-9a96-7902ed26ca07/en-US/deployment/configuration#filename-metadata-parsing) | Some telephony systems are able to put some metadata information into the filename of the audio files that they input. This section defines the _regular expressions_ required to extract those metadata fields |
-| [Transcription](https://studio.us-east-1.prod.workshops.aws/preview/2031cf73-22de-40c4-899a-5e4abd940e9a/builds/36aedf9e-2590-4fca-9a96-7902ed26ca07/en-US/deployment/configuration#transcription) | Defines the configuration for the various native optional features of Amazon Transribe that the application supports |
-| [Comprehend](https://studio.us-east-1.prod.workshops.aws/preview/2031cf73-22de-40c4-899a-5e4abd940e9a/builds/36aedf9e-2590-4fca-9a96-7902ed26ca07/en-US/deployment/configuration#comprehend) | Configuration for the various APIs called in Amazon Comprehend for entity detection, PII redaction or sentiment detection |
-| [Other parameters](https://studio.us-east-1.prod.workshops.aws/preview/2031cf73-22de-40c4-899a-5e4abd940e9a/builds/36aedf9e-2590-4fca-9a96-7902ed26ca07/en-US/deployment/configuration#other-parameters) | Any additional parameters that do not fall into the above categories |
+| [S3 Bucket Names and Retention Policy](./configuration.md#s3-bucket-names-and-retention-policy) | Allows the definition of which S3 buckets are used by the workflows. You are able to re-use existing buckets or automatically create new ones and specify the retention policy used |
+| [S3 Bucket Prefixes](./configuration.md#s3-bucket-prefixes) | Within the various S3 buckets the application may use a folder structure to hold certain types of files, and you can specify your own prefixes if you wish |
+| [Filename metadata parsing](./configuration.md#filename-metadata-parsing) | Some telephony systems are able to put some metadata information into the filename of the audio files that they input. This section defines the _regular expressions_ required to extract those metadata fields |
+| [Transcription](./configuration.md#transcription) | Defines the configuration for the various native optional features of Amazon Transribe that the application supports |
+| [Comprehend](./configuration.md#comprehend) | Configuration for the various APIs called in Amazon Comprehend for entity detection, PII redaction or sentiment detection |
+| [Other parameters](./configuration.md#other-parameters) | Any additional parameters that do not fall into the above categories |
  
 
 ##### S3 Bucket Names and Retention Policy 
