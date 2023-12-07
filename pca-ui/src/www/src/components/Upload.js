@@ -86,6 +86,14 @@ export const Upload = () => {
         accept: {
             'audio/*': ['.mp3', '.wav', '.flac', '.ogg', '.amr'],
             'video/*': ['.mp4', '.webm'],
+        }, validator: file => {
+            if (!/^[a-zA-Z0-9._-]+$/.test(file.name)) {
+                setUploadError("File contains invalid characters. No spaces are allowed, and only characters a-z, A-Z, 0-9, period (.), underscore (_), and hyphen (-) are allowed.");
+                return {
+                    code: "filename-invalid",
+                    message: `Invalid character in file name: ${file.name}`
+                };
+            }
         },
     });
 
@@ -147,10 +155,10 @@ export const Upload = () => {
                     <div className="container">
                         <div {...getRootProps({style})}>
                             <input {...getInputProps()} />
-                            {isDragAccept && (<p>Drag and drop or click to select call recordings to upload
+                            {isDragAccept && (<p>Drag and drop or click to select call recordings to upload. Filenames can only include characters a-z, A-Z, 0-9, period (.), underscore (_), and hyphen (-).
                             <br></br>Valid formats: MP3, WAV, FLAC, OGG, AMR, MP4, and WEBM</p>)}
                             {isDragReject && (<p>Unsupported files detected</p>)}
-                            {!isDragActive && (<p>Drag and drop or click to select call recordings to upload
+                            {!isDragActive && (<p>Drag and drop or click to select call recordings to upload. Filenames can only include characters a-z, A-Z, 0-9, period (.), underscore (_), and hyphen (-).
                              <br></br>Valid formats: MP3, WAV, FLAC, OGG, AMR, MP4, and WEBM</p>)}
                         </div>
                     </div>
