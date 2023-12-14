@@ -51,6 +51,19 @@ Parameters:
     Type: String
     Default: ''
 
+  LLMPromptBucket:
+    Type: String
+    Description: Existing bucket holding your generative AI prompts.
+
+  LLMPromptBucketPrefix:
+    Type: String
+    Default: LLMPrompts
+    Description: Prefix/Folder that holds the generative AI prompts.
+
+  LLMPromptSummaryTemplateName:
+    Type: String
+    Description: The LLM summary prompt template name.
+
 Globals:
   Function:
     Runtime: python3.11
@@ -268,6 +281,9 @@ Resources:
         Variables:
           AWS_DATA_PATH: "/opt/models"
           FETCH_TRANSCRIPT_LAMBDA_ARN: !GetAtt SFFetchTranscript.Arn
+          LLM_PROMPT_BUCKET: !Ref LLMPromptBucket
+          LLM_PROMPT_BUCKET_PREFIX: !Ref LLMPromptBucketPrefix
+          LLM_PROMPT_SUMMARY_TEMPLATE_NAME: !Ref LLMPromptSummaryTemplateName
           BEDROCK_MODEL_ID: !Ref SummarizationBedrockModelId
           SUMMARY_TYPE: !Ref CallSummarization
           SUMMARY_SAGEMAKER_ENDPOINT: !Ref SummarizationSagemakerEndpointName
@@ -288,6 +304,16 @@ Resources:
             Action:
               - lambda:InvokeFunction
             Resource: !GetAtt SFFetchTranscript.Arn
+          - Sid: S3BucketReadWrite
+            Effect: Allow
+            Action:
+              - s3:ListBucket
+              - s3:GetObject
+              - s3:PutObject
+              - s3:DeleteObject
+            Resource:
+              - !Sub arn:aws:s3:::${LLMPromptBucket}
+              - !Sub arn:aws:s3:::${LLMPromptBucket}/*
           - Sid: InvokeBedrock
             Effect: Allow
             Action: 

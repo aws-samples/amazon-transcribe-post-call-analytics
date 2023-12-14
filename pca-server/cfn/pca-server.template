@@ -61,6 +61,19 @@ Parameters:
     Type: String
     Description: PyUtils layer arn from main stack.
 
+  LLMPromptBucket:
+    Type: String
+    Description: Existing bucket holding your generative AI prompts.
+
+  LLMPromptBucketPrefix:
+    Type: String
+    Default: LLMPrompts
+    Description: Prefix/Folder that holds the generative AI prompts.
+
+  LLMPromptSummaryTemplateName:
+    Type: String
+    Description: The LLM summary prompt template name.
+
 Conditions:
   ShouldCreateBoto3Layer: !Equals [!Ref Boto3LayerArn, '']
   ShouldDeployBedrockSummarizer: !Equals [!Ref CallSummarization, "BEDROCK"]
@@ -116,6 +129,10 @@ Resources:
           - ''
         SummarizationLLMThirdPartyApiKey: !Ref SummarizationLLMThirdPartyApiKey
         SummarizationLambdaFunctionArn: !Ref SummarizationLambdaFunctionArn
+        LLMPromptBucket: !Ref LLMPromptBucket
+        LLMPromptBucketPrefix: !Ref LLMPromptBucketPrefix
+        LLMPromptSummaryTemplateName: !Ref LLMPromptSummaryTemplateName
+
 
   Trigger:
     Type: AWS::CloudFormation::Stack
@@ -129,6 +146,17 @@ Resources:
           - !Ref Boto3LayerArn
         PyUtilsLayer: !Ref PyUtilsLayerArn
         Summarize: !If [IsTranscriptSummaryEnabled, "true", "false"]
+
+  LLMPromptConfigure:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: lib/llm.template
+      Parameters:
+        LLMPromptBucket: !Ref LLMPromptBucket
+        LLMPromptBucketPrefix: !Ref LLMPromptBucketPrefix
+        LLMPromptSummaryTemplateName: !Ref LLMPromptSummaryTemplateName
+
+
 
   BulkImport:
     Type: AWS::CloudFormation::Stack

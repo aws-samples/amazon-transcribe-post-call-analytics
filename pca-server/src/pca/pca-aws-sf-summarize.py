@@ -26,12 +26,16 @@ SUMMARY_LAMBDA_ARN = os.getenv('SUMMARY_LAMBDA_ARN','')
 FETCH_TRANSCRIPT_LAMBDA_ARN = os.getenv('FETCH_TRANSCRIPT_LAMBDA_ARN','')
 BEDROCK_MODEL_ID = os.environ.get("BEDROCK_MODEL_ID","amazon.titan-text-express-v1")
 BEDROCK_ENDPOINT_URL = os.environ.get("ENDPOINT_URL", f'https://bedrock-runtime.{AWS_REGION}.amazonaws.com')
+LLM_PROMPT_BUCKET = os.getenv('LLM_PROMPT_BUCKET','')
+LLM_PROMPT_BUCKET_PREFIX = os.getenv('LLM_PROMPT_BUCKET_PREFIX','')
+LLM_PROMPT_SUMMARY_TEMPLATE_NAME = os.getenv('LLM_PROMPT_SUMMARY_TEMPLATE_NAME', '')
 
 MAX_TOKENS = int(os.getenv('MAX_TOKENS','256'))
 
 lambda_client = boto3.client('lambda')
 ssmClient = boto3.client("ssm")
 bedrock_client = None
+s3Client = boto3.client('s3')
 
 config = Config(
    retries = {
@@ -134,10 +138,15 @@ def generate_sagemaker_summary(transcript):
         summary = "No summary"
     return summary
 
-def get_templates_from_ssm():
+def get_templates_from_s3():
     templates = []
     try:
-        SUMMARY_PROMPT_TEMPLATE = ssmClient.get_parameter(Name=cf.CONF_LLM_PROMPT_SUMMARY_TEMPLATE)["Parameter"]["Value"]
+        SUMMARY_PROMPT_TEMPLATE = s3Client.get_object(Bucket=LLM_PROMPT_BUCKET,
+                                                      Key=LLM_PROMPT_BUCKET_PREFIX
+                                                          + '/' +
+                                                          LLM_PROMPT_SUMMARY_TEMPLATE_NAME)
+
+        SUMMARY_PROMPT_TEMPLATE = SUMMARY_PROMPT_TEMPLATE['Body'].read().decode('utf-8')
 
         prompt_templates = json.loads(SUMMARY_PROMPT_TEMPLATE)
         for k, v in prompt_templates.items():
@@ -151,10 +160,11 @@ def get_templates_from_ssm():
         print("Prompt: ",prompt)
     return templates
 
+
 def generate_anthropic_summary(transcript):
 
     # first check to see if this is one prompt, or many prompts as a json
-    templates = get_templates_from_ssm()
+    templates = get_templates_from_s3()
     result = {}
     for item in templates:
         key = list(item.keys())[0]
@@ -183,7 +193,7 @@ def generate_anthropic_summary(transcript):
 def generate_bedrock_summary(transcript):
 
     # first check to see if this is one prompt, or many prompts as a json
-    templates = get_templates_from_ssm()
+    templates = get_templates_from_s3()
     result = {}
     for item in templates:
         key = list(item.keys())[0]
