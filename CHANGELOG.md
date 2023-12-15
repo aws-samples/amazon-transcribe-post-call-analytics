@@ -6,8 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
-- Drag/drop upload from call list page
-- Refresh call summary from call details page
+- Drag/drop upload from call list page.
+- Refresh call summary from call details page.
+- Support for larger prompts by storing LLMPromptSummaryTemplate in an Amazon S3 bucket.
 
 ### Fixed
 - Accessibility improvements

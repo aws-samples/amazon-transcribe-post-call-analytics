@@ -13,7 +13,7 @@ PCA also supports 'Generative AI Queries' - which simply means you can ask quest
 
 ## Generative AI Insights
 
-When enabled, PCA can run one or more FM inferences against Amazon Bedrock or Anthropic APIs. The prompt used to generate the insights is configured in a [AWS Systems Manager Parameter Store](https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-parameter-store.html). The name of the parameter is `LLMPromptSummaryTemplate`.
+When enabled, PCA can run one or more FM inferences against Amazon Bedrock or Anthropic APIs. The prompt used to generate the insights is stored in an Amazon S3 bucket. The name of the object is `LLMPromptSummaryTemplate`.
 
 ### Multiple inferences per call
 
@@ -85,7 +85,7 @@ The call list main screen contains additional pre-defined columns. If the output
 
 ## Generative AI Queries
 
-For interactive queries from within PCA, it uses a different parameter, named `LLMPromptQueryTemplate`. This will only run a single inference per question.
+For interactive queries from within PCA, we use a different prompt, named `LLMPromptQueryTemplate`, configured in the [AWS Systems Manager Parameter Store](https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-parameter-store.html). This will only run a single inference per question.
 
 The default value is:
 
