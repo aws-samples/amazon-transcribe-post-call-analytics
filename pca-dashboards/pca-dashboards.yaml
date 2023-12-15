@@ -224,7 +224,10 @@ Resources:
                             'categoriesdetected': [item['Name'] for item in conversationAnalytics['CategoriesDetected']] if "CategoriesDetected" in conversationAnalytics else None,
 
                             'url_to_display': urlPrefix + conversationAnalytics['SourceInformation'][0]['TranscribeJobInfo']['TranscriptionJobName'] + ".json" if "SourceInformation" in conversationAnalytics else None,
+
+                            'summary': conversationAnalytics['Summary'] if "Summary" in conversationAnalytics else None,
                         }
+
                         #print (transformedRecord)
                         encodedData = base64.b64encode(json.dumps(transformedRecord).encode("utf-8"))
                         partitiontime = datetime.strptime(conversationTime, '%Y-%m-%d %H:%M:%S').strftime(partitionFormat)
@@ -521,6 +524,9 @@ Resources:
                       -
                         Name: "url_to_display"
                         Type: "string"
+                      -
+                        Name: "summary"
+                        Type: "string"
                     Location: !Sub "s3://${PcaOutputBucket}/pca-output-base"
                     InputFormat: "org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat"
                     OutputFormat: "org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat"
@@ -778,6 +784,9 @@ Resources:
                             Name: "url_to_display"
                             Type: "STRING"
                           - 
+                            Name: "summary"
+                            Type: "STRING"
+                          - 
                             Name: "customentity_name"
                             Type: "STRING"
                           - 
@@ -820,6 +829,7 @@ Resources:
                               - "agent_totaltimesecs"
                               - "nontalktime"
                               - "url_to_display"
+                              - "summary"
                               - "customentity_name"
                               - "customentity_value"
                     Source: 
@@ -1006,6 +1016,9 @@ Resources:
                             Name: "url_to_display"
                             Type: "STRING"
                           - 
+                            Name: "summary"
+                            Type: "STRING"
+                          - 
                             Name: "partitiontimestamp"
                             Type: "STRING"
             LogicalTableMap: 
@@ -1055,6 +1068,7 @@ Resources:
                               - "outcomesdetectedtext"
                               - "categoriesdetectedtext"
                               - "url_to_display"
+                              - "summary"
                               - "partitiontimestamp"
                     Source: 
                         PhysicalTableId: "e0f38318-b3d3-4c0d-8904-55b88566c401"

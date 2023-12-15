@@ -1,9 +1,9 @@
 import { Box, Container, Header, Link, SpaceBetween, StatusIndicator } from '@cloudscape-design/components';
 
-export const ValueWithLabel = ({ label, children }) => (
+export const ValueWithLabel = ({ label,index, children }) => (
   <>
     <Box variant="awsui-key-label">
-      {label}
+      <span tabindex={index}>{label}</span>
     </Box>
     <>{children}</>
   </>

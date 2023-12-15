@@ -5,6 +5,7 @@
   "dependencies": {
     "@cloudscape-design/components": "^3.0.293",
     "@cloudscape-design/global-styles": "^1.0.9",
+    "axios": "^1.6.0",
     "bootstrap": "5.1.1",
     "chart.js": "^3.5.1",
     "luxon": "^2.5.2",
@@ -13,6 +14,7 @@
     "react-chartjs-2": "^3.2.0",
     "react-datepicker": "^4.2.1",
     "react-dom": "^17.0.2",
+    "react-dropzone": "^14.2.3",
     "react-icons": "^4.3.1",
     "react-router-bootstrap": "^0.25.0",
     "react-router-dom": "^5.3.0",

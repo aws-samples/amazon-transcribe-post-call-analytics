@@ -38,6 +38,7 @@ export const LoudnessChart = ({ loudnessData, speakerLabels }) => {
 
   return (
     <Bar
+      aria-label="This is a chart showing speaker and caller loudness, interruptions, silence, and sentiment per second."
       height={70}
       data={{
         /*labels: Object.keys(speakerLabels),*/

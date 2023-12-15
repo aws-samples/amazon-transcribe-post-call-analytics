@@ -6,6 +6,9 @@ Parameters:
   Bucket:
     Type: String
 
+  AudioBucket:
+    Type: String
+
   AuthUri:
     Type: String
 
@@ -91,13 +94,14 @@ Resources:
     Properties:
       ServiceToken: !GetAtt DeployFunction.Arn
       Counter: !Ref DeployCountValue
-      Version: "0.7.2"
+      Version: "0.7.3"
 
   Configure:
     Type: "AWS::CloudFormation::CustomResource"
     DependsOn: Deploy
     Properties:
       Bucket: !Ref Bucket
+      AudioBucket: !Ref AudioBucket
       ServiceToken: !GetAtt ConfigureFunction.Arn
       AuthUri: !Ref AuthUri
       AuthClientId: !Ref AuthClientId

@@ -12,6 +12,7 @@ const VISIBLE_CONTENT_OPTIONS = [{
   options: [
     /*{ id: "timestamp", label: "Timestamp", visible: true },
     { id: "jobName", label: "Job Name", visible: true },*/
+    { id: "status", label: "Status", visible: true },
     { id: "guid", label: "Guid",  visible: false },
     { id: "agent", label: "Agent",  visible: false },
     { id: "customer", label: "Customer",  visible: false },
@@ -36,6 +37,7 @@ export const DEFAULT_PREFERENCES = {
   visibleContent: [
     'timestamp',
     'jobName',
+    'status',
     'agent',
     'summary_resolved',
     'summary_topic',

@@ -41,6 +41,7 @@ export const ComprehendSentimentChart = ({ comprehendSentimentData, speakerLabel
 
   return (
     <Line
+      aria-label="This is a chart showing speaker and caller sentiment per second."
       height={70}
       data={{
         type: 'line',

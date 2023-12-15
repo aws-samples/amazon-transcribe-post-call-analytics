@@ -131,6 +131,7 @@ Resources:
       BucketName: !Ref InputBucketName
       Prefix: !Ref InputBucketRawAudio
       LambdaArn: !GetAtt FileDropTrigger.Arn
+      FileUpload: "true"
 
   ConfigureBucketTranscriptFile:
     Type: "AWS::CloudFormation::CustomResource"

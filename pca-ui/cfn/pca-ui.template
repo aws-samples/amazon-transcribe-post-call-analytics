@@ -21,6 +21,10 @@ Parameters:
     Default: InputBucketName
     Description: S3 bucket containing audio files. Audio object names must be prefixed with nci/
 
+  AudioBucketPrefix:
+    Type: String
+    Description: Prefix/Folder that holds the audio files to be ingested into the system
+
   DataBucket:
     Type: String
     Default: OutputBucketName
@@ -51,13 +55,13 @@ Parameters:
   
   GenAIQueryBedrockModelId:
     Type: String
-    Default: anthropic.claude-v2
+    Default: anthropic.claude-instant-v1
     AllowedValues:
-      - amazon.titan-tg1-large
+      - amazon.titan-text-express-v1
       - anthropic.claude-v1
       - anthropic.claude-instant-v1
       - anthropic.claude-v2
-    Description: (Optional) If 'GenAIQuery' is BEDROCK, which Bedrock model to use. (Bedrock preview access only)
+    Description: (Optional) If 'GenAIQuery' is BEDROCK, which Bedrock model to use.
 
   LLMThirdPartyApiKey:
     Type: String
@@ -69,6 +73,11 @@ Parameters:
     Type: String
     AllowedPattern: '^(|arn:aws:lambda:.*)$'
     Description: Arn to use for the GenAIQuery to fetch transcript
+
+  SummarizerArn:
+    Type: String
+    AllowedPattern: '^(|arn:aws:lambda:.*)$'
+    Description: Arn to use to refresh the GenAI Summaries
 
   Boto3LayerArn:
     Default: ''
@@ -123,6 +132,9 @@ Resources:
       Parameters:
         DataBucket: !Ref DataBucket
         DataPrefix: !Ref DataPrefix
+        AudioBucket: !Ref AudioBucket
+        AudioBucketPrefix: !Ref AudioBucketPrefix
+        WebUri: !GetAtt Web.Outputs.Uri
 
   Api:
     Type: AWS::CloudFormation::Stack
@@ -130,6 +142,7 @@ Resources:
       TemplateURL: lib/api.template
       Parameters:
         AudioBucket: !Ref AudioBucket
+        AudioBucketPrefix: !Ref AudioBucketPrefix
         DataBucket: !Ref DataBucket
         TableName: !GetAtt Indexer.Outputs.TableName
         UserPoolId: !GetAtt Cognito.Outputs.UserPoolId
@@ -137,6 +150,7 @@ Resources:
         GenAIQueryBedrockModelId: !Ref GenAIQueryBedrockModelId
         LLMThirdPartyApiKey: !Ref LLMThirdPartyApiKey
         FetchTranscriptArn: !Ref FetchTranscriptArn
+        SummarizerArn: !Ref SummarizerArn
         Boto3LayerArn: !Ref Boto3LayerArn
         PyUtilsLayerArn: !Ref PyUtilsLayerArn
 
@@ -146,6 +160,7 @@ Resources:
       TemplateURL: lib/deploy.template
       Parameters:
         Bucket: !GetAtt Web.Outputs.Bucket
+        AudioBucket: !Ref AudioBucket
         AuthUri: !GetAtt Cognito.Outputs.BaseUri
         AuthClientId: !GetAtt Cognito.Outputs.UserPoolClientId
         ApiUri: !GetAtt Api.Outputs.Uri

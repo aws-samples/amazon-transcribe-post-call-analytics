@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 
-Description: Amazon Transcribe Post Call Analytics - PCA (v0.7.3) (uksb-1sn29lk73)
+Description: Amazon Transcribe Post Call Analytics - PCA (v0.7.4) (uksb-1sn29lk73)
 
 Parameters:
 
@@ -1022,6 +1022,7 @@ Resources:
           - ShouldCreateInputBucket
           - !Ref InputBucket
           - !Ref InputBucketName 
+        AudioBucketPrefix: !Ref InputBucketRawAudio
         DataBucket:
           !If
           - ShouldCreateOutputBucket
@@ -1032,6 +1033,7 @@ Resources:
         GenAIQueryType: !Ref GenAIQuery
         GenAIQueryBedrockModelId: !Ref GenAIQueryBedrockModelId
         FetchTranscriptArn: !GetAtt PCAServer.Outputs.FetchTranscriptArn
+        SummarizerArn: !GetAtt PCAServer.Outputs.SummarizerArn
         LLMThirdPartyApiKey: !If 
           - ShouldDeployLLMThirdPartyApiKey
           - !Ref LLMThirdPartyApiKeySecret

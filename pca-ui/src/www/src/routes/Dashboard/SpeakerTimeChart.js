@@ -41,6 +41,7 @@ export const SpeakerTimeChart = ({ data = [] }) => {
 
   return (
     <Bar
+    aria-label="This is a chart showing speaker and caller duration by percentage."
       data={{
         labels: ["Proportion speaking"],
         datasets: data.map((entry) => ({
