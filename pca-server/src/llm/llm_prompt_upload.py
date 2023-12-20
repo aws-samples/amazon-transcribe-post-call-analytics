@@ -16,19 +16,30 @@ def lambda_handler(event, context):
     }
 
     print("The event is: ", str(the_event))
+
+    table_name = event['ResourceProperties']['TableName']
     response_data = {}
-    s_3 = boto3.client('s3')
-    # Retrieve parameters
-    bucket_name = event['ResourceProperties']['BucketName']
-    bucket_prefix = event['ResourceProperties']['Prefix']
-    object_name = event['ResourceProperties']['ObjectName']
+    dynamodb_client = boto3.client('dynamodb')
+    ssm_client = boto3.client('ssm')
+
+    # First look if LLMPromptSummaryTemplate parameter exists in the Parameter Store, so we can
+    # migrate the template to DynamoDB. This is to preserve backwards compatibility when users
+    # update their stack.
 
     try:
-        if the_event in ('Create', 'Update'):
-            s_3.put_object(Bucket=bucket_name,
-                           Key=(bucket_prefix
-                                + '/' + object_name),
-                           Body=json.dumps(llm_prompt_summary_template))
+        summary_prompt_template = ssm_client.get_parameter(Name="LLMPromptSummaryTemplate")["Parameter"]["Value"]
+    except Exception as e:
+        print("No parameter found:", str(e))
+        summary_prompt_template = llm_prompt_summary_template
+
+    try:
+        if the_event in ('Create'):
+            response = dynamodb_client.put_item(Item={
+                'LLMPromptTemplateId': {'S': 'LLMPromptSummaryTemplate'},
+                'LLMPromptValue': {'S': json.dumps(summary_prompt_template)}
+            },
+                TableName=table_name)
+
         # Everything OK... send the signal back
         print("Operation successful!")
         cfnresponse.send(event,

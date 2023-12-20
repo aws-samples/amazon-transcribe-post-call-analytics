@@ -100,23 +100,6 @@ Parameters:
       Folder that holds Transcripts from other applications (e.g. Live Call Analytics) that are to be
       processed as if PCA had processed that audio
 
-  LLMPromptBucketName:
-    Type: String
-    Default: ""
-    Description: >-
-      (Optional) Existing bucket holding your generative AI prompts.
-      Leave blank to automatically create a new bucket.
-
-  LLMPromptBucketPrefix:
-    Type: String
-    Default: LLMPrompts
-    Description: Prefix/Folder that holds the generative AI prompts.
-
-  LLMPromptSummaryTemplateName:
-    Type: String
-    Default: LLMPromptSummaryTemplate
-    Description: The LLM summary prompt template name.
-
   MaxSpeakers:
     Type: String
     Default: "2"
@@ -490,8 +473,6 @@ Metadata:
                   - OutputBucketName
                   - SupportFilesBucketName
                   - RetentionDays
-                  - LLMPromptBucketName
-                  - LLMPromptBucketPrefix
             - Label:
                 default: S3 bucket prefixes
               Parameters:
@@ -559,7 +540,6 @@ Metadata:
 Conditions:
   ShouldCreateBulkUploadBucket: !Equals [!Ref BulkUploadBucketName, '']
   ShouldCreateInputBucket: !Equals [!Ref InputBucketName, '']
-  ShouldCreateLLMPromptBucket: !Equals [!Ref LLMPromptBucketName, '']
   ShouldCreateOutputBucket: !Equals [!Ref OutputBucketName, '']
   ShouldCreateSupportFilesBucket: !Equals [!Ref SupportFilesBucketName, '']
   ShouldEnableGui: !Not [!Equals [!Ref EnableTranscriptGui, false]]
@@ -609,17 +589,6 @@ Resources:
             Transitions:
               - TransitionInDays: 1
                 StorageClass: INTELLIGENT_TIERING
-
-  LLMPromptBucket:
-    Condition: ShouldCreateLLMPromptBucket
-    Type: 'AWS::S3::Bucket'
-    DeletionPolicy: Retain
-    UpdateReplacePolicy: Retain
-    Properties:
-      BucketEncryption:
-        ServerSideEncryptionConfiguration:
-          - ServerSideEncryptionByDefault:
-              SSEAlgorithm: AES256
 
   OutputBucket:
     Condition: ShouldCreateOutputBucket
@@ -799,11 +768,17 @@ Resources:
       ServiceToken: !GetAtt TestBedrockModelFunction.Arn
       LLMModelId: !Ref SummarizationBedrockModelId
 
+  LLMPromptConfigure:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: pca-server/cfn/lib/llm.template
+
   ########################################################
   # SSM Stack
   ########################################################
   SSM:
     Type: AWS::CloudFormation::Stack
+    DependsOn: LLMPromptConfigure
     Properties:
       TemplateURL: pca-ssm/cfn/ssm.template
       Parameters:
@@ -905,13 +880,6 @@ Resources:
       Parameters:
         ffmpegDownloadUrl: !Ref ffmpegDownloadUrl
         CallSummarization: !Ref CallSummarization
-        LLMPromptBucket:
-          !If
-          - ShouldCreateLLMPromptBucket
-          - !Ref LLMPromptBucket
-          - !Ref LLMPromptBucketName
-        LLMPromptBucketPrefix: !Ref LLMPromptBucketPrefix
-        LLMPromptSummaryTemplateName: !Ref LLMPromptSummaryTemplateName
         SummarizationBedrockModelId: !Ref SummarizationBedrockModelId
         SummarizationSageMakerInitialInstanceCount: !Ref SummarizationSageMakerInitialInstanceCount
         SummarizationLLMThirdPartyApiKey: !If 
@@ -924,6 +892,7 @@ Resources:
           - ShouldDeployBedrockBoto3Layer
           - !GetAtt BedrockBoto3Layer.Outputs.Boto3Layer
           - ''
+        LLMTableName: !GetAtt LLMPromptConfigure.Outputs.LLMTableName
 
   PCAUI:
     Type: AWS::CloudFormation::Stack
@@ -1139,18 +1108,10 @@ Outputs:
     Description: Lambda function arn that will generate a string of the entire transcript for custom Lambda functions to use.
     Value: !GetAtt PCAServer.Outputs.FetchTranscriptArn
 
-  LLMPromptSummaryTemplateBucket:
-    Description: S3 Bucket that holds the prompt template
-    Value:
-      !If
-      - ShouldCreateLLMPromptBucket
-      - !Ref LLMPromptBucket
-      - !Ref LLMPromptBucketName
+  LLMPromptSummaryTemplateTable:
+    Description: The LLM summary prompt template in DynamoDB Table - open to customise summary prompts.
+    Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/dynamodbv2/home?region=${AWS::Region}#table?name=${LLMPromptConfigure.Outputs.LLMTableName}"
 
-  LLMPromptSummaryPrefix:
-    Description: S3 Bucket prefix/folder where the prompt templates are stored.
-    Value: !Ref LLMPromptBucketPrefix
-  
   LLMPromptQueryTemplateParameter:
     Description: The LLM query prompt template in SSM Parameter Store - open to customise query prompts.
     Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/systems-manager/parameters/${SSM.Outputs.LLMPromptQueryTemplateParameter}"
