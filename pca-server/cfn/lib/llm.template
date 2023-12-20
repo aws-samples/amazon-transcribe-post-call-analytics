@@ -4,22 +4,23 @@ Description: Amazon Transcribe Post Call Analytics - PCA Server - S3 Trigger
 
 Transform: AWS::Serverless-2016-10-31
 
-Parameters:
-  LLMPromptBucket:
-    Type: String
-    Description: Existing bucket holding your generative AI prompts.
-
-  LLMPromptBucketPrefix:
-    Type: String
-    Default: LLMPrompts
-    Description: Prefix/Folder that holds the generative AI prompts.
-
-  LLMPromptSummaryTemplateName:
-    Type: String
-    Description: The LLM summary prompt template name.
-
 Resources:
-  ConfigureBucketRole:
+  LLMPromptTable:
+    Type: "AWS::DynamoDB::Table"
+    Properties:
+      KeySchema:
+        - AttributeName: LLMPromptTemplateId
+          KeyType: HASH
+      AttributeDefinitions:
+        - AttributeName: LLMPromptTemplateId
+          AttributeType: S
+      BillingMode: PAY_PER_REQUEST
+      SSESpecification:
+        SSEEnabled: True
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
+  ConfigureDynamoDBRole:
     Type: "AWS::IAM::Role"
     Properties:
       AssumeRolePolicyDocument:
@@ -36,33 +37,38 @@ Resources:
           PolicyDocument:
             Statement:
               Effect: Allow
+              Resource: !GetAtt LLMPromptTable.Arn
               Action:
-                - s3:ListBucket
-                - s3:GetObject
-                - s3:PutObject
-                - s3:DeleteObject
-              Resource:
-                - !Sub arn:aws:s3:::${LLMPromptBucket}
-                - !Sub arn:aws:s3:::${LLMPromptBucket}/*
+                - 'dynamodb:*'
+        - PolicyName: SSMGetParameterPolicy
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                  - ssm:GetParameters
+                Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*
 
-  ConfigureBucketFunction:
+  ConfigureDynamoDBFunction:
     Type: "AWS::Lambda::Function"
     Properties:
       Code:  ../../src/llm
       Handler: llm_prompt_upload.lambda_handler
-      Role: !GetAtt ConfigureBucketRole.Arn
+      Role: !GetAtt ConfigureDynamoDBRole.Arn
       Runtime: python3.11
       MemorySize: 128
       Timeout: 60
       Environment:
         Variables:
           StackName: !Ref AWS::StackName
+          TableName: !Ref LLMPromptTable
 
-  ConfigureBucket:
+  ConfigureDynamoDB:
     Type: "AWS::CloudFormation::CustomResource"
     Properties:
-      ServiceToken: !GetAtt ConfigureBucketFunction.Arn
-      BucketName: !Ref LLMPromptBucket
-      Prefix: !Ref LLMPromptBucketPrefix
-      ObjectName: !Ref LLMPromptSummaryTemplateName
+      ServiceToken: !GetAtt ConfigureDynamoDBFunction.Arn
+      TableName: !Ref LLMPromptTable
 
+Outputs:
+    LLMTableName:
+      Value: !Ref LLMPromptTable
