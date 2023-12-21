@@ -154,7 +154,7 @@ Resources:
         InitialInstanceCount: !Ref SummarizationSageMakerInitialInstanceCount
 
 Outputs:
-  
+
   FetchTranscriptArn:
     Value: !GetAtt PCA.Outputs.FetchTranscriptArn
 
