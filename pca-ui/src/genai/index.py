@@ -23,11 +23,11 @@ LLM_QUERY_LAMBDA_ARN = os.getenv('LLM_QUERY_LAMBDA_ARN','')
 FETCH_TRANSCRIPT_LAMBDA_ARN = os.getenv('FETCH_TRANSCRIPT_LAMBDA_ARN','')
 BEDROCK_MODEL_ID = os.getenv("BEDROCK_MODEL_ID","amazon.text-express-v1")
 BEDROCK_ENDPOINT_URL = os.getenv("ENDPOINT_URL", f'https://bedrock-runtime.{AWS_REGION}.amazonaws.com')
-CONF_LLM_PROMPT_QUERY_TEMPLATE = os.getenv("CONF_LLM_PROMPT_QUERY_TEMPLATE","LLMPromptQueryTemplate")
+LLM_TABLE_NAME = os.getenv('LLM_TABLE_NAME', '')
 MAX_TOKENS = int(os.getenv('MAX_TOKENS','256'))
 
 lambda_client = boto3.client('lambda')
-ssmClient = boto3.client("ssm")
+dynamodb_client = boto3.client('dynamodb')
 bedrock_client = None
 
 def get_third_party_llm_secret():
@@ -104,18 +104,23 @@ def call_bedrock(parameters, prompt):
     generated_text = get_bedrock_generate_text(modelId, response)
     return generated_text
 
-def get_template_from_ssm():
+def get_template_from_dynamodb():
     try:
-        prompt_template = ssmClient.get_parameter(Name=CONF_LLM_PROMPT_QUERY_TEMPLATE)["Parameter"]["Value"]
+        QUERY_PROMPT_TEMPLATE = dynamodb_client.get_item(Key={'LLMPromptTemplateId': {'S': 'LLMPromptQueryTemplate'}},
+                                                         TableName=LLM_TABLE_NAME)
+        print ("Prompt Template:", QUERY_PROMPT_TEMPLATE['Item']['LLMPromptTemplateValue']['S'])
+
+        prompt_template = QUERY_PROMPT_TEMPLATE["Item"]['LLMPromptTemplateValue']['S']
         prompt_template = prompt_template.replace("<br>", "\n")
-    except:
-       prompt_template = "Human: Answer the following question in 1 sentence based on the transcript. If the question is not relevant to the transcript, reply with I'm sorry, this is not relevant. \n<question>{question}</question>\n\n<transcript>\n{transcript}</transcript>\n\nAssistant: Based on the transcript: "
+    except Exception as e:
+        print("Exception", e)
+        prompt_template = "Human: Answer the following question in 1 sentence based on the transcript. If the question is not relevant to the transcript, reply with I'm sorry, this is not relevant. \n<question>{question}</question>\n\n<transcript>\n{transcript}</transcript>\n\nAssistant: Based on the transcript: "
     return prompt_template
 
 def generate_anthropic_query(transcript, question):
 
     # first check to see if this is one prompt, or many prompts as a json
-    prompt = get_template_from_ssm()
+    prompt = get_template_from_dynamodb()
 
     prompt = prompt.replace("{transcript}", transcript)
     prompt = prompt.replace("{question}", question)
@@ -142,7 +147,7 @@ def generate_anthropic_query(transcript, question):
 def generate_bedrock_query(transcript, question):
 
     # first check to see if this is one prompt, or many prompts as a json
-    prompt = get_template_from_ssm()
+    prompt = get_template_from_dynamodb()
 
     prompt = prompt.replace("{transcript}", transcript)
     prompt = prompt.replace("{question}", question)

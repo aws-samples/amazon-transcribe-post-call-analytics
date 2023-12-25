@@ -296,7 +296,7 @@ Resources:
             Effect: Allow
             Resource: !Sub arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${LLMTableName}
             Action:
-              - 'dynamodb:*'
+              - 'dynamodb:GetItem'
           - Sid: InvokeBedrock
             Effect: Allow
             Action: 
