@@ -63,7 +63,7 @@ Parameters:
 
   LLMTableName:
     Type: String
-    Description: The DynamoDB table name where the summary prompt template is stored.
+    Description: The DynamoDB table name where the summary and query prompt templates are stored.
 
 
 Conditions:

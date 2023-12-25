@@ -31,7 +31,6 @@ LLM_TABLE_NAME = os.getenv('LLM_TABLE_NAME')
 MAX_TOKENS = int(os.getenv('MAX_TOKENS','256'))
 
 lambda_client = boto3.client('lambda')
-ssmClient = boto3.client("ssm")
 bedrock_client = None
 s3Client = boto3.client('s3')
 dynamodb_client = boto3.client('dynamodb')
@@ -143,16 +142,19 @@ def get_templates_from_dynamodb():
         SUMMARY_PROMPT_TEMPLATE = dynamodb_client.get_item(Key={'LLMPromptTemplateId': {'S': 'LLMPromptSummaryTemplate'}},
                                                      TableName=LLM_TABLE_NAME)
 
-        prompt_templates = json.loads(SUMMARY_PROMPT_TEMPLATE["Item"]["LLMPromptValue"]["S"])
-        for k, v in prompt_templates.items():
-            prompt = v.replace("<br>", "\n")
-            templates.append({ k:prompt })
-    except:
-        prompt = SUMMARY_PROMPT_TEMPLATE.replace("<br>", "\n")
-        templates.append({
-            "Summary": prompt
-        })
-        print("Prompt: ",prompt)
+        print ("Prompt Template:", SUMMARY_PROMPT_TEMPLATE['Item'])
+
+        prompt_templates = SUMMARY_PROMPT_TEMPLATE["Item"]
+
+        for k in sorted(prompt_templates):
+            if (k != "LLMPromptTemplateId"):
+                prompt = prompt_templates[k]['S'].replace("<br>", "\n")
+                index = k.find('#')
+                k_stripped = k[index+1:]
+                templates.append({ k_stripped:prompt })
+    except Exception as e:
+        print ("Exception:", e)
+        raise (e)
     return templates
 
 def generate_anthropic_summary(transcript):
@@ -179,9 +181,19 @@ def generate_anthropic_summary(transcript):
         summary = json.loads(response.text)["completion"].strip()
         result[key] = summary
     if len(result.keys()) == 1:
-        # there's only one summary in here, so let's return just that.
-        # this may contain json or a string.
-        return result[list(result.keys())[0]]
+        # This is a single node JSON with value that can be either:
+        # A single inference that returns a string value
+        # OR
+        # A single inference that returns a JSON, enclosed in a string.
+        # Refer to https://github.com/aws-samples/amazon-transcribe-post-call-analytics/blob/develop/docs/generative_ai.md#generative-ai-insights
+        # for more details.
+        try:
+            parsed_json = json.loads(result[list(result.keys())[0]])
+            print("Nested JSON...")
+            return json.dumps(parsed_json)
+        except:
+            print("Not nested JSON...")
+            return json.dumps(result)
     return json.dumps(result)
 
 def generate_bedrock_summary(transcript):
@@ -199,9 +211,19 @@ def generate_bedrock_summary(transcript):
         generated_text = call_bedrock(parameters, prompt)
         result[key] = generated_text
     if len(result.keys()) == 1:
-        # there's only one summary in here, so let's return just that.
-        # this may contain json or a string.
-        return result[list(result.keys())[0]]
+        # This is a single node JSON with value that can be either:
+        # A single inference that returns a string value
+        # OR
+        # A single inference that returns a JSON, enclosed in a string.
+        # Refer to https://github.com/aws-samples/amazon-transcribe-post-call-analytics/blob/develop/docs/generative_ai.md#generative-ai-insights
+        # for more details.
+        try:
+            parsed_json = json.loads(result[list(result.keys())[0]])
+            print("Nested JSON...")
+            return json.dumps(parsed_json)
+        except:
+            print("Not nested JSON...")
+            return json.dumps(result)
     return json.dumps(result)
 
 

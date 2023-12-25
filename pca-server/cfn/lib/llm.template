@@ -4,6 +4,33 @@ Description: Amazon Transcribe Post Call Analytics - PCA Server - S3 Trigger
 
 Transform: AWS::Serverless-2016-10-31
 
+Parameters:
+  LLMPromptSummaryTemplate:
+    Type: String
+    Description: >-
+      Prompt to use to generate insights for a call. This can be a single string where an LLM returns a string,
+      or a single string where the LLM returns a JSON object with key/value pairs, or a string that contains
+      a JSON Object with key/value pairs, where the LLM will run one inference on each key/value pair with the value
+      containing the prompt. Use {transcript} as a placeholder for where the call transcript will be injected.
+    Default: >-
+      {
+        "Summary":"<br><br>Human: Answer the questions below, defined in <question></question> based on the transcript defined in <transcript></transcript>. If you cannot answer the question, reply with 'n/a'. Use gender neutral pronouns. When you reply, only respond with the answer.<br><br><question>What is a summary of the transcript?</question><br><br><transcript><br>{transcript}<br></transcript><br><br>Assistant:",
+        "Topic":"<br><br>Human: Answer the questions below, defined in <question></question> based on the transcript defined in <transcript></transcript>. If you cannot answer the question, reply with 'n/a'. Use gender neutral pronouns. When you reply, only respond with the answer.<br><br><question>What is the topic of the call? For example, iphone issue, billing issue, cancellation. Only reply with the topic, nothing more.</question><br><br><transcript><br>{transcript}<br></transcript><br><br>Assistant:",
+        "Product":"<br><br>Human: Answer the questions below, defined in <question></question> based on the transcript defined in <transcript></transcript>. If you cannot answer the question, reply with 'n/a'. Use gender neutral pronouns. When you reply, only respond with the answer.<br><br><question>What product did the customer call about? For example, internet, broadband, mobile phone, mobile plans. Only reply with the product, nothing more.</question><br><br><transcript><br>{transcript}<br></transcript><br><br>Assistant:",
+        "Resolved":"<br><br>Human: Answer the questions below, defined in <question></question> based on the transcript defined in <transcript></transcript>. If you cannot answer the question, reply with 'n/a'. Use gender neutral pronouns. When you reply, only respond with the answer.<br><br><question>Did the agent resolve the customer's questions? Only reply with yes or no, nothing more. </question><br><br><transcript><br>{transcript}<br></transcript><br><br>Assistant:",
+        "Callback":"<br><br>Human: Answer the questions below, defined in <question></question> based on the transcript defined in <transcript></transcript>. If you cannot answer the question, reply with 'n/a'. Use gender neutral pronouns. When you reply, only respond with the answer.<br><br><question>Was this a callback? (yes or no) Only reply with yes or no, nothing more.</question><br><br><transcript><br>{transcript}<br></transcript><br><br>Assistant:",
+        "Politeness":"<br><br>Human: Answer the question below, defined in <question></question> based on the transcript defined in <transcript></transcript>. If you cannot answer the question, reply with 'n/a'. Use gender neutral pronouns. When you reply, only respond with the answer.<br><br><question>Was the agent polite and professional? (yes or no) Only reply with yes or no, nothing more.</question><br><br><transcript><br>{transcript}<br></transcript><br><br>Assistant:",
+        "Actions":"<br><br>Human: Answer the question below, defined in <question></question> based on the transcript defined in <transcript></transcript>. If you cannot answer the question, reply with 'n/a'. Use gender neutral pronouns. When you reply, only respond with the answer.<br><br><question>What actions did the Agent take? </question><br><br><transcript><br>{transcript}<br></transcript><br><br>Assistant:"
+      }
+
+  LLMPromptQueryTemplate:
+    Type: String
+    Description: This is the LLM prompt template to use when querying an individual call transcript.
+    Default: >-
+      <br><br>Human: You are an AI chatbot. Carefully read the following transcript within <transcript></transcript> tags. Provide a
+      short answer to the question at the end. If the answer cannot be determined from the transcript, then reply saying Sorry,
+      I don't know. Use gender neutral pronouns. Do not use XML tags in the answer. <br><transcript><br>{transcript}<br></transcript><br>{question}<br><br>Assistant:
+
 Resources:
   LLMPromptTable:
     Type: "AWS::DynamoDB::Table"
@@ -39,7 +66,8 @@ Resources:
               Effect: Allow
               Resource: !GetAtt LLMPromptTable.Arn
               Action:
-                - 'dynamodb:*'
+                - 'dynamodb:PutItem'
+                - 'dynamodb:UpdateItem'
         - PolicyName: SSMGetParameterPolicy
           PolicyDocument:
             Statement:
@@ -62,12 +90,17 @@ Resources:
         Variables:
           StackName: !Ref AWS::StackName
           TableName: !Ref LLMPromptTable
+          LLMPromptSummaryTemplate: !Ref LLMPromptSummaryTemplate
+          LLMPromptQueryTemplate: !Ref LLMPromptQueryTemplate
 
   ConfigureDynamoDB:
     Type: "AWS::CloudFormation::CustomResource"
     Properties:
       ServiceToken: !GetAtt ConfigureDynamoDBFunction.Arn
       TableName: !Ref LLMPromptTable
+      StackName: !Ref AWS::StackName
+      LLMPromptSummaryTemplate: !Ref LLMPromptSummaryTemplate
+      LLMPromptQueryTemplate: !Ref LLMPromptQueryTemplate
 
 Outputs:
     LLMTableName:
