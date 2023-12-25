@@ -89,6 +89,10 @@ Parameters:
     Type: String
     Description: External PyUtils Layer Arn to use.
 
+  LLMTableName:
+    Type: String
+    Description: The DynamoDB table name where the summary and query prompt templates are stored.
+
 Conditions:
   isMainStackNameEmpty: !Equals [!Ref MainStackName, '']
   ShouldEnableGenAIQuery: !Not [!Equals [!Ref GenAIQueryType, 'DISABLED']]
@@ -153,6 +157,7 @@ Resources:
         SummarizerArn: !Ref SummarizerArn
         Boto3LayerArn: !Ref Boto3LayerArn
         PyUtilsLayerArn: !Ref PyUtilsLayerArn
+        LLMTableName: !Ref LLMTableName
 
   Deploy:
     Type: AWS::CloudFormation::Stack

@@ -84,14 +84,6 @@ Parameters:
       Folder that holds Transcripts from other applications (e.g. Live Call Analytics) that are to be
       processed as if PCA had processed that audio
 
-  LLMPromptQueryTemplate:
-    Type: String
-    Description: This is the LLM prompt template to use when querying an individual call transcript.
-    Default: >-
-      <br><br>Human: You are an AI chatbot. Carefully read the following transcript within <transcript></transcript> tags. Provide a 
-      short answer to the question at the end. If the answer cannot be determined from the transcript, then reply saying Sorry, 
-      I don't know. Use gender neutral pronouns. Do not use XML tags in the answer. <br><transcript><br>{transcript}<br></transcript><br>{question}<br><br>Assistant:
-
   MaxSpeakers:
     Type: String
     Default: "2"
@@ -399,14 +391,6 @@ Resources:
         processed as if PCA had processed that audio
       Value: !Ref InputBucketOrigTranscripts
 
-  LLMPromptQueryTemplateParameter:
-    Type: "AWS::SSM::Parameter"
-    Properties:
-      Name: LLMPromptQueryTemplate
-      Type: String
-      Description: This is the LLM prompt template to use when querying an individual call transcript.
-      Value: !Ref LLMPromptQueryTemplate
-
   MaxSpeakersParameter:
     Type: "AWS::SSM::Parameter"
     Properties:
@@ -675,8 +659,3 @@ Resources:
       Type: String
       Value: !Ref DatabaseName
       Description: PCA Glue catalog database name
-
-Outputs:
-
-  LLMPromptQueryTemplateParameter:
-    Value: !Ref LLMPromptQueryTemplateParameter
