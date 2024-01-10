@@ -20,7 +20,7 @@ Parameters:
     Type: String
 
 Conditions:
-  IsProd: !Equals [!Ref Environment, true]
+  IsProd: !Equals [!Ref Environment, PROD]
 
 Resources:
 
