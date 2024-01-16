@@ -13,79 +13,11 @@ PCA also supports 'Generative AI Queries' - which simply means you can ask quest
 
 ## Generative AI Insights
 
-When enabled, PCA can run one or more FM inferences against Amazon Bedrock or Anthropic APIs. The prompt used to generate the insights is stored in an Amazon S3 bucket. The name of the object is `LLMPromptSummaryTemplate`.
+When enabled, PCA can run one or more FM inferences against Amazon Bedrock or Anthropic APIs. The prompt used to generate the insights is stored in DynamoDB. The name of the table contains the string `LLMPromptConfigure`, and the table partition key is `LLMPromptTemplateId`. There are two items in the table, one with the partition key value of `LLMPromptSummaryTemplate` and the other with the partition key value of `LLMPromptQueryTemplate`.
 
-### Multiple inferences per call
+### Generative AI interactive queries
 
-The default value for `LLMPromptSummaryTemplate` is a JSON object with key/value pairs, each pair representing the label (key) and prompt (value). During the `Summarize` step, PCA will iterate the keys and run each prompt. PCA will replace  `<br>` tags with newlines, and  `{transcript}` is replaced with the call transcript.  The key will be used as a header for the value in the "generated insights" section in the PCA UI.
-
-Below is the default value of `LLMpromptSummaryTemplate`. 
-
-```
-{
-  "Summary":"<br><br>Human: Answer the questions below, defined in <question></question> based on the transcript defined in <transcript></transcript>. If you cannot answer the question, reply with 'n/a'. Use gender neutral pronouns. When you reply, only respond with the answer.<br><br><question>What is a summary of the transcript?</question><br><br><transcript><br>{transcript}<br></transcript><br><br>Assistant:",
-  "Topic":"<br><br>Human: Answer the questions below, defined in <question></question> based on the transcript defined in <transcript></transcript>. If you cannot answer the question, reply with 'n/a'. Use gender neutral pronouns. When you reply, only respond with the answer.<br><br><question>What is the topic of the call? For example, iphone issue, billing issue, cancellation. Only reply with the topic, nothing more.</question><br><br><transcript><br>{transcript}<br></transcript><br><br>Assistant:",
-  "Product":"<br><br>Human: Answer the questions below, defined in <question></question> based on the transcript defined in <transcript></transcript>. If you cannot answer the question, reply with 'n/a'. Use gender neutral pronouns. When you reply, only respond with the answer.<br><br><question>What product did the customer call about? For example, internet, broadband, mobile phone, mobile plans. Only reply with the product, nothing more.</question><br><br><transcript><br>{transcript}<br></transcript><br><br>Assistant:",
-  "Resolved":"<br><br>Human: Answer the questions below, defined in <question></question> based on the transcript defined in <transcript></transcript>. If you cannot answer the question, reply with 'n/a'. Use gender neutral pronouns. When you reply, only respond with the answer.<br><br><question>Did the agent resolve the customer's questions? Only reply with yes or no, nothing more. </question><br><br><transcript><br>{transcript}<br></transcript><br><br>Assistant:",
-  "Callback":"<br><br>Human: Answer the questions below, defined in <question></question> based on the transcript defined in <transcript></transcript>. If you cannot answer the question, reply with 'n/a'. Use gender neutral pronouns. When you reply, only respond with the answer.<br><br><question>Was this a callback? (yes or no) Only reply with yes or no, nothing more.</question><br><br><transcript><br>{transcript}<br></transcript><br><br>Assistant:",
-  "Politeness":"<br><br>Human: Answer the question below, defined in <question></question> based on the transcript defined in <transcript></transcript>. If you cannot answer the question, reply with 'n/a'. Use gender neutral pronouns. When you reply, only respond with the answer.<br><br><question>Was the agent polite and professional? (yes or no) Only reply with yes or no, nothing more.</question><br><br><transcript><br>{transcript}<br></transcript><br><br>Assistant:",
-  "Actions":"<br><br>Human: Answer the question below, defined in <question></question> based on the transcript defined in <transcript></transcript>. If you cannot answer the question, reply with 'n/a'. Use gender neutral pronouns. When you reply, only respond with the answer.<br><br><question>What actions did the Agent take? </question><br><br><transcript><br>{transcript}<br></transcript><br><br>Assistant:"
-}
-```
-
-The expected output after the summarize step is a single json object, as a string, that contains all the key/value pairs. For example:
-
-```
-{
-  "Summary": "...",
-  "Topic": "...",
-  "Product": "...",
-  "Resolved": "...",
-  "Callback": "...",
-  "Politeness": "...",
-  "Actions": "...",
-}
-```
-
-
-### Single FM Inference
-
-Some LLMs may be able to generate the JSON with one inference, rather than several. Below is an example that we've seen work, but with mixed results. 
-
-```
-<br>
-<br>Human: Answer all the questions below, based on the contents of <transcript></transcript>, as a json object with key value pairs. Use the text before the colon as the key, and the answer as the value.  If you cannot answer the question, reply with 'n/a'. Only return json. Use gender neutral pronouns. Skip the preamble; go straight into the json.
-<br>
-<br><questions>
-<br>Summary: Summarize the transcript in no more than 5 sentences. Were the caller's needs met during the call?
-<br>Topic: Topic of the call. Choose from one of these or make one up (iphone issue, billing issue, cancellation)
-<br>Product: What product did the customer call about? (internet, broadband, mobile phone, mobile plans)
-<br>Resolved: Did the agent resolve the customer's questions? (yes or no) 
-<br>Callback: Was this a callback? (yes or no) 
-<br>Politeness: Was the agent polite and professional? (yes or no)
-<br>Actions: What actions did the Agent take? 
-<br></questions> 
-<br>
-<br><transcript>
-<br>{transcript}
-<br></transcript>
-<br>
-<br>Assistant:
-```
-
-The `<br>` tags are replaced with newlines, and  `{transcript}` is replaced with the call transcript.
-
-**Note:** This prompt generates 7 insights in a single inference - summary, topic, product, resolved, callback, agent politeness, and actions.
-
-The expected output of the inference should be a single JSON object with key-value pairs, similar to above.
-
-### Call list default columns
-
-The call list main screen contains additional pre-defined columns. If the output of the inference contains JSON with the column names (or the names are keys in the multiple inferences per call), the values will propogate to the main call list. The names columns are: `Summary`, `Topic`, `Product`, `Resolved`, `Callback`, `Politeness`, `Actions`. They are also in the default prompt.
-
-## Generative AI Queries
-
-For interactive queries from within PCA, we use a different prompt, named `LLMPromptQueryTemplate`, configured in the [AWS Systems Manager Parameter Store](https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-parameter-store.html). This will only run a single inference per question.
+The item in Dynamo with the key `LLMPromptQueryTemplate` allows you to customize the interactive query prompt as seen in the call details page. You can use this to provide model specific prompts. The default valu is in [Anthropic's prompt format](https://docs.anthropic.com/claude/docs/constructing-a-prompt). 
 
 The default value is:
 
@@ -106,4 +38,31 @@ respond with the answer.
 ```
 
 The `<br>` tags are replaced with newlines, and  `{transcript}` is replaced with the call transcript.
+
+
+### Generative AI insights
+
+The item in Dynamo with the key `LLMPromptSummaryTemplate` contains 1 or more attributes. Each attribute is a single prompt that will be invoked for each call analyzed. Each attribute contains an attribute name and value. The attribute name is an integer, followed by a `#`, followed by the name of the insight. The number signifies the order of the insight. For example, `1#Summary` will show up first. 
+
+Default attributes:
+
+| Key   | Description | Prompt   |
+| ----- | --------    | ----------   |
+| `1#Summary` | What is a summary of the transcript? | `<br><br>Human: Answer the questions below, defined in <question></question> based on the transcript defined in <transcript></transcript>. If you cannot answer the question, reply with 'n/a'. Use gender neutral pronouns. When you reply, only respond with the answer.<br><br><question>What is a summary of the transcript?</question><br><br><transcript><br>{transcript}<br></transcript><br><br>Assistant:` |
+| `2#Topic` | What is the topic of the call? | `<br><br>Human: Answer the questions below, defined in <question></question> based on the transcript defined in <transcript></transcript>. If you cannot answer the question, reply with 'n/a'. Use gender neutral pronouns. When you reply, only respond with the answer.<br><br><question>What is the topic of the call? For example, iphone issue, billing issue, cancellation. Only reply with the topic, nothing more.</question><br><br><transcript><br>{transcript}<br></transcript><br><br>Assistant:` |
+| `3#Product` | What product did the customer call about? | `<br><br>Human: Answer the questions below, defined in <question></question> based on the transcript defined in <transcript></transcript>. If you cannot answer the question, reply with 'n/a'. Use gender neutral pronouns. When you reply, only respond with the answer.<br><br><question>What product did the customer call about? For example, internet, broadband, mobile phone, mobile plans. Only reply with the product, nothing more.</question><br><br><transcript><br>{transcript}<br></transcript><br><br>Assistant:` |
+| `4#Resolved` | Did the agent resolve the customer's questions? Only reply with yes or no. | `<br><br>Human: Answer the questions below, defined in <question></question> based on the transcript defined in <transcript></transcript>. If you cannot answer the question, reply with 'n/a'. Use gender neutral pronouns. When you reply, only respond with the answer.<br><br><question>Did the agent resolve the customer's questions? Only reply with yes or no, nothing more. </question><br><br><transcript><br>{transcript}<br></transcript><br><br>Assistant:` | 
+| `5#Callback` | Was this a callback? | `<br><br>Human: Answer the questions below, defined in <question></question> based on the transcript defined in <transcript></transcript>. If you cannot answer the question, reply with 'n/a'. Use gender neutral pronouns. When you reply, only respond with the answer.<br><br><question>Was this a callback? (yes or no) Only reply with yes or no, nothing more.</question><br><br><transcript><br>{transcript}<br></transcript><br><br>Assistant:` |
+| `6#Politeness` | Was the agent polite and professional? | `<br><br>Human: Answer the question below, defined in <question></question> based on the transcript defined in <transcript></transcript>. If you cannot answer the question, reply with 'n/a'. Use gender neutral pronouns. When you reply, only respond with the answer.<br><br><question>Was the agent polite and professional? (yes or no) Only reply with yes or no, nothing more.</question><br><br><transcript><br>{transcript}<br></transcript><br><br>Assistant:` |
+| `7#Actions` | What actions did the Agent take? | `<br><br>Human: Answer the question below, defined in <question></question> based on the transcript defined in <transcript></transcript>. If you cannot answer the question, reply with 'n/a'. Use gender neutral pronouns. When you reply, only respond with the answer.<br><br><question>What actions did the Agent take? </question><br><br><transcript><br>{transcript}<br></transcript><br><br>Assistant:` |
+
+The `<br>` tags are replaced with newlines, and  `{transcript}` is replaced with the call transcript. Some Bedrock models such as Claude require newlines in specific spots.
+
+#### Customizing
+
+You can add your own additional attributes and prompts by editing this item in DynamoDB. Make sure you include an order number and insight name in the attribute name. For example `9#NPS Score`.  You can use any of the above prompts as a starting point for crafting a prompt.  Do not forget to include `{transcript}` as a placeholder, otherwise your transcript will not be included in the LLM inference! 
+
+### Call list default columns
+
+The call list main screen contains additional pre-defined columns. If the output of the inference contains the column names, the values will propogate to the main call list. The names columns are: `Summary`, `Topic`, `Product`, `Resolved`, `Callback`, `Politeness`, `Actions`. They are also in the default prompt.
 
