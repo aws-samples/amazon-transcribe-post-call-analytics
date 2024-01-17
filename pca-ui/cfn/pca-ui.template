@@ -128,7 +128,7 @@ Resources:
   Indexer:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: lib/indexer.template
+      TemplateURL: ../../build/indexer.template
       Parameters:
         DataBucket: !Ref DataBucket
         DataPrefix: !Ref DataPrefix

@@ -101,10 +101,20 @@ aws s3 cp $mediasearch_template build/pca-mediasearch-finder.yaml
 
 # Build embedded QuickSight dashboards project
 cp pca-dashboards/pca-dashboards.yaml build/pca-dashboards.yaml
+
+# Replace placeholders for Bootstrap bucket with actual release bucket.
 cp pca-ui/cfn/lib/indexer.template build/indexer.template
 
+sed -E \
+		" \
+		/^ {2,}BootstrapBucketBaseName:/ , /^ {2,}Default:/ s@^(.*Default: {1,})(.*)@\1 ${BUCKET}@ ; \
+		/^ {2,}BootstrapS3Prefix:/ , /^ {2,}Default:/ s@^(.*Default: {1,})(.*)@\1 ${PREFIX}@ ; \
+		/^ {2,}BootstrapVersion:/ , /^ {2,}Default:/ s@^(.*Default: {1,})(.*)@\1 ${VERSION}@ ; \
+		" \
+		pca-ui/cfn/lib/indexer.template > build/indexer.template
+
 echo "Packaging Cfn artifacts"
-aws cloudformation package --template-file pca-main.template --output-template-file build/packaged.template --s3-bucket ${BUCKET} --s3-prefix ${PREFIX_AND_VERSION} --region ${region}|| exit 1
+aws cloudformation package --template-file pca-main.template --output-template-file build/packaged.template --s3-bucket ${BUCKET} --s3-prefix ${PREFIX_AND_VERSION} --region ${region} || exit 1
 
 aws s3 cp build/packaged.template "s3://${BUCKET}/${PREFIX}/pca-main.yaml" || exit 1
 

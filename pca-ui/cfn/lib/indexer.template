@@ -131,7 +131,7 @@ Resources:
   ConfigureDataBucketFunction:
     Type: "AWS::Lambda::Function"
     Properties:
-      Code:  ../../src/lambda
+      Code:  ../pca-ui/src/lambda
       Handler: bucket.handler
       Runtime: nodejs14.x
       Role: !GetAtt ConfigureDataBucketRole.Arn
@@ -183,7 +183,7 @@ Resources:
   IndexFunction:
     Type: "AWS::Serverless::Function"
     Properties:
-      CodeUri:  ../../src/lambda
+      CodeUri:  ../pca-ui/src/lambda
       Handler: index.handler
       Timeout: 300
       Environment:
@@ -204,8 +204,8 @@ Resources:
   DocConversionFunction:
     Type: "AWS::Serverless::Function"
     Properties:
-      CodeUri:  ../../src/lambda/json-to-docx
-      Handler: json-to-docx.lambda_handler
+      PackageType: Image
+      ImageUri: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${JSONDocECRRepository}:${BootstrapVersion}"
       Timeout: 300
       Environment:
         Variables:
@@ -224,7 +224,7 @@ Resources:
   InputBucketTriggerFunction:
     Type: "AWS::Serverless::Function"
     Properties:
-      CodeUri:  ../../src/lambda
+      CodeUri:  ../pca-ui/src/lambda
       Handler: input_bucket_trigger.handler
       Timeout: 300
       Environment:
@@ -447,28 +447,18 @@ Resources:
                   aws ecr get-login-password --region $AWS_DEFAULT_REGION |
                   docker login --username AWS
                   --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
-                - npm install -g npm@7.23.0
-                - cd source/app
-                - npm install
             build:
               commands:
                 - echo Build started on `date`
-                - echo Building Genesys audiohook container image
-                - cd $CODEBUILD_SRC_DIR
+                - echo Building JSON to DocX container image
                 - echo `pwd`
-                - docker build -t "${REPOSITORY_URI}:${IMAGE_TAG}" source/app/
-                - >
-                  printf '{"RepositoryUri":"%s","ProjectName":"%s","ArtifactBucket":"%s"}'
-                  $REPOSITORY_URI $PROJECT_NAME $ARTIFACT_BUCKET > build.json
+                - docker build -t "${REPOSITORY_URI}:${IMAGE_TAG}" .
             post_build:
               commands:
                 - echo Build completed on `date`
                 - echo "Pushing Docker image to ECR"
                 - docker push "${REPOSITORY_URI}:${IMAGE_TAG}"
 
-          artifacts:
-            files:
-              - build.json
       Environment:
         ComputeType: BUILD_GENERAL1_MEDIUM
         Image: aws/codebuild/amazonlinux2-x86_64-standard:3.0
@@ -561,7 +551,7 @@ Resources:
       Timeout: 60
       MemorySize: 128
       Handler: lambda_start_codebuild.handler
-      CodeUri: ../../src/utils/start_codebuild
+      CodeUri: ../pca-ui/src/utils/start_codebuild
       Description: This AWS Lambda Function kicks off a code build job.
     Metadata:
       cfn_nag:
