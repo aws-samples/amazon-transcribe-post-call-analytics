@@ -61,6 +61,11 @@ Parameters:
     Type: String
     Description: PyUtils layer arn from main stack.
 
+  LLMTableName:
+    Type: String
+    Description: The DynamoDB table name where the summary and query prompt templates are stored.
+
+
 Conditions:
   ShouldCreateBoto3Layer: !Equals [!Ref Boto3LayerArn, '']
   ShouldDeployBedrockSummarizer: !Equals [!Ref CallSummarization, "BEDROCK"]
@@ -116,6 +121,7 @@ Resources:
           - ''
         SummarizationLLMThirdPartyApiKey: !Ref SummarizationLLMThirdPartyApiKey
         SummarizationLambdaFunctionArn: !Ref SummarizationLambdaFunctionArn
+        LLMTableName: !Ref LLMTableName
 
   Trigger:
     Type: AWS::CloudFormation::Stack

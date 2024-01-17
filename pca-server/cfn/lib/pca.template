@@ -51,6 +51,9 @@ Parameters:
     Type: String
     Default: ''
 
+  LLMTableName:
+    Type: String
+
 Globals:
   Function:
     Runtime: python3.11
@@ -269,6 +272,7 @@ Resources:
           AWS_DATA_PATH: "/opt/models"
           FETCH_TRANSCRIPT_LAMBDA_ARN: !GetAtt SFFetchTranscript.Arn
           BEDROCK_MODEL_ID: !Ref SummarizationBedrockModelId
+          LLM_TABLE_NAME: !Ref LLMTableName
           SUMMARY_TYPE: !Ref CallSummarization
           SUMMARY_SAGEMAKER_ENDPOINT: !Ref SummarizationSagemakerEndpointName
           ANTHROPIC_API_KEY: !Ref SummarizationLLMThirdPartyApiKey
@@ -288,6 +292,11 @@ Resources:
             Action:
               - lambda:InvokeFunction
             Resource: !GetAtt SFFetchTranscript.Arn
+          - Sid: DynamoDBAccess
+            Effect: Allow
+            Resource: !Sub arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${LLMTableName}
+            Action:
+              - 'dynamodb:GetItem'
           - Sid: InvokeBedrock
             Effect: Allow
             Action: 
