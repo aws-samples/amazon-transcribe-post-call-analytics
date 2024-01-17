@@ -9,13 +9,16 @@ exports.handler = function (event, context) {
 
     const bucketName = props.BucketName;
     const prefix = props.Prefix;
+    const transcribePrefix = props.TranscribeResultsPrefix;
     const queueArn = props.QueueArn;
+    const docQueueArn = props.DocConversionQueueArn;
 
     const audioBucket = props.AudioBucket;
     const audioBucketPrefix = props.AudioBucketPrefix;
     const webUri = props.WebUri.replace(/\/$/, "");
 
     const resourceId = `${stackName}::${bucketName}/${prefix}`
+    const docResourceId = `${stackName}::${bucketName}/${transcribePrefix}/redacted-analytics`
 
     console.log("Event:", JSON.stringify(event, null, 4));
 
@@ -54,6 +57,12 @@ exports.handler = function (event, context) {
                 }
             );
 
+            data.QueueConfigurations = data.QueueConfigurations.filter(
+                (config) => {
+                    return config.Id != docResourceId;
+                }
+            );
+
             console.log("Removed us:", JSON.stringify(data, null, 4));
 
             if (event.RequestType != "Delete") {
@@ -68,6 +77,25 @@ exports.handler = function (event, context) {
                                 {
                                     Name: "prefix",
                                     Value: `${prefix}/`,
+                                },
+                                {
+                                    Name: "suffix",
+                                    Value: `.json`,
+                                },
+                            ],
+                        },
+                    },
+                },
+                {
+                    Id: docResourceId,
+                    QueueArn: docQueueArn,
+                    Events: ["s3:ObjectCreated:*", "s3:ObjectRemoved:*"],
+                    Filter: {
+                        Key: {
+                            FilterRules: [
+                                {
+                                    Name: "prefix",
+                                    Value: `${transcribePrefix}/redacted-analytics/`,
                                 },
                                 {
                                     Name: "suffix",

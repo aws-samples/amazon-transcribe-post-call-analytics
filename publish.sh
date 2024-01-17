@@ -70,6 +70,11 @@ pushd pca-ui/src/lambda
 npm install
 popd
 
+pushd pca-ui/src/lambda/json-to-docx
+zip json-to-docx.zip Dockerfile json-to-docx.py requirements.txt
+aws s3 cp json-to-docx.zip s3://${BUCKET}/${PREFIX}/${VERSION}/json-to-docx.zip
+popd
+
 pushd pca-ui/src/www
 npm install
 npm run build || exit 1
@@ -96,6 +101,7 @@ aws s3 cp $mediasearch_template build/pca-mediasearch-finder.yaml
 
 # Build embedded QuickSight dashboards project
 cp pca-dashboards/pca-dashboards.yaml build/pca-dashboards.yaml
+cp pca-ui/cfn/lib/indexer.template build/indexer.template
 
 echo "Packaging Cfn artifacts"
 aws cloudformation package --template-file pca-main.template --output-template-file build/packaged.template --s3-bucket ${BUCKET} --s3-prefix ${PREFIX_AND_VERSION} --region ${region}|| exit 1
