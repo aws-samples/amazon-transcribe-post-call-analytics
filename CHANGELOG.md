@@ -9,8 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support for larger prompts by storing LLMPromptSummaryTemplate in S3 rather than SSM. By default, the CF templtae will migrate existing SSM prompts to DynamoDB.
 
 ### Fixed
-- Updated the pca-aws-sf-bulk-queue-space.py function to correctly count jobs based on IN_PROGRESS as well as QUEUED
-- Updated the pca-aws-sf-bulk-queue-space.py function to correctly count both Transcribe and Transcribe Call Analytics (vs just Transcribe).
+- #125 Updated the pca-aws-sf-bulk-queue-space.py function to correctly count jobs based on IN_PROGRESS as well as QUEUED
+- #224 Updated the pca-aws-sf-bulk-queue-space.py function to correctly count both Transcribe and Transcribe Call Analytics (vs just Transcribe).
 
 ## [0.7.4] - 2023-12-15
 ### Added
