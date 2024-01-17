@@ -20,7 +20,7 @@ def countTranscribeJobsInState(status, client, filesLimit):
     response = client.list_transcription_jobs(Status=status)
     found = len(response["TranscriptionJobSummaries"])
     while ("NextToken" in response) and (found <= filesLimit):
-        response = client.list_transcription_jobs(Status="IN_PROGRESS", NextToken=response["NextToken"])
+        response = client.list_transcription_jobs(Status=status, NextToken=response["NextToken"])
         found += len(response["TranscriptionJobSummaries"])
 
     return found
