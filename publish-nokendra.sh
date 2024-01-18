@@ -70,6 +70,10 @@ pushd pca-ui/src/lambda
 npm install
 popd
 
+pushd pca-ui/src/utils/start_codebuild
+pip install -r requirements.txt -t .
+popd
+
 pushd pca-ui/src/lambda/json-to-docx
 zip json-to-docx.zip Dockerfile json-to-docx.py requirements.txt
 aws s3 cp json-to-docx.zip s3://${BUCKET}/${PREFIX}/${VERSION}/json-to-docx.zip

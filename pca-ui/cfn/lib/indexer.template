@@ -203,6 +203,7 @@ Resources:
 
   DocConversionFunction:
     Type: "AWS::Serverless::Function"
+    DependsOn: CodeBuildRun
     Properties:
       PackageType: Image
       ImageUri: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${JSONDocECRRepository}:${BootstrapVersion}"
@@ -219,7 +220,6 @@ Resources:
       Policies:
         - S3CrudPolicy:
             BucketName: !Ref DataBucket
-      Runtime: python3.11
 
   InputBucketTriggerFunction:
     Type: "AWS::Serverless::Function"

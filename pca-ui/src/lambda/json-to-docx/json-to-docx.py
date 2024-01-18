@@ -1853,5 +1853,7 @@ def generate_document():
         os.remove(cli_args.inputFile)
 
 # Main entrypoint
-if __name__ == "__main__":
+def handler(event, context):
+    print("Event:", event)
+    print("Context:", context)
     generate_document()
