@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 
-Description: Amazon Transcribe Post Call Analytics - PCA (v0.7.4) (uksb-1sn29lk73)
+Description: Amazon Transcribe Post Call Analytics - PCA (v0.7.5) (uksb-1sn29lk73)
 
 Parameters:
 
@@ -889,12 +889,18 @@ Resources:
     Properties:
       ServiceToken: !GetAtt TestBedrockModelFunction.Arn
       LLMModelId: !Ref SummarizationBedrockModelId
-  
+
+  LLMPromptConfigure:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: pca-server/cfn/lib/llm.template
+
   ########################################################
   # SSM Stack
   ########################################################
   SSM:
     Type: AWS::CloudFormation::Stack
+    DependsOn: LLMPromptConfigure
     Properties:
       TemplateURL: pca-ssm/cfn/ssm.template
       Parameters:
@@ -1008,6 +1014,7 @@ Resources:
           - ShouldDeployBedrockBoto3Layer
           - !GetAtt BedrockBoto3Layer.Outputs.Boto3Layer
           - ''
+        LLMTableName: !GetAtt LLMPromptConfigure.Outputs.LLMTableName
 
   PCAUI:
     Type: AWS::CloudFormation::Stack
@@ -1043,6 +1050,7 @@ Resources:
           - ShouldDeployBedrockBoto3Layer
           - !GetAtt BedrockBoto3Layer.Outputs.Boto3Layer
           - ''
+        LLMTableName: !GetAtt LLMPromptConfigure.Outputs.LLMTableName
 
   MediaSearchFinder:
     Type: AWS::CloudFormation::Stack
@@ -1232,10 +1240,10 @@ Outputs:
     Description: Lambda function arn that will generate a string of the entire transcript for custom Lambda functions to use.
     Value: !GetAtt PCAServer.Outputs.FetchTranscriptArn
 
-  LLMPromptSummaryTemplateParameter:
-    Description: The LLM summary prompt template in SSM Parameter Store - open to customise call summary prompts.
-    Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/systems-manager/parameters/${SSM.Outputs.LLMPromptSummaryTemplateParameter}"
-  
-  LLMPromptQueryTemplateParameter:
-    Description: The LLM query prompt template in SSM Parameter Store - open to customise query prompts.
-    Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/systems-manager/parameters/${SSM.Outputs.LLMPromptQueryTemplateParameter}"
+  LLMPromptSummaryTemplate:
+    Description: The LLM summary prompt template in DynamoDB Table - open to customise summary prompts.
+    Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/dynamodbv2/home?region=${AWS::Region}#edit-item?itemMode=2&pk=LLMPromptSummaryTemplate&route=ROUTE_ITEM_EXPLORER&sk=&table=${LLMPromptConfigure.Outputs.LLMTableName}"
+
+  LLMPromptQueryTemplate:
+    Description: The LLM query prompt template in DynamoDB Table - open to customise query prompts.
+    Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/dynamodbv2/home?region=${AWS::Region}#edit-item?itemMode=2&pk=LLMPromptQueryTemplate&route=ROUTE_ITEM_EXPLORER&sk=&table=${LLMPromptConfigure.Outputs.LLMTableName}"

@@ -66,6 +66,10 @@ Parameters:
     Type: String
     Description: External PyUtils Layer Arn to use.
 
+  LLMTableName:
+    Type: String
+    Description: The DynamoDB table name where the summary and query prompt templates are stored.
+
 Conditions:
   ShouldAddBoto3Layer: !Not [!Equals [!Ref Boto3LayerArn, '']]
   HasAnthropicSummary: !Equals [!Ref GenAIQueryType, 'ANTHROPIC']
@@ -268,6 +272,7 @@ Resources:
           ANTHROPIC_MODEL_IDENTIFIER: "claude-2"
           ANTHROPIC_ENDPOINT_URL: "https://api.anthropic.com/v1/complete"
           ANTHROPIC_API_KEY: !Ref LLMThirdPartyApiKey
+          LLM_TABLE_NAME: !Ref LLMTableName
       Events:
         APIEvent:
           Type: Api
@@ -287,6 +292,11 @@ Resources:
             Action:
               - lambda:InvokeFunction
             Resource: !Ref FetchTranscriptArn
+          - Sid: DynamoDBAccess
+            Effect: Allow
+            Resource: !Sub arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${LLMTableName}
+            Action:
+              - 'dynamodb:GetItem'
           - Sid: InvokeBedrock
             Effect: Allow
             Action: 
