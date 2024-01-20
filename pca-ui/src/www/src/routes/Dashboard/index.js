@@ -1,7 +1,7 @@
 import { useState, useEffect, Fragment, useRef } from "react";
 import { useParams } from "react-router";
 import useSWR, { useSWRConfig } from "swr";
-import { get, genaiquery, swap, genairefresh } from "../../api/api";
+import {get, genaiquery, swap, genairefresh, presign} from "../../api/api";
 import { Formatter } from "../../format";
 import { TranscriptSegment } from "./TranscriptSegment";
 import { Entities } from "./Entities";
@@ -20,7 +20,8 @@ import { TranscriptOverlay } from "./TranscriptOverlay";
 import { range } from "../../util";
 import { Sentiment } from "../../components/Sentiment";
 import { ChatInput } from "../../components/ChatInput";
-import { Button, ContentLayout, Spinner, Link, Header, Grid, Container, SpaceBetween, Input, FormField, TextContent } from '@cloudscape-design/components';
+import { Button, ContentLayout, Spinner, Link, Header, Grid, Container, SpaceBetween, ColumnLayout } from '@cloudscape-design/components';
+import axios from "axios";
 
 const getSentimentTrends = (d, target, labels) => {
   const id = Object.entries(labels).find(([_, v]) => v === target)?.[0];
@@ -83,6 +84,8 @@ function Dashboard({ setAlert }) {
   const [comprehendSentimentData, setComprehendSentimentData] = useState({});
 
   const [isSwapping, setIsSwapping] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+
 
   const [genAiQueries, setGenAiQueries] = useState([]);
   const [genAiQuery, setGenAiQuery] = useState("");
@@ -290,6 +293,46 @@ function Dashboard({ setAlert }) {
     }
   };
 
+  const docDownload = async () => {
+    try {
+      setIsDownloading(true);
+      const filename = key.split('/')[1];
+      const response = await presign(filename, 'Doc');
+      // const r = await axios.get(response.url);
+      // let blob = await fetch(response.url).then(r => r.blob());
+
+      axios({
+        url: response.url,
+        method: 'GET',
+        responseType: 'blob', // important
+      }).then((r) => {
+        // create file link in browser's memory
+        const href = URL.createObjectURL(r.data);
+
+        // create "a" HTML element with href to file & click
+        const link = document.createElement('a');
+        link.href = href;
+        link.setAttribute('download', filename + ".docx"); //or any other extension
+        document.body.appendChild(link);
+        link.click();
+
+        // clean up "a" element & remove ObjectURL
+        document.body.removeChild(link);
+        URL.revokeObjectURL(href);
+      });
+
+    } catch (err) {
+      console.error(err);
+      setAlert({
+        heading: "Something went wrong",
+        variant: "danger",
+        text: "Unable to download the document. Please try again later",
+      });
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   const setAudioCurrentTime = (e) => {
     const a = document.getElementsByTagName("audio")[0];
     a.currentTime = e.target.dataset.currenttime;
@@ -492,9 +535,14 @@ function Dashboard({ setAlert }) {
       <Header
           variant="h2"
           actions={[
-            <Button key='swapAgent' onClick={swapAgent} disabled={isSwapping} className="float-end">
-              {isSwapping ? "Swapping..." : "Swap Agent/Caller"}
-            </Button>
+            <SpaceBetween direction="horizontal" size="xs">
+              <Button key='downloadDoc' onClick={docDownload} disabled={isDownloading} className="float-end">
+                {isDownloading ? "Downloading..." : "Download Document"}
+              </Button>
+              <Button key='swapAgent' onClick={swapAgent} disabled={isSwapping} className="float-end">
+                {isSwapping ? "Swapping..." : "Swap Agent/Caller"}
+              </Button>
+            </SpaceBetween>
           ]}
       >
         Call Details

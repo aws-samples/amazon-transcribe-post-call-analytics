@@ -126,7 +126,9 @@ Resources:
               Effect: Allow
               Action:
                 - s3:PutBucketCORS
-              Resource: !Sub arn:aws:s3:::${AudioBucket}
+              Resource:
+                - !Sub arn:aws:s3:::${AudioBucket}
+                - !Sub arn:aws:s3:::${DataBucket}
 
   ConfigureDataBucketFunction:
     Type: "AWS::Lambda::Function"

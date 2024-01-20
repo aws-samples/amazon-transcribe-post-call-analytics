@@ -103,7 +103,7 @@ export const Upload = () => {
         try {
             for (let i = 0; i < items.length; i++) {
                 console.log("File uploaded=", items[i].file.name);
-                const response = await presign(items[i].file.name);
+                const response = await presign(items[i].file.name, 'Audio');
                 
                 const r = await axios.put(response.url, items[i].file);
             }

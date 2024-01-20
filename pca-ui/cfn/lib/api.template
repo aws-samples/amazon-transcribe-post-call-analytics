@@ -14,6 +14,9 @@ Parameters:
   DataBucket:
     Type: String
 
+  DocPrefix:
+    Type: String
+
   TableName:
     Type: String
 
@@ -357,6 +360,8 @@ Resources:
         Variables:
           AudioBucket: !Ref AudioBucket
           AudioBucketPrefix: !Ref AudioBucketPrefix
+          DataBucket: !Ref DataBucket
+          DocPrefix: !Ref DocPrefix
       Events:
         APIEvent:
           Type: Api
@@ -367,6 +372,8 @@ Resources:
       Policies:
         - S3WritePolicy:
             BucketName: !Ref AudioBucket
+        - S3ReadPolicy:
+            BucketName: !Ref DataBucket
       Runtime: nodejs14.x
 
 Outputs:
