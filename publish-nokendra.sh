@@ -70,6 +70,15 @@ pushd pca-ui/src/lambda
 npm install
 popd
 
+pushd pca-ui/src/utils/start_codebuild
+pip install -r requirements.txt -t .
+popd
+
+pushd pca-ui/src/lambda/json-to-docx
+zip json-to-docx.zip Dockerfile json-to-docx.py requirements.txt
+aws s3 cp json-to-docx.zip s3://${BUCKET}/${PREFIX}/${VERSION}/json-to-docx.zip
+popd
+
 pushd pca-ui/src/www
 npm install
 npm run build || exit 1
@@ -82,6 +91,17 @@ popd
 
 # Build embedded QuickSight dashboards project
 cp pca-dashboards/pca-dashboards.yaml build/pca-dashboards.yaml
+
+# Replace placeholders for Bootstrap bucket with actual release bucket.
+cp pca-ui/cfn/lib/indexer.template build/indexer.template
+
+sed -E \
+		" \
+		/^ {2,}BootstrapBucketBaseName:/ , /^ {2,}Default:/ s@^(.*Default: {1,})(.*)@\1 ${BUCKET}@ ; \
+		/^ {2,}BootstrapS3Prefix:/ , /^ {2,}Default:/ s@^(.*Default: {1,})(.*)@\1 ${PREFIX}@ ; \
+		/^ {2,}BootstrapVersion:/ , /^ {2,}Default:/ s@^(.*Default: {1,})(.*)@\1 ${VERSION}@ ; \
+		" \
+		pca-ui/cfn/lib/indexer.template > build/indexer.template
 
 echo "Packaging Cfn artifacts"
 aws cloudformation package --template-file pca-main-nokendra.template --output-template-file build/packaged.template --s3-bucket ${BUCKET} --s3-prefix ${PREFIX_AND_VERSION} --region ${region}|| exit 1

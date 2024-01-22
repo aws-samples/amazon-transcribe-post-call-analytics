@@ -94,8 +94,9 @@ export async function genairefresh(filename) {
   } );
 }
 
-export async function presign(filename) {
+export async function presign(filename, file_type) {
   return getRequest("presign", {
     "filename": filename,
+    "file_type": file_type,
   } );
 }

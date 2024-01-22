@@ -35,6 +35,11 @@ Parameters:
     Default: OutputBucketParsedResults
     Description: Prefix that parsed transcription output is stored under in DataBucket
 
+  DocPrefix:
+    Type: String
+    Default: OutputBucketDocResults
+    Description: Prefix that parsed transcription converted to a word document is stored under in DataBucket
+
   MainStackName:
     Type: String
     Default: ""
@@ -132,7 +137,7 @@ Resources:
   Indexer:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: lib/indexer.template
+      TemplateURL: ../../build/indexer.template
       Parameters:
         DataBucket: !Ref DataBucket
         DataPrefix: !Ref DataPrefix
@@ -148,6 +153,7 @@ Resources:
         AudioBucket: !Ref AudioBucket
         AudioBucketPrefix: !Ref AudioBucketPrefix
         DataBucket: !Ref DataBucket
+        DocPrefix: !Ref DocPrefix
         TableName: !GetAtt Indexer.Outputs.TableName
         UserPoolId: !GetAtt Cognito.Outputs.UserPoolId
         GenAIQueryType: !Ref GenAIQueryType

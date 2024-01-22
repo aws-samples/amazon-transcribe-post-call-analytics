@@ -1,0 +1,4 @@
+python-docx
+scipy
+matplotlib
+crhelper~=2.0.10

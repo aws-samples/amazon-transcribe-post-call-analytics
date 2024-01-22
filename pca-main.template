@@ -132,6 +132,13 @@ Parameters:
     Default: parsedFiles
     Description: Folder within the output S3 bucket where parsed results are written
 
+  OutputBucketDocResults:
+    Type: String
+    Default: docFiles
+    Description: >-
+      Folder within the output S3 bucket where results of Amazon Transcribe JSON output converted to word document
+      is stored.
+
   SpeakerNames:
     Type: String
     Default: Customer | Agent
@@ -937,6 +944,7 @@ Resources:
           - !Ref OutputBucketName 
         OutputBucketTranscribeResults: !Ref OutputBucketTranscribeResults
         OutputBucketParsedResults: !Ref OutputBucketParsedResults
+        OutputBucketDocResults: !Ref OutputBucketDocResults
         SpeakerNames: !Ref SpeakerNames
         SpeakerSeparationType: !Ref SpeakerSeparationType
         StepFunctionName: !Ref StepFunctionName
@@ -1036,6 +1044,7 @@ Resources:
           - !Ref OutputBucket
           - !Ref OutputBucketName
         DataPrefix: !Ref OutputBucketParsedResults
+        DocPrefix: !Ref OutputBucketDocResults
         Environment: !Ref Environment
         GenAIQueryType: !Ref GenAIQuery
         GenAIQueryBedrockModelId: !Ref GenAIQueryBedrockModelId

@@ -9,13 +9,17 @@ exports.handler = function (event, context) {
 
     const bucketName = props.BucketName;
     const prefix = props.Prefix;
+    const transcribePrefix = props.TranscribeResultsPrefix;
     const queueArn = props.QueueArn;
+    const docQueueArn = props.DocConversionQueueArn;
 
     const audioBucket = props.AudioBucket;
     const audioBucketPrefix = props.AudioBucketPrefix;
     const webUri = props.WebUri.replace(/\/$/, "");
 
+    const audioResourceId = `${stackName}::${audioBucket}/${audioBucketPrefix}`
     const resourceId = `${stackName}::${bucketName}/${prefix}`
+    const docResourceId = `${stackName}::${bucketName}/${transcribePrefix}/redacted-analytics`
 
     console.log("Event:", JSON.stringify(event, null, 4));
 
@@ -35,10 +39,42 @@ exports.handler = function (event, context) {
         }]
     }
 
-    // Configure input bucket CORS configuration
-    s3.putBucketCors({
+    const outputBucketCorsConfiguration = {
+        CORSRules: [{
+            AllowedHeaders: [
+                "Authorization"
+            ],
+            AllowedMethods: [
+                "GET"
+            ],
+            AllowedOrigins: [
+                webUri,
+                "http://localhost:3000"
+            ],
+            MaxAgeSeconds: 3000
+        }]
+    }
+
+    const params = {
         Bucket: audioBucket,
         CORSConfiguration: corsConfiguration
+    }
+
+    // Configure input bucket CORS configuration
+    s3.putBucketCors(params, function(err, data) {
+        if (err) {
+            console.log(err, err.stack);
+            response.send(event, context, response.FAILED, {
+                error: err,
+            }, resourceId);
+
+        } // an error occurred
+    });
+
+    // Configure output bucket CORS configuration
+    s3.putBucketCors({
+        Bucket: bucketName,
+        CORSConfiguration: outputBucketCorsConfiguration
     }).promise().then(() => 
     {
         // Configure output bucket
@@ -51,6 +87,12 @@ exports.handler = function (event, context) {
             data.QueueConfigurations = data.QueueConfigurations.filter(
                 (config) => {
                     return config.Id != resourceId;
+                }
+            );
+
+            data.QueueConfigurations = data.QueueConfigurations.filter(
+                (config) => {
+                    return config.Id != docResourceId;
                 }
             );
 
@@ -68,6 +110,25 @@ exports.handler = function (event, context) {
                                 {
                                     Name: "prefix",
                                     Value: `${prefix}/`,
+                                },
+                                {
+                                    Name: "suffix",
+                                    Value: `.json`,
+                                },
+                            ],
+                        },
+                    },
+                },
+                {
+                    Id: docResourceId,
+                    QueueArn: docQueueArn,
+                    Events: ["s3:ObjectCreated:*", "s3:ObjectRemoved:*"],
+                    Filter: {
+                        Key: {
+                            FilterRules: [
+                                {
+                                    Name: "prefix",
+                                    Value: `${transcribePrefix}/redacted-analytics/`,
                                 },
                                 {
                                     Name: "suffix",
@@ -105,5 +166,4 @@ exports.handler = function (event, context) {
         }, resourceId);
     });
 
-    
 };

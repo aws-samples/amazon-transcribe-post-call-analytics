@@ -115,6 +115,13 @@ Parameters:
     Default: parsedFiles
     Description: Folder within the output S3 bucket where parsed results are written
 
+  OutputBucketDocResults:
+    Type: String
+    Default: docFiles
+    Description: >-
+      Folder within the output S3 bucket where results of Amazon Transcribe JSON output converted to word document
+      is stored.
+
   SpeakerNames:
     Type: String
     Default: Caller | Agent
@@ -431,6 +438,14 @@ Resources:
       Type: String
       Description: Folder within the output S3 bucket where parsed results are written
       Value: !Ref OutputBucketParsedResults
+
+  OutputBucketDocResultsParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: OutputBucketDocResults
+      Type: String
+      Description: Folder within the output S3 bucket where parsed results are written
+      Value: !Ref OutputBucketDocResults
 
   SpeakerNamesParameter:
     Type: "AWS::SSM::Parameter"
