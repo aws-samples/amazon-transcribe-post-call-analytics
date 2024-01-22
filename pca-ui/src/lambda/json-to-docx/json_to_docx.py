@@ -58,7 +58,20 @@ COL_CONTENT = 4
 MIN_SENTIMENT_LENGTH = 16
 MIN_SENTIMENT_NEGATIVE = 0.4
 MIN_SENTIMENT_POSITIVE = 0.6
-SENTIMENT_LANGUAGES = ["en", "es", "fr", "de", "it", "pt", "ar", "hi", "ja", "ko", "zh-TW", "zh"]
+SENTIMENT_LANGUAGES = [
+    "en",
+    "es",
+    "fr",
+    "de",
+    "it",
+    "pt",
+    "ar",
+    "hi",
+    "ja",
+    "ko",
+    "zh-TW",
+    "zh",
+]
 
 # Image download URLS
 IMAGE_URL_BANNER = "https://raw.githubusercontent.com/aws-samples/amazon-transcribe-output-word-document/main/images/banner.png"
@@ -69,23 +82,34 @@ IMAGE_URL_NEUTRAL = "https://raw.githubusercontent.com/aws-samples/amazon-transc
 # Definitions to use whilst scanning summarisation data
 CALL_SUMMARY_MAP = [
     {"Field": "segmentIssuesDetected", "Title": "Issues Detected", "Color": "FF3333"},
-    {"Field": "segmentActionItemsDetected", "Title": "Action Items Detected", "Color": "FFB266"},
-    {"Field": "segmentOutcomesDetected", "Title": "Outcomes Detected", "Color": "66CC00"}
+    {
+        "Field": "segmentActionItemsDetected",
+        "Title": "Action Items Detected",
+        "Color": "FFB266",
+    },
+    {
+        "Field": "segmentOutcomesDetected",
+        "Title": "Outcomes Detected",
+        "Color": "66CC00",
+    },
 ]
 
 # Additional Constants
-START_NEW_SEGMENT_DELAY = 2.0       # After n seconds pause by one speaker, put next speech in new segment
+START_NEW_SEGMENT_DELAY = (
+    2.0  # After n seconds pause by one speaker, put next speech in new segment
+)
 
 
 class SpeechSegment:
-    """ Class to hold information about a single speech segment """
+    """Class to hold information about a single speech segment"""
+
     def __init__(self):
         self.segmentStartTime = 0.0
         self.segmentEndTime = 0.0
         self.segmentSpeaker = ""
         self.segmentText = ""
         self.segmentConfidence = []
-        self.segmentSentimentScore = -1.0    # -1.0 => no sentiment calculated
+        self.segmentSentimentScore = -1.0  # -1.0 => no sentiment calculated
         self.segmentPositive = 0.0
         self.segmentNegative = 0.0
         self.segmentIsPositive = False
@@ -138,6 +162,7 @@ def set_table_row_bold(row, bold):
             for run in paragraph.runs:
                 run.font.bold = bold
 
+
 def set_transcript_text_style(run, force_highlight, confidence=0.0, rgb_color=None):
     """
     Sets the colour and potentially the style of a given run of text in a transcript.  You can either
@@ -171,7 +196,9 @@ def set_transcript_text_style(run, force_highlight, confidence=0.0, rgb_color=No
         run.font.highlight_color = WD_COLOR_INDEX.YELLOW
 
 
-def write_transcribe_text(output_table, sentiment_enabled, analytics_mode, speech_segments, keyed_categories):
+def write_transcribe_text(
+    output_table, sentiment_enabled, analytics_mode, speech_segments, keyed_categories
+):
     """
     Writes out each line of the transcript in the Word table structure, optionally including sentiments
 
@@ -198,19 +225,25 @@ def write_transcribe_text(output_table, sentiment_enabled, analytics_mode, speec
         # Before we start, does an angory start at this time?
         start_in_millis = segment.segmentStartTime * 1000.0
         end_in_millis = segment.segmentEndTime * 1000.0
-        if start_in_millis in keyed_categories:
-            insert_category_row(content_col_offset, keyed_categories, output_table, start_in_millis)
-            keyed_categories.pop(start_in_millis)
+        # if start_in_millis in keyed_categories:
+        #     insert_category_row(content_col_offset, keyed_categories, output_table, start_in_millis)
+        #     keyed_categories.pop(start_in_millis)
 
         # Start with the easy stuff
         row_cells = output_table.add_row().cells
         row_cells[COL_STARTTIME].text = convert_timestamp(segment.segmentStartTime)
-        row_cells[COL_ENDTIME].text = f"{(segment.segmentEndTime - segment.segmentStartTime):.1f}s"
+        row_cells[
+            COL_ENDTIME
+        ].text = f"{(segment.segmentEndTime - segment.segmentStartTime):.1f}s"
         row_cells[COL_SPEAKER].text = segment.segmentSpeaker
 
         # Mark the start of the turn as INTERRUPTED if that's the case
         if segment.segmentInterruption:
-            run = row_cells[COL_CONTENT + content_col_offset].paragraphs[0].add_run("[INTERRUPTION]")
+            run = (
+                row_cells[COL_CONTENT + content_col_offset]
+                .paragraphs[0]
+                .add_run("[INTERRUPTION]")
+            )
             set_transcript_text_style(run, True, confidence=0.0)
             row_cells[COL_CONTENT + content_col_offset].paragraphs[0].add_run(" ")
 
@@ -228,23 +261,56 @@ def write_transcribe_text(output_table, sentiment_enabled, analytics_mode, speec
         for eachWord in segment.segmentConfidence:
             # Look to start a new summary block if needed, in strict priority order - issues, actions, then outcomes.
             # We cannot start a new one until an existing one finishes, so if 2 overlap (unlikely) we skip the second
-            live_issue = start_summary_run_highlight(content_col_offset, live_issue, live_action or live_outcome,
-                                                     next_issue, row_cells, text_index, "[ISSUE]")
-            live_action = start_summary_run_highlight(content_col_offset, live_action, live_issue or live_outcome,
-                                                      next_action, row_cells, text_index, "[ACTION]")
-            live_outcome = start_summary_run_highlight(content_col_offset, live_outcome, live_issue or live_action,
-                                                       next_outcome, row_cells, text_index, "[OUTCOME]")
+            live_issue = start_summary_run_highlight(
+                content_col_offset,
+                live_issue,
+                live_action or live_outcome,
+                next_issue,
+                row_cells,
+                text_index,
+                "[ISSUE]",
+            )
+            live_action = start_summary_run_highlight(
+                content_col_offset,
+                live_action,
+                live_issue or live_outcome,
+                next_action,
+                row_cells,
+                text_index,
+                "[ACTION]",
+            )
+            live_outcome = start_summary_run_highlight(
+                content_col_offset,
+                live_outcome,
+                live_issue or live_action,
+                next_outcome,
+                row_cells,
+                text_index,
+                "[OUTCOME]",
+            )
 
             # Output the next word, with the correct confidence styling and forced background
-            run = row_cells[COL_CONTENT + content_col_offset].paragraphs[0].add_run(eachWord["text"])
+            run = (
+                row_cells[COL_CONTENT + content_col_offset]
+                .paragraphs[0]
+                .add_run(eachWord["text"])
+            )
             text_index += len(eachWord["text"])
             confLevel = eachWord["confidence"]
-            set_transcript_text_style(run, live_issue or live_outcome or live_action, confidence=confLevel)
+            set_transcript_text_style(
+                run, live_issue or live_outcome or live_action, confidence=confLevel
+            )
 
             # Has any in-progress summarisation block now finished?  Check each one
-            live_issue, next_issue = stop_summary_run_highlight(issues, live_issue, next_issue, text_index)
-            live_action, next_action = stop_summary_run_highlight(actions, live_action, next_action, text_index)
-            live_outcome, next_outcome = stop_summary_run_highlight(outcomes, live_outcome, next_outcome, text_index)
+            live_issue, next_issue = stop_summary_run_highlight(
+                issues, live_issue, next_issue, text_index
+            )
+            live_action, next_action = stop_summary_run_highlight(
+                actions, live_action, next_action, text_index
+            )
+            live_outcome, next_outcome = stop_summary_run_highlight(
+                outcomes, live_outcome, next_outcome, text_index
+            )
 
         # If enabled, finish with the base sentiment for the segment - don't write out
         # score if it turns out that this segment ie neither Negative nor Positive
@@ -259,29 +325,35 @@ def write_transcribe_text(output_table, sentiment_enabled, analytics_mode, speec
 
                 # We only have turn-by-turn sentiment score values in non-analytics mode
                 if not analytics_mode:
-                    text_run = paragraph.add_run(' (' + str(segment.segmentSentimentScore)[:4] + ')')
+                    text_run = paragraph.add_run(
+                        " (" + str(segment.segmentSentimentScore)[:4] + ")"
+                    )
                     text_run.font.size = Pt(7)
                     text_run.font.italic = True
             else:
-                row_cells[COL_SENTIMENT].paragraphs[0].add_run().add_picture(png_neutral, width=Mm(4))
+                row_cells[COL_SENTIMENT].paragraphs[0].add_run().add_picture(
+                    png_neutral, width=Mm(4)
+                )
 
         # Add highlighting to the row if required
         if shading_reqd:
             for column in range(0, COL_CONTENT + content_col_offset + 1):
-                set_table_cell_background_colour(row_cells[column], ALTERNATE_ROW_COLOUR)
+                set_table_cell_background_colour(
+                    row_cells[column], ALTERNATE_ROW_COLOUR
+                )
         shading_reqd = not shading_reqd
 
         # Check if a category occurs in the middle of a segment - put it after the segment, as timestamp is "later"
-        for category_start in keyed_categories.copy().keys():
-            if (start_in_millis < category_start) and (category_start < end_in_millis):
-                insert_category_row(content_col_offset, keyed_categories, output_table, category_start)
-                keyed_categories.pop(category_start)
+        # for category_start in keyed_categories.copy().keys():
+        #     if (start_in_millis < category_start) and (category_start < end_in_millis):
+        #         insert_category_row(content_col_offset, keyed_categories, output_table, category_start)
+        #         keyed_categories.pop(category_start)
 
         # Before we end, does an analytics category start with this line's end time?
-        if end_in_millis in keyed_categories:
-            # If so, write out the line after this
-            insert_category_row(content_col_offset, keyed_categories, output_table, end_in_millis)
-            keyed_categories.pop(end_in_millis)
+        # if end_in_millis in keyed_categories:
+        #     # If so, write out the line after this
+        #     insert_category_row(content_col_offset, keyed_categories, output_table, end_in_millis)
+        #     keyed_categories.pop(end_in_millis)
 
 
 def stop_summary_run_highlight(summaries, live_summary, next_summary, text_index):
@@ -306,8 +378,15 @@ def stop_summary_run_highlight(summaries, live_summary, next_summary, text_index
     return live_summary, next_summary
 
 
-def start_summary_run_highlight(content_col_offset, this_summary, other_summaries, next_summ_item, row_cells,
-                                text_index, output_phrase):
+def start_summary_run_highlight(
+    content_col_offset,
+    this_summary,
+    other_summaries,
+    next_summ_item,
+    row_cells,
+    text_index,
+    output_phrase,
+):
     """
     This looks at a call summary data block to see if it has started - if it has then we output a
     message with a highlight and set the text-run highlighting to continue.  If a summary block of
@@ -326,14 +405,20 @@ def start_summary_run_highlight(content_col_offset, this_summary, other_summarie
     new_summary = this_summary
 
     if len(next_summ_item) > 0 and not this_summary and not other_summaries:
-        if (next_summ_item["Begin"] == 0 and text_index == 1) or (next_summ_item["Begin"] == text_index):
+        if (next_summ_item["Begin"] == 0 and text_index == 1) or (
+            next_summ_item["Begin"] == text_index
+        ):
             # If so, start the highlighting run, tagging on a leading/trailing
             # highlight space depending on where were are in the segment
             if text_index == 1:
                 next_phrase = output_phrase + " "
             else:
                 next_phrase = " " + output_phrase
-            run = row_cells[COL_CONTENT + content_col_offset].paragraphs[0].add_run(next_phrase)
+            run = (
+                row_cells[COL_CONTENT + content_col_offset]
+                .paragraphs[0]
+                .add_run(next_phrase)
+            )
             set_transcript_text_style(run, True, confidence=0.0)
             new_summary = True
 
@@ -356,7 +441,9 @@ def setup_summarised_data(summary_block):
     return summary_data, next_data_item
 
 
-def insert_category_row(content_col_offset, keyed_categories, output_table, timestamp_millis):
+def insert_category_row(
+    content_col_offset, keyed_categories, output_table, timestamp_millis
+):
     """
     When writing out the transcript table this method will add in an additional row based
     upon the found entry in the time-keyed category list
@@ -370,16 +457,22 @@ def insert_category_row(content_col_offset, keyed_categories, output_table, time
     # Create a new row with the timestamp leading cell, then merge the other cells together
     row_cells = output_table.add_row().cells
     row_cells[COL_STARTTIME].text = convert_timestamp(timestamp_millis / 1000.0)
-    merged_cells = row_cells[COL_ENDTIME].merge(row_cells[COL_CONTENT + content_col_offset])
+    merged_cells = row_cells[COL_ENDTIME].merge(
+        row_cells[COL_CONTENT + content_col_offset]
+    )
 
     # Insert the text for each found category
     run = merged_cells.paragraphs[0].add_run("[CATEGORY]")
     set_transcript_text_style(run, False, rgb_color=CATEGORY_TRANSCRIPT_FG_COLOUR)
-    run = merged_cells.paragraphs[0].add_run(" " + " ".join(keyed_categories[timestamp_millis]))
+    run = merged_cells.paragraphs[0].add_run(
+        " " + " ".join(keyed_categories[timestamp_millis])
+    )
     set_transcript_text_style(run, False, confidence=0.5)
 
     # Give this row a special colour so that it stands out when scrolling
-    set_table_cell_background_colour(row_cells[COL_STARTTIME], CATEGORY_TRANSCRIPT_BG_COLOUR)
+    set_table_cell_background_colour(
+        row_cells[COL_STARTTIME], CATEGORY_TRANSCRIPT_BG_COLOUR
+    )
     set_table_cell_background_colour(merged_cells, CATEGORY_TRANSCRIPT_BG_COLOUR)
 
 
@@ -398,8 +491,10 @@ def merge_speaker_segments(input_segment_list):
 
     # Step through each of our defined speaker segments
     for segment in input_segment_list:
-        if (segment.segmentSpeaker != lastSpeaker) or \
-                ((segment.segmentStartTime - lastSegment.segmentEndTime) >= START_NEW_SEGMENT_DELAY):
+        if (segment.segmentSpeaker != lastSpeaker) or (
+            (segment.segmentStartTime - lastSegment.segmentEndTime)
+            >= START_NEW_SEGMENT_DELAY
+        ):
             # Simple case - speaker change or > n-second gap means new output segment
             outputSegmentList.append(segment)
 
@@ -410,7 +505,9 @@ def merge_speaker_segments(input_segment_list):
             # Same speaker, short time, need to copy this info to the last one
             lastSegment.segmentEndTime = segment.segmentEndTime
             lastSegment.segmentText += " " + segment.segmentText
-            segment.segmentConfidence[0]["text"] = " " + segment.segmentConfidence[0]["text"]
+            segment.segmentConfidence[0]["text"] = (
+                " " + segment.segmentConfidence[0]["text"]
+            )
             for wordConfidence in segment.segmentConfidence:
                 lastSegment.segmentConfidence.append(wordConfidence)
 
@@ -430,7 +527,9 @@ def generate_sentiment(segment_list, language_code):
     for nextSegment in segment_list:
         if len(nextSegment.segmentText) >= MIN_SENTIMENT_LENGTH:
             nextText = nextSegment.segmentText
-            response = client.detect_sentiment(Text=nextText, LanguageCode=language_code)
+            response = client.detect_sentiment(
+                Text=nextText, LanguageCode=language_code
+            )
             positiveBase = response["SentimentScore"]["Positive"]
             negativeBase = response["SentimentScore"]["Negative"]
 
@@ -455,8 +554,8 @@ def set_repeat_table_header(row):
     Set Word repeat table row on every new page
     """
     row_pointer = row._tr.get_or_add_trPr()
-    table_header = OxmlElement('w:tblHeader')
-    table_header.set(qn('w:val'), "true")
+    table_header = OxmlElement("w:tblHeader")
+    table_header.set(qn("w:val"), "true")
     row_pointer.append(table_header)
     return row
 
@@ -489,20 +588,19 @@ def write_small_header_text(document, text, confidence):
     run.font.italic = True
 
 
-def write(cli_arguments, speech_segments, job_status, summaries_detected):
+def write(json_data, speech_segments, job_status, summaries_detected, job_name):
     """
     Write a transcript from the .json transcription file and other data generated
     by the results parser, putting it all into a human-readable Word document
 
-    :param cli_arguments: CLI arguments used for this processing run
     :param speech_segments: List of call speech segments
     :param job_status: Status of the Transcribe job
     :param summaries_detected: Flag to indicate presence of call summary data
+    :param job_name: ID of the Transcribe job
     """
 
-    json_filepath = Path(cli_arguments.inputFile)
-    data = json.load(open(json_filepath.absolute(), "r", encoding="utf-8"))
-    sentimentEnabled = (cli_arguments.sentiment == 'on')
+    # json_filepath = Path(cli_arguments.inputFile)
+    sentimentEnabled = False
     tempFiles = []
 
     # Initiate Document, orientation and margins
@@ -520,7 +618,9 @@ def write(cli_arguments, speech_segments, job_status, summaries_detected):
     font.size = Pt(10)
 
     # Create our custom text header style
-    custom_style = document.styles.add_style(CUSTOM_STYLE_HEADER, WD_STYLE_TYPE.PARAGRAPH)
+    custom_style = document.styles.add_style(
+        CUSTOM_STYLE_HEADER, WD_STYLE_TYPE.PARAGRAPH
+    )
     custom_style.paragraph_format.widow_control = True
     custom_style.paragraph_format.keep_with_next = True
     custom_style.paragraph_format.space_after = Pt(0)
@@ -533,12 +633,12 @@ def write(cli_arguments, speech_segments, job_status, summaries_detected):
     document.add_picture(load_image(IMAGE_URL_BANNER), width=Mm(171))
 
     # Pull out header information - some from the JSON, but most only exists in the Transcribe job status
-    if cli_arguments.analyticsMode:
-        # We need 2 columns only if we're in analytics mode, as we put the charts on the right of the table
-        document.add_section(WD_SECTION.CONTINUOUS)
-        section_ptr = document.sections[-1]._sectPr
-        cols = section_ptr.xpath('./w:cols')[0]
-        cols.set(qn('w:num'), '2')
+    # if cli_arguments.analyticsMode:
+    #     # We need 2 columns only if we're in analytics mode, as we put the charts on the right of the table
+    #     document.add_section(WD_SECTION.CONTINUOUS)
+    #     section_ptr = document.sections[-1]._sectPr
+    #     cols = section_ptr.xpath('./w:cols')[0]
+    #     cols.set(qn('w:num'), '2')
 
     # Write put the call summary table - depending on the mode that Transcribe was used in, and
     # if the request is being run on a JSON results file rather than reading the job info from Transcribe,
@@ -552,45 +652,82 @@ def write(cli_arguments, speech_segments, job_status, summaries_detected):
     table.alignment = WD_ALIGN_PARAGRAPH.LEFT
     hdr_cells = table.rows[0].cells
     hdr_cells[0].text = "Job Name"
-    if cli_arguments.analyticsMode:
-        hdr_cells[1].text = data["JobName"]
-    else:
-        hdr_cells[1].text = data["jobName"]
+    # if cli_arguments.analyticsMode:
+    #     hdr_cells[1].text = data["JobName"]
+    # else:
+    hdr_cells[1].text = json_data["JobName"]
     job_data = []
     # Audio duration is the end-time of the final voice segment, which might be shorter than the actual file duration
     if len(speech_segments) > 0:
         audio_duration = speech_segments[-1].segmentEndTime
-        dur_text = str(int(audio_duration / 60)) + "m " + str(round(audio_duration % 60, 2)) + "s"
+        dur_text = (
+            str(int(audio_duration / 60))
+            + "m "
+            + str(round(audio_duration % 60, 2))
+            + "s"
+        )
         job_data.append({"name": "Audio Duration", "value": dur_text})
     # We can infer diarization mode from the JSON results data structure
-    if cli_arguments.analyticsMode:
-        job_data.append({"name": "Audio Ident", "value": "Call Analytics"})
-    elif "speaker_labels" in data["results"]:
-        job_data.append({"name": "Audio Ident", "value": "Speaker-separated"})
-    else:
-        job_data.append({"name": "Audio Ident", "value": "Channel-separated"})
+    # if cli_arguments.analyticsMode:
+    #     job_data.append({"name": "Audio Ident", "value": "Call Analytics"})
+    # if "speaker_labels" in json_data["results"]:
+    #     job_data.append({"name": "Audio Ident", "value": "Speaker-separated"})
+    # else:
+    job_data.append({"name": "Audio Ident", "value": "Channel-separated"})
 
     # Some information is only in the job status
     if job_status is not None:
         job_data.append({"name": "Language", "value": job_status["LanguageCode"]})
         job_data.append({"name": "File Format", "value": job_status["MediaFormat"]})
-        job_data.append({"name": "Sample Rate", "value": str(job_status["MediaSampleRateHertz"]) + " Hz"})
-        job_data.append({"name": "Job Created", "value": job_status["CreationTime"].strftime("%a %d %b '%y at %X")})
+        job_data.append(
+            {
+                "name": "Sample Rate",
+                "value": str(job_status["MediaSampleRateHertz"]) + " Hz",
+            }
+        )
+        job_data.append(
+            {
+                "name": "Job Created",
+                "value": job_status["CreationTime"].strftime("%a %d %b '%y at %X"),
+            }
+        )
         if "ContentRedaction" in job_status["Settings"]:
             redact_type = job_status["Settings"]["ContentRedaction"]["RedactionType"]
-            redact_output = job_status["Settings"]["ContentRedaction"]["RedactionOutput"]
-            job_data.append({"name": "Redaction Mode", "value": redact_type + " [" + redact_output + "]"})
+            redact_output = job_status["Settings"]["ContentRedaction"][
+                "RedactionOutput"
+            ]
+            job_data.append(
+                {
+                    "name": "Redaction Mode",
+                    "value": redact_type + " [" + redact_output + "]",
+                }
+            )
         if "VocabularyFilterName" in job_status["Settings"]:
             vocab_filter = job_status["Settings"]["VocabularyFilterName"]
             vocab_method = job_status["Settings"]["VocabularyFilterMethod"]
-            job_data.append({"name": "Vocabulary Filter", "value": vocab_filter + " [" + vocab_method + "]"})
+            job_data.append(
+                {
+                    "name": "Vocabulary Filter",
+                    "value": vocab_filter + " [" + vocab_method + "]",
+                }
+            )
         if "VocabularyName" in job_status["Settings"]:
-            job_data.append({"name": "Custom Vocabulary", "value": job_status["Settings"]["VocabularyName"]})
+            job_data.append(
+                {
+                    "name": "Custom Vocabulary",
+                    "value": job_status["Settings"]["VocabularyName"],
+                }
+            )
 
     # Finish with the confidence scores (if we have any)
     stats = generate_confidence_stats(speech_segments)
     if len(stats["accuracy"]) > 0:
-        job_data.append({"name": "Avg. Confidence", "value": str(round(statistics.mean(stats["accuracy"]), 2)) + "%"})
+        job_data.append(
+            {
+                "name": "Avg. Confidence",
+                "value": str(round(statistics.mean(stats["accuracy"]), 2)) + "%",
+            }
+        )
 
     # Place all of our job-summary fields into the Table, one row at a time
     for next_row in job_data:
@@ -610,35 +747,37 @@ def write(cli_arguments, speech_segments, job_status, summaries_detected):
     # Conversational Analytics (other column) if enabled
     # -- Caller sentiment graph
     # -- Talk time split
-    if cli_arguments.analyticsMode:
-        write_header_graphs(data, document, tempFiles)
+    # if cli_arguments.analyticsMode:
+    #     write_header_graphs(data, document, tempFiles)
 
     # At this point, if we have no transcript then we need to quickly exit
     if len(speech_segments) == 0:
         document.add_section(WD_SECTION.CONTINUOUS)
         section_ptr = document.sections[-1]._sectPr
-        cols = section_ptr.xpath('./w:cols')[0]
-        cols.set(qn('w:num'), '1')
-        write_custom_text_header(document, "This call had no audible speech to transcribe.")
+        cols = section_ptr.xpath("./w:cols")[0]
+        cols.set(qn("w:num"), "1")
+        write_custom_text_header(
+            document, "This call had no audible speech to transcribe."
+        )
     else:
         # Conversational Analytics (new Section)
         # -- Show speaker loudness graph, with sentiment, interrupts and non-talk time highlighted
         # -- Show a summary of any call analytics categories detected
         # -- Show a summary of any issues detected in the transcript
         # -- Process and display speaker sentiment by period
-        if cli_arguments.analyticsMode:
-            build_call_loudness_charts(document, speech_segments, data["ConversationCharacteristics"]["Interruptions"],
-                                       data["ConversationCharacteristics"]["NonTalkTime"],
-                                       data["ConversationCharacteristics"]["TalkTime"], tempFiles)
-            keyed_categories = write_detected_categories(document, data["Categories"]["MatchedDetails"])
-            write_analytics_sentiment(data, document)
+        # if cli_arguments.analyticsMode:
+        #     build_call_loudness_charts(document, speech_segments, data["ConversationCharacteristics"]["Interruptions"],
+        #                                data["ConversationCharacteristics"]["NonTalkTime"],
+        #                                data["ConversationCharacteristics"]["TalkTime"], tempFiles)
+        #     keyed_categories = write_detected_categories(document, data["Categories"]["MatchedDetails"])
+        #     write_analytics_sentiment(data, document)
 
-            # Write out any call summarisation data
-            if summaries_detected:
-                write_detected_summaries(document, speech_segments)
-        else:
-            # No analytics => no categories
-            keyed_categories = {}
+        #     # Write out any call summarisation data
+        #     if summaries_detected:
+        #         write_detected_summaries(document, speech_segments)
+        # else:
+        #     # No analytics => no categories
+        #     keyed_categories = {}
 
         # Process and display transcript by speaker segments (new section)
         # -- Conversation "turn" start time and duration
@@ -647,21 +786,21 @@ def write(cli_arguments, speech_segments, job_status, summaries_detected):
         # -- Transcribed text with (if available) Call Analytics markers
         document.add_section(WD_SECTION.CONTINUOUS)
         section_ptr = document.sections[-1]._sectPr
-        cols = section_ptr.xpath('./w:cols')[0]
-        cols.set(qn('w:num'), '1')
+        cols = section_ptr.xpath("./w:cols")[0]
+        cols.set(qn("w:num"), "1")
         write_custom_text_header(document, "Call Transcription")
         document.add_paragraph()  # Spacing
         write_small_header_text(document, "WORD CONFIDENCE: >= 90% in black, ", 0.9)
         write_small_header_text(document, ">= 50% in brown, ", 0.5)
         write_small_header_text(document, "< 50% in red", 0.49)
         table_cols = 4
-        if sentimentEnabled or cli_arguments.analyticsMode:
-            # Ensure that we add space for the sentiment column
-            table_cols += 1
-            content_col_offset = 0
-        else:
-            # Will need to shift the content column to the left, as Sentiment isn't there now
-            content_col_offset = -1
+        # if sentimentEnabled or cli_arguments.analyticsMode:
+        #     # Ensure that we add space for the sentiment column
+        #     table_cols += 1
+        #     content_col_offset = 0
+        # else:
+        # Will need to shift the content column to the left, as Sentiment isn't there now
+        content_col_offset = -1
         table = document.add_table(rows=1, cols=table_cols)
         table.style = document.styles[TABLE_STYLE_STANDARD]
         hdr_cells = table.rows[0].cells
@@ -671,25 +810,24 @@ def write(cli_arguments, speech_segments, job_status, summaries_detected):
         hdr_cells[COL_CONTENT + content_col_offset].text = "Transcription"
 
         # Based upon our segment list, write out the transcription table
-        write_transcribe_text(table, sentimentEnabled or cli_arguments.analyticsMode, cli_arguments.analyticsMode,
-                              speech_segments, keyed_categories)
+        write_transcribe_text(table, False, False, speech_segments, None)
         document.add_paragraph()
 
         # Formatting transcript table widths - we need to add sentiment
         # column if needed, and it and the content width accordingly
         widths = [Inches(0.8), Inches(0.5), Inches(0.5), 0]
-        if sentimentEnabled:
-            # Comprehend sentiment needs space for the icon and % score
-            widths.append(0)
-            widths[COL_CONTENT + + content_col_offset] = Inches(7)
-            widths[COL_SENTIMENT] = Inches(0.7)
-        elif cli_arguments.analyticsMode:
-            # Analytics sentiment just needs an icon
-            widths.append(0)
-            widths[COL_CONTENT + + content_col_offset] = Inches(7.4)
-            widths[COL_SENTIMENT] = Inches(0.3)
-        else:
-            widths[COL_CONTENT + content_col_offset] = Inches(7.7)
+        # if sentimentEnabled:
+        #     # Comprehend sentiment needs space for the icon and % score
+        #     widths.append(0)
+        #     widths[COL_CONTENT + + content_col_offset] = Inches(7)
+        #     widths[COL_SENTIMENT] = Inches(0.7)
+        # elif cli_arguments.analyticsMode:
+        #     # Analytics sentiment just needs an icon
+        #     widths.append(0)
+        #     widths[COL_CONTENT + + content_col_offset] = Inches(7.4)
+        #     widths[COL_SENTIMENT] = Inches(0.3)
+        # else:
+        widths[COL_CONTENT + content_col_offset] = Inches(7.7)
         for row in table.rows:
             for idx, width in enumerate(widths):
                 row.cells[idx].width = width
@@ -700,20 +838,19 @@ def write(cli_arguments, speech_segments, job_status, summaries_detected):
         # Display confidence count table, if requested (new section)
         # -- Summary table of confidence scores into "bins"
         # -- Scatter plot of confidence scores over the whole transcript
-        if cli_arguments.confidence == 'on':
-            write_confidence_scores(document, stats, tempFiles)
-            document.add_section(WD_SECTION.CONTINUOUS)
+        # if cli_arguments.confidence == 'on':
+        write_confidence_scores(document, stats, tempFiles)
+        document.add_section(WD_SECTION.CONTINUOUS)
 
         # Generate our raw data for the Comprehend sentiment graph (if requested)
         if sentimentEnabled:
             write_comprehend_sentiment(document, speech_segments, tempFiles)
 
-    # Save the whole document
-    document.save(cli_arguments.outputFile)
-
     # Now delete any local images that we created
     for filename in tempFiles:
         os.remove(filename)
+
+    return document
 
 
 def write_header_graphs(data, document, temp_files):
@@ -726,15 +863,20 @@ def write_header_graphs(data, document, temp_files):
     """
     characteristics = data["ConversationCharacteristics"]
     # Caller sentiment graph
-    fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(12.5 / 2.54, 8 / 2.54), gridspec_kw={'width_ratios': [4, 3]})
+    fig, ax = plt.subplots(
+        nrows=1,
+        ncols=2,
+        figsize=(12.5 / 2.54, 8 / 2.54),
+        gridspec_kw={"width_ratios": [4, 3]},
+    )
     period_sentiment = characteristics["Sentiment"]["SentimentByPeriod"]["QUARTER"]
     # Graph configuration
     ax[0].set_xlim(xmin=1, xmax=4)
     ax[0].set_ylim(ymax=5, ymin=-5)
     ax[0].yaxis.set_major_locator(ticker.MultipleLocator(5.0))
-    ax[0].spines['bottom'].set_position('zero')
-    ax[0].spines['top'].set_color('none')
-    ax[0].spines['right'].set_color('none')
+    ax[0].spines["bottom"].set_position("zero")
+    ax[0].spines["top"].set_color("none")
+    ax[0].spines["right"].set_color("none")
     ax[0].set_xticks([])
     ax[0].set_title("Customer sentiment", fontsize=10, fontweight="bold", pad="12.0")
     # Only draw the sentiment line if we actually have a Customer that talked
@@ -765,11 +907,15 @@ def write_header_graphs(data, document, temp_files):
     for quiet in non_talk:
         quiet_time += quiet["DurationMillis"]
     if "AGENT" in characteristics["TalkTime"]["DetailsByParticipant"]:
-        agent_talk_time = characteristics["TalkTime"]["DetailsByParticipant"]["AGENT"]["TotalTimeMillis"]
+        agent_talk_time = characteristics["TalkTime"]["DetailsByParticipant"]["AGENT"][
+            "TotalTimeMillis"
+        ]
     else:
         agent_talk_time = 0
     if "CUSTOMER" in characteristics["TalkTime"]["DetailsByParticipant"]:
-        caller_talk_time = characteristics["TalkTime"]["DetailsByParticipant"]["CUSTOMER"]["TotalTimeMillis"]
+        caller_talk_time = characteristics["TalkTime"]["DetailsByParticipant"][
+            "CUSTOMER"
+        ]["TotalTimeMillis"]
     else:
         caller_talk_time = 0
     total_time = agent_talk_time + caller_talk_time + quiet_time
@@ -786,20 +932,37 @@ def write_header_graphs(data, document, temp_files):
     ax[1].set_xticks([])
     ax[1].set_yticks([])
     ax[1].set_title("Talk time", fontsize=10, fontweight="bold", pad="10.0")
-    ax[1].spines['top'].set_color('none')
-    ax[1].spines['bottom'].set_color('none')
-    ax[1].spines['left'].set_color('none')
-    ax[1].spines['right'].set_color('none')
+    ax[1].spines["top"].set_color("none")
+    ax[1].spines["bottom"].set_color("none")
+    ax[1].spines["left"].set_color("none")
+    ax[1].spines["right"].set_color("none")
     # Now draw out the plot
     labels = ["time"]
     width = 1.0
-    ax[1].bar(labels, [quiet_time], width, label=ratio_format.format(ratio=quiet_ratio, speaker="Non-Talk"),
-              bottom=[agent_talk_time + caller_talk_time])
-    ax[1].bar(labels, [caller_talk_time], width, label=ratio_format.format(ratio=caller_ratio, speaker="Customer"),
-              bottom=[agent_talk_time])
-    ax[1].bar(labels, [agent_talk_time], width, label=ratio_format.format(ratio=agent_ratio, speaker="Agent"))
+    ax[1].bar(
+        labels,
+        [quiet_time],
+        width,
+        label=ratio_format.format(ratio=quiet_ratio, speaker="Non-Talk"),
+        bottom=[agent_talk_time + caller_talk_time],
+    )
+    ax[1].bar(
+        labels,
+        [caller_talk_time],
+        width,
+        label=ratio_format.format(ratio=caller_ratio, speaker="Customer"),
+        bottom=[agent_talk_time],
+    )
+    ax[1].bar(
+        labels,
+        [agent_talk_time],
+        width,
+        label=ratio_format.format(ratio=agent_ratio, speaker="Agent"),
+    )
     box = ax[1].get_position()
-    ax[1].set_position([box.x0, box.y0 + box.height * 0.25, box.width, box.height * 0.75])
+    ax[1].set_position(
+        [box.x0, box.y0 + box.height * 0.25, box.width, box.height * 0.75]
+    )
     ax[1].legend(loc="upper center", bbox_to_anchor=(0.5, -0.05), ncol=1)
     chart_file_name = "./" + "talk-time.png"
     plt.savefig(chart_file_name, facecolor="aliceblue")
@@ -815,14 +978,25 @@ def generate_confidence_stats(speech_segments):
     
     :param speech_segments: List of call speech segments 
     :return: Confidence and timestamp structures for graphing 
-    """""
+    """ ""
 
     # Stats dictionary
     stats = {
         "timestamps": [],
         "accuracy": [],
-        "9.8": 0, "9": 0, "8": 0, "7": 0, "6": 0, "5": 0, "4": 0, "3": 0, "2": 0, "1": 0, "0": 0,
-        "parsedWords": 0}
+        "9.8": 0,
+        "9": 0,
+        "8": 0,
+        "7": 0,
+        "6": 0,
+        "5": 0,
+        "4": 0,
+        "3": 0,
+        "2": 0,
+        "1": 0,
+        "0": 0,
+        "parsedWords": 0,
+    }
 
     # Confidence count - we need the average confidence score regardless
     for line in speech_segments:
@@ -880,8 +1054,8 @@ def write_confidence_scores(document, stats, temp_files):
     """
     document.add_section(WD_SECTION.CONTINUOUS)
     section_ptr = document.sections[-1]._sectPr
-    cols = section_ptr.xpath('./w:cols')[0]
-    cols.set(qn('w:num'), '2')
+    cols = section_ptr.xpath("./w:cols")[0]
+    cols.set(qn("w:num"), "2")
     write_custom_text_header(document, "Word Confidence Scores")
     # Start with the fixed headers
     table = document.add_table(rows=1, cols=3)
@@ -892,8 +1066,19 @@ def write_confidence_scores(document, stats, temp_files):
     hdr_cells[1].text = "Count"
     hdr_cells[2].text = "Percentage"
     parsedWords = stats["parsedWords"]
-    confidenceRanges = ["98% - 100%", "90% - 97%", "80% - 89%", "70% - 79%", "60% - 69%", "50% - 59%", "40% - 49%",
-                        "30% - 39%", "20% - 29%", "10% - 19%", "0% - 9%"]
+    confidenceRanges = [
+        "98% - 100%",
+        "90% - 97%",
+        "80% - 89%",
+        "70% - 79%",
+        "60% - 69%",
+        "50% - 59%",
+        "40% - 49%",
+        "30% - 39%",
+        "20% - 29%",
+        "10% - 19%",
+        "0% - 9%",
+    ]
     confidenceRangeStats = ["9.8", "9", "8", "7", "6", "5", "4", "3", "2", "1", "0"]
     # Add on each row
     shading_reqd = False
@@ -906,7 +1091,9 @@ def write_confidence_scores(document, stats, temp_files):
         # Add highlighting to the row if required
         if shading_reqd:
             for column in range(0, 3):
-                set_table_cell_background_colour(row_cells[column], ALTERNATE_ROW_COLOUR)
+                set_table_cell_background_colour(
+                    row_cells[column], ALTERNATE_ROW_COLOUR
+                )
         shading_reqd = not shading_reqd
 
     # Formatting transcript table widths, then move to the next column
@@ -917,8 +1104,11 @@ def write_confidence_scores(document, stats, temp_files):
     # Confidence of each word as scatter graph, and the mean as a line across
     fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(6, 4))
     ax.scatter(stats["timestamps"], stats["accuracy"])
-    ax.plot([stats["timestamps"][0], stats["timestamps"][-1]], [statistics.mean(stats["accuracy"]),
-                                                                statistics.mean(stats["accuracy"])], "r")
+    ax.plot(
+        [stats["timestamps"][0], stats["timestamps"][-1]],
+        [statistics.mean(stats["accuracy"]), statistics.mean(stats["accuracy"])],
+        "r",
+    )
     # Formatting
     ax.set_xlabel("Time (seconds)")
     ax.set_ylabel("Word Confidence (percent)")
@@ -961,8 +1151,8 @@ def write_detected_categories(document, category_list):
         # Start with a new single-column section
         document.add_section(WD_SECTION.CONTINUOUS)
         section_ptr = document.sections[-1]._sectPr
-        cols = section_ptr.xpath('./w:cols')[0]
-        cols.set(qn('w:num'), '1')
+        cols = section_ptr.xpath("./w:cols")[0]
+        cols.set(qn("w:num"), "1")
         write_custom_text_header(document, "Categories Detected")
 
         # Table header information
@@ -981,7 +1171,9 @@ def write_detected_categories(document, category_list):
 
             # Instances and timestamps for the category do not exist for "negative" categories
             if category_list[next_cat]["PointsOfInterest"] != []:
-                row_cells[1].text = str(len(category_list[next_cat]["PointsOfInterest"]))
+                row_cells[1].text = str(
+                    len(category_list[next_cat]["PointsOfInterest"])
+                )
                 row_cells[1].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
 
                 # Now go through each instance of it
@@ -1008,7 +1200,9 @@ def write_detected_categories(document, category_list):
             for idx, width in enumerate(widths):
                 row.cells[idx].width = width
                 if shading_reqd:
-                    set_table_cell_background_colour(row.cells[idx], ALTERNATE_ROW_COLOUR)
+                    set_table_cell_background_colour(
+                        row.cells[idx], ALTERNATE_ROW_COLOUR
+                    )
             shading_reqd = not shading_reqd
 
         # Finish with some spacing
@@ -1031,8 +1225,8 @@ def write_detected_summaries(document, speech_segments):
     # Start with a new single-column section
     document.add_section(WD_SECTION.CONTINUOUS)
     section_ptr = document.sections[-1]._sectPr
-    cols = section_ptr.xpath('./w:cols')[0]
-    cols.set(qn('w:num'), '1')
+    cols = section_ptr.xpath("./w:cols")[0]
+    cols.set(qn("w:num"), "1")
     table = document.add_table(rows=1, cols=3)
     table.style = document.styles[TABLE_STYLE_STANDARD]
     hdr_cells = table.rows[0].cells
@@ -1049,7 +1243,7 @@ def write_detected_summaries(document, speech_segments):
             for issue in summary_block:
                 new_summary = {"Speaker": turn.segmentSpeaker}
                 new_summary["Timestamp"] = turn.segmentStartTime
-                new_summary["Text"] = turn.segmentText[issue["Begin"]:issue["End"]]
+                new_summary["Text"] = turn.segmentText[issue["Begin"] : issue["End"]]
                 # May need a prefix or suffix for partial text
                 if issue["Begin"] > 0:
                     new_summary["Text"] = "..." + new_summary["Text"]
@@ -1087,7 +1281,9 @@ def write_detected_summaries(document, speech_segments):
                 # Add highlighting to the row if required; e.g. every 2nd row
                 if shading_reqd:
                     for column in range(0, 3):
-                        set_table_cell_background_colour(row_cells[column], ALTERNATE_ROW_COLOUR)
+                        set_table_cell_background_colour(
+                            row_cells[column], ALTERNATE_ROW_COLOUR
+                        )
                 shading_reqd = not shading_reqd
 
             # Formatting transcript table widths
@@ -1100,7 +1296,9 @@ def write_detected_summaries(document, speech_segments):
     document.add_paragraph()
 
 
-def build_call_loudness_charts(document, speech_segments, interruptions, quiet_time, talk_time, temp_files):
+def build_call_loudness_charts(
+    document, speech_segments, interruptions, quiet_time, talk_time, temp_files
+):
     """
     Creates the call loudness charts for each caller, which we also overlay sentiment on
     :param document: Word document structure to write the graphics into
@@ -1114,10 +1312,12 @@ def build_call_loudness_charts(document, speech_segments, interruptions, quiet_t
     # Start with a new single-column section
     document.add_section(WD_SECTION.CONTINUOUS)
     section_ptr = document.sections[-1]._sectPr
-    cols = section_ptr.xpath('./w:cols')[0]
-    cols.set(qn('w:num'), '1')
+    cols = section_ptr.xpath("./w:cols")[0]
+    cols.set(qn("w:num"), "1")
     document.add_paragraph()
-    write_custom_text_header(document, "Conversation Volume Levels with Sentiment and Interruptions")
+    write_custom_text_header(
+        document, "Conversation Volume Levels with Sentiment and Interruptions"
+    )
 
     # Initialise our loudness structures
     secsLoudAgent = []
@@ -1176,7 +1376,7 @@ def build_call_loudness_charts(document, speech_segments, interruptions, quiet_t
         for entry in interruptions["InterruptionsByInterrupter"][speaker]:
             start = int(entry["BeginOffsetMillis"] / 1000)
             end = int(entry["EndOffsetMillis"] / 1000)
-            for second in range(start, end+1):
+            for second in range(start, end + 1):
                 intSecs.append(second)
                 intDb.append(max_decibel_headroom)
     intSegments = {"Seconds": intSecs, "dB": intDb}
@@ -1197,16 +1397,56 @@ def build_call_loudness_charts(document, speech_segments, interruptions, quiet_t
     fig, ax = plt.subplots(nrows=plotRows, ncols=1, figsize=(12, 2.5 * plotRows))
     if haveAgent:
         if haveCaller:
-            build_single_loudness_chart(ax[0], agentLoudness, intSegments, quietSegments, speech_segments,
-                                        final_second, max_decibel_headroom, "Agent", False, True)
-            build_single_loudness_chart(ax[1], callerLoudness, intSegments, quietSegments, speech_segments,
-                                        final_second, max_decibel_headroom, "Customer", True, False)
+            build_single_loudness_chart(
+                ax[0],
+                agentLoudness,
+                intSegments,
+                quietSegments,
+                speech_segments,
+                final_second,
+                max_decibel_headroom,
+                "Agent",
+                False,
+                True,
+            )
+            build_single_loudness_chart(
+                ax[1],
+                callerLoudness,
+                intSegments,
+                quietSegments,
+                speech_segments,
+                final_second,
+                max_decibel_headroom,
+                "Customer",
+                True,
+                False,
+            )
         else:
-            build_single_loudness_chart(ax, agentLoudness, intSegments, quietSegments, speech_segments,
-                                        final_second, max_decibel_headroom, "Agent", True, True)
+            build_single_loudness_chart(
+                ax,
+                agentLoudness,
+                intSegments,
+                quietSegments,
+                speech_segments,
+                final_second,
+                max_decibel_headroom,
+                "Agent",
+                True,
+                True,
+            )
     elif haveCaller:
-        build_single_loudness_chart(ax, callerLoudness, intSegments, quietSegments, speech_segments,
-                                    final_second, max_decibel_headroom, "Customer", True, True)
+        build_single_loudness_chart(
+            ax,
+            callerLoudness,
+            intSegments,
+            quietSegments,
+            speech_segments,
+            final_second,
+            max_decibel_headroom,
+            "Customer",
+            True,
+            True,
+        )
 
     # Add the chart to our document
     chart_file_name = "./" + "volume.png"
@@ -1217,8 +1457,18 @@ def build_call_loudness_charts(document, speech_segments, interruptions, quiet_t
     plt.clf()
 
 
-def build_single_loudness_chart(axes, loudness, interrupts, quiet_time, speech_segments, xaxis_max, yaxis_max, caller,
-                                show_x_legend, show_chart_legend):
+def build_single_loudness_chart(
+    axes,
+    loudness,
+    interrupts,
+    quiet_time,
+    speech_segments,
+    xaxis_max,
+    yaxis_max,
+    caller,
+    show_x_legend,
+    show_chart_legend,
+):
     """
     Builds a single loundness/sentiment chart using the given data
 
@@ -1264,22 +1514,51 @@ def build_single_loudness_chart(axes, loudness, interrupts, quiet_time, speech_s
                 for score in segment.segmentLoudnessScores:
                     yneut[this_second] = 10
                     this_second += 1
-    axes.bar(x, ypos, label="Positive sentiment", color="limegreen", width=BAR_CHART_WIDTH)
-    axes.bar(x, yneg, label="Negative sentiment", color="orangered", width=BAR_CHART_WIDTH)
-    axes.bar(x, yneut, label="Neutral sentiment", color="cadetblue", width=BAR_CHART_WIDTH)
+    axes.bar(
+        x, ypos, label="Positive sentiment", color="limegreen", width=BAR_CHART_WIDTH
+    )
+    axes.bar(
+        x, yneg, label="Negative sentiment", color="orangered", width=BAR_CHART_WIDTH
+    )
+    axes.bar(
+        x, yneut, label="Neutral sentiment", color="cadetblue", width=BAR_CHART_WIDTH
+    )
 
     # Finish with the non-talk and interrupt overlays (if there are any)
     if len(quiet_time["Seconds"]) > 0:
-        axes.bar(quiet_time["Seconds"], quiet_time["dB"], label="Non-talk time", color="lightcyan", width=BAR_CHART_WIDTH)
+        axes.bar(
+            quiet_time["Seconds"],
+            quiet_time["dB"],
+            label="Non-talk time",
+            color="lightcyan",
+            width=BAR_CHART_WIDTH,
+        )
     if len(interrupts["Seconds"]) > 0:
-        axes.bar(interrupts["Seconds"], interrupts["dB"], label="Interruptions", color="goldenrod", width=BAR_CHART_WIDTH, alpha=0.5, bottom=10)
+        axes.bar(
+            interrupts["Seconds"],
+            interrupts["dB"],
+            label="Interruptions",
+            color="goldenrod",
+            width=BAR_CHART_WIDTH,
+            alpha=0.5,
+            bottom=10,
+        )
 
     # Only show the legend for the top graph if requested
     box = axes.get_position()
     axes.set_position([0.055, box.y0, box.width, box.height])
-    axes.text(5, yaxis_max-5, caller, style='normal', color='black', bbox={'facecolor': 'white', 'pad': 5})
+    axes.text(
+        5,
+        yaxis_max - 5,
+        caller,
+        style="normal",
+        color="black",
+        bbox={"facecolor": "white", "pad": 5},
+    )
     if show_chart_legend:
-        axes.legend(loc="upper right", bbox_to_anchor=(1.21, 1.0), ncol=1, borderaxespad=0)
+        axes.legend(
+            loc="upper right", bbox_to_anchor=(1.21, 1.0), ncol=1, borderaxespad=0
+        )
 
 
 def write_comprehend_sentiment(document, speech_segments, temp_files):
@@ -1293,8 +1572,8 @@ def write_comprehend_sentiment(document, speech_segments, temp_files):
     :return:
     """
     # Initialise our base structures
-    speaker0labels = ['ch_0', 'spk_0']
-    speaker1labels = ['ch_1', 'spk_1']
+    speaker0labels = ["ch_0", "spk_0"]
+    speaker1labels = ["ch_1", "spk_1"]
     speaker0timestamps = []
     speaker0data = []
     speaker1timestamps = []
@@ -1334,16 +1613,22 @@ def write_comprehend_sentiment(document, speech_segments, temp_files):
 
     # Create Speaker-0 graph
     plt.figure(figsize=(8, 5))
-    speaker0xnew = np.linspace(speaker0timestamps[0], speaker0timestamps[-1],
-                               int((speaker0timestamps[-1] - speaker0timestamps[0]) + 1.0))
+    speaker0xnew = np.linspace(
+        speaker0timestamps[0],
+        speaker0timestamps[-1],
+        int((speaker0timestamps[-1] - speaker0timestamps[0]) + 1.0),
+    )
     speaker0spl = make_interp_spline(speaker0timestamps, speaker0data, k=speaker0k)
     speaker0powerSmooth = speaker0spl(speaker0xnew)
     plt.plot(speaker0timestamps, speaker0data, "ro")
     plt.plot(speaker0xnew, speaker0powerSmooth, "r", label="Speaker 1")
 
     # Create Speaker-1 graph
-    speaker1xnew = np.linspace(speaker1timestamps[0], speaker1timestamps[-1],
-                               int((speaker1timestamps[-1] - speaker1timestamps[0]) + 1.0))
+    speaker1xnew = np.linspace(
+        speaker1timestamps[0],
+        speaker1timestamps[-1],
+        int((speaker1timestamps[-1] - speaker1timestamps[0]) + 1.0),
+    )
     speaker1spl = make_interp_spline(speaker1timestamps, speaker1data, k=speaker1k)
     speaker1powerSmooth = speaker1spl(speaker1xnew)
     plt.plot(speaker1timestamps, speaker1data, "bo")
@@ -1354,8 +1639,8 @@ def write_comprehend_sentiment(document, speech_segments, temp_files):
     plt.xlabel("Time (seconds)")
     plt.axis([0, max(speaker0timestamps[-1], speaker1timestamps[-1]), -1.5, 1.5])
     plt.legend()
-    plt.axhline(y=0, color='k')
-    plt.axvline(x=0, color='k')
+    plt.axhline(y=0, color="k")
+    plt.axvline(x=0, color="k")
     plt.grid(True)
     plt.xticks(np.arange(0, max(speaker0timestamps[-1], speaker1timestamps[-1]), 60))
     plt.yticks(np.arange(-1, 1.01, 0.25))
@@ -1377,7 +1662,7 @@ def set_table_cell_background_colour(cell, rgb_hex):
     :param cell: Table cell to be changed
     :param rgb_hex: RBG hex string for the background color
     """
-    parsed_xml = parse_xml(r'<w:shd {0} w:fill="{1}"/>'.format(nsdecls('w'), rgb_hex))
+    parsed_xml = parse_xml(r'<w:shd {0} w:fill="{1}"/>'.format(nsdecls("w"), rgb_hex))
     cell._tc.get_or_add_tcPr().append(parsed_xml)
 
 
@@ -1393,8 +1678,8 @@ def write_analytics_sentiment(data, document):
     # Start with a new 2-column section
     document.add_section(WD_SECTION.CONTINUOUS)
     section_ptr = document.sections[-1]._sectPr
-    cols = section_ptr.xpath('./w:cols')[0]
-    cols.set(qn('w:num'), '2')
+    cols = section_ptr.xpath("./w:cols")[0]
+    cols.set(qn("w:num"), "2")
 
     # Table 1 - Period sentiment per speaker
     write_custom_text_header(document, "Call Sentiment per Quarter of the call")
@@ -1410,7 +1695,9 @@ def write_analytics_sentiment(data, document):
         hdr_cells[col].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
 
     # Work through our sentiment period data
-    period_sentiment = data["ConversationCharacteristics"]["Sentiment"]["SentimentByPeriod"]["QUARTER"]
+    period_sentiment = data["ConversationCharacteristics"]["Sentiment"][
+        "SentimentByPeriod"
+    ]["QUARTER"]
     for caller in period_sentiment:
         # First column is the speaker
         row_cells = table.add_row().cells
@@ -1426,7 +1713,9 @@ def write_analytics_sentiment(data, document):
 
     # Put in a short table footer, then move to the next column
     document.add_paragraph()  # Spacing
-    write_small_header_text(document, "SENTIMENT: Range from +5 (Positive) to -5 (Negative)", 0.9)
+    write_small_header_text(
+        document, "SENTIMENT: Range from +5 (Positive) to -5 (Negative)", 0.9
+    )
 
     # Table 2 - Overall speaker sentiment
     write_custom_text_header(document, "Overall Speaker Sentiment")
@@ -1436,7 +1725,9 @@ def write_analytics_sentiment(data, document):
     hdr_cells[0].text = "Speaker"
     hdr_cells[1].text = "Sentiment"
     hdr_cells[1].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
-    speaker_sentiment = data["ConversationCharacteristics"]["Sentiment"]["OverallSentiment"]
+    speaker_sentiment = data["ConversationCharacteristics"]["Sentiment"][
+        "OverallSentiment"
+    ]
     for caller in speaker_sentiment:
         row_cells = table.add_row().cells
         row_cells[0].text = caller.title()
@@ -1453,14 +1744,13 @@ def write_analytics_sentiment(data, document):
     document.add_paragraph()  # Spacing
 
 
-def create_turn_by_turn_segments(data, cli_args):
+def create_turn_by_turn_segments(data):
     """
     This creates a list of per-turn speech segments based upon the transcript data.  It has to work in three
     slightly different ways, as each operational mode from Transcribe outputs slightly different JSON structures.
     These modes are (a) Speaker-separated audio, (b) Channel-separated audio, and (c) Call Analytics audio
 
     :param data: JSON result data from Transcribe
-    :param cli_args: CLI arguments used for this processing run
     :return: List of transcription speech segments
     :return: Flag to indicate the presence of call summary data
     """
@@ -1469,15 +1759,16 @@ def create_turn_by_turn_segments(data, cli_args):
 
     # Decide on our operational mode - it's in the job-status or, if necessary, infer it from the data file
     # STANDARD => speaker separated, channel separated;  ANALYTICS => different format
-    isAnalyticsMode = cli_args.analyticsMode
-    if isAnalyticsMode:
+    # change this if we move into analytics mode in the future
+    isAnalyticsMode = True
+    # if isAnalyticsMode:
         # We know if its analytics mode, as it's defined in the job-status and file
-        isChannelMode = False
-        isSpeakerMode = False
-    else:
-        # Channel/Speaker-mode only relevant if not using analytics
-        isChannelMode = "channel_labels" in data["results"]
-        isSpeakerMode = not isChannelMode
+    isChannelMode = False
+    isSpeakerMode = False
+    # else:
+    #     # Channel/Speaker-mode only relevant if not using analytics
+    #     isChannelMode = "channel_labels" in data["results"]
+    #     isSpeakerMode = not isChannelMode
 
     lastSpeaker = ""
     lastEndTime = 0.0
@@ -1489,7 +1780,6 @@ def create_turn_by_turn_segments(data, cli_args):
     if isSpeakerMode:
         # A segment is a blob of pronunciation and punctuation by an individual speaker
         for segment in data["results"]["speaker_labels"]["segments"]:
-
             # If there is content in the segment then pick out the time and speaker
             if len(segment["items"]) > 0:
                 # Pick out our next data
@@ -1498,7 +1788,9 @@ def create_turn_by_turn_segments(data, cli_args):
                 nextSpeaker = str(segment["speaker_label"])
 
                 # If we've changed speaker, or there's a gap, create a new row
-                if (nextSpeaker != lastSpeaker) or ((nextStartTime - lastEndTime) >= START_NEW_SEGMENT_DELAY):
+                if (nextSpeaker != lastSpeaker) or (
+                    (nextStartTime - lastEndTime) >= START_NEW_SEGMENT_DELAY
+                ):
                     nextSpeechSegment = SpeechSegment()
                     speechSegmentList.append(nextSpeechSegment)
                     nextSpeechSegment.segmentStartTime = nextStartTime
@@ -1514,12 +1806,25 @@ def create_turn_by_turn_segments(data, cli_args):
 
                 # For each word in the segment...
                 for word in segment["items"]:
-
                     # Get the word with the highest confidence
-                    pronunciations = list(filter(lambda x: x["type"] == "pronunciation", data["results"]["items"]))
-                    word_result = list(filter(lambda x: x["start_time"] == word["start_time"] and x["end_time"] == word["end_time"], pronunciations))
+                    pronunciations = list(
+                        filter(
+                            lambda x: x["type"] == "pronunciation",
+                            data["results"]["items"],
+                        )
+                    )
+                    word_result = list(
+                        filter(
+                            lambda x: x["start_time"] == word["start_time"]
+                            and x["end_time"] == word["end_time"],
+                            pronunciations,
+                        )
+                    )
                     try:
-                        result = sorted(word_result[-1]["alternatives"], key=lambda x: x["confidence"])[-1]
+                        result = sorted(
+                            word_result[-1]["alternatives"],
+                            key=lambda x: x["confidence"],
+                        )[-1]
                         confidence = float(result["confidence"])
                     except:
                         result = word_result[-1]["alternatives"][0]
@@ -1534,7 +1839,9 @@ def create_turn_by_turn_segments(data, cli_args):
 
                     # If the next item is punctuation, add it to the current word
                     try:
-                        word_result_index = data["results"]["items"].index(word_result[0])
+                        word_result_index = data["results"]["items"].index(
+                            word_result[0]
+                        )
                         next_item = data["results"]["items"][word_result_index + 1]
                         if next_item["type"] == "punctuation":
                             wordToAdd += next_item["alternatives"][0]["content"]
@@ -1542,20 +1849,21 @@ def create_turn_by_turn_segments(data, cli_args):
                         pass
 
                     nextSpeechSegment.segmentText += wordToAdd
-                    confidenceList.append({"text": wordToAdd,
-                                           "confidence": confidence,
-                                           "start_time": float(word["start_time"]),
-                                           "end_time": float(word["end_time"])})
+                    confidenceList.append(
+                        {
+                            "text": wordToAdd,
+                            "confidence": confidence,
+                            "start_time": float(word["start_time"]),
+                            "end_time": float(word["end_time"]),
+                        }
+                    )
 
     # Process a Channel-separated non-analytics file
     elif isChannelMode:
-
         # A channel contains all pronunciation and punctuation from a single speaker
         for channel in data["results"]["channel_labels"]["channels"]:
-
             # If there is content in the channel then start processing it
             if len(channel["items"]) > 0:
-
                 # We have the same speaker all the way through this channel
                 nextSpeaker = str(channel["channel_label"])
                 for word in channel["items"]:
@@ -1566,8 +1874,10 @@ def create_turn_by_turn_segments(data, cli_args):
 
                         # If we've changed speaker, or we haven't and the
                         # pause is very small, then start a new text segment
-                        if (nextSpeaker != lastSpeaker) or \
-                                ((nextSpeaker == lastSpeaker) and ((nextStartTime - lastEndTime) > 0.1)):
+                        if (nextSpeaker != lastSpeaker) or (
+                            (nextSpeaker == lastSpeaker)
+                            and ((nextStartTime - lastEndTime) > 0.1)
+                        ):
                             nextSpeechSegment = SpeechSegment()
                             speechSegmentList.append(nextSpeechSegment)
                             nextSpeechSegment.segmentStartTime = nextStartTime
@@ -1582,10 +1892,23 @@ def create_turn_by_turn_segments(data, cli_args):
                         lastEndTime = nextEndTime
 
                         # Get the word with the highest confidence
-                        pronunciations = list(filter(lambda x: x["type"] == "pronunciation", channel["items"]))
-                        word_result = list(filter(lambda x: x["start_time"] == word["start_time"] and x["end_time"] == word["end_time"], pronunciations))
+                        pronunciations = list(
+                            filter(
+                                lambda x: x["type"] == "pronunciation", channel["items"]
+                            )
+                        )
+                        word_result = list(
+                            filter(
+                                lambda x: x["start_time"] == word["start_time"]
+                                and x["end_time"] == word["end_time"],
+                                pronunciations,
+                            )
+                        )
                         try:
-                            result = sorted(word_result[-1]["alternatives"], key=lambda x: x["confidence"])[-1]
+                            result = sorted(
+                                word_result[-1]["alternatives"],
+                                key=lambda x: x["confidence"],
+                            )[-1]
                             confidence = float(result["confidence"])
                         except:
                             result = word_result[-1]["alternatives"][0]
@@ -1593,7 +1916,7 @@ def create_turn_by_turn_segments(data, cli_args):
                         # result = sorted(word_result[-1]["alternatives"], key=lambda x: x["confidence"])[-1]
 
                         # Write the word, and a leading space if this isn't the start of the segment
-                        if (skipLeadingSpace):
+                        if skipLeadingSpace:
                             skipLeadingSpace = False
                             wordToAdd = result["content"]
                         else:
@@ -1610,29 +1933,35 @@ def create_turn_by_turn_segments(data, cli_args):
 
                         # Finally, add the word and confidence to this segment's list
                         nextSpeechSegment.segmentText += wordToAdd
-                        confidenceList.append({"text": wordToAdd,
-                                               "confidence": confidence,
-                                               "start_time": float(word["start_time"]),
-                                               "end_time": float(word["end_time"])})
+                        confidenceList.append(
+                            {
+                                "text": wordToAdd,
+                                "confidence": confidence,
+                                "start_time": float(word["start_time"]),
+                                "end_time": float(word["end_time"]),
+                            }
+                        )
 
         # Sort the segments, as they are in channel-order and not speaker-order, then
         # merge together turns from the same speaker that are very close together
-        speechSegmentList = sorted(speechSegmentList, key=lambda segment: segment.segmentStartTime)
+        speechSegmentList = sorted(
+            speechSegmentList, key=lambda segment: segment.segmentStartTime
+        )
         speechSegmentList = merge_speaker_segments(speechSegmentList)
 
     # Process a Call Analytics file
     elif isAnalyticsMode:
-
         # Lookup shortcuts
         interrupts = data["ConversationCharacteristics"]["Interruptions"]
 
         # Each turn has already been processed by Transcribe, so the outputs are in order
         for turn in data["Transcript"]:
-
             # Setup the next speaker block
             nextSpeechSegment = SpeechSegment()
             speechSegmentList.append(nextSpeechSegment)
-            nextSpeechSegment.segmentStartTime = float(turn["BeginOffsetMillis"]) / 1000.0
+            nextSpeechSegment.segmentStartTime = (
+                float(turn["BeginOffsetMillis"]) / 1000.0
+            )
             nextSpeechSegment.segmentEndTime = float(turn["EndOffsetMillis"]) / 1000.0
             nextSpeechSegment.segmentSpeaker = turn["ParticipantRole"].title()
             nextSpeechSegment.segmentText = turn["Content"]
@@ -1643,7 +1972,9 @@ def create_turn_by_turn_segments(data, cli_args):
 
             # Check if this block is within an interruption block for the speaker
             if turn["ParticipantRole"] in interrupts["InterruptionsByInterrupter"]:
-                for entry in interrupts["InterruptionsByInterrupter"][turn["ParticipantRole"]]:
+                for entry in interrupts["InterruptionsByInterrupter"][
+                    turn["ParticipantRole"]
+                ]:
                     if turn["BeginOffsetMillis"] == entry["BeginOffsetMillis"]:
                         nextSpeechSegment.segmentInterruption = True
 
@@ -1652,21 +1983,27 @@ def create_turn_by_turn_segments(data, cli_args):
                 summaries_detected = True
                 for issue in turn["IssuesDetected"]:
                     # Grab the transcript offsets for the issue text
-                    nextSpeechSegment.segmentIssuesDetected.append(issue["CharacterOffsets"])
+                    nextSpeechSegment.segmentIssuesDetected.append(
+                        issue["CharacterOffsets"]
+                    )
 
             # Record any actions detected
             if "ActionItemsDetected" in turn:
                 summaries_detected = True
                 for action in turn["ActionItemsDetected"]:
                     # Grab the transcript offsets for the issue text
-                    nextSpeechSegment.segmentActionItemsDetected.append(action["CharacterOffsets"])
+                    nextSpeechSegment.segmentActionItemsDetected.append(
+                        action["CharacterOffsets"]
+                    )
 
             # Record any outcomes detected
             if "OutcomesDetected" in turn:
                 summaries_detected = True
                 for outcome in turn["OutcomesDetected"]:
                     # Grab the transcript offsets for the issue text
-                    nextSpeechSegment.segmentOutcomesDetected.append(outcome["CharacterOffsets"])
+                    nextSpeechSegment.segmentOutcomesDetected.append(
+                        outcome["CharacterOffsets"]
+                    )
 
             # Process each word in this turn
             for word in turn["Items"]:
@@ -1686,10 +2023,14 @@ def create_turn_by_turn_segments(data, cli_args):
                         conf_score = float(word["Redaction"][0]["Confidence"])
 
                     # Add the word and confidence to this segment's list
-                    confidenceList.append({"text": wordToAdd,
-                                           "confidence": conf_score,
-                                           "start_time": float(word["BeginOffsetMillis"]) / 1000.0,
-                                           "end_time": float(word["BeginOffsetMillis"] / 1000.0)})
+                    confidenceList.append(
+                        {
+                            "text": wordToAdd,
+                            "confidence": conf_score,
+                            "start_time": float(word["BeginOffsetMillis"]) / 1000.0,
+                            "end_time": float(word["BeginOffsetMillis"] / 1000.0),
+                        }
+                    )
                 else:
                     # Punctuation, needs to be added to the previous word
                     last_word = nextSpeechSegment.segmentConfidence[-1]
@@ -1723,137 +2064,169 @@ def load_transcribe_job_status(cli_args):
 
     try:
         # Extract the standard Transcribe job status
-        job_status = transcribe_client.get_transcription_job(TranscriptionJobName=cli_args.inputJob)["TranscriptionJob"]
+        job_status = transcribe_client.get_transcription_job(
+            TranscriptionJobName=cli_args.inputJob
+        )["TranscriptionJob"]
         cli_args.analyticsMode = False
         completed = job_status["TranscriptionJobStatus"]
     except:
         # That job doesn't exist, but it may have been an analytics job
-        job_status = transcribe_client.get_call_analytics_job(CallAnalyticsJobName=cli_args.inputJob)["CallAnalyticsJob"]
+        job_status = transcribe_client.get_call_analytics_job(
+            CallAnalyticsJobName=cli_args.inputJob
+        )["CallAnalyticsJob"]
         cli_args.analyticsMode = True
         completed = job_status["CallAnalyticsJobStatus"]
 
     return job_status, completed
 
 
-def generate_document():
+def generate_document(event_body):
     """
-    Entrypoint for the command-line interface.
+    Entrypoint for the main Lambda function handler.
     """
+
+    # Extract the Transcribe job ID from the SQS message
+    job_id = event_body["JobName"]
+
     # Parameter extraction
-    cli_parser = argparse.ArgumentParser(prog='ts-to-word',
-                                         description='Turn an Amazon Transcribe job output into an MS Word document')
-    source_group = cli_parser.add_mutually_exclusive_group(required=True)
-    source_group.add_argument('--inputFile', metavar='filename', type=str, help='File containing Transcribe JSON output')
-    source_group.add_argument('--inputJob', metavar='job-id', type=str, help='Transcribe job identifier')
-    cli_parser.add_argument('--outputFile', metavar='filename', type=str, help='Output file to hold MS Word document')
-    cli_parser.add_argument('--sentiment', choices=['on', 'off'], default='off', help='Enables sentiment analysis on each conversational turn via Amazon Comprehend')
-    cli_parser.add_argument('--confidence', choices=['on', 'off'], default='off', help='Displays information on word confidence scores throughout the transcript')
-    cli_parser.add_argument('--keep', action='store_true', help='Keeps any downloaded job transcript JSON file')
-    cli_args = cli_parser.parse_args()
+    # cli_parser = argparse.ArgumentParser(prog='ts-to-word',
+    #                                      description='Turn an Amazon Transcribe job output into an MS Word document')
+    # source_group = cli_parser.add_mutually_exclusive_group(required=True)
+    # source_group.add_argument('--inputFile', metavar='filename', type=str, help='File containing Transcribe JSON output')
+    # source_group.add_argument('--inputJob', metavar='job-id', type=str, help='Transcribe job identifier')
+    # cli_parser.add_argument('--outputFile', metavar='filename', type=str, help='Output file to hold MS Word document')
+    # cli_parser.add_argument('--sentiment', choices=['on', 'off'], default='off', help='Enables sentiment analysis on each conversational turn via Amazon Comprehend')
+    # cli_parser.add_argument('--confidence', choices=['on', 'off'], default='off', help='Displays information on word confidence scores throughout the transcript')
+    # cli_parser.add_argument('--keep', action='store_true', help='Keeps any downloaded job transcript JSON file')
+    # cli_args = cli_parser.parse_args()
 
     # If we're downloading a job transcript then validate that we have a job, then download it
-    if cli_args.inputJob is not None:
-        try:
-            job_info, job_status = load_transcribe_job_status(cli_args)
-        except:
-            # Exception, most-likely due to the job not existing
-            print("NOT FOUND: Requested job-id '{0}' does not exist.".format(cli_args.inputJob))
-            exit(-1)
+    # if cli_args.inputJob is not None:
+    #     try:
+    #         job_info, job_status = load_transcribe_job_status(cli_args)
+    #     except:
+    #         # Exception, most-likely due to the job not existing
+    #         print("NOT FOUND: Requested job-id '{0}' does not exist.".format(cli_args.inputJob))
+    #         exit(-1)
 
-        # If the job hasn't completed then there is no transcript available
-        if job_status == "FAILED":
-            print("{0}: Requested job-id '{1}' has failed to complete".format(job_status, cli_args.inputJob))
-            exit(-1)
-        elif job_status != "COMPLETED":
-            print("{0}: Requested job-id '{1}' has not yet completed.".format(job_status, cli_args.inputJob))
-            exit(-1)
+    #     # If the job hasn't completed then there is no transcript available
+    #     if job_status == "FAILED":
+    #         print("{0}: Requested job-id '{1}' has failed to complete".format(job_status, cli_args.inputJob))
+    #         exit(-1)
+    #     elif job_status != "COMPLETED":
+    #         print("{0}: Requested job-id '{1}' has not yet completed.".format(job_status, cli_args.inputJob))
+    #         exit(-1)
 
-        # The transcript is available from a signed URL - get the redacted if it exists, otherwise the non-redacted
-        if "RedactedTranscriptFileUri" in job_info["Transcript"]:
-            # Get the redacted transcript
-            download_url = job_info["Transcript"]["RedactedTranscriptFileUri"]
-        else:
-            # Gen the non-redacted transcript
-            download_url = job_info["Transcript"]["TranscriptFileUri"]
-        cli_args.inputFile = cli_args.inputJob + "-asrOutput.json"
+    #     # The transcript is available from a signed URL - get the redacted if it exists, otherwise the non-redacted
+    #     if "RedactedTranscriptFileUri" in job_info["Transcript"]:
+    #         # Get the redacted transcript
+    #         download_url = job_info["Transcript"]["RedactedTranscriptFileUri"]
+    #     else:
+    #         # Gen the non-redacted transcript
+    #         download_url = job_info["Transcript"]["TranscriptFileUri"]
+    #     cli_args.inputFile = cli_args.inputJob + "-asrOutput.json"
 
-        # Try and download the JSON - this will fail if the job delivered it to
-        # an S3 bucket, as in that case the service no longer has the results
-        try:
-            urllib.request.urlretrieve(download_url, cli_args.inputFile)
-        except:
-            print("UNAVAILABLE: Transcript for job-id '{0}' is not available for download.".format(cli_args.inputJob))
-            exit(-1)
+    #     # Try and download the JSON - this will fail if the job delivered it to
+    #     # an S3 bucket, as in that case the service no longer has the results
+    #     try:
+    #         urllib.request.urlretrieve(download_url, cli_args.inputFile)
+    #     except:
+    #         print("UNAVAILABLE: Transcript for job-id '{0}' is not available for download.".format(cli_args.inputJob))
+    #         exit(-1)
 
-        # Set our output filename if one wasn't supplied
-        if cli_args.outputFile is None:
-            cli_args.outputFile = cli_args.inputJob + ".docx"
+    #     # Set our output filename if one wasn't supplied
+    #     if cli_args.outputFile is None:
+    #         cli_args.outputFile = cli_args.inputJob + ".docx"
 
     # Load in the JSON file for processing
-    json_filepath = Path(cli_args.inputFile)
-    if json_filepath.is_file():
-        json_data = json.load(open(json_filepath.absolute(), "r", encoding="utf-8"))
-    else:
-        print("FAIL: Specified JSON file '{0}' does not exists.".format(cli_args.inputFile))
-        exit(-1)
+    json_data = event_body
+    # if json_filepath.is_file():
+    #     json_data = json.load(open(json_filepath.absolute(), "r", encoding="utf-8"))
+    # else:
+    #     print("FAIL: Specified JSON file '{0}' does not exists.".format(cli_args.inputFile))
+    #     exit(-1)
 
     # If this is a file-input run then try and load the job status (which may no longer exist)
-    if cli_args.inputJob is None:
-        try:
-            # Ensure we don't delete our JSON later, reset our output file to match the job-name if it's currently blank
-            cli_args.keep = True
-            if cli_args.outputFile is None:
-                if "results" in json_data:
-                    cli_args.outputFile = json_data["jobName"] + ".docx"
-                    cli_args.inputJob = json_data["jobName"]
-                else:
-                    cli_args.outputFile = json_data["JobName"] + ".docx"
-                    cli_args.inputJob = json_data["JobName"]
-            job_info, job_status = load_transcribe_job_status(cli_args)
-        except:
-            # No job status - need to quickly work out what mode we're in,
-            # as standard job results look different from analytical ones
-            cli_args.inputJob = None
-            cli_args.outputFile = cli_args.inputFile + ".docx"
-            cli_args.analyticsMode = "results" not in json_data
-            job_info = None
+    # if cli_args.inputJob is None:
+    #     try:
+    #         # Ensure we don't delete our JSON later, reset our output file to match the job-name if it's currently blank
+    #         cli_args.keep = True
+    #         if cli_args.outputFile is None:
+    #             if "results" in json_data:
+    #                 cli_args.outputFile = json_data["jobName"] + ".docx"
+    #                 cli_args.inputJob = json_data["jobName"]
+    #             else:
+    #                 cli_args.outputFile = json_data["JobName"] + ".docx"
+    #                 cli_args.inputJob = json_data["JobName"]
+    #         job_info, job_status = load_transcribe_job_status(cli_args)
+    #     except:
+    #         # No job status - need to quickly work out what mode we're in,
+    #         # as standard job results look different from analytical ones
+    #         cli_args.inputJob = None
+    #         cli_args.outputFile = cli_args.inputFile + ".docx"
+    #         cli_args.analyticsMode = "results" not in json_data
+    job_info = None
 
     # Disable Comprehend's sentiment if we're in Analytics mode
-    if cli_args.analyticsMode:
-        cli_args.sentiment = 'off'
+    # if cli_args.analyticsMode:
+    #     cli_args.sentiment = 'off'
 
     # Generate the core transcript
     start = perf_counter()
-    speech_segments, summaries_detected = create_turn_by_turn_segments(json_data, cli_args)
+    speech_segments, summaries_detected = create_turn_by_turn_segments(json_data)
 
     # Inject Comprehend-based sentiments into the segment list if required
-    if cli_args.sentiment == 'on':
-        # Work out the mapped language code, as Transcribe supports more languages than Comprehend.  Just
-        # see if the Transcribe language code starts with any of those that Comprehend supports and use that
-        sentiment_lang_code = None
-        for comprehend_code in SENTIMENT_LANGUAGES:
-            if job_info["LanguageCode"].startswith(comprehend_code):
-                sentiment_lang_code = comprehend_code
-                break
+    # if cli_args.sentiment == 'on':
+    #     # Work out the mapped language code, as Transcribe supports more languages than Comprehend.  Just
+    #     # see if the Transcribe language code starts with any of those that Comprehend supports and use that
+    #     sentiment_lang_code = None
+    #     for comprehend_code in SENTIMENT_LANGUAGES:
+    #         if job_info["LanguageCode"].startswith(comprehend_code):
+    #             sentiment_lang_code = comprehend_code
+    #             break
 
-        # If we have no match then we cannot perform sentiment analysis
-        if sentiment_lang_code is not None:
-            generate_sentiment(speech_segments, sentiment_lang_code)
-        else:
-            cli_args.sentiment = 'off'
+    #     # If we have no match then we cannot perform sentiment analysis
+    #     if sentiment_lang_code is not None:
+    #         generate_sentiment(speech_segments, sentiment_lang_code)
+    #     else:
+    #         cli_args.sentiment = 'off'
 
     # Write out our file and the performance statistics
-    write(cli_args, speech_segments, job_info, summaries_detected)
+    document = write(json_data, speech_segments, job_info, summaries_detected, job_id)
     finish = perf_counter()
     duration = round(finish - start, 2)
-    print(f"> Transcript {cli_args.outputFile} writen in {duration} seconds.")
+    print(f"> Transcript for job {job_id} writen in {duration} seconds.")
 
-    # Finally, remove any temporary downloaded JSON results file
-    if (cli_args.inputJob is not None) and (not cli_args.keep):
-        os.remove(cli_args.inputFile)
+    return document
+
 
 # Main entrypoint
 def handler(event, context):
-    print("Event:", event)
-    print("Context:", context)
-    generate_document()
+    # Get the S3 object key from the event
+    for record in event["Records"]:
+        # Parse the SQS message body
+        body = json.loads(record["body"])
+
+        # Extract the S3 bucket name and object key from the SQS message
+        # TODO make sure you have only 1 record in the SQS message
+        bucket_name = body["Records"][0]["s3"]["bucket"]["name"]
+        object_key = body["Records"][0]["s3"]["object"]["key"]
+
+        # Download the file from S3
+        s3_client = boto3.client("s3", region_name="us-east-1")
+        s3_client.download_file(bucket_name, object_key, "/tmp/test_transcript.json")
+
+        # Load the file into a Python dictionary
+        with open("/tmp/test_transcript.json", "r") as file:
+            json_transcript = json.load(file)
+
+        # Call the generate_document function with the SQS event
+        document = generate_document(json_transcript)
+        s3_client.put_object(
+            Bucket=os.getenv("OutputBucketPrefix"),
+            Key=f"{object_key}.docx",
+            Body=document,
+        )
+
+        # Finally, remove any temporary downloaded JSON results file
+        os.remove("/tmp/test_transcript.json")
