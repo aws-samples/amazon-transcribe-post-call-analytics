@@ -12,6 +12,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - #125 Updated the pca-aws-sf-bulk-queue-space.py function to correctly count jobs based on IN_PROGRESS as well as QUEUED
 - #224 Updated the pca-aws-sf-bulk-queue-space.py function to correctly count both Transcribe and Transcribe Call Analytics (vs just Transcribe).
 
+## [0.7.5] - 2024-01-17
+### Added
+- Support for larger prompts by storing LLMPromptSummaryTemplate in S3 rather than SSM. By default, the CF templtae will migrate existing SSM prompts to DynamoDB.
+
+### Fixed
+- #125 Updated the pca-aws-sf-bulk-queue-space.py function to correctly count jobs based on IN_PROGRESS as well as QUEUED
+- #224 Updated the pca-aws-sf-bulk-queue-space.py function to correctly count both Transcribe and Transcribe Call Analytics (vs just Transcribe).
+
 ## [0.7.4] - 2023-12-15
 ### Added
 - Drag/drop upload from call list page.
@@ -158,7 +166,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial release
 
-[Unreleased]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/compare/v0.7.3...develop
+[Unreleased]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/compare/v0.7.5...develop
+[0.7.5]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.7.5
+[0.7.4]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.7.4
 [0.7.3]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.7.3
 [0.7.2]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.7.2
 [0.7.1]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.7.1
