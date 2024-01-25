@@ -964,7 +964,7 @@ def write_header_graphs(data, document, temp_files):
         [box.x0, box.y0 + box.height * 0.25, box.width, box.height * 0.75]
     )
     ax[1].legend(loc="upper center", bbox_to_anchor=(0.5, -0.05), ncol=1)
-    chart_file_name = "./" + "talk-time.png"
+    chart_file_name = "/tmp/" + "talk-time.png"
     plt.savefig(chart_file_name, facecolor="aliceblue")
     temp_files.append(chart_file_name)
     document.add_picture(chart_file_name, width=Cm(7.5))
@@ -1116,7 +1116,7 @@ def write_confidence_scores(document, stats, temp_files):
     fig.suptitle("Word Confidence During Transcription", fontsize=11, fontweight="bold")
     ax.legend(["Word Confidence Mean", "Individual words"], loc="lower center")
     # Write out the chart
-    chart_file_name = "./" + "chart.png"
+    chart_file_name = "/tmp/" + "chart.png"
     plt.savefig(chart_file_name, facecolor="aliceblue")
     temp_files.append(chart_file_name)
     plt.clf()
@@ -1449,7 +1449,7 @@ def build_call_loudness_charts(
         )
 
     # Add the chart to our document
-    chart_file_name = "./" + "volume.png"
+    chart_file_name = "/tmp/" + "volume.png"
     fig.savefig(chart_file_name, facecolor="aliceblue")
     temp_files.append(chart_file_name)
     document.add_picture(chart_file_name, width=Cm(17))
@@ -1646,7 +1646,7 @@ def write_comprehend_sentiment(document, speech_segments, temp_files):
     plt.yticks(np.arange(-1, 1.01, 0.25))
 
     # Write out the chart
-    chart_file_name = "./" + "sentiment.png"
+    chart_file_name = "/tmp/" + "sentiment.png"
     plt.savefig(chart_file_name)
     temp_files.append(chart_file_name)
     plt.clf()
@@ -2222,12 +2222,14 @@ def handler(event, context):
 
         # Call the generate_document function with the SQS event
         document = generate_document(json_transcript)
+        output_bucket = os.getenv("OutputBucket")
         output_bucket_prefix = os.getenv("OutputBucketPrefix")
-        s3_client.put_object(
-            Bucket=output_bucket_prefix,
-            Key=f"{output_bucket_prefix}/{object_key.split('/')[-1]}.docx",
-            Body=document,
-        )
+
+
+        with BytesIO() as fileobj:
+            document.save(fileobj)
+            fileobj.seek(0)
+            s3_client.upload_fileobj(fileobj, output_bucket, f"{output_bucket_prefix}/{object_key.split('/')[-1]}.docx")
 
         # Finally, remove any temporary downloaded JSON results file
         os.remove("/tmp/test_transcript.json")
