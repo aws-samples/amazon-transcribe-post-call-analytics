@@ -2222,9 +2222,10 @@ def handler(event, context):
 
         # Call the generate_document function with the SQS event
         document = generate_document(json_transcript)
+        output_bucket_prefix = os.getenv("OutputBucketPrefix")
         s3_client.put_object(
-            Bucket=os.getenv("OutputBucketPrefix"),
-            Key=f"{object_key}.docx",
+            Bucket=output_bucket_prefix,
+            Key=f"{output_bucket_prefix}/{object_key.split('/')[-1]}.docx",
             Body=document,
         )
 

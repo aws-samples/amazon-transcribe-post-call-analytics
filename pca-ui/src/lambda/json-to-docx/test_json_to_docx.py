@@ -1,12 +1,12 @@
 import json
-from json_to_docx import handler
+json_to_docx =  __import__('json-to-docx')
 
 def mock_handler():
     # Simulate an event
     with open('test_event.json', 'r') as file:
         event = json.load(file)
 
-    handler(event, None)
+    json_to_docx.handler(event, None)
 
 # Call the mock handler
 mock_handler()
