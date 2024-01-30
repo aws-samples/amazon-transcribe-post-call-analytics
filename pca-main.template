@@ -1041,6 +1041,7 @@ Resources:
         GenAIQueryBedrockModelId: !Ref GenAIQueryBedrockModelId
         FetchTranscriptArn: !GetAtt PCAServer.Outputs.FetchTranscriptArn
         SummarizerArn: !GetAtt PCAServer.Outputs.SummarizerArn
+        StepFunctionName: !Ref StepFunctionName
         LLMThirdPartyApiKey: !If 
           - ShouldDeployLLMThirdPartyApiKey
           - !Ref LLMThirdPartyApiKeySecret
