@@ -20,6 +20,11 @@ Parameters:
   WebUri:
     Type: String
 
+  StepFunctionName:
+    Type: String
+    Default: PostCallAnalyticsWorkflow
+    Description: Name of Step Functions workflow that orchestrates this process
+
 Resources:
   Queue:
     Type: "AWS::SQS::Queue"
@@ -167,11 +172,28 @@ Resources:
                 bucket:
                   name:
                     - !Ref AudioBucket
+        StepFunctionChange:
+          Type: EventBridgeRule
+          Properties:
+            Pattern:
+              source:
+                - "aws.states"
+              detail-type:
+                - "Step Functions Execution Status Change"
+              detail:
+                stateMachineArn:
+                  - !Sub arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${StepFunctionName}
       Policies:
       - DynamoDBCrudPolicy:
           TableName: !Ref Table
       - S3ReadPolicy:
           BucketName: !Ref AudioBucket
+      - Statement:
+        - Effect: "Allow"
+          Action: 
+            - "states:GetExecutionHistory"
+          Resource: 
+          - !Sub arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:execution:${StepFunctionName}:*
       Runtime: nodejs14.x
 
 Outputs:
