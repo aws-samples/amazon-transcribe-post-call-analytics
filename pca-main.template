@@ -4,6 +4,16 @@ Description: Amazon Transcribe Post Call Analytics - PCA (v0.7.5) (uksb-1sn29lk7
 
 Parameters:
 
+  ResourceTagName:
+    Type: String
+    Default: post-call-analytics
+    Description: Resource tag name that will be applied to resources.
+
+  ResourceTagValue:
+    Type: String
+    Default: post-call-analytics
+    Description: Resource tag value that will be applied to resources.
+
   AdminUsername:
     Type: String
     Default: "admin"
@@ -558,6 +568,9 @@ Resources:
     DeletionPolicy: Retain
     UpdateReplacePolicy: Retain 
     Properties:
+      Tags: 
+        - Key: !Ref ResourceTagName
+          Value: !Ref ResourceTagValue
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
@@ -568,8 +581,10 @@ Resources:
     Type: 'AWS::S3::Bucket'
     DeletionPolicy: Retain
     UpdateReplacePolicy: Retain 
-    
     Properties:
+      Tags: 
+        - Key: !Ref ResourceTagName
+          Value: !Ref ResourceTagValue
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
@@ -589,6 +604,9 @@ Resources:
     DeletionPolicy: Retain
     UpdateReplacePolicy: Retain 
     Properties:
+      Tags: 
+        - Key: !Ref ResourceTagName
+          Value: !Ref ResourceTagValue
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
@@ -608,6 +626,9 @@ Resources:
     DeletionPolicy: Retain
     UpdateReplacePolicy: Retain 
     Properties:
+      Tags: 
+        - Key: !Ref ResourceTagName
+          Value: !Ref ResourceTagValue
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
@@ -620,6 +641,9 @@ Resources:
     Type: 'AWS::IAM::Role'
     Condition: ShouldEnableKendraSearch
     Properties:
+      Tags: 
+        - Key: !Ref ResourceTagName
+          Value: !Ref ResourceTagValue
       AssumeRolePolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -663,6 +687,9 @@ Resources:
     Type: 'AWS::Kendra::Index'
     Condition: ShouldEnableKendraSearch
     Properties:
+      Tags: 
+        - Key: !Ref ResourceTagName
+          Value: !Ref ResourceTagValue
       Description: PCA transcript index
       Edition:
           !If
@@ -751,6 +778,9 @@ Resources:
     Type: AWS::IAM::Role
     Condition: ShouldTestBedrockModelId
     Properties:
+      Tags: 
+        - Key: !Ref ResourceTagName
+          Value: !Ref ResourceTagValue
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -776,6 +806,9 @@ Resources:
     Type: AWS::Lambda::Function
     Condition: ShouldTestBedrockModelId
     Properties:
+      Tags: 
+        - Key: !Ref ResourceTagName
+          Value: !Ref ResourceTagValue
       Handler: index.lambda_handler
       Role: !GetAtt 'TestBedrockModelFunctionRole.Arn'
       Runtime: python3.11
@@ -893,6 +926,9 @@ Resources:
   LLMPromptConfigure:
     Type: AWS::CloudFormation::Stack
     Properties:
+      Tags: 
+        - Key: !Ref ResourceTagName
+          Value: !Ref ResourceTagValue
       TemplateURL: pca-server/cfn/lib/llm.template
 
   ########################################################
@@ -902,6 +938,9 @@ Resources:
     Type: AWS::CloudFormation::Stack
     DependsOn: LLMPromptConfigure
     Properties:
+      Tags: 
+        - Key: !Ref ResourceTagName
+          Value: !Ref ResourceTagValue
       TemplateURL: pca-ssm/cfn/ssm.template
       Parameters:
         BulkUploadBucketName:
@@ -973,18 +1012,27 @@ Resources:
     DependsOn: SSM
     Type: AWS::CloudFormation::Stack
     Properties:
+      Tags: 
+        - Key: !Ref ResourceTagName
+          Value: !Ref ResourceTagValue
       TemplateURL: pca-server/cfn/lib/python-utilities.template
 
   BedrockBoto3Layer:
     Type: AWS::CloudFormation::Stack
     Condition: ShouldDeployBedrockBoto3Layer
     Properties:
+      Tags: 
+        - Key: !Ref ResourceTagName
+          Value: !Ref ResourceTagValue
       TemplateURL: pca-boto3-bedrock/template.yaml
 
   LLMThirdPartyApiKeySecret:
     Condition: ShouldDeployLLMThirdPartyApiKey
     Type: AWS::SecretsManager::Secret
     Properties: 
+      Tags: 
+        - Key: !Ref ResourceTagName
+          Value: !Ref ResourceTagValue
       Description: API Key
       Name: !Sub '${AWS::StackName}-ThirdPartyApiKey'
       SecretString: !Ref SummarizationLLMThirdPartyApiKey
@@ -998,8 +1046,13 @@ Resources:
     Type: AWS::CloudFormation::Stack
     DependsOn: SSM
     Properties:
+      Tags: 
+        - Key: !Ref ResourceTagName
+          Value: !Ref ResourceTagValue
       TemplateURL: pca-server/cfn/pca-server.template
       Parameters:
+        ResourceTagName: !Ref ResourceTagName
+        ResourceTagValue: !Ref ResourceTagValue
         ffmpegDownloadUrl: !Ref ffmpegDownloadUrl
         CallSummarization: !Ref CallSummarization
         SummarizationBedrockModelId: !Ref SummarizationBedrockModelId
@@ -1019,6 +1072,9 @@ Resources:
   PCAUI:
     Type: AWS::CloudFormation::Stack
     Properties:
+      Tags: 
+        - Key: !Ref ResourceTagName
+          Value: !Ref ResourceTagValue
       TemplateURL: pca-ui/cfn/pca-ui.template
       Parameters:
         AdminUsername: !Ref AdminUsername
@@ -1056,6 +1112,9 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Condition: ShouldEnableKendraSearch
     Properties:
+      Tags: 
+        - Key: !Ref ResourceTagName
+          Value: !Ref ResourceTagValue
       TemplateURL: build/pca-mediasearch-finder.yaml
       Parameters:
         AdminEmail: !Ref AdminEmail
@@ -1071,6 +1130,9 @@ Resources:
     Condition: ShouldDeployPcaDashboards
     DependsOn: PCAServer
     Properties:
+      Tags: 
+        - Key: !Ref ResourceTagName
+          Value: !Ref ResourceTagValue
       TemplateURL: build/pca-dashboards.yaml
       Parameters:
         PcaGlueCatalogDatabaseName: !Ref DatabaseName
@@ -1086,6 +1148,9 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Condition: ShouldLoadSampleFiles
     Properties:
+      Tags: 
+        - Key: !Ref ResourceTagName
+          Value: !Ref ResourceTagValue
       TemplateURL: pca-samples/copy-samples.template
       Parameters:
         DependsOnPCAServer: !Ref PCAServer
@@ -1101,6 +1166,9 @@ Resources:
     Type: "AWS::IAM::Role"
     Condition: ShouldDeployPcaDashboards
     Properties:
+      Tags: 
+        - Key: !Ref ResourceTagName
+          Value: !Ref ResourceTagValue
       AssumeRolePolicyDocument:
         Statement:
           - Effect: Allow
@@ -1123,6 +1191,9 @@ Resources:
     Type: AWS::Lambda::Function
     Condition: ShouldDeployPcaDashboards
     Properties:
+      Tags: 
+        - Key: !Ref ResourceTagName
+          Value: !Ref ResourceTagValue
       Handler: index.handler
       Runtime: python3.11
       Role: !GetAtt QuickSightEnabledCheckFunctionRole.Arn

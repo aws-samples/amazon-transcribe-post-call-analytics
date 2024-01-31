@@ -5,6 +5,16 @@ Description: Amazon Transcribe Post Call Analytics - PCA Server - PCA State Mach
 Transform: AWS::Serverless-2016-10-31
 
 Parameters:
+  ResourceTagName:
+    Type: String
+    Default: post-call-analytics
+    Description: Resource tag name that will be applied to resources.
+
+  ResourceTagValue:
+    Type: String
+    Default: post-call-analytics
+    Description: Resource tag value that will be applied to resources.
+
   TableName:
     Type: String
 
@@ -148,6 +158,8 @@ Resources:
         Variables:
           RoleArn: !GetAtt TranscribeRole.Arn
           AWS_DATA_PATH: "/opt/models"
+          ResourceTagName: !Ref ResourceTagName
+          ResourceTagValue: !Ref ResourceTagValue
       Role: !GetAtt TranscribeLambdaRole.Arn
 
   SFExtractJobHeader:

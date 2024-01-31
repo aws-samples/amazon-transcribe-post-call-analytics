@@ -3,6 +3,16 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description: Amazon Transcribe Post Call Analytics - PCA Server
 
 Parameters:
+  ResourceTagName:
+    Type: String
+    Default: post-call-analytics
+    Description: Resource tag name that will be applied to resources.
+
+  ResourceTagValue:
+    Type: String
+    Default: post-call-analytics
+    Description: Resource tag value that will be applied to resources.
+
   ffmpegDownloadUrl:
     Type: String
     Default: http://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz
@@ -102,6 +112,8 @@ Resources:
     Properties:
       TemplateURL: lib/pca.template
       Parameters:
+        ResourceTagName: !Ref ResourceTagName
+        ResourceTagValue: !Ref ResourceTagValue
         TableName: !GetAtt DDB.Outputs.TableName
         FFMPEGZipName: !GetAtt FFMPEG.Outputs.FFMPEGZipName
         Boto3Layer:  !If 
