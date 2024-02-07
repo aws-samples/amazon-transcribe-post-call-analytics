@@ -7,3 +7,4 @@ build
 .idea
 /pca-ui/src/witch/witch.zip
 /pca-ui/src/lambda/json-to-docx/json-to-docx.zip
+/pca-ui/src/utils/start_codebuild
