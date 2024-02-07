@@ -98,6 +98,11 @@ Parameters:
     Type: String
     Description: The DynamoDB table name where the summary and query prompt templates are stored.
 
+  StepFunctionName:
+    Type: String
+    Default: PostCallAnalyticsWorkflow
+    Description: Name of Step Functions workflow that orchestrates this process
+
 Conditions:
   isMainStackNameEmpty: !Equals [!Ref MainStackName, '']
   ShouldEnableGenAIQuery: !Not [!Equals [!Ref GenAIQueryType, 'DISABLED']]
@@ -139,6 +144,7 @@ Resources:
     Properties:
       TemplateURL: ../../build/indexer.template
       Parameters:
+        StepFunctionName: !Ref StepFunctionName
         DataBucket: !Ref DataBucket
         DataPrefix: !Ref DataPrefix
         AudioBucket: !Ref AudioBucket

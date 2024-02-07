@@ -5,16 +5,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-### Added
-- Support for larger prompts by storing LLMPromptSummaryTemplate in S3 rather than SSM. By default, the CF templtae will migrate existing SSM prompts to DynamoDB.
 
-### Fixed
-- #125 Updated the pca-aws-sf-bulk-queue-space.py function to correctly count jobs based on IN_PROGRESS as well as QUEUED
-- #224 Updated the pca-aws-sf-bulk-queue-space.py function to correctly count both Transcribe and Transcribe Call Analytics (vs just Transcribe).
+- EventBridge Rule now triggers the Job status index function to update the status of a job every time the step function moves to the next step.
 
 ## [0.7.5] - 2024-01-17
 ### Added
-- Support for larger prompts by storing LLMPromptSummaryTemplate in S3 rather than SSM. By default, the CF templtae will migrate existing SSM prompts to DynamoDB.
+- Support for larger prompts by storing LLMPromptSummaryTemplate in S3 rather than SSM. By default, the CF template will migrate existing SSM prompts to DynamoDB.
 
 ### Fixed
 - #125 Updated the pca-aws-sf-bulk-queue-space.py function to correctly count jobs based on IN_PROGRESS as well as QUEUED
