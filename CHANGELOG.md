@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - EventBridge Rule now triggers the Job status index function to update the status of a job every time the step function moves to the next step.
 
+### Fixed
+- Dependabot updates for PCA
+- Fix exception for files that contain no speech segments.
+
 ## [0.7.5] - 2024-01-17
 ### Added
 - Support for larger prompts by storing LLMPromptSummaryTemplate in S3 rather than SSM. By default, the CF templtae will migrate existing SSM prompts to DynamoDB.
