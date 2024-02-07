@@ -72,8 +72,8 @@ async function createRecord(record) {
         jobName: jobInfo.TranscriptionJobName,
         confidence: jobInfo.AverageWordConfidence,
         lang: parsed.ConversationAnalytics.LanguageCode,
-        duration:
-            parsed.SpeechSegments[parsed.SpeechSegments.length - 1].SegmentEndTime,
+        duration:parsed.ConversationAnalytics.Duration,
+            // parsed.SpeechSegments[parsed.SpeechSegments.length - 1].SegmentEndTime,
         timestamp: timestamp,
         location: parsed.ConversationAnalytics.ConversationLocation,
         callerSentimentScore:
