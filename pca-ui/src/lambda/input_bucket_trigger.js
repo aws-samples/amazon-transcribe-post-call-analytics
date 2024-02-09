@@ -2,6 +2,9 @@ const AWS = require("aws-sdk");
 const s3 = new AWS.S3();
 const ddb = new AWS.DynamoDB();
 const stepFunctions = new AWS.StepFunctions();
+const mime = require("mime-types");
+const VALID_MIME_TYPES = ["audio", "video"];
+const VALID_EXTENSIONS = ["wav", "mp3"];
 
 const tableName = process.env.TableName;
 const objectKey = process.env.AudioBucketPrefix;
@@ -62,6 +65,10 @@ function getCurrentStateName(events) {
     return null;
 }
 
+function getExtensionFromKey(key) {
+    return key.split(".").pop();
+}
+
 function getJobNameFromKey(key) {
     return key.split("/").pop();
 }
@@ -119,10 +126,12 @@ exports.handler = async function (event, context) {
         if (re.test(eventObjectKey)) {
             const jobName = getJobNameFromKey(event.detail.object.key);
             const outputFileName = getFilenameFromKey(event.detail.object.key);
-
-            const promise = createRecord(outputFileName, jobName, 'InProgress');
-            return await Promise.all([promise]);
+            const mimeType = mime.lookup(jobName);
+            const types = mimeType.split("/");
+            if (types[0] in VALID_MIME_TYPES || getExtensionFromKey(jobName) in VALID_EXTENSIONS) {
+                const promise = createRecord(outputFileName, jobName, 'InProgress');
+                return await Promise.all([promise]);
+            }
         }
     }
-
 };
