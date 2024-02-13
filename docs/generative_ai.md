@@ -3,7 +3,7 @@
 Post-Call Analytics has an optional step in the step function workflow to generate insights with generative AI. 
 PCA supports [Amazon Bedrock](https://aws.amazon.com/bedrock/) (Titan or Anthropic models) and [Anthropic](https://www.anthropic.com/) (3rd party) foundational models (FMs). Customers may also write a Lambda function and provide PCA the ARN, and use any FM of their choice. The prompts below are based on Anthropic's prompt formats. Learn more about prompt design at Anthropic's [Introduction to Prompt Design].(https://docs.anthropic.com/claude/docs/introduction-to-prompt-design). 
 
-For Amazon Bedrock models, you must [request model access](https://docs.aws.amazon.com/bedrock/latest/userguide/model-access.html) for the models selected.
+For Amazon Bedrock models, you must [request model access](https://docs.aws.amazon.com/bedrock/latest/userguide/model-access.html) for the models selected. 
 
 PCA also supports 'Generative AI Queries' - which simply means you can ask questions about a specific call. These queries appear in a chat-like window from within the call details page.
 
@@ -11,9 +11,15 @@ PCA also supports 'Generative AI Queries' - which simply means you can ask quest
 
 **Note:** If you choose to call Anthropic directly, data will leave your AWS account!  Also, the Anthropic API key will be stored in [AWS Secrets Manager](https://docs.aws.amazon.com/secretsmanager/latest/userguide/intro.html), under the key `{StackName}-ThirdPartyApiKey`, where `{StackName}` is replaced with your PCA CloudFormation stack's name.
 
-## Generative AI Insights
+## How to enable generative AI Summarization and Insights
 
-When enabled, PCA can run one or more FM inferences against Amazon Bedrock or Anthropic APIs. The prompt used to generate the insights is stored in DynamoDB. The name of the table contains the string `LLMPromptConfigure`, and the table partition key is `LLMPromptTemplateId`. There are two items in the table, one with the partition key value of `LLMPromptSummaryTemplate` and the other with the partition key value of `LLMPromptQueryTemplate`.
+To enable generative AI summarization and insights, update the **CallSummarization** CloudFormation parameter with one of the following values: `BEDROCK`, `BEDROCK+TCA`, `ANTHROPIC`, `TCA-ONLY`.
+
+To use Transcribe Call Analytics (TCA) [generative call summarization](https://docs.aws.amazon.com/transcribe/latest/dg/call-analytics-batch.html#tca-summarization-batch), use `BEDROCK+TCA` or `TCA-ONLY` as the value.
+
+**Note:** If you enable TCA, the summarization templates below will skip the 'Summary' prompt for files that are analyzed with TCA. For audio files that are analyzed with Transcribe `standard` mode, such as mono audio files, the 'Summary' prompt will be executed.
+
+When summarization is enabled, PCA can run one or more FM inferences against Amazon Bedrock or Anthropic APIs. The prompt used to generate the insights is stored in DynamoDB. The name of the table contains the string `LLMPromptConfigure`, and the table partition key is `LLMPromptTemplateId`. There are two items in the table, one with the partition key value of `LLMPromptSummaryTemplate` and the other with the partition key value of `LLMPromptQueryTemplate`.
 
 ### Generative AI interactive queries
 

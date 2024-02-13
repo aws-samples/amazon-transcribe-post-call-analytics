@@ -36,7 +36,8 @@ Contains header-level information around the analytics that have been generated,
   "OutcomesDetected": [ ],
   "Telephony": [ ],
   "SourceInformation": [ ],
-  "Summary": { }
+  "Summary": { },
+  "ContactSummary": { }
 }
 ```
 
@@ -62,6 +63,7 @@ Contains header-level information around the analytics that have been generated,
 | Telephony            | -        | *[Optional]* A list of telephony-specific metadata fields extract from the CTR files (only present if the chosen telephony CTR parser chooses to write this information out) |
 | SourceInformation    | -        | Source-specific details for the conversation.  Contains just one of any of the possible supported sources |
 | Summary    | -        | Key value pairs that define summary topics and values. These will be rendered inside the GenAI Call Summary panel in the user interface. The key will be rendered as the title, and the value is the body. |
+| ContactSummary    | -        | [Generative call summarization](https://docs.aws.amazon.com/transcribe/latest/dg/call-analytics-batch.html#tca-summarization-batch) output from Transcribe Call Analytics. This is a nested structure. See the structure [here](https://docs.aws.amazon.com/transcribe/latest/dg/tca-output-batch.html#tca-output-summarization-batch). |
 
 ###### SpeakerLabels
 

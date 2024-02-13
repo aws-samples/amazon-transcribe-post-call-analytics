@@ -378,14 +378,18 @@ Parameters:
     Type: String
     AllowedValues:
       - 'DISABLED'
+      - 'BEDROCK+TCA'
       - 'BEDROCK'
+      - 'TCA-ONLY'
       - 'SAGEMAKER'
       - 'ANTHROPIC'
       - 'LAMBDA'
     Description: >
       Set to enable call summarization by a Large Language Model. 
+      The BEDROCK+TCA will use Transcribe Call Analytics for summarization and Bedrock for other analytics, and is available only for English.
       The BEDROCK option requires you to choose one of the supported model IDs from the provided list (SummarizationBedrockModelId).
       You must also accept access to that model in the Amazon Bedrock > Model Access console.
+      The TCA-ONLY option will not use Bedrock, but will only use Transcribe Call Analytics summarization, and is available only for English.
       The SAGEMAKER option uses a SageMaker endpoint with the pretrained bart-large-cnn-samsum model with a ml.m5.xlarge instance type.  
       The LAMBDA option requires you to provide a function ARN below. 
       The ANTHROPIC option is a third party service, and you must enter your Anthropic API key in the Third Party LLM API Key section. 
@@ -539,12 +543,22 @@ Conditions:
   ShouldCreateKendraIndexDeveloperEdition: !Equals [!Ref EnableTranscriptKendraSearch, 'Yes, create new Kendra Index (Developer Edition)']
   ShouldDeployPcaDashboards: !Equals [!Ref EnablePcaDashboards, 'Yes']
   ShouldLoadSampleFiles: !Equals [!Ref loadSampleAudioFiles, 'true']
-  ShouldDeployBedrockBoto3Layer: !Or [!Equals [!Ref CallSummarization, 'BEDROCK'], !Equals [!Ref GenAIQuery, 'BEDROCK'],]
+  ShouldDeployBedrockBoto3Layer: !Or [
+    !Equals [!Ref CallSummarization, 'BEDROCK'], 
+    !Equals [!Ref CallSummarization, 'BEDROCK+TCA'], 
+    !Equals [!Ref CallSummarization, 'TCA-ONLY'], 
+    !Equals [!Ref GenAIQuery, 'BEDROCK'],
+  ]
   ShouldDeployLLMThirdPartyApiKey: !And [!Not [!Equals [!Ref SummarizationLLMThirdPartyApiKey, '']], !Not [!Equals [!Ref SummarizationLLMThirdPartyApiKey, undefined]]]
-  ShouldTestBedrockModelId: !Or [!Equals [!Ref CallSummarization, 'BEDROCK'], !Equals [!Ref GenAIQuery, 'BEDROCK'],]
+  ShouldTestBedrockModelId: !Or [
+    !Equals [!Ref CallSummarization, 'BEDROCK'], 
+    !Equals [!Ref CallSummarization, "BEDROCK+TCA"],
+    !Equals [!Ref GenAIQuery, 'BEDROCK'],]
   ShouldTestGenAIQueryBedrockModelId: !Equals [!Ref GenAIQuery, 'BEDROCK']
-  ShouldTestSummarizationBedrockModelId: !Equals [!Ref CallSummarization, 'BEDROCK']
-
+  ShouldTestSummarizationBedrockModelId: !Or [
+    !Equals [!Ref CallSummarization, 'BEDROCK'],
+    !Equals [!Ref CallSummarization, "BEDROCK+TCA"],
+  ]
 
 Resources:
   ########################################################
@@ -911,6 +925,7 @@ Resources:
           - !Ref BulkUploadBucketName
         BulkUploadMaxDripRate: !Ref BulkUploadMaxDripRate
         BulkUploadMaxTranscribeJobs: !Ref BulkUploadMaxTranscribeJobs
+        CallSummarization: !Ref CallSummarization
         ComprehendLanguages: !Ref ComprehendLanguages
         ContentRedactionLanguages: !Ref ContentRedactionLanguages
         ConversationLocation: !Ref ConversationLocation
@@ -977,7 +992,7 @@ Resources:
 
   BedrockBoto3Layer:
     Type: AWS::CloudFormation::Stack
-    Condition: ShouldDeployBedrockBoto3Layer
+    # Condition: ShouldDeployBedrockBoto3Layer
     Properties:
       TemplateURL: pca-boto3-bedrock/template.yaml
 
