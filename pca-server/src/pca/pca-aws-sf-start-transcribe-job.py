@@ -263,6 +263,13 @@ def submitTranscribeJob(bucket, key):
         else:
             job_settings["LanguageOptions"] = [lang_code]
 
+        # Check for TCA Summarization
+        if cf.appConfig[cf.CONF_CALL_SUMMARIZATION] == 'TCA-ONLY' or \
+           cf.appConfig[cf.CONF_CALL_SUMMARIZATION] == 'BEDROCK+TCA':
+            job_settings['Summarization'] = {
+                'GenerateAbstractiveSummary': True
+            }
+
         # Should have a clear run at doing the job now
         kwargs = {'CallAnalyticsJobName': job_name,
                   'Media': media_settings,

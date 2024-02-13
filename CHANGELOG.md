@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - EventBridge Rule now triggers the Job status index function to update the status of a job every time the step function moves to the next step.
+- Transcribe Call Analytics generative call summarization. 
 
 ### Fixed
 - Dependabot updates for PCA

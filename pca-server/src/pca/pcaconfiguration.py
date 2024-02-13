@@ -49,6 +49,7 @@ CONF_WEB_URI = "WebUiUri"
 CONF_TRANSCRIBE_API = "TranscribeApiMode"
 CONF_REDACTION_TRANSCRIPT = "CallRedactionTranscript"
 CONF_REDACTION_AUDIO = "CallRedactionAudio"
+CONF_CALL_SUMMARIZATION = "CallSummarization"
 
 # Parameter store fieldnames used by bulk import
 BULK_S3_BUCKET = "BulkUploadBucket"
@@ -162,7 +163,8 @@ def loadConfiguration():
             CONF_REDACTION_TRANSCRIPT,
             CONF_REDACTION_AUDIO,
             CONF_TELEPHONY_CTR,
-            CONF_TELEPHONY_CTR_SUFFIX
+            CONF_TELEPHONY_CTR_SUFFIX,
+            CONF_CALL_SUMMARIZATION
         ]
     )
 

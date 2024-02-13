@@ -196,20 +196,23 @@ def generate_anthropic_summary(transcript):
             return json.dumps(result)
     return json.dumps(result)
 
-def generate_bedrock_summary(transcript):
+def generate_bedrock_summary(transcript, api_mode):
 
     # first check to see if this is one prompt, or many prompts as a json
     templates = get_templates_from_dynamodb()
     result = {}
     for item in templates:
         key = list(item.keys())[0]
-        prompt = item[key]
-        prompt = prompt.replace("{transcript}", transcript)
-        parameters = {
-            "temperature": 0
-        }
-        generated_text = call_bedrock(parameters, prompt)
-        result[key] = generated_text
+        if key == 'Summary' and SUMMARIZE_TYPE == 'BEDROCK+TCA' and api_mode == cf.API_ANALYTICS:
+            continue
+        else:
+            prompt = item[key]
+            prompt = prompt.replace("{transcript}", transcript)
+            parameters = {
+                "temperature": 0
+            }
+            generated_text = call_bedrock(parameters, prompt)
+            result[key] = generated_text
     if len(result.keys()) == 1:
         # This is a single node JSON with value that can be either:
         # A single inference that returns a string value
@@ -293,9 +296,9 @@ def lambda_handler(event, context):
         except Exception as err:
             summary = 'An error occurred generating Anthropic summary.'
             print(err)
-    elif SUMMARIZE_TYPE == 'BEDROCK':
+    elif SUMMARIZE_TYPE == 'BEDROCK' or SUMMARIZE_TYPE == 'BEDROCK+TCA':
         try:
-            summary = generate_bedrock_summary(transcript_str)
+            summary = generate_bedrock_summary(transcript_str, pca_results.analytics.transcribe_job.api_mode)
             try: 
                 summary_json = json.loads(summary)
             except:
@@ -309,13 +312,15 @@ def lambda_handler(event, context):
         except Exception as err:
             summary = 'An error occurred generating summary with custom Lambda function'
             print(err)
+    elif SUMMARIZE_TYPE == 'TCA-ONLY':
+        print("Skip summary due to TCA")
     else:
         summary = 'Summarization disabled.'
     
     if summary_json:
         pca_results.analytics.summary = summary_json
         print("Summary JSON: " + summary)
-    else:
+    elif SUMMARIZE_TYPE != 'TCA-ONLY':
         pca_results.analytics.summary = {}
         pca_results.analytics.summary['Summary'] = summary
         print("Summary: " + summary)
