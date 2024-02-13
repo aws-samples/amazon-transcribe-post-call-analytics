@@ -21,6 +21,27 @@ Parameters:
     Default: "50"
     Description: Number of concurrent Transcribe jobs (executing or queuing) where bulk upload will pause
 
+  CallSummarization:
+    Default: 'BEDROCK'
+    Type: String
+    AllowedValues:
+      - 'DISABLED'
+      - 'BEDROCK+TCA'
+      - 'BEDROCK'
+      - 'TCA-ONLY'
+      - 'SAGEMAKER'
+      - 'ANTHROPIC'
+      - 'LAMBDA'
+    Description: >
+      Set to enable call summarization by a Large Language Model. 
+      The BEDROCK+TCA will use Transcribe Call Analytics for summarization and Bedrock for other analytics. 
+      The BEDROCK option requires you to choose one of the supported model IDs from the provided list (SummarizationBedrockModelId).
+      You must also accept access to that model in the Amazon Bedrock > Model Access console.
+      The TCA-ONLY option will not use Bedrock, but will only use Transcribe Call Analytics summarization.
+      The SAGEMAKER option uses a SageMaker endpoint with the pretrained bart-large-cnn-samsum model with a ml.m5.xlarge instance type.  
+      The LAMBDA option requires you to provide a function ARN below. 
+      The ANTHROPIC option is a third party service, and you must enter your Anthropic API key in the Third Party LLM API Key section. 
+
   ComprehendLanguages:
     Type: String
     Default: de | en | es | it | pt | fr | ja | ko | hi | ar | zh | zh-TW
@@ -285,6 +306,15 @@ Resources:
       Type: String
       Description: Number of concurrent Transcribe jobs (executing or queuing) where bulk upload will pause
       Value: !Ref BulkUploadMaxTranscribeJobs
+
+  CallSummarizationParameter:
+    Type: "AWS::SSM::Parameter"
+    Properties:
+      Name: CallSummarization
+      Type: String
+      Description: >-
+        What type of call summarization to use. 
+      Value: !Ref CallSummarization
 
   ComprehendLanguagesParameter:
     Type: "AWS::SSM::Parameter"
