@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - #234 Fix exception for files that contain no speech segments. 
 - Fix input bucket trigger to not create a DynamoDB record for metadata files.
 - Updated NodeJS to v16.
+- Fix bug when deploying with Amazon Titan Text Express.
 
 ## [0.7.5] - 2024-01-17
 ### Added
