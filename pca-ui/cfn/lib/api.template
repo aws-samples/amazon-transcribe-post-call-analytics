@@ -124,7 +124,7 @@ Resources:
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref TableName
-      Runtime: nodejs14.x
+      Runtime: nodejs16.x
 
   GetFunction:
     Type: "AWS::Serverless::Function"
@@ -147,7 +147,7 @@ Resources:
             BucketName: !Ref DataBucket
         - S3ReadPolicy:
             BucketName: !Ref AudioBucket
-      Runtime: nodejs14.x
+      Runtime: nodejs16.x
 
   ListFunction:
     Type: "AWS::Serverless::Function"
@@ -167,7 +167,7 @@ Resources:
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref TableName
-      Runtime: nodejs14.x
+      Runtime: nodejs16.x
 
   SearchFunction:
     Type: "AWS::Serverless::Function"
@@ -187,7 +187,7 @@ Resources:
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref TableName
-      Runtime: nodejs14.x
+      Runtime: nodejs16.x
 
   EntitiesFunction:
     Type: "AWS::Serverless::Function"
@@ -207,7 +207,7 @@ Resources:
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref TableName
-      Runtime: nodejs14.x
+      Runtime: nodejs16.x
 
   LanguagesFunction:
     Type: "AWS::Serverless::Function"
@@ -227,7 +227,7 @@ Resources:
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref TableName
-      Runtime: nodejs14.x
+      Runtime: nodejs16.x
 
   SwapFunction:
     Type: "AWS::Serverless::Function"
@@ -250,7 +250,7 @@ Resources:
             BucketName: !Ref DataBucket
         - DynamoDBCrudPolicy:
             TableName: !Ref TableName
-      Runtime: nodejs14.x
+      Runtime: nodejs16.x
   
   GenAIQueryFunction:
     Type: "AWS::Serverless::Function"
@@ -367,7 +367,7 @@ Resources:
       Policies:
         - S3WritePolicy:
             BucketName: !Ref AudioBucket
-      Runtime: nodejs14.x
+      Runtime: nodejs16.x
 
 Outputs:
   Uri:
