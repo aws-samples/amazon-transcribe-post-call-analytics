@@ -34,7 +34,7 @@ Resources:
     Type: "AWS::Lambda::LayerVersion"
     Properties:
       CompatibleRuntimes:
-        - nodejs14.x
+        - nodejs16.x
       Content: ../../src/witch/witch.zip
 
   Role:
@@ -78,7 +78,7 @@ Resources:
       Layers:
         - !Ref Layer
       Role: !GetAtt Role.Arn
-      Runtime: nodejs14.x
+      Runtime: nodejs16.x
       Timeout: 300
 
   ConfigureFunction:
@@ -87,14 +87,14 @@ Resources:
       Code: ../../src/lambda
       Handler: config.handler
       Role: !GetAtt Role.Arn
-      Runtime: nodejs14.x
+      Runtime: nodejs16.x
 
   Deploy:
     Type: "AWS::CloudFormation::CustomResource"
     Properties:
       ServiceToken: !GetAtt DeployFunction.Arn
       Counter: !Ref DeployCountValue
-      Version: "0.7.3"
+      Version: "0.7.6"
 
   Configure:
     Type: "AWS::CloudFormation::CustomResource"

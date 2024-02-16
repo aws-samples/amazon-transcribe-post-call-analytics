@@ -3,7 +3,7 @@ import { Box, Container, Header, Link, SpaceBetween, StatusIndicator } from '@cl
 export const ValueWithLabel = ({ label,index, children }) => (
   <>
     <Box variant="awsui-key-label">
-      <span tabindex={index}>{label}</span>
+      <span tabIndex={index}>{label}</span>
     </Box>
     <>{children}</>
   </>

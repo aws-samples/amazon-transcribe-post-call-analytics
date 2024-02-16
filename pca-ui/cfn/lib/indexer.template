@@ -20,6 +20,11 @@ Parameters:
   WebUri:
     Type: String
 
+  StepFunctionName:
+    Type: String
+    Default: PostCallAnalyticsWorkflow
+    Description: Name of Step Functions workflow that orchestrates this process
+
 Resources:
   Queue:
     Type: "AWS::SQS::Queue"
@@ -77,7 +82,7 @@ Resources:
     Properties:
       Code:  ../../src/lambda
       Handler: bucket.handler
-      Runtime: nodejs14.x
+      Runtime: nodejs16.x
       Role: !GetAtt ConfigureDataBucketRole.Arn
       Environment:
         Variables:
@@ -141,7 +146,7 @@ Resources:
             TableName: !Ref Table
         - S3ReadPolicy:
             BucketName: !Ref DataBucket
-      Runtime: nodejs14.x
+      Runtime: nodejs16.x
 
   InputBucketTriggerFunction:
     Type: "AWS::Serverless::Function"
@@ -167,12 +172,29 @@ Resources:
                 bucket:
                   name:
                     - !Ref AudioBucket
+        StepFunctionChange:
+          Type: EventBridgeRule
+          Properties:
+            Pattern:
+              source:
+                - "aws.states"
+              detail-type:
+                - "Step Functions Execution Status Change"
+              detail:
+                stateMachineArn:
+                  - !Sub arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${StepFunctionName}
       Policies:
       - DynamoDBCrudPolicy:
           TableName: !Ref Table
       - S3ReadPolicy:
           BucketName: !Ref AudioBucket
-      Runtime: nodejs14.x
+      - Statement:
+        - Effect: "Allow"
+          Action: 
+            - "states:GetExecutionHistory"
+          Resource: 
+          - !Sub arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:execution:${StepFunctionName}:*
+      Runtime: nodejs16.x
 
 Outputs:
   TableName:

@@ -83,6 +83,7 @@ class ConversationAnalytics:
         self.summary = {}
         self.telephony = None
         self.transcribe_job = TranscribeJobInfo()
+        self.contact_summary = {}
 
     def get_transcribe_job(self):
         """
@@ -111,7 +112,9 @@ class ConversationAnalytics:
                             "CustomEntities": self.custom_entities,
                             "EntityRecognizerName": self.entity_recognizer,
                             "SentimentTrends": self.sentiment_trends,
-                            "Summary": self.summary}
+                            "Summary": self.summary,
+                            "ContactSummary": self.contact_summary
+                            }
 
         # If we don't have a set conversation time then copy the [ProcessTime] field
         if self.conversationTime == "":
@@ -167,6 +170,8 @@ class ConversationAnalytics:
             self.telephony = json_input["Telephony"]
         if "Summary" in json_input:
             self.summary = json_input["Summary"]
+        if "ContactSummary" in json_input:
+            self.contact_summary = json_input["ContactSummary"]
 
         # Load in all analytics data if it exists
         if "CategoriesDetected" in json_input:

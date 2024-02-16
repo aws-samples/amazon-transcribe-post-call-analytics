@@ -9,18 +9,25 @@ Parameters:
     Description: URL for ffmpeg binary distribution tar file download - see https://www.johnvansickle.com/ffmpeg/
 
   CallSummarization:
-    Default: 'DISABLED'
+    Default: 'BEDROCK'
     Type: String
     AllowedValues:
       - 'DISABLED'
-      - 'SAGEMAKER'
+      - 'BEDROCK+TCA'
       - 'BEDROCK'
-      - 'LAMBDA'
+      - 'TCA-ONLY'
+      - 'SAGEMAKER'
       - 'ANTHROPIC'
+      - 'LAMBDA'
     Description: >
-      Set to enable call summarization by a Large Language Model. The SAGEMAKER option uses a SageMaker endpoint with
-      the pretrained bart-large-cnn-samsum model with a ml.m5.xlarge instance type.  The LAMBDA option requires you 
-      to provide a function ARN below. The ANTHROPIC option is a third party service, and you must enter your Anthropic API key below.
+      Set to enable call summarization by a Large Language Model. 
+      The BEDROCK+TCA will use Transcribe Call Analytics for summarization and Bedrock for other analytics. 
+      The BEDROCK option requires you to choose one of the supported model IDs from the provided list (SummarizationBedrockModelId).
+      You must also accept access to that model in the Amazon Bedrock > Model Access console.
+      The TCA-ONLY option will not use Bedrock, but will only use Transcribe Call Analytics summarization.
+      The SAGEMAKER option uses a SageMaker endpoint with the pretrained bart-large-cnn-samsum model with a ml.m5.xlarge instance type.  
+      The LAMBDA option requires you to provide a function ARN below. 
+      The ANTHROPIC option is a third party service, and you must enter your Anthropic API key in the Third Party LLM API Key section. 
   
   SummarizationBedrockModelId:
     Type: String
@@ -68,7 +75,10 @@ Parameters:
 
 Conditions:
   ShouldCreateBoto3Layer: !Equals [!Ref Boto3LayerArn, '']
-  ShouldDeployBedrockSummarizer: !Equals [!Ref CallSummarization, "BEDROCK"]
+  ShouldDeployBedrockSummarizer: !Or [
+    !Equals [!Ref CallSummarization, "BEDROCK"],
+    !Equals [!Ref CallSummarization, "BEDROCK+TCA"],
+  ]
   ShouldDeploySageMakerSummarizer: !Equals [!Ref CallSummarization, "SAGEMAKER"]
   ShouldEnableAnthropicSummarizer: !Equals [!Ref CallSummarization, "ANTHROPIC"]
   ShouldEnableEndOfCallLambdaHookFunction: !Equals [!Ref CallSummarization, "LAMBDA"]

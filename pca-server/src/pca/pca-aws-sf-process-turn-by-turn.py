@@ -79,6 +79,12 @@ class TranscribeParser:
         self.simpleEntityMatchingUsed = (self.customEntityEndpointARN == "") and \
                                         (cf.appConfig[cf.CONF_ENTITY_FILE] != "")
 
+    def process_tca_summary(self):
+        if self.api_mode == cf.API_ANALYTICS and \
+           self.asr_output["ConversationCharacteristics"] and \
+           "ContactSummary" in self.asr_output["ConversationCharacteristics"]:
+            self.analytics.contact_summary = self.asr_output["ConversationCharacteristics"]["ContactSummary"]
+
     def generate_sentiment_trend(self, speaker, speaker_num):
         """
         Generates an entry for the "SentimentTrends" block for the given speaker, which is the overall speaker
@@ -1148,6 +1154,9 @@ class TranscribeParser:
 
         # Update our results data structures, generate JSON results and save them to S3
         self.push_turn_by_turn_results()
+
+        # Update summary structures
+        self.process_tca_summary()
 
         # Write out the JSON data back to our interim S3 location
         json_output, output_filename = self.pca_results.write_results_to_s3(bucket=output_bucket,

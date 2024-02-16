@@ -1,6 +1,10 @@
 const AWS = require("aws-sdk");
 const s3 = new AWS.S3();
 const ddb = new AWS.DynamoDB();
+const stepFunctions = new AWS.StepFunctions();
+const mime = require("mime-types");
+const VALID_MIME_TYPES = ["audio", "video"];
+const VALID_EXTENSIONS = ["wav", "mp3"];
 
 const tableName = process.env.TableName;
 const objectKey = process.env.AudioBucketPrefix;
@@ -23,11 +27,7 @@ function makeItem(pk, sk, tk, data) {
     };
 }
 
-async function createRecord(record) {
-    const jobName = record.object.key.split("/").pop();
-    const k = record.object.key.replace(objectKey, outputKey);
-    const key = k.concat('.json');
-
+async function createRecord(key, jobName, status) {
     console.log("Creating:", key);
 
     let timestamp = new Date().getTime();
@@ -37,7 +37,7 @@ async function createRecord(record) {
         key: key,
         jobName: jobName,
         timestamp: timestamp,
-        status: "In progress",
+        status: status,
     };
 
     let data = JSON.stringify(dataJson);
@@ -56,6 +56,28 @@ async function createRecord(record) {
     }).promise();
 }
 
+function getCurrentStateName(events) {
+    for (let event of events) {
+        if (event.type.endsWith('StateEntered')) {
+            return event.stateEnteredEventDetails.name;
+        }
+    }
+    return null;
+}
+
+function getExtensionFromKey(key) {
+    return key.split(".").pop();
+}
+
+function getJobNameFromKey(key) {
+    return key.split("/").pop();
+}
+
+function getFilenameFromKey(key) {
+    const k = key.replace(objectKey, outputKey);
+    return k.concat('.json');
+}
+
 exports.handler = async function (event, context) {
     console.log(
         JSON.stringify(
@@ -69,12 +91,47 @@ exports.handler = async function (event, context) {
     );
 
     const eventType = event['detail-type'];
-    const eventObjectKey = event.detail.object.key;
+    
+    if(eventType === 'Step Functions Execution Status Change') {
+        const executionArn = event.detail.executionArn;
+        
+        const historyParams = {
+            executionArn: executionArn,
+            reverseOrder: true
+        }
+        
+        const history = await stepFunctions.getExecutionHistory(historyParams).promise();
+        
+        const currentState = getCurrentStateName(history.events);
+        console.log('---- CURRENT STATE ---- : ', currentState);
+        let outputState = "In progress";
+        if (currentState === "TranscribeAudio") outputState = "Transcribing";
+        else if (currentState === "WaitForMainTranscribe") outputState = "Transcribing";
+        else if (currentState === "ProcessSummarize") outputState = "Summarizing";
+        else if (currentState === "Success") outputState = "Done";
+        else if (currentState === "TranscriptionFailed") outputState = "Failed";
+        else outputState = currentState;
 
-    const re = new RegExp("^" + objectKey);
-
-    if (eventType == "Object Created" && re.test(eventObjectKey)) {
-        const promise = createRecord(event.detail);
+        const input = JSON.parse(event.detail.input);
+        console.log(input);
+        const jobName = getJobNameFromKey(input.key);
+        const outputFileName = getFilenameFromKey(input.key);
+        const promise = createRecord(outputFileName, jobName, outputState);
         return await Promise.all([promise]);
+        
+    } else if(eventType === "Object Created") {
+        // this is most likely the s3 end drop trigger
+        const eventObjectKey = event.detail.object.key;
+        const re = new RegExp("^" + objectKey);
+        if (re.test(eventObjectKey)) {
+            const jobName = getJobNameFromKey(event.detail.object.key);
+            const outputFileName = getFilenameFromKey(event.detail.object.key);
+            const mimeType = mime.lookup(jobName);
+            const types = mimeType.split("/");
+            if (types[0] in VALID_MIME_TYPES || getExtensionFromKey(jobName) in VALID_EXTENSIONS) {
+                const promise = createRecord(outputFileName, jobName, 'InProgress');
+                return await Promise.all([promise]);
+            }
+        }
     }
 };

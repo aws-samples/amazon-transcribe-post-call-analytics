@@ -5,6 +5,7 @@ Description: Amazon Transcribe Post Call Analytics - PCA Server - S3 Trigger
 Transform: AWS::Serverless-2016-10-31
 
 Parameters:
+
   LLMPromptSummaryTemplate:
     Type: String
     Description: >-
