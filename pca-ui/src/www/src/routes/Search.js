@@ -38,10 +38,11 @@ function Search({ setAlert }) {
 
   useEffect(() => {
     (query.timestampTo && query.timestampTo) ||
-    (!query.timestampTo && !query.timestampFrom)
+    (!query.timestampTo && !query.timestampFrom) ||
+    (jobName)
       ? setShouldSearch(true)
       : setShouldSearch(false);
-  }, [query.timestampTo, query.timestampFrom]);
+  }, [query.timestampTo, query.timestampFrom, jobName]);
 
   const { data: entities, error: errorEntities } = useSWR(
     `/entities`,
