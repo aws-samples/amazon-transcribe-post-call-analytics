@@ -5,9 +5,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.7.6] - 2024-02-16
 ### Added
-- EventBridge Rule now triggers the Job status index function to update the status of a job every time the step function moves to the next step.
-- Transcribe Call Analytics generative call summarization. 
+- PCA UI now shows the status of the step function workflow for each call.
+- Added support for the new Transcribe Call Analytics generative call summarization option. 
 
 ### Fixed
 - Dependabot updates for PCA
@@ -18,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.7.5] - 2024-01-17
 ### Added
-- Support for larger prompts by storing LLMPromptSummaryTemplate in S3 rather than SSM. By default, the CF templtae will migrate existing SSM prompts to DynamoDB.
+- Support for larger prompts by storing LLMPromptSummaryTemplate in S3 rather than SSM. By default, the CF template will migrate existing SSM prompts to DynamoDB.
 
 ### Fixed
 - #125 Updated the pca-aws-sf-bulk-queue-space.py function to correctly count jobs based on IN_PROGRESS as well as QUEUED
@@ -170,7 +172,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial release
 
-[Unreleased]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/compare/v0.7.5...develop
+[Unreleased]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/compare/v0.7.6...develop
+[0.7.6]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.7.6
 [0.7.5]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.7.5
 [0.7.4]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.7.4
 [0.7.3]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.7.3
