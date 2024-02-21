@@ -34,6 +34,7 @@ function Search({ setAlert }) {
   const [editing, setEditing] = useState(true);
   const [query, setQuery] = useState({});
   const [shouldSearch, setShouldSearch] = useState(true);
+  const [jobName, setJobName] = useState("");
 
   useEffect(() => {
     (query.timestampTo && query.timestampTo) ||
@@ -206,6 +207,31 @@ function Search({ setAlert }) {
                 />
             </SpaceBetween>
           </FormField>
+
+          <FormField label="Job Name">
+            <SpaceBetween direction="horizontal" size="l">
+              <Input
+                  value={jobName}
+                  onChange={(event) => {
+                    setJobName(event.detail.value);
+                    handleQueryInput(event.detail.value, "jobName");
+                  }
+                }
+              />
+              <Button
+                  className="mt-2"
+                  variant="outline-secondary"
+                  onClick={() => {
+                    setJobName("");
+                    handleQueryInput(null, "jobName");
+                  }}
+              >
+                Clear
+              </Button>
+
+            </SpaceBetween>
+          </FormField>
+
 
           <Button bg={"primary"} onClick={onClick}>
             Search
