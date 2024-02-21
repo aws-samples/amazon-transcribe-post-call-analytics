@@ -27,7 +27,7 @@
     "immer": ">=9.0.6",
     "set-value": ">=4.0.1",
     "ansi-html-community": "^0.0.8",
-    "axios": ">=0.21.2"
+    "axios": ">=0.28.0"
   },
   "devDependencies": {
     "react-scripts": "4.0.3"
