@@ -81,14 +81,17 @@ npm run build || exit 1
 popd
 
 # Build and deploy embedded MediaSearch project
-pushd aws-kendra-transcribe-media-search
+echo "Initialize and update git submodules"
+git submodule init
+git submodule update
+pushd submodule-mediasearch
 if $PUBLIC; then
   echo "Enabling ACLs on bucket"
   aws s3api put-public-access-block --bucket ${BUCKET} --public-access-block-configuration "BlockPublicPolicy=false"
   aws s3api put-bucket-ownership-controls --bucket ${BUCKET} --ownership-controls="Rules=[{ObjectOwnership=BucketOwnerPreferred}]"
-  ./publish.sh ${BUCKET} ${PREFIX_AND_VERSION}/mediasearch | tee /tmp/mediasearch.out || exit 1
+  ./publish.sh ${BUCKET} ${PREFIX_AND_VERSION}/mediasearch public | tee /tmp/mediasearch.out || exit 1
 else
-   ./publish-privatebucket.sh ${BUCKET} ${PREFIX_AND_VERSION}/mediasearch | tee /tmp/mediasearch.out || exit 1
+   ./publish.sh ${BUCKET} ${PREFIX_AND_VERSION}/mediasearch private | tee /tmp/mediasearch.out || exit 1
 fi
 popd
 mediasearch_template="s3://${BUCKET}/${PREFIX_AND_VERSION}/mediasearch/msfinder.yaml"
