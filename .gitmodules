@@ -1,0 +1,3 @@
+[submodule "submodule-mediasearch"]
+	path = submodule-mediasearch
+	url = https://github.com/aws-samples/aws-kendra-transcribe-media-search.git
