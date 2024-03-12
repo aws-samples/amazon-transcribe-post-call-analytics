@@ -203,10 +203,14 @@ def generate_bedrock_summary(transcript, api_mode):
     result = {}
     for item in templates:
         key = list(item.keys())[0]
+
+        prompt = item[key] 
+        # Quick fix for Titan
+        prompt = modify_prompt_based_on_model(BEDROCK_MODEL_ID, prompt)
+
         if key == 'Summary' and SUMMARIZE_TYPE == 'BEDROCK+TCA' and api_mode == cf.API_ANALYTICS:
             continue
-        else:
-            prompt = item[key]
+        else: 
             prompt = prompt.replace("{transcript}", transcript)
             parameters = {
                 "temperature": 0
@@ -229,6 +233,11 @@ def generate_bedrock_summary(transcript, api_mode):
             return json.dumps(result)
     return json.dumps(result)
 
+def modify_prompt_based_on_model(model_id, prompt):
+    if model_id == "amazon.titan-text-express-v1":
+        prompt = prompt.replace("Human:", "")
+        prompt = prompt.replace("Assistant:", "")
+    return prompt
 
 def get_transcript_str(interimResultsFile):
     payload = {
