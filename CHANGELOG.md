@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+## [0.7.8] - 2024-03-29
 - Fix an issue with job status indicator (step function workflow) inserting duplicate entries into DynamoDB.
+- Fix regression in the mediasearch finder to re-enable hyperlink to PCA call detail page
 
 ## [0.7.7] - 2024-03-06
 ### Added
