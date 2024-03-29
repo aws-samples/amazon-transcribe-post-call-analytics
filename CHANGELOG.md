@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Fix an issue with job status indicator (step function workflow) inserting duplicate entries into DynamoDB.
+
 ## [0.7.7] - 2024-03-06
 ### Added
 - Fix #245 TranscriptKendraSearch page fails to build / load after deployment

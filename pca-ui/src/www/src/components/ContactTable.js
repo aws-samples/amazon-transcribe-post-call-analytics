@@ -23,7 +23,7 @@ const COLUMN_DEFINITIONS = [
     header: "Timestamp",
     sortingField: "timestamp",
     cell: (d) => {
-      if(d.status !== undefined && d.status.length > 0) {
+      if(d.status !== undefined && d.status.length > 0 && d.status !== "Done") {
         return (
             Formatter.Timestamp(d.timestamp)
         )
@@ -40,7 +40,7 @@ const COLUMN_DEFINITIONS = [
     id: "jobName",
     header: "Job Name",
     cell: (d) => {
-      if(d.status !== undefined && d.status.length > 0) {
+      if(d.status !== undefined && d.status.length > 0 && d.status !== "Done") {
         return (
             d.jobName
         )
