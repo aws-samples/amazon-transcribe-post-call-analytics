@@ -83,6 +83,7 @@ async function createRecord(record) {
         agent: parsed.ConversationAnalytics.Agent,
         customer: parsed.ConversationAnalytics.Cust,
         guid: parsed.ConversationAnalytics.GUID,
+        status: "Done",
     };
 
     
