@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+## [0.7.8] - 2024-03-29
+- Fix an issue with job status indicator (step function workflow) inserting duplicate entries into DynamoDB.
+- Fix regression in the mediasearch finder to re-enable hyperlink to PCA call detail page
+
 ## [0.7.7] - 2024-03-06
 ### Added
 - Fix #245 TranscriptKendraSearch page fails to build / load after deployment
@@ -176,7 +181,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial release
 
-[Unreleased]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/compare/v0.7.7...develop
+[Unreleased]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/compare/v0.7.8...develop
+[0.7.8]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.7.6
 [0.7.7]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.7.6
 [0.7.6]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.7.6
 [0.7.5]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.7.5
