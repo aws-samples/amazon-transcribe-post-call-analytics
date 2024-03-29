@@ -84,6 +84,11 @@ popd
 echo "Initialize and update git submodules"
 git submodule init
 git submodule update
+echo "Applying patch files to enable link to PCA Call Analysis"
+# force new codecommit repo to be created during upgrade
+cp -v ./patches/mediasearch/msfinder.yaml submodule-mediasearch/cfn-templates/msfinder.yaml
+# add PCA call detail link to results page
+cp -v ./patches/mediasearch/ResultFooter.tsx submodule-mediasearch/finderapp/src/search/resultsPanel/components/ResultFooter.tsx
 pushd submodule-mediasearch
 if $PUBLIC; then
   echo "Enabling ACLs on bucket"
