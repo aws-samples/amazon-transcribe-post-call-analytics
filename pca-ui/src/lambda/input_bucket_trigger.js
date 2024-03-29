@@ -116,6 +116,7 @@ exports.handler = async function (event, context) {
         console.log(input);
         const jobName = getJobNameFromKey(input.key);
         const outputFileName = getFilenameFromKey(input.key);
+        const extension = getExtensionFromKey(input.key);
 
         // The Done/Success state corresponds to when pca-aws-sf-post-processing function
         // completes successfully. It writes the final results to the output (results) S3 bucket.
@@ -124,7 +125,7 @@ exports.handler = async function (event, context) {
         // to be written to the DynamoDB table. Handle updating the status to Done in the output
         // S3 bucket trigger.
 
-        if (outputState !== "Done") {
+        if (outputState !== "Done" && extension !== "json") {
             const promise = createRecord(outputFileName, jobName, outputState);
             return await Promise.all([promise]);
         }
