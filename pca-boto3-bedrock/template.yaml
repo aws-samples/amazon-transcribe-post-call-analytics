@@ -6,7 +6,7 @@ Description: >
 Parameters:
   Boto3Version:
     Type: String
-    Default: "1.34.40"
+    Default: "1.34.101"
 
 Resources:
 

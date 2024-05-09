@@ -51,10 +51,18 @@ def get_bedrock_request_body(modelId, parameters, prompt):
     provider = modelId.split(".")[0]
     request_body = None
     if provider == "anthropic":
-        request_body = {
-            "prompt": prompt,
-            "max_tokens_to_sample": MAX_TOKENS
-        } 
+        print(modelId)
+        if 'claude-3' in modelId:
+            request_body = {
+                "max_tokens": MAX_TOKENS,
+                "messages": [{"role": "user", "content": prompt}],
+                "anthropic_version": "bedrock-2023-05-31"
+            }
+        else:    
+            request_body = {
+                "prompt": prompt,
+                "max_tokens_to_sample": MAX_TOKENS
+            } 
         request_body.update(parameters)
     elif provider == "ai21":
         request_body = {
@@ -80,8 +88,13 @@ def get_bedrock_generate_text(modelId, response):
     provider = modelId.split(".")[0]
     generated_text = None
     if provider == "anthropic":
-        response_body = json.loads(response.get("body").read().decode())
-        generated_text = response_body.get("completion")
+        if 'claude-3' in modelId:
+            response_raw = json.loads(response.get("body").read().decode())
+            generated_text = response_raw.get('content')[0].get('text')
+
+        else:
+            response_body = json.loads(response.get("body").read().decode())
+            generated_text = response_body.get("completion")
     elif provider == "ai21":
         response_body = json.loads(response.get("body").read())
         generated_text = response_body.get("completions")[0].get("data").get("text")
@@ -90,7 +103,7 @@ def get_bedrock_generate_text(modelId, response):
         generated_text = response_body.get("results")[0].get("outputText")
     else:
         raise Exception("Unsupported provider: ", provider)
-    generated_text = generated_text.replace('```','')
+    #generated_text = generated_text.replace('```','')
     return generated_text
 
 def call_bedrock(parameters, prompt):
