@@ -103,7 +103,7 @@ def get_bedrock_generate_text(modelId, response):
         generated_text = response_body.get("results")[0].get("outputText")
     else:
         raise Exception("Unsupported provider: ", provider)
-    #generated_text = generated_text.replace('```','')
+    generated_text = generated_text.replace('```','')
     return generated_text
 
 def call_bedrock(parameters, prompt):
