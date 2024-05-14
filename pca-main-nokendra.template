@@ -371,8 +371,10 @@ Parameters:
 
   GenAIQueryBedrockModelId:
     Type: String
-    Default: anthropic.claude-v2
+    Default: anthropic.claude-3-haiku-20240307-v1:0
     AllowedValues:
+      - anthropic.claude-3-haiku-20240307-v1:0
+      - anthropic.claude-3-sonnet-20240229-v1:0
       - amazon.titan-text-express-v1
       - anthropic.claude-v1
       - anthropic.claude-instant-v1
@@ -402,8 +404,10 @@ Parameters:
   
   SummarizationBedrockModelId:
     Type: String
-    Default: anthropic.claude-instant-v1
+    Default: anthropic.claude-3-haiku-20240307-v1:0
     AllowedValues:
+      - anthropic.claude-3-haiku-20240307-v1:0
+      - anthropic.claude-3-sonnet-20240229-v1:0
       - amazon.titan-text-express-v1
       - anthropic.claude-v1
       - anthropic.claude-instant-v1
@@ -695,10 +699,18 @@ Resources:
               provider = modelId.split(".")[0]
               request_body = None
               if provider == "anthropic":
-                  request_body = {
-                      "prompt": prompt,
-                      "max_tokens_to_sample": DEFAULT_MAX_TOKENS
-                  } 
+                  if 'claude-3' in modelId:
+                      request_body = {
+                          "max_tokens": DEFAULT_MAX_TOKENS,
+                          "messages": [{"role": "user", "content": prompt}],
+                          "anthropic_version": "bedrock-2023-05-31"
+                      }
+                  else:    
+                      request_body = {
+                          "prompt": prompt,
+                          "max_tokens_to_sample": DEFAULT_MAX_TOKENS
+                      } 
+
                   request_body.update(parameters)
               elif provider == "ai21":
                   request_body = {
@@ -723,8 +735,13 @@ Resources:
               provider = modelId.split(".")[0]
               generated_text = None
               if provider == "anthropic":
-                  response_body = json.loads(response.get("body").read().decode())
-                  generated_text = response_body.get("completion")
+                  if 'claude-3' in modelId:
+                      response_raw = json.loads(response.get("body").read().decode())
+                      generated_text = response_raw.get('content')[0].get('text')
+          
+                  else:
+                      response_body = json.loads(response.get("body").read().decode())
+                      generated_text = response_body.get("completion")
               elif provider == "ai21":
                   response_body = json.loads(response.get("body").read())
                   generated_text = response_body.get("completions")[0].get("data").get("text")
