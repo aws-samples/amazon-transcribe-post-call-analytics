@@ -116,7 +116,7 @@ Resources:
     Properties:
       Code:  ../../src/trigger
       Handler: index.handler
-      Runtime: nodejs16.x
+      Runtime: nodejs18.x
       Role: !GetAtt ConfigureBucketRole.Arn
       Environment:
         Variables:
