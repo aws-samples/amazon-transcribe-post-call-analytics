@@ -5,7 +5,7 @@
   "main": "index.js",
   "dependencies": {
     "ajv": "^8.8.2",
-    "aws-sdk": "^2.1322.0",
+    "aws-sdk": "^2.1620.0",
     "cfn-response": "^1.0.1",
     "mime-types": "^2.1.35"
   },
