@@ -331,7 +331,7 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       Handler: lambda_function.lambda_handler
-      Runtime: python3.8
+      Runtime: python3.11
       Role: !GetAtt 'MediaLambdaRole.Arn'
       Timeout: 300
       Code: ../lambda/build-trigger
@@ -387,7 +387,7 @@ Resources:
     Condition: EnableAccess
     Properties:
       Handler: lambda_function.lambda_handler
-      Runtime: python3.8
+      Runtime: python3.11
       Role: !GetAtt 'TokenEnablerLambdaRole.Arn'
       Timeout: 900
       MemorySize: 1024

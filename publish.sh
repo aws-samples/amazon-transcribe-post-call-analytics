@@ -16,6 +16,16 @@
 # export AWS_DEFAULT_REGION=eu-west-1
 ##############################################################################################
 
+if ! [ -x "$(command -v npm)" ]; then
+  echo 'Error: npm is not installed and required.' >&2
+  exit 1
+fi
+if ! node -v | grep -qF "v18."; then
+    echo 'Error: Node.js version 18.x is not installed and required.' >&2
+    exit 1
+fi
+
+
 USAGE="$0 <cfn_bucket> <cfn_prefix> [public]"
 
 BUCKET=$1

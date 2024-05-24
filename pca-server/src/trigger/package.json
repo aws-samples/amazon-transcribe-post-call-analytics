@@ -4,7 +4,7 @@
     "description": "",
     "main": "index.js",
     "dependencies": {
-        "aws-sdk": "^2.757.0",
+        "aws-sdk": "^2.1620.0",
         "cfn-response": "^1.0.1"
     },
     "devDependencies": {},
