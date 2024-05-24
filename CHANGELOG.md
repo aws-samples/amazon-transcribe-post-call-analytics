@@ -6,8 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.9] - 2024-05-24
 ### Added
+- Support for Anthropic Claude Haiku and Sonnet models to perform call summarization and queries.
+- Upgraded Python runtime to 3.11 and NodeJS to version 18.x
+
 ## [0.7.8] - 2024-03-29
+### Fixed
 - Fix an issue with job status indicator (step function workflow) inserting duplicate entries into DynamoDB.
 - Fix regression in the mediasearch finder to re-enable hyperlink to PCA call detail page
 
@@ -181,9 +186,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial release
 
-[Unreleased]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/compare/v0.7.8...develop
-[0.7.8]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.7.6
-[0.7.7]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.7.6
+[Unreleased]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/compare/main...develop
+[0.7.9]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.7.9
+[0.7.8]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.7.8
+[0.7.7]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.7.7
 [0.7.6]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.7.6
 [0.7.5]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.7.5
 [0.7.4]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.7.4
