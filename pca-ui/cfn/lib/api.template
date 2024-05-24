@@ -33,8 +33,10 @@ Parameters:
   
   GenAIQueryBedrockModelId:
     Type: String
-    Default: anthropic.claude-v2
+    Default: anthropic.claude-3-haiku-20240307-v1:0
     AllowedValues:
+      - anthropic.claude-3-haiku-20240307-v1:0
+      - anthropic.claude-3-sonnet-20240229-v1:0
       - amazon.titan-text-express-v1
       - anthropic.claude-v1
       - anthropic.claude-instant-v1
@@ -124,7 +126,7 @@ Resources:
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref TableName
-      Runtime: nodejs16.x
+      Runtime: nodejs18.x
 
   GetFunction:
     Type: "AWS::Serverless::Function"
@@ -147,7 +149,7 @@ Resources:
             BucketName: !Ref DataBucket
         - S3ReadPolicy:
             BucketName: !Ref AudioBucket
-      Runtime: nodejs16.x
+      Runtime: nodejs18.x
 
   ListFunction:
     Type: "AWS::Serverless::Function"
@@ -167,7 +169,7 @@ Resources:
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref TableName
-      Runtime: nodejs16.x
+      Runtime: nodejs18.x
 
   SearchFunction:
     Type: "AWS::Serverless::Function"
@@ -187,7 +189,7 @@ Resources:
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref TableName
-      Runtime: nodejs16.x
+      Runtime: nodejs18.x
 
   EntitiesFunction:
     Type: "AWS::Serverless::Function"
@@ -207,7 +209,7 @@ Resources:
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref TableName
-      Runtime: nodejs16.x
+      Runtime: nodejs18.x
 
   LanguagesFunction:
     Type: "AWS::Serverless::Function"
@@ -227,7 +229,7 @@ Resources:
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref TableName
-      Runtime: nodejs16.x
+      Runtime: nodejs18.x
 
   SwapFunction:
     Type: "AWS::Serverless::Function"
@@ -250,7 +252,7 @@ Resources:
             BucketName: !Ref DataBucket
         - DynamoDBCrudPolicy:
             TableName: !Ref TableName
-      Runtime: nodejs16.x
+      Runtime: nodejs18.x
   
   GenAIQueryFunction:
     Type: "AWS::Serverless::Function"
@@ -367,7 +369,7 @@ Resources:
       Policies:
         - S3WritePolicy:
             BucketName: !Ref AudioBucket
-      Runtime: nodejs16.x
+      Runtime: nodejs18.x
 
 Outputs:
   Uri:
