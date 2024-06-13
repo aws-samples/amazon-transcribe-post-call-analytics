@@ -109,6 +109,27 @@ const handler = async function (event, context) {
     queries.push(makeQuery(`language#${params.language}`));
   }
 
+  if("jobName" in params) {
+    const query = makeQuery("call");
+    query.FilterExpression = "contains(#col_name, :col_value)";
+
+    let values = {
+      ":col_value": {
+        S: params.jobName,
+      },
+    };
+
+    query.ExpressionAttributeValues = { ...query.ExpressionAttributeValues, ...values };
+
+    query.ExpressionAttributeNames = {
+      "#col_name": "Data"
+    };
+
+    queries.push(
+        query
+    );
+  }
+
   if (queries.length == 0) {
     return response(200, [], { "access-control-allow-methods": "OPTIONS,GET" });
   }
