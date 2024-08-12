@@ -299,12 +299,21 @@ Parameters:
       the filename: AutoRepairs1_CUST_12345_GUID_2a602c1a-4ca3-4d37-a933-444d575c0222_AGENT_BobS_DATETIME_07.55.51.067-09-16-2021.wav 
       to extract the Customer value '12345'.
 
+  EnableGui:
+    Type: String
+    Default: true
+    AllowedValues:
+        - true
+        - false
+    Description: Optionally disable the web GUI that comes with this solution, to deploy server components only.
+
   EnableTranscriptKendraSearch:
     Type: String
     Default: 'No'
     AllowedValues:
         - 'No'
-    Description: (NOT AVAILABLE) Optionally make call transcripts searchable, using Amazon Kendra.
+    Description: >
+      (NOT AVAILABLE) Optionally make call transcripts searchable, using Amazon Kendra. 
 
   RetentionDays:
     Type: Number
@@ -442,6 +451,7 @@ Metadata:
             - Label:
                 default: Enable Call Transcript Search
               Parameters:
+                  - EnableGui
                   - EnableTranscriptKendraSearch
             - Label:
                 default: Call Summarization
@@ -541,6 +551,7 @@ Conditions:
   ShouldCreateInputBucket: !Equals [!Ref InputBucketName, '']
   ShouldCreateOutputBucket: !Equals [!Ref OutputBucketName, '']
   ShouldCreateSupportFilesBucket: !Equals [!Ref SupportFilesBucketName, '']
+  ShouldEnableGui: !Not [!Equals [!Ref EnableGui, false]]
   ShouldEnableKendraSearch: !Not [!Equals [!Ref EnableTranscriptKendraSearch, 'No']]
   ShouldCreateKendraIndexDeveloperEdition: !Equals [!Ref EnableTranscriptKendraSearch, 'Yes, create new Kendra Index (Developer Edition)']
   ShouldDeployPcaDashboards: !Equals [!Ref EnablePcaDashboards, 'Yes']
@@ -918,6 +929,7 @@ Resources:
 
   PCAUI:
     Type: AWS::CloudFormation::Stack
+    Condition: ShouldEnableGui
     Properties:
       TemplateURL: pca-ui/cfn/pca-ui.template
       Parameters:
@@ -1100,7 +1112,11 @@ Outputs:
  
   WebAppURL:
     Description: PCA Web Application link
-    Value: !GetAtt PCAUI.Outputs.WebUri  
+    Value:
+      !If
+      - ShouldEnableGui
+      - !GetAtt PCAUI.Outputs.WebUri
+      - "Not enabled"
     
   WebAdminUsername:
     Description: PCA admin user
@@ -1110,7 +1126,7 @@ Outputs:
     Description: When using KMS key to encrypt S3 input/output buckets, KMS key must grant access to these roles.
     Value: !Join
       - ', '
-      - - !Sub '${PCAUI.Outputs.RolesForKMSKey}'
+      - - !If [ShouldEnableGui, !Sub '${PCAUI.Outputs.RolesForKMSKey}', !Ref AWS::NoValue]
         - !Sub '${PCAServer.Outputs.RolesForKMSKey}'
         - !If [ShouldLoadSampleFiles, !Sub '${CopySamples.Outputs.RolesForKMSKey}', !Ref AWS::NoValue]
 
