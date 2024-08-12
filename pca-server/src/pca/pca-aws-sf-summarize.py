@@ -13,6 +13,8 @@ import json
 import re
 import requests
 from botocore.exceptions import ClientError
+from botocore.config import Config
+
 
 AWS_REGION = os.environ["AWS_REGION_OVERRIDE"] if "AWS_REGION_OVERRIDE" in os.environ else os.environ["AWS_REGION"]
 SUMMARIZE_TYPE = os.getenv('SUMMARY_TYPE', 'DISABLED')
@@ -31,6 +33,13 @@ lambda_client = boto3.client('lambda')
 ssmClient = boto3.client("ssm")
 bedrock_client = None
 
+config = Config(
+   retries = {
+      'max_attempts': 100,
+      'mode': 'adaptive'
+   }
+)
+
 def get_third_party_llm_secret():
     print("Getting API key from Secrets Manager")
     secrets_client = boto3.client('secretsmanager')
@@ -45,7 +54,7 @@ def get_third_party_llm_secret():
 
 def get_bedrock_client():
     print("Connecting to Bedrock Service: ", BEDROCK_ENDPOINT_URL)
-    client = boto3.client(service_name='bedrock-runtime', region_name=AWS_REGION, endpoint_url=BEDROCK_ENDPOINT_URL)
+    client = boto3.client(service_name='bedrock-runtime', region_name=AWS_REGION, endpoint_url=BEDROCK_ENDPOINT_URL, config=config)
     return client
     
 def get_bedrock_request_body(modelId, parameters, prompt):

@@ -34,7 +34,7 @@ PCA currently supports the following features:
     * Detects when caller and agent interrupt each other
     * Speaker loudness
 * **Generative AI**
-    * Abstractive call summarization using [HuggingFace bart-large-cnn-samsum](https://huggingface.co/philschmid/bart-large-cnn-samsum) deployed on Sagemaker, [Anthropic Claude](https://www.anthropic.com/index/introducing-claude) (which is also in [Amazon Bedrock](https://aws.amazon.com/bedrock/)), or a user-defined custom AWS Lambda function.
+    * Abstractive call summarization using [Amazon Bedrock](https://aws.amazon.com/bedrock/), [HuggingFace bart-large-cnn-samsum](https://huggingface.co/philschmid/bart-large-cnn-samsum) deployed on Sagemaker, [Anthropic Claude](https://www.anthropic.com/index/introducing-claude) (third party API), or a user-defined custom AWS Lambda function.
 * **Search**
     * Search on call attributes such as time range, sentiment, or entities
     * Search transcriptions
@@ -84,7 +84,7 @@ Once standard PCA processing is complete the telephony-specific CTR handler will
 
 ## (optional) Generative AI Call Summarization
 
-PCA contains a new step in the step functions that (if enabled) will generate a call summary. There are 4 choices for call summarization - Sagemaker Endpoint with HuggingFace bart-large-cnn-samsum, Amazon Bedrock, Anthropic Claude, or a custom AWS Lambda function.  
+PCA contains a new step in the step functions that (if enabled) will generate a call summary. There are 4 choices for call summarization - Amazon Bedrock, Sagemaker Endpoint with HuggingFace bart-large-cnn-samsum, Anthropic Claude, or a custom AWS Lambda function.
 
 Learn more about the features in the [Generative AI readme](./docs/generative_ai.md)
 

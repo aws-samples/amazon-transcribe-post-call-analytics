@@ -7,6 +7,7 @@ Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 """
 import boto3
+from botocore.config import Config
 
 # Parameter Store Field Names used by main workflow
 CONF_COMP_LANGS = "ComprehendLanguages"
@@ -76,6 +77,12 @@ NLP_THROTTLE_RETRIES = 3
 # Configuration data
 appConfig = {}
 
+config = Config(
+   retries = {
+      'max_attempts': 100,
+      'mode': 'adaptive'
+   }
+)
 
 def extractParameters(ssmResponse, useTagName):
     """
@@ -104,7 +111,7 @@ def loadConfiguration():
     """
 
     # Load the the core ones in from Parameter Store in batches of up to 10
-    ssm = boto3.client("ssm")
+    ssm = boto3.client("ssm", config=config)
     fullParamList1 = ssm.get_parameters(
         Names=[
             CONF_COMP_LANGS,

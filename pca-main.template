@@ -1091,3 +1091,11 @@ Outputs:
   FetchTranscriptArn:
     Description: Lambda function arn that will generate a string of the entire transcript for custom Lambda functions to use.
     Value: !GetAtt PCAServer.Outputs.FetchTranscriptArn
+
+  LLMPromptSummaryTemplateParameter:
+    Description: The LLM summary prompt template in SSM Parameter Store - open to customise call summary prompts.
+    Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/systems-manager/parameters/${SSM.Outputs.LLMPromptSummaryTemplateParameter}"
+  
+  LLMPromptQueryTemplateParameter:
+    Description: The LLM query prompt template in SSM Parameter Store - open to customise query prompts.
+    Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/systems-manager/parameters/${SSM.Outputs.LLMPromptQueryTemplateParameter}"

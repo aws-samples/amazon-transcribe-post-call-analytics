@@ -9,14 +9,22 @@ SPDX-License-Identifier: Apache-2.0
 """
 import copy
 import boto3
+from botocore.config import Config
 import subprocess
 import pcaconfiguration as cf
 import pcacommon
 import os
+import time
 
 # Local temporary folder for file-based operations
 TMP_DIR = "/tmp/"
 
+config = Config(
+   retries = {
+      'max_attempts': 100,
+      'mode': 'adaptive'
+   }
+)
 
 def check_existing_job_status(job_name, transcribe, api_mode):
     """
@@ -55,6 +63,8 @@ def delete_existing_job(job_name, transcribe, api_mode):
             transcribe.delete_call_analytics_job(CallAnalyticsJobName=job_name)
         else:
             transcribe.delete_transcription_job(TranscriptionJobName=job_name)
+        # let the job process for a few seconds
+        time.sleep(5) 
     except Exception as e:
         # If the job has already been deleted then we don't need to take any action
         print(f"Unable to delete previous Transcribe job {job_name}: {e}")
@@ -147,7 +157,7 @@ def submitTranscribeJob(bucket, key):
     """
 
     # Work out our API mode for Transcribe, and get our boto3 client
-    transcribe = boto3.client('transcribe')
+    transcribe = boto3.client('transcribe', config=config)
     api_mode, channel_ident, base_model_name = evaluate_transcribe_mode(bucket, key)
 
     # Generate job-name - delete if it already exists
