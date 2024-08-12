@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [0.7.3] - 2023-10-11
+### Fixed
+- #187 - Got error message in PostCallAnalyticsWorkflow step function
+- #189 - Uploading some MP3 files fails to trigger workflow - files remain unprocessed
+- #190 - Transcription search web UI opens with an error page after deployment
+
 ## [0.7.2] - 2023-10-03
 ### Fixed
 - Enable Bedrock GA by default for call summarization and chat/generative query
@@ -135,7 +143,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial release
 
-[Unreleased]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/compare/v0.7.2...develop
+[Unreleased]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/compare/v0.7.3...develop
+[0.7.3]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.7.3
 [0.7.2]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.7.2
 [0.7.1]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.7.1
 [0.7.0]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.7.0
