@@ -9,15 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.7.10] - 2024-08-12
 
-### Fixed
-
-- When choosing Kendra option, PCA fails to deploy in new AWS accounts due to CodeCommit deprecation for new accounts. #265
-- Modified the LLM prompt for titan express - remove the Human and Assistant strings when Titan Express is selected. PR #244
-
 ### Added
 
-- Set kendra capacity PR #250
-- Make UI stack conditional #264
+- Allow Kendra Capacity to be specified (Enterprise Edition only) PR #250
+- Make deployment of the PCA UI stack conditional (i.e. deploy server only) #264
+
+### Fixed
+
+- Fix: When choosing Kendra option, PCA fails to deploy in new AWS accounts due to CodeCommit deprecation for new accounts. #265
+  - _NOTE you will be asked to create a new password for the MediaSearch Finder app when you update an existing PCA stack with Kendra Transcript search enabled._
+- Modified the LLM prompt for Titan Express - remove the Human and Assistant strings when Titan Express is selected. PR #244
 
 ## [0.7.9] - 2024-05-24
 

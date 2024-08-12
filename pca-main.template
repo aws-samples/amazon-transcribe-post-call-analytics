@@ -1149,7 +1149,7 @@ Resources:
           - ''
         LLMTableName: !GetAtt LLMPromptConfigure.Outputs.LLMTableName
 
-  MediaSearchFinder:
+  MediaSearchKendraFinder:
     Type: AWS::CloudFormation::Stack
     Condition: ShouldEnableKendraSearch
     Properties:
@@ -1309,7 +1309,7 @@ Outputs:
     Value:
       !If
       - ShouldEnableKendraSearch
-      - !GetAtt MediaSearchFinder.Outputs.MediaSearchFinderURL
+      - !GetAtt MediaSearchKendraFinder.Outputs.MediaSearchFinderURL
       - "Not enabled"
  
   WebAppURL:
