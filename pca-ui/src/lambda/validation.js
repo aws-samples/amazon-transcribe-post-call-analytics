@@ -50,6 +50,7 @@ const searchSchema = {
     sentimentDirection: { type: "string", enum: ["positive", "negative"] },
     entity: { type: "string" },
     language: { type: "string" },
+    jobName: {type: "string"},
   },
   additionalProperties: false,
 };
