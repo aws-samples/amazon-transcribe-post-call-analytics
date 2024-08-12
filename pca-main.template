@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 
-Description: Amazon Transcribe Post Call Analytics - PCA (v0.6.0) (uksb-1sn29lk73)
+Description: Amazon Transcribe Post Call Analytics - PCA (v0.7.0) (uksb-1sn29lk73)
 
 Parameters:
 
@@ -542,7 +542,7 @@ Conditions:
   ShouldCreateKendraIndexDeveloperEdition: !Equals [!Ref EnableTranscriptKendraSearch, 'Yes, create new Kendra Index (Developer Edition)']
   ShouldDeployPcaDashboards: !Equals [!Ref EnablePcaDashboards, 'Yes']
   ShouldLoadSampleFiles: !Equals [!Ref loadSampleAudioFiles, 'true']
-  ShouldDeployBedrockBoto3Layer: !Equals [!Ref CallSummarization, 'BEDROCK']
+  ShouldDeployBedrockBoto3Layer: !Or [!Equals [!Ref CallSummarization, 'BEDROCK'], !Equals [!Ref GenAIQuery, 'BEDROCK'],]
 
 Rules:
   GuiEnabledWithKenda:
@@ -819,12 +819,14 @@ Resources:
           - ShouldEnableKendraSearch
           - !Ref KendraIndex
           - 'None'
-        WebUri:
-          !If
-          - ShouldEnableGui
-          - !GetAtt PCAUI.Outputs.WebUri
-          - 'None'
+        # WebUri: !GetAtt PCAUI.Outputs.WebUri
         DatabaseName: !Ref DatabaseName
+
+  PythonUtilsLayer:
+    DependsOn: SSM
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: pca-server/cfn/lib/python-utilities.template
 
   BedrockBoto3Layer:
     Type: AWS::CloudFormation::Stack
@@ -834,7 +836,7 @@ Resources:
 
   PCAServer:
     Type: AWS::CloudFormation::Stack
-    DependsOn: SSM
+    # DependsOn: SSM
     Properties:
       TemplateURL: pca-server/cfn/pca-server.template
       Parameters:
@@ -844,10 +846,11 @@ Resources:
         SummarizationSageMakerInitialInstanceCount: !Ref SummarizationSageMakerInitialInstanceCount
         SummarizationLLMThirdPartyApiKey: !Ref SummarizationLLMThirdPartyApiKey
         SummarizationLambdaFunctionArn: !Ref SummarizationLambdaFunctionArn
+        PyUtilsLayerArn: !GetAtt PythonUtilsLayer.Outputs.PyUtilsLayer
         Boto3LayerArn: !If
-        - ShouldDeployBedrockBoto3Layer
-        - !GetAtt BedrockBoto3Layer.Outputs.Boto3Layer
-        - ''
+          - ShouldDeployBedrockBoto3Layer
+          - !GetAtt BedrockBoto3Layer.Outputs.Boto3Layer
+          - ''
 
   PCAUI:
     Type: AWS::CloudFormation::Stack
@@ -873,6 +876,11 @@ Resources:
         GenAIQueryType: !Ref GenAIQuery
         GenAIQueryBedrockModelId: !Ref GenAIQueryBedrockModelId
         FetchTranscriptArn: !GetAtt PCAServer.Outputs.FetchTranscriptArn
+        PyUtilsLayerArn: !GetAtt PythonUtilsLayer.Outputs.PyUtilsLayer
+        Boto3LayerArn: !If
+          - ShouldDeployBedrockBoto3Layer
+          - !GetAtt BedrockBoto3Layer.Outputs.Boto3Layer
+          - ''
 
   MediaSearchFinder:
     Type: AWS::CloudFormation::Stack

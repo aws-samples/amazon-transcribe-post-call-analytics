@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 
-Description: Amazon Transcribe Post Call Analytics - PCA (v0.6.0) (uksb-1sn29lk73)
+Description: Amazon Transcribe Post Call Analytics - PCA (v0.7.0) (uksb-1sn29lk73)
 
 Parameters:
 
@@ -639,11 +639,7 @@ Resources:
           - ShouldEnableKendraSearch
           - 'None'
           - 'None'
-        WebUri:
-          !If
-          - ShouldEnableGui
-          - !GetAtt PCAUI.Outputs.WebUri
-          - 'None'
+        # WebUri: !GetAtt PCAUI.Outputs.WebUri
         DatabaseName: !Ref DatabaseName
 
 
