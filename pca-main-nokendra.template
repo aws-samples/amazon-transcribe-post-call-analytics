@@ -299,20 +299,21 @@ Parameters:
       the filename: AutoRepairs1_CUST_12345_GUID_2a602c1a-4ca3-4d37-a933-444d575c0222_AGENT_BobS_DATETIME_07.55.51.067-09-16-2021.wav 
       to extract the Customer value '12345'.
 
-  EnableTranscriptGui:
+  EnableGui:
     Type: String
     Default: true
     AllowedValues:
         - true
         - false
-    Description: Optionally disable the web GUI that comes with this solution to explore transcripts.
+    Description: Optionally disable the web GUI that comes with this solution, to deploy server components only.
 
   EnableTranscriptKendraSearch:
     Type: String
     Default: 'No'
     AllowedValues:
         - 'No'
-    Description: (NOT AVAILABLE) Optionally make call transcripts searchable, using Amazon Kendra.
+    Description: >
+      (NOT AVAILABLE) Optionally make call transcripts searchable, using Amazon Kendra. 
 
   RetentionDays:
     Type: Number
@@ -450,7 +451,7 @@ Metadata:
             - Label:
                 default: Enable Call Transcript Search
               Parameters:
-                  - EnableTranscriptGui
+                  - EnableGui
                   - EnableTranscriptKendraSearch
             - Label:
                 default: Call Summarization
@@ -550,7 +551,7 @@ Conditions:
   ShouldCreateInputBucket: !Equals [!Ref InputBucketName, '']
   ShouldCreateOutputBucket: !Equals [!Ref OutputBucketName, '']
   ShouldCreateSupportFilesBucket: !Equals [!Ref SupportFilesBucketName, '']
-  ShouldEnableGui: !Not [!Equals [!Ref EnableTranscriptGui, false]]
+  ShouldEnableGui: !Not [!Equals [!Ref EnableGui, false]]
   ShouldEnableKendraSearch: !Not [!Equals [!Ref EnableTranscriptKendraSearch, 'No']]
   ShouldCreateKendraIndexDeveloperEdition: !Equals [!Ref EnableTranscriptKendraSearch, 'Yes, create new Kendra Index (Developer Edition)']
   ShouldDeployPcaDashboards: !Equals [!Ref EnablePcaDashboards, 'Yes']
