@@ -1,4 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
 
 Description: Amazon Transcribe Post Call Analytics - PCA UI - Cognito
 
@@ -10,6 +11,17 @@ Parameters:
   AdminEmail:
       Type: String
 
+  AllowedSignUpEmailDomain:
+    Type: String
+    Default: ""
+    Description: >-
+      Email address domain (example.com) or comma separated list of email domains  (example1.com,
+      example2.com) allowed to signin and signup using the web UI.
+      If left empty, signup via the web UI is disabled and users will have to be created
+      using
+      Cognito.
+    AllowedPattern: '^(\*||([\w-]+\.)+[\w-]{2,6}(, *([\w-]+\.)+[\w-]{2,6})*)$' 
+
   Name:
     Type: String
 
@@ -19,8 +31,16 @@ Parameters:
   Environment:
     Type: String
 
+  CloudWatchLogsExpirationInDays:
+    Type: Number
+    Default: 14
+    Description: The number of days log events are kept in CloudWatch Logs.
+
 Conditions:
   IsProd: !Equals [!Ref Environment, PROD]
+
+  ShouldAllowSignUpEmailDomain:
+    !Not [!Equals [!Ref AllowedSignUpEmailDomain, ""]]
 
 Resources:
 
@@ -68,7 +88,10 @@ Resources:
     Type: "AWS::Cognito::UserPool"
     Properties:
       AdminCreateUserConfig:
-        AllowAdminCreateUserOnly: true
+        AllowAdminCreateUserOnly: !If
+          - ShouldAllowSignUpEmailDomain
+          - false
+          - true
         InviteMessageTemplate:
           EmailMessage:
             !Sub >
@@ -86,6 +109,11 @@ Resources:
         - email
       AutoVerifiedAttributes:
         - email
+      LambdaConfig: !If
+        - ShouldAllowSignUpEmailDomain
+        - PreAuthentication: !GetAtt CognitoUserPoolEmailDomainVerifyFunction.Arn
+          PreSignUp: !GetAtt CognitoUserPoolEmailDomainVerifyFunction.Arn
+        - !Ref AWS::NoValue
       Schema:
         - Required: true
           Name: email
@@ -136,6 +164,67 @@ Resources:
         !Ref AdminUsername
       UserPoolId:
         !Ref PCAUserPool
+
+  CognitoUserPoolEmailDomainVerifyFunction:
+    Type: AWS::Serverless::Function
+    Condition: ShouldAllowSignUpEmailDomain
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs18.x
+      Timeout: 3
+      Environment:
+        Variables:
+          ALLOWED_SIGNUP_EMAIL_DOMAINS: !Ref AllowedSignUpEmailDomain
+      InlineCode: |
+        exports.handler = async (event, context) => {
+          console.log(event);
+          const allowed_domains = (
+              process.env?.ALLOWED_SIGNUP_EMAIL_DOMAINS
+              .split(",").map(domain => {return domain.trim()})
+          );
+          const { email } = event.request?.userAttributes;
+          if (!email || !email.includes('@')) {
+            throw Error('Username does not exists or invalid email address');
+          }
+          const emailDomain = email?.split('@')[1];
+          if (!emailDomain || !allowed_domains) {
+            throw new Error('Server error - invalid configuration');
+          }
+          if (!allowed_domains.includes(emailDomain) && allowed_domains != "*") {
+            throw new Error('Invalid email address domain');
+          }
+          return event;
+        };
+      LoggingConfig:
+        LogGroup:
+          Fn::Sub: /${AWS::StackName}/lambda/CognitoUserPoolEmailDomainVerifyFunction
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W89
+            reason: Customer can use VPC if desired
+          - id: W92
+            reason: Customer can choose reserved concurrency based on their requirement.
+    DependsOn:
+      - CognitoUserPoolEmailDomainVerifyFunctionLogGroup
+
+  CognitoUserPoolEmailDomainVerifyFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Sub: /${AWS::StackName}/lambda/CognitoUserPoolEmailDomainVerifyFunction
+      RetentionInDays:
+        Ref: CloudWatchLogsExpirationInDays
+
+  CognitoUserPoolEmailDomainVerifyPermission:
+    Type: AWS::Lambda::Permission
+    Condition: ShouldAllowSignUpEmailDomain
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref CognitoUserPoolEmailDomainVerifyFunction
+      Principal: cognito-idp.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+      SourceArn: !GetAtt PCAUserPool.Arn
 
 Outputs:
   AdminUser:

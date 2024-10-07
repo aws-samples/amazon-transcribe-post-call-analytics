@@ -17,6 +17,17 @@ Parameters:
       AllowedPattern: ".+\\@.+\\..+"
       ConstraintDescription: Must be valid email address eg. johndoe@example.com
 
+  AllowedSignUpEmailDomain:
+    Type: String
+    Default: ""
+    Description: >-
+      Email address domain (example.com) or comma separated list of email domains  (example1.com,
+      example2.com) allowed to signin and signup using the web UI.
+      If left empty, signup via the web UI is disabled and users will have to be created
+      using
+      Cognito.
+    AllowedPattern: '^(\*||([\w-]+\.)+[\w-]{2,6}(, *([\w-]+\.)+[\w-]{2,6})*)$'
+
   BulkUploadBucketName:
     Type: String
     Default: ""
@@ -456,6 +467,15 @@ Parameters:
       - anthropic.claude-v2
     Description: (Optional) If 'CallSummarization' is BEDROCK, which Bedrock model to use. 
 
+  TestBedrockModelId:
+    Type: String
+    Default: true
+    AllowedValues:
+        - true
+        - false
+    Description: >
+      Set to false to disable checking if the Bedrock models are enabled. 
+
   SummarizationSageMakerInitialInstanceCount:
     Type: Number
     MinValue: 0
@@ -485,6 +505,7 @@ Metadata:
               Parameters:
                   - AdminUsername
                   - AdminEmail
+                  - AllowedSignUpEmailDomain
             - Label:
                 default: Sample Data
               Parameters:
@@ -586,6 +607,7 @@ Metadata:
                 - Environment
                 - StepFunctionName
                 - ffmpegDownloadUrl 
+                - TestBedrockModelId
 
 Conditions:
   ShouldCreateBulkUploadBucket: !Equals [!Ref BulkUploadBucketName, '']
@@ -604,14 +626,18 @@ Conditions:
     !Equals [!Ref GenAIQuery, 'BEDROCK'],
   ]
   ShouldDeployLLMThirdPartyApiKey: !And [!Not [!Equals [!Ref SummarizationLLMThirdPartyApiKey, '']], !Not [!Equals [!Ref SummarizationLLMThirdPartyApiKey, undefined]]]
-  ShouldTestBedrockModelId: !Or [
+  ShouldTestBedrockModelId: !And [!Or [
     !Equals [!Ref CallSummarization, 'BEDROCK'], 
     !Equals [!Ref CallSummarization, "BEDROCK+TCA"],
-    !Equals [!Ref GenAIQuery, 'BEDROCK'],]
-  ShouldTestGenAIQueryBedrockModelId: !Equals [!Ref GenAIQuery, 'BEDROCK']
-  ShouldTestSummarizationBedrockModelId: !Or [
+    !Equals [!Ref GenAIQuery, 'BEDROCK'],], !Equals [!Ref TestBedrockModelId, 'true']]
+  ShouldTestGenAIQueryBedrockModelId: !And [
+    !Equals [!Ref GenAIQuery, 'BEDROCK'], 
+    !Equals [!Ref TestBedrockModelId, 'true']
+  ]
+  ShouldTestSummarizationBedrockModelId: !And [!Or [
     !Equals [!Ref CallSummarization, 'BEDROCK'],
-    !Equals [!Ref CallSummarization, "BEDROCK+TCA"],
+    !Equals [!Ref CallSummarization, "BEDROCK+TCA"],], 
+    !Equals [!Ref TestBedrockModelId, 'true']
   ]
 
 Rules:
@@ -1119,6 +1145,7 @@ Resources:
       Parameters:
         AdminUsername: !Ref AdminUsername
         AdminEmail: !Ref AdminEmail
+        AllowedSignUpEmailDomain: !Ref AllowedSignUpEmailDomain
         MainStackName: !Ref AWS::StackName
         AudioBucket:
           !If
