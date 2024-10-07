@@ -22,7 +22,8 @@ Parameters:
     Default: ""
     Description: >-
       Email address domain (example.com) or comma separated list of email domains  (example1.com,
-      example2.com) allowed to signin and signup using the web UI.
+      example2.com) allowed to signin and signup using the web UI. To allow signup from any domain, 
+      enter *.
       If left empty, signup via the web UI is disabled and users will have to be created
       using
       Cognito.
