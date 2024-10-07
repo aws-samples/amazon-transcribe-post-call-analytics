@@ -627,17 +627,23 @@ Conditions:
     !Equals [!Ref GenAIQuery, 'BEDROCK'],
   ]
   ShouldDeployLLMThirdPartyApiKey: !And [!Not [!Equals [!Ref SummarizationLLMThirdPartyApiKey, '']], !Not [!Equals [!Ref SummarizationLLMThirdPartyApiKey, undefined]]]
-  ShouldTestBedrockModelId: !And [!Or [
-    !Equals [!Ref CallSummarization, 'BEDROCK'], 
-    !Equals [!Ref CallSummarization, "BEDROCK+TCA"],
-    !Equals [!Ref GenAIQuery, 'BEDROCK'],], !Equals [!Ref TestBedrockModelId, 'true']]
+  ShouldTestBedrockModelId: !And [
+    !Or [
+      !Equals [!Ref CallSummarization, 'BEDROCK'], 
+      !Equals [!Ref CallSummarization, "BEDROCK+TCA"],
+      !Equals [!Ref GenAIQuery, 'BEDROCK'],
+    ], 
+    !Equals [!Ref TestBedrockModelId, 'true']
+  ]
   ShouldTestGenAIQueryBedrockModelId: !And [
     !Equals [!Ref GenAIQuery, 'BEDROCK'], 
     !Equals [!Ref TestBedrockModelId, 'true']
   ]
-  ShouldTestSummarizationBedrockModelId: !And [!Or [
-    !Equals [!Ref CallSummarization, 'BEDROCK'],
-    !Equals [!Ref CallSummarization, "BEDROCK+TCA"],], 
+  ShouldTestSummarizationBedrockModelId: !And [
+    !Or [
+      !Equals [!Ref CallSummarization, 'BEDROCK'],
+      !Equals [!Ref CallSummarization, "BEDROCK+TCA"],
+    ], 
     !Equals [!Ref TestBedrockModelId, 'true']
   ]
 
