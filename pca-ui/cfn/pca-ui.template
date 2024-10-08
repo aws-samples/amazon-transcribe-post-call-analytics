@@ -16,6 +16,18 @@ Parameters:
       AllowedPattern: ".+\\@.+\\..+"
       ConstraintDescription: Must be valid email address eg. johndoe@example.com
 
+  AllowedSignUpEmailDomain:
+    Type: String
+    Default: ""
+    Description: >-
+      Email address domain (example.com) or comma separated list of email domains  (example1.com,
+      example2.com) allowed to signin and signup using the web UI. To allow signup from any domain, 
+      enter *.
+      If left empty, signup via the web UI is disabled and users will have to be created
+      using
+      Cognito.
+    AllowedPattern: '^(\*||([\w-]+\.)+[\w-]{2,6}(, *([\w-]+\.)+[\w-]{2,6})*)$' 
+
   AudioBucket:
     Type: String
     Default: InputBucketName
@@ -128,6 +140,7 @@ Resources:
       Parameters:
         AdminUsername: !Ref AdminUsername
         AdminEmail: !Ref AdminEmail
+        AllowedSignUpEmailDomain: !Ref AllowedSignUpEmailDomain
         WebUri: !GetAtt Web.Outputs.Uri
         Environment: !Ref Environment
         Name: 
