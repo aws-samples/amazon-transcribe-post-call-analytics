@@ -191,6 +191,7 @@ OR, if you opted to follow the steps above to Build and Publish PCA CloudFormati
 * For **Stack name**, use the default value, ``PostCallAnalytics``. 
 * For **AdminUsername,** use the default value, `admin`.
 * For **AdminEmail,** use a valid email address—your temporary password is emailed to this address during the deployment.
+* For **AllowedSignUpEmailDomain** Email address domain (example.com) or comma separated list of email domains (example1.com, example2.com) allowed to signin and signup using the web UI. To allow signup from any domain, enter *. If left empty, signup via the web UI is disabled and users will have to be created using Cognito.
 * For **loadSampleAudioFiles**, change the value to `true`.
 * For **EnableTranscriptKendraSearch**, change the value to ``Yes, create new Kendra Index (Developer Edition)``.
 

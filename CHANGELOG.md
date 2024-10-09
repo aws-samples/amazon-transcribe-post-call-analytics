@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.11] - 2024-10-09
+
+### Added
+- Disable checking if Bedrock models are enabled (default is set to true i.e check it which is the right setting for most cases).
+- Allow users to sign-up for access to Web UI when AllowedSignUpEmailDomain is populated (disable if left blank. enabled for all domains if * is entered).
+
 ## [0.7.10] - 2024-08-12
 
 ### Added
@@ -269,6 +275,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial release
 
 [Unreleased]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/compare/main...develop
+[0.7.11]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.7.11
+[0.7.10]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.7.10
 [0.7.9]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.7.9
 [0.7.8]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.7.8
 [0.7.7]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.7.7
