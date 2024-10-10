@@ -16,6 +16,7 @@ import Button from "@cloudscape-design/components/button";
 import StatusIndicator from "@cloudscape-design/components/status-indicator";
 import Icon from "@cloudscape-design/components/icon";
 import Link from "@cloudscape-design/components/link";
+import { useTranslation } from 'react-i18next';
 
 const COLUMN_DEFINITIONS = [
   {
@@ -191,9 +192,21 @@ const NoMatches = ({ children }) => (
   </tr>
 );
 
+const useTranslatedColumnDefinitions = () => {
+  const { t } = useTranslation();
+
+  return COLUMN_DEFINITIONS.map(column => ({
+    ...column,
+    header: t(`contactTable.${column.id}`)
+  }));
+};
+
 export const ContactTable = ({ data = [], loading = false, empty, header, variant='embedded' }) => {
   const history = useHistory();
-  
+
+  const { t } = useTranslation();
+  const translatedColumnDefinitions = useTranslatedColumnDefinitions();
+
   const [preferences, setPreferences] = useLocalStorage(
     'contact-table-preferences',
     DEFAULT_PREFERENCES,
@@ -227,13 +240,13 @@ export const ContactTable = ({ data = [], loading = false, empty, header, varian
               format: formatDateTime,
               match: 'datetime',
             })),
-            propertyLabel: "Timestamp",
+            propertyLabel: t("contactTable.timestamp"),
             groupValuesLabel: "Timestamps"
           },
           {
             key: "jobName",
             operators: ["=", "!=", ":", "!:"],
-            propertyLabel: "Job Name",
+            propertyLabel: t("contactTable.jobName"),
             groupValuesLabel: "Job Names"
           },
           {
@@ -245,50 +258,50 @@ export const ContactTable = ({ data = [], loading = false, empty, header, varian
           {
             key: "agent",
             operators: ["=", "!=", ":", "!:"],
-            propertyLabel: "Agent",
+            propertyLabel: t("contactTable.agent"),
             groupValuesLabel: "Agents"
           },
           {
             key: "customer",
             operators: ["=", "!=", ":", "!:"],
-            propertyLabel: "Customer",
+            propertyLabel: t("contactTable.customer"),
             groupValuesLabel: "Customers"
           },
           {
             key: "queue",
             operators: ["=", "!=", ":", "!:"],
-            propertyLabel: "Queue",
+            propertyLabel: t("contactTable.queue"),
             groupValuesLabel: "Queues"
           },
           {
             key: "summary_resolved",
             operators: ["=", "!=", ":", "!:"],
-            propertyLabel: "Resolved",
+            propertyLabel: t("contactTable.summary_resolved"),
             groupValuesLabel: "Resolved"
           },
           {
             key: "summary_topic",
             operators: ["=", "!=", ":", "!:"],
-            propertyLabel: "Topic",
+            propertyLabel: t("contactTable.summary_topic"),
             groupValuesLabel: "Topics"
           },
           {
             key: "summary_product",
             operators: ["=", "!=", ":", "!:"],
-            propertyLabel: "Product",
+            propertyLabel: t("contactTable.summary_product"),
             groupValuesLabel: "Products"
           },
           {
             key: "lang",
             operators: ["=", "!=", ":", "!:"],
-            propertyLabel: "Language Code",
+            propertyLabel: t("contactTable.langCode"),
             groupValuesLabel: "Languages Codes"
           },
           {
             key: "duration",
             defaultOperator: '>',
             operators: ['<', '<=', '>', '>='],
-            propertyLabel: "Duration",
+            propertyLabel: t("contactTable.duration"),
             groupValuesLabel: "Durations"
           }
         ],
@@ -309,7 +322,7 @@ export const ContactTable = ({ data = [], loading = false, empty, header, varian
       {...collectionProps}
       header={header}
       variant={variant}
-      columnDefinitions={COLUMN_DEFINITIONS}
+      columnDefinitions={translatedColumnDefinitions}
       columnDisplay={preferences.contentDisplay}
       items={items}
       //pagination={<Pagination {...paginationProps} />}
@@ -329,36 +342,35 @@ export const ContactTable = ({ data = [], loading = false, empty, header, varian
           }}*/
           //query={callQuery}
           i18nStrings={{
-            filteringAriaLabel: "your choice",
-            dismissAriaLabel: "Dismiss",
-            filteringPlaceholder: "Find calls",
-            groupValuesText: "Values",
-            groupPropertiesText: "Properties",
-            operatorsText: "Operators",
-            operationAndText: "and",
-            operationOrText: "or",
-            operatorLessText: "Less than",
-            operatorLessOrEqualText: "Less than or equal",
-            operatorGreaterText: "Greater than",
-            operatorGreaterOrEqualText:
-              "Greater than or equal",
-            operatorContainsText: "Contains",
-            operatorDoesNotContainText: "Does not contain",
-            operatorEqualsText: "Equals",
-            operatorDoesNotEqualText: "Does not equal",
-            editTokenHeader: "Edit filter",
-            propertyText: "Property",
-            operatorText: "Operator",
-            valueText: "Value",
-            cancelActionText: "Cancel",
-            applyActionText: "Apply",
-            allPropertiesLabel: "All properties",
-            tokenLimitShowMore: "Show more",
-            tokenLimitShowFewer: "Show fewer",
-            clearFiltersText: "Clear filters",
+            filteringAriaLabel: t("contactTable.filteringAriaLabel"),
+            dismissAriaLabel: t("contactTable.dismissAriaLabel"),
+            filteringPlaceholder: t("contactTable.filteringPlaceholder"),
+            groupValuesText: t("contactTable.groupValuesText"),
+            groupPropertiesText: t("contactTable.groupPropertiesText"),
+            operatorsText: t("contactTable.operatorsText"),
+            operationAndText: t("contactTable.operationAndText"),
+            operationOrText: t("contactTable.operationOrText"),
+            operatorLessText: t("contactTable.operatorLessText"),
+            operatorLessOrEqualText: t("contactTable.operatorLessOrEqualText"),
+            operatorGreaterText: t("contactTable.operatorGreaterText"),
+            operatorGreaterOrEqualText: t("contactTable.operatorGreaterOrEqualText"),
+            operatorContainsText: t("contactTable.operatorContainsText"),
+            operatorDoesNotContainText: t("contactTable.operatorDoesNotContainText"),
+            operatorEqualsText: t("contactTable.operatorEqualsText"),
+            operatorDoesNotEqualText: t("contactTable.operatorDoesNotEqualText"),
+            editTokenHeader: t("contactTable.editTokenHeader"),
+            propertyText: t("contactTable.propertyText"),
+            operatorText: t("contactTable.operatorText"),
+            valueText: t("contactTable.valueText"),
+            cancelActionText: t("contactTable.cancelActionText"),
+            applyActionText: t("contactTable.applyActionText"),
+            allPropertiesLabel: t("contactTable.allPropertiesLabel"),
+            tokenLimitShowMore: t("contactTable.tokenLimitShowMore"),
+            tokenLimitShowFewer: t("contactTable.tokenLimitShowFewer"),
+            clearFiltersText: t("contactTable.clearFiltersText"),
             removeTokenButtonAriaLabel: token =>
-              `Remove token ${token.propertyKey} ${token.operator} ${token.value}`,
-            enteredTextLabel: text => `Use: "${text}"`
+              t("contactTable.removeTokenButtonAriaLabel", { propertyKey: token.propertyKey, operator: token.operator, value: token.value }),
+            enteredTextLabel: text => t("contactTable.enteredTextLabel", { text })
           }}
           countText={getMatchesCountText(filteredItemsCount)}
           expandToViewport={true}
