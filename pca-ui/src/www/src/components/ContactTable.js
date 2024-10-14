@@ -17,6 +17,7 @@ import StatusIndicator from "@cloudscape-design/components/status-indicator";
 import Icon from "@cloudscape-design/components/icon";
 import Link from "@cloudscape-design/components/link";
 import { useTranslation } from 'react-i18next';
+import "../styles/CustomPopover.css";
 
 const COLUMN_DEFINITIONS = [
   {
@@ -131,7 +132,14 @@ const COLUMN_DEFINITIONS = [
             position="top"
             size="large"
             triggerType="text"
-            content={d.summary_summary}
+            content={
+              <div className="custom-popover-content">
+                <div className="custom-popover-header">Resumen de llamada</div>
+                <div className="custom-popover-body">{d.summary_summary}</div>
+              </div>
+            }
+            renderWithPortal={true}
+            className="custom-popover"
           >
             {(d.summary_summary.length > 20 ? d.summary_summary.substring(0, 20) + "..." : d.summary_summary)}
           </Popover>

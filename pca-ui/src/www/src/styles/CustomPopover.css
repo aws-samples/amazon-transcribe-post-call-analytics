@@ -1,0 +1,19 @@
+.custom-popover {
+    width: 567px !important;
+    height: 496px !important;
+    border-radius: 2px !important;
+    background-color: #FFFFFF !important;
+}
+  
+.custom-popover-content {
+    padding: 16px !important;
+}
+  
+.custom-popover-header {
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+  
+.custom-popover-body {
+    font-size: 14px;
+}
