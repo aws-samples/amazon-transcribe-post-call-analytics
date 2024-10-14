@@ -39,7 +39,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-region: ${{ secrets.AWS_BUCKET_REGION }}
-          role-to-assume: arn:aws:iam::${{ secrets.AWS_BUCKET_ACCOUNT }}:role/vue-app-uploader-role
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_BUCKET_ACCOUNT }}:role/GithubActionsS3Role
           role-session-name: GithubSession # OIDC
 
       - name: Check login
