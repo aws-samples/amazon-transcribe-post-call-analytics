@@ -1,0 +1,49 @@
+name: PCA UI www CD
+
+on:
+  push:
+    branches: [ "testing" ]
+  pull_request:
+    branches: [ "testing" ]
+
+#oidc encima de oauth 2.0
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions/setup-node@v1
+        with:
+          node-version: 14
+          cache: 'npm'
+
+      - name: install
+        run: npm i
+        working-directory: ./pca-ui/src/www
+
+      - name: Run unit tests
+        run: npm t
+        working-directory: ./pca-ui/src/www
+
+      - name: compile dist
+        run: npm run build
+        working-directory: ./pca-ui/src/www
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-region: ${{ secrets.AWS_BUCKET_REGION }}
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_BUCKET_ACCOUNT }}:role/vue-app-uploader-role
+          role-session-name: GithubSession # OIDC
+
+      - name: Check login
+        run: aws sts get-caller-identity
+
+      - name: Upload to S3
+        run: aws s3 sync ./pca-ui/src/www/build s3://${{ secrets.AWS_BUCKET_NAME }} --delete
