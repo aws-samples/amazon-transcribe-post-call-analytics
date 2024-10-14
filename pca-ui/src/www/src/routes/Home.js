@@ -25,6 +25,9 @@ import {
   Container
 } from '@cloudscape-design/components';
 
+import { useTranslation } from 'react-i18next';
+import "../locales/i18n";
+
 const config = window.pcaSettings;
 
 function Home({ setAlert }) {
@@ -54,6 +57,8 @@ function Home({ setAlert }) {
   const { data, error, size, setSize } = useSWRInfinite(getKey, fetcher);
   const [value, setValue] = React.useState([]);
 
+  const { t } = useTranslation();
+
   const isLoadingInitialData = !data && !error;
   const isLoadingMore =
     isLoadingInitialData ||
@@ -65,16 +70,16 @@ function Home({ setAlert }) {
 
   const details = (data || []).map((d) => d.Records).flat();
   useDangerAlert(error, setAlert);
-
+  
   return (
     <>
       <ContentLayout 
         header={
             <Header
               variant="h1"
-              description="Select a call record to view details."
+              description={t('home.description')}
               info={<Link variant="info" ariaLabel="Info goes here.">Info</Link>}>
-              Call List
+              {t('callList')}
             </Header>
         }>
         <Container>
@@ -85,7 +90,7 @@ function Home({ setAlert }) {
               {colspan: { default:12} }
             ]}
           >
-            <ExpandableSection headerText="Upload call recordings">
+            <ExpandableSection headerText={t("home.uploadCall")}>
                 <Upload/>
             </ExpandableSection>
             <ContactTable
@@ -99,10 +104,10 @@ function Home({ setAlert }) {
               disabled={isLoadingMore || isReachingEnd}
             >
               {isLoadingMore
-                ? "Loading..."
+                ? t("home.loading")
                 : isReachingEnd
-                ? "No more to load"
-                : "Load more"}
+                ? t("home.noMore")
+                : t("home.loadMore")}
             </Button>
           </Grid>
         </Container>
