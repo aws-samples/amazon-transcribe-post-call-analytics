@@ -123,34 +123,6 @@ const COLUMN_DEFINITIONS = [
   {
     id: "summary_summary",
     header: "Summary",
-    cell: (d) => {
-      console.log(d);
-      if (d.summary_summary !== undefined) {
-        return (
-          <Popover
-            dismissButton={false}
-            position="top"
-            size="large"
-            triggerType="text"
-            content={
-              <div className="custom-popover-content">
-                <div className="custom-popover-header">Resumen de llamada</div>
-                <div className="custom-popover-body">{d.summary_summary}</div>
-              </div>
-            }
-            renderWithPortal={true}
-            className="custom-popover"
-          >
-            {(d.summary_summary.length > 20 ? d.summary_summary.substring(0, 20) + "..." : d.summary_summary)}
-          </Popover>
-          /*
-          <ExpandableSection headerText={(d.summary_summary.length > 50 ? d.summary_summary.substring(0,50) + "..." : d.summary_summary )}>
-            {d.summary_summary}
-          </ExpandableSection>*/
-        )
-      }
-      return 'n/a';
-    },
     isRowHeader: true,
     sortingField: "summary_summary",
     minWidth:200
@@ -205,7 +177,32 @@ const useTranslatedColumnDefinitions = () => {
 
   return COLUMN_DEFINITIONS.map(column => ({
     ...column,
-    header: t(`contactTable.${column.id}`)
+    header: t(`contactTable.${column.id}`),
+    cell: column.id === "summary_summary" 
+      ? (d) => {
+          if (d.summary_summary !== undefined) {
+            return (
+              <Popover
+                dismissButton={false}
+                position="top"
+                size="large"
+                triggerType="text"
+                content={
+                  <div className="custom-popover-content">
+                    <div className="custom-popover-header">{t('contactTable.callSummary')}</div>
+                    <div className="custom-popover-body">{d.summary_summary}</div>
+                  </div>
+                }
+                renderWithPortal={true}
+                className="custom-popover"
+              >
+                {(d.summary_summary.length > 20 ? d.summary_summary.substring(0, 20) + "..." : d.summary_summary)}
+              </Popover>
+            )
+          }
+          return 'n/a';
+        }
+      : column.cell
   }));
 };
 
