@@ -32,7 +32,7 @@ jobs:
         working-directory: ./pca-ui/src/www
 
       - name: compile dist
-        run: npm run build
+        run: CI=false npm run build
         working-directory: ./pca-ui/src/www
 
       - name: Configure AWS Credentials
