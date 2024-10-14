@@ -103,7 +103,8 @@
         "entityRecognizer": "Entity Recognizer Name",
         "language": "Language Model",
         "agentSentiment": "Agent Sentiment",
-        "customerSentiment": "Customer Sentiment"
+        "customerSentiment": "Customer Sentiment",
+        "callSummary": "Call Summary"
     },
     "transcribeDetail": {
         "title": "Transcribe Details",

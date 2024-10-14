@@ -99,7 +99,8 @@
         "entityRecognizer": "Nombre del Detector de Entidades",
         "language": "Idioma del Modelo",
         "agentSentiment": "Sentimiento del Agente",
-        "customerSentiment": "Sentimiento del Cliente"
+        "customerSentiment": "Sentimiento del Cliente",
+        "callSummary": "Resumen de llamada"
     },
     "transcribeDetail": {
         "title": "Detalles de la transcripción",
