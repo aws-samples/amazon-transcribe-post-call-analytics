@@ -20,7 +20,7 @@ In directory `pca-ui/src/www`
 - again open the **Resources** tab, and navigate to the S2 bucket named `WebBucket`
 - download and copy `config.js` file into the local `pca-ui/src/www/public` folder.
 
-3. **Configure Cognito for local URL redirect\***
+3. **Configure Cognito for local URL redirect**
 
 - open the PCA stack **Resources** tab, and navigate to nested `PCAUI` stack
 - again open the **Resources** tab, and navigate to the nested `Cognito` stack
