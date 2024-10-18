@@ -2,9 +2,8 @@ name: PCA UI www CD
 
 on:
   push:
-    branches: [ "staging" ]
-  pull_request:
-    branches: [ "staging" ]
+    tags: 
+      - "alpha-*.*.*"
 
 #oidc encima de oauth 2.0
 permissions:
@@ -48,14 +47,11 @@ jobs:
       - name: Generate version file
         run: echo "NOW=$(date +'%Y-%m-%dT%H:%M:%S')" >> $GITHUB_ENV
 
-      - name: Print version file NOW
-        run: echo $NOW
-
       - name: Write version file
-        run: echo "{ \"name\"":" \"Evoltis PCA\", \"version\"":" \""$BITBUCKET_TAG"\", \"publishDate\"":"\""$NOW"\"}" >> ./pca-ui/src/www/build/version.json
+        run: echo "{ \"name\"":" \"Evoltis PCA\", \"version\"":" \""${{  github.ref_name }}"\", \"publishDate\"":"\""$NOW"\"}" >> ./pca-ui/src/www/build/version.json
 
       - name: Upload to S3
         run: aws s3 sync ./pca-ui/src/www/build s3://${{ secrets.AWS_BUCKET_NAME }} --delete --exclude "config.js"
 
       - name: Create Cloudfront invalidation
-        run: aws cloudfront create-invalidation --distribution-id EJO9SDT3WF3I8 --paths "/index.html"
+        run: aws cloudfront create-invalidation --distribution-id EJO9SDT3WF3I8 --paths "/index.html" "/version.json"
