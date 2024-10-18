@@ -15,12 +15,8 @@
     "headerTitle": "Amazon Transcribe Post-Call Analytics",
     "utilities": {
         "search": "Search",
-        "blogPost": "PCA Blog Post",
         "user": "User",
         "email": "Email",
-        "support": "Support",
-        "documentation": "GitHub/Readme",
-        "feedback": "Blog Post",
         "signout": "Sign out",
         "language": "Language",
         "language_en": "English",

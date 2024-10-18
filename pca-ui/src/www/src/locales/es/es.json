@@ -14,17 +14,13 @@
     "chatInputPlaceholder": "Ingrese una pregunta sobre la llamada.",
     "headerTitle": "Transcripción y Análisis de post llamadas de Amazon",
     "utilities": {
-      "search": "Buscar",
-      "blogPost": "Publicación del Blog PCA",
-      "user": "Usuario",
-      "email": "Correo electrónico",
-      "support": "Soporte",
-      "documentation": "GitHub/Readme",
-      "feedback": "Publicación del Blog",
-      "signout": "Cerrar sesión",
-      "language": "Idioma",
-      "language_en": "Inglés",
-      "language_es": "Español"
+        "search": "Buscar",
+        "user": "Usuario",
+        "email": "Correo electrónico",
+        "signout": "Cerrar sesión",
+        "language": "Idioma",
+        "language_en": "Inglés",
+        "language_es": "Español"
     },
     "home": {
         "title": "Inicio",
@@ -33,7 +29,6 @@
         "loading": "Cargando...",
         "noMore": "No hay más para cargar.",
         "loadMore": "Cargar más"
-
     },
     "upload": {
         "title": "Subir grabaciones de llamadas",

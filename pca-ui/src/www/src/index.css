@@ -1,6 +1,6 @@
 @import "react-datepicker/dist/react-datepicker.css";
 
-.react-datepicker__input-container > input {
+.react-datepicker__input-container>input {
   background-color: hsl(0, 0%, 100%);
   border-color: hsl(0, 0%, 80%);
   border-radius: 4px;
@@ -9,8 +9,30 @@
   padding: 7px 8px;
   width: 100%;
 }
-.react-datepicker__input-container > input:focus {
+
+.react-datepicker__input-container>input:focus {
   outline: 1px solid var(--bs-blue);
+}
+
+#root>div:nth-child(1)>div>header>div>div.awsui_utilities_k5dlb_j1i9i_227>div.awsui_utility-wrapper_k5dlb_j1i9i_238.awsui_utility-type-menu-dropdown_k5dlb_j1i9i_263>div>div>div:nth-child(3)>div.awsui_dropdown_qwoo0_l5rqw_93.awsui-visual-refresh.awsui-context-top-navigation.awsui_open_qwoo0_l5rqw_236.awsui_with-limited-width_qwoo0_l5rqw_217.awsui_refresh_qwoo0_l5rqw_114.awsui_dropdown-drop-left_qwoo0_l5rqw_220 {
+  border-radius: 20px;
+  box-shadow: -1px 3px 18px 0px rgb(30 33 71) !important;
+}
+
+.awsui_dropdown-content-wrapper_qwoo0_l5rqw_93:not(#\9)::after {
+  border: 1px solid #003aff5c !important;
+}
+
+.awsui_item-element_93a1u_1if6y_93.awsui_last_93a1u_1if6y_110:not(#\9) {
+  border-bottom: transparent !important;
+}
+
+.awsui_header_sne0l_1jdy2_144:not(#\9) {
+  border-bottom: 1px solid #003aff5c !important;
+}
+
+#awsui-button-dropdown__header3-1728945444025-8495 {
+  border: 3px solid #0034e5db;
 }
 
 img.sentiment {

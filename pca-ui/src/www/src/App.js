@@ -104,13 +104,6 @@ function Navigation({ userName, email }) {
             externalIconAriaLabel: " (opens in a new tab)"
           },
           {
-            type: "button",
-            text: t('utilities.blogPost'),
-            href: "https://amazon.com/post-call-analytics",
-            external: true,
-            externalIconAriaLabel: " (opens in a new tab)"
-          },
-          {
             type: "menu-dropdown",
             text: userName,
             description: email,
@@ -119,32 +112,8 @@ function Navigation({ userName, email }) {
               console.log(event);
               if (event.detail.id === "signout") logOut();
             },
-            items: [
-              /* { id: "profile", text: "Profile" },
-              { id: "preferences", text: "Preferences" },
-              { id: "security", text: "Security" },*/
-              {
-                id: "support-group",
-                text: t('utilities.support'),
-                items: [
-                  {
-                    id: "documentation",
-                    text: t('utilities.documentation'),
-                    href: "https://github.com/aws-samples/amazon-transcribe-post-call-analytics/",
-                    external: true,
-                    externalIconAriaLabel: 
-                      " (opens in new tab)"
-                  },
-                  {
-                    id: "feedback",
-                    text: t('utilities.feedback'),
-                    href: "https://amazon.com/post-call-analytics",
-                    external: true,
-                    externalIconAriaLabel: 
-                      " (opens in new tab)"
-                  }
-                ]
-              },
+            items: [            
+              { id: "security", text: "Security" },  
               { id: "signout", text: t('utilities.signout') }
             ]
           }
