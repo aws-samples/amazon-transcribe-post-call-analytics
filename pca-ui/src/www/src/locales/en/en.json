@@ -11,6 +11,9 @@
     "enabled": "Enabled",
     "disabled": "Disabled",
     "submit": "Submit",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "clear": "Clear",
     "chatInputPlaceholder": "Enter a question about the call.",
     "headerTitle": "Amazon Transcribe Post-Call Analytics",
     "utilities": {
@@ -103,7 +106,12 @@
         "entityRecognizer": "Entity Recognizer Name",
         "language": "Language Model",
         "agentSentiment": "Agent Sentiment",
-        "customerSentiment": "Customer Sentiment"
+        "customerSentiment": "Customer Sentiment",
+        "callListProperties": "Call List Properties",
+        "preferences": "Preferences",
+        "selectVisibleColumns": "Select visible columns",
+        "wrapLines": "Wrap Lines",
+        "wrapLinesDescription": "Check to see all the text and wrap the lines"
     },
     "transcribeDetail": {
         "title": "Transcribe Details",
@@ -127,5 +135,18 @@
     "question": "Ask a question below.",
     "callSummary": "Call Analytics Summary",
     "swapping": "Swapping...",
-    "swapAgent": "Swap Agent/Caller"
+    "swapAgent": "Swap Agent/Caller",
+    "search": {
+        "startWord": "The",
+        "middleWord": "sentiment of the",
+        "endWord": "is",
+        "average": "Average",
+        "trend": "Trend",
+        "caller": "Customer",
+        "agent": "Agent",
+        "positive": "Positive",
+        "negative": "Negative",
+        "entities": "Entities",
+        "jobName": "Job Name"
+    }
 }
