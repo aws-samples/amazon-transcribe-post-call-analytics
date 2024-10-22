@@ -20,10 +20,11 @@ const routes = [
     name: "Search",
     Component: Search,
     Breadcrumb: () => {
+      const { t } = useTranslation();
       return <BreadcrumbGroup
         items={[
-          { text: "Home", href: "../" },
-          { text: "Search", href: "search" }
+          { text: t("home.title"), href: "../" },
+          { text: t("utilities.search"), href: "search" }
         ]}
         ariaLabel="Breadcrumbs"
       />
@@ -34,10 +35,11 @@ const routes = [
     name: "Search",
     Component: Search,
     Breadcrumb: () => {
+      const { t } = useTranslation();
       return <BreadcrumbGroup
         items={[
-          { text: "Home", href: "../" },
-          { text: "Search", href: "search" }
+          { text: t("home.title"), href: "../" },
+          { text: t("utilities.search"), href: "search" }
         ]}
         ariaLabel="Breadcrumbs"
       />
