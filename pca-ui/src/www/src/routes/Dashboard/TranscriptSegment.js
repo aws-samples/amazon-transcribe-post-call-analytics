@@ -1,8 +1,6 @@
 import { SentimentIcon } from "../../components/SentimentIcon";
 import { Formatter } from "../../format";
 import {Tag} from "../../components/Tag";
-import { Box } from '@cloudscape-design/components';
-
 
 const getTranscriptDetails = (allSegments) => {
   let offsetStartValue = 0;
