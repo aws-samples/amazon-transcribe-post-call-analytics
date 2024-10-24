@@ -200,7 +200,14 @@ const useTranslatedColumnDefinitions = () => {
               </Popover>
             )
           }
-          return 'n/a';
+          return <div style={{
+            fontFamily: 'Helvetica',
+            fontSize: '14px',
+            fontWeight: 400,
+            lineHeight: '22px',
+            textAlign: 'left',
+            color: '#000000'
+          }}>n/a</div>;
         }
       : column.cell
   }));
