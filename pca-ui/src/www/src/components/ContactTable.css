@@ -8,3 +8,108 @@
     max-width: 10ch;
     display: flex;
 }
+
+
+.custom-popover-content {
+    font-family: Helvetica;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 22px;
+    text-align: left;
+}
+
+
+.custom-popover-body {
+    font-family: Helvetica;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 22px;
+    text-align: left;
+}
+
+.awsui_button_vjswe_juk2v_153.awsui_variant-normal_vjswe_juk2v_204:not(#\9) {
+    background: var(--color-background-button-normal-default-zr63bz, #ffffff);
+    color: #2C2F88;
+    border-color: #2C2F88;
+    position: relative;
+    text-decoration: none;
+}
+
+.awsui_token_19bso_p9yrw_199:not(#\9),
+.awsui_inner-token_19bso_p9yrw_200:not(#\9) {
+    border-block: var(--border-field-width-09w7vk, 2px) solid #2C2F88;
+    border-inline: var(--border-field-width-09w7vk, 2px) solid #2C2F88;
+    border-inline-start: var(--border-field-width-09w7vk, 2px) solid #2C2F88;
+}
+
+.awsui_button-trigger_18eso_1s6dq_157>.awsui_arrow_18eso_1s6dq_157:not(#\9) {
+    color: #2C2F88;
+}
+
+.awsui_button-trigger_18eso_1s6dq_157.awsui_in-filtering-token-root_18eso_1s6dq_220:not(#\9),
+.awsui_button-trigger_18eso_1s6dq_157.awsui_in-filtering-token-nested_18eso_1s6dq_220:not(#\9) {
+    border-color: var(--color-border-item-selected-m769ej, #2C2F88);
+}
+
+.awsui_button_vjswe_juk2v_153.awsui_variant-primary_vjswe_juk2v_296:not(#\9) {
+    background: #2C2F88;
+    color: #ffffff;
+    border-color: #2C2F88;
+    position: relative;
+    text-decoration: none;
+}
+
+.awsui_link_4c84z_1dta4_141.awsui_variant-primary_4c84z_1dta4_245:not(#\9) {
+    color: #2C2F88;
+}
+
+.awsui_token_19bso_p9yrw_199:not(#\9),
+.awsui_inner-token_19bso_p9yrw_200:not(#\9) {
+    background-color: #EDF3FF;
+    color: #080709;
+}
+
+.awsui_edit-button_19bso_p9yrw_263:not(#\9),
+.awsui_dismiss-button_19bso_p9yrw_264:not(#\9),
+.awsui_inner-dismiss-button_19bso_p9yrw_265:not(#\9) {
+    border-inline-start: var(--border-field-width-09w7vk, 2px) solid #2C2F88
+}
+
+.awsui_button-trigger_18eso_1s6dq_157.awsui_in-filtering-token-root_18eso_1s6dq_220:not(#\9),
+.awsui_button-trigger_18eso_1s6dq_157.awsui_in-filtering-token-nested_18eso_1s6dq_220:not(#\9) {
+    border-color: #2C2F88;
+}
+
+.awsui_variant-normal_h11ix_229dc_316 {
+    color: #4C4F7D !important;
+}
+
+[class*='awsui_variant-normal'] {
+    color: #4C4F7D !important;
+}
+
+[class*='awsui_button'][class*='awsui_variant-link'] {
+    background: transparent;
+    border-color: transparent;
+}
+
+[class*='awsui_calendar-date'] {
+    border: none !important;
+    background-color: transparent !important;
+}
+
+/* Estilo para la fecha seleccionada */
+[class*='awsui_calendar-date-selected']::after {
+    background-color: #2C2F88 !important;
+    border: none !important;
+}
+
+td[class*="awsui_calendar-grid-cell"][aria-current="date"],
+td[class*="awsui_calendar-grid-cell_1ykar_12fgq_252"][aria-current="date"],
+td[class*="awsui_calendar-date-current-page_1ykar"] {
+    color: #080709;
+}
+
+:root {
+    --color-text-button-normal-default-476t5h: #2C2F88;
+}

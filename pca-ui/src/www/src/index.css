@@ -58,3 +58,21 @@ span.audio-start {
   color: #4c7f81;
   cursor: pointer;
 }
+
+.awsui_click-target_gwq0h_10iv9_479:not(#\9):not(.awsui_wrapper-container_gwq0h_10iv9_286):not(.awsui_header-container-button_gwq0h_10iv9_364):hover {
+  color: #2C2F88 !important;
+}
+
+:root {
+  --color-text-expandable-section-hover-lomw6v: #2C2F88;
+}
+
+[class*='awsui_click-target']:hover {
+  color: #2C2F88 !important;
+}
+
+
+.awsui_breadcrumb_1kosq_1md44_145>.awsui_anchor_1kosq_1md44_155:not(#\9),
+.awsui_ghost-breadcrumb_1kosq_1md44_146>.awsui_anchor_1kosq_1md44_155:not(#\9) {
+  color: #7C91FD;
+}

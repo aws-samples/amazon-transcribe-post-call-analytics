@@ -447,52 +447,55 @@ function Dashboard({ setAlert }) {
   };
 
   const issuesTab = () => {
-    return <div key='issuesTab'>
+    return <div key='issuesTab' style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
       {data?.ConversationAnalytics?.IssuesDetected?.length > 0 ? 
         data?.ConversationAnalytics?.IssuesDetected?.map((issue, j) => (
           <Tag key={j}
             style={{
               "--highlight-colour": "yellow",
+              fontFamily: 'Helvetica, Arial, sans-serif'
             }}
           >
             {issue.Text}
           </Tag>
-        )) : <div tag='no-issue'>No issues detected.</div>
+        )) : <div tag='no-issue' style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>No issues detected.</div>
       }
     </div>
   }
   const actionItemsTab = () => {
-    return <div key='actionItemsTab'>
+    return <div key='actionItemsTab' style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
       {data?.ConversationAnalytics?.ActionItemsDetected?.length > 0 ? 
       data?.ConversationAnalytics?.ActionItemsDetected?.map(
         (actionItem, j) => (
           <Tag key={j}
             style={{
               "--highlight-colour": "LightPink",
+              fontFamily: 'Helvetica, Arial, sans-serif'
             }}
           >
             {actionItem.Text}
           </Tag>
         )
-        ) : <div tag='no-action-items'>No action items detected.</div>
-      }
+      ) : <div tag='no-action-items' style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>No action items detected.</div>
+    }
     </div>
   }
 
   const outcomesTab = () => {
-    return <div key='outcomesTab'>
+    return <div key='outcomesTab' style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
       {data?.ConversationAnalytics?.OutcomesDetected?.length > 0 ?
         data?.ConversationAnalytics?.OutcomesDetected?.map(
         (outcome, j ) => (
           <Tag key={j}
             style={{
               "--highlight-colour": "Aquamarine",
+              fontFamily: 'Helvetica, Arial, sans-serif'
             }}
           >
             {outcome.Text}
           </Tag>
         )
-        ): <div tag='no-outcomes'>No outcomes detected.</div>
+      ): <div tag='no-outcomes' style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>No outcomes detected.</div>
     }
     </div>
   }
@@ -563,7 +566,7 @@ function Dashboard({ setAlert }) {
         <Container
           fitHeight={true}
           header={
-            <Header variant="h2">
+            <Header variant="h2" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
               {t("callMetadata")}
             </Header>
           }
@@ -745,19 +748,19 @@ function Dashboard({ setAlert }) {
             }
             
           >
-            <div style={{minHeight:'38em'}}>
-              {!data && !error ? (
-                <h4>No summary available.</h4>
+          <div style={{ minHeight: '38em', fontFamily: 'Helvetica, Arial, sans-serif' }}>
+            {!data && !error ? (
+                <h4 style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>No summary available.</h4>
               ) : (
                   <SpaceBetween size="l">
-                    <ValueWithLabel key='issues' label="Issue">
-                      {issuesTab()}
+                  <ValueWithLabel key='outcomes' label="Outcomes" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+                    {issuesTab()}
                     </ValueWithLabel>
-                    <ValueWithLabel key='actionItems' label="Action Items">
-                      {actionItemsTab()}
+                    <ValueWithLabel key='outcomes' label="Outcomes" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+                    {actionItemsTab()}
                     </ValueWithLabel>
-                    <ValueWithLabel key='outcomes' label="Outcomes">
-                      {outcomesTab()}
+                    <ValueWithLabel key='outcomes' label="Outcomes" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+                    {outcomesTab()}
                     </ValueWithLabel>
                   </SpaceBetween>
               )}
