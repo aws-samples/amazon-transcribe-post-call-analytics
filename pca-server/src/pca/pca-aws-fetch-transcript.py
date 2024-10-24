@@ -52,6 +52,11 @@ def generate_transcript_string(pca_results):
         transcript_str = truncate_number_of_words(transcript_str, TOKEN_COUNT)
     return transcript_str
 
+def write_to_s3(bucket, key, transcript):
+    s3 = boto3.client('s3')
+    s3.put_object(Bucket=bucket, Key=f"{key}", Body=transcript)
+    print(f"Wrote transcript to S3: s3://{bucket}/{key}")
+
 
 def lambda_handler(event, context):
     """
@@ -76,6 +81,11 @@ def lambda_handler(event, context):
         processTranscript = event['processTranscript']
         if processTranscript:
             transcript_str = remove_filler_words(transcript_str)
+
+    # write the (redacted) transcribe to a file in a new folder in the output bucket
+    redactedfilekey = "redacted_transcripts/" + event["interimResultsFile"].split('/')[-1]
+    redactedfilekey = redactedfilekey.replace(".json", ".txt")
+    write_to_s3(cf.appConfig[cf.CONF_S3BUCKET_OUTPUT], redactedfilekey, transcript_str)
 
     return {
         'transcript': transcript_str

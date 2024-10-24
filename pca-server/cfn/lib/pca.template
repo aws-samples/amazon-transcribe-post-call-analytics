@@ -203,6 +203,7 @@ Resources:
         - arn:aws:iam::aws:policy/AmazonS3FullAccess
         - arn:aws:iam::aws:policy/ComprehendFullAccess
         - arn:aws:iam::aws:policy/AmazonKendraFullAccess
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaRole
 
   SFFinalProcessing:
     Type: "AWS::Serverless::Function"

@@ -442,6 +442,8 @@ class TranscribeParser:
         """
         client = boto3.client("comprehend")
 
+        lambda_client = boto3.client('lambda')
+
         # Setup some sentiment blocks - used when we have no Comprehend
         # language or where we need "something" for Call Analytics
         sentiment_set_neutral = {'Positive': 0.0, 'Negative': 0.0, 'Neutral': 1.0}
@@ -450,6 +452,17 @@ class TranscribeParser:
 
         # Go through each of our segments
         for next_segment in segment_list:
+
+            # invoke a custom (named) lambda function using boto3, to process the text and return new text 
+            response = lambda_client.invoke(
+                FunctionName='redactPIIHungarian',
+                InvocationType='RequestResponse',
+                Payload=json.dumps({'original': next_segment.segmentText})
+            )
+            payload = json.loads(response['Payload'].read().decode("utf-8"))
+            print("payload: ", payload)
+            next_segment.segmentText = payload["redacted"]
+
             if len(next_segment.segmentText) >= MIN_SENTIMENT_LENGTH:
                 nextText = next_segment.segmentText
 
