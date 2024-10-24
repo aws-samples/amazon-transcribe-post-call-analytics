@@ -254,7 +254,7 @@ Parameters:
 
   loadSampleAudioFiles:
     Type: String
-    Default: false
+    Default: true
     AllowedValues:
         - true
         - false
