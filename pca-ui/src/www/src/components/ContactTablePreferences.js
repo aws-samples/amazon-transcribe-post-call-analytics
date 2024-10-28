@@ -1,6 +1,7 @@
 import * as React from "react";
 import CollectionPreferences from "@cloudscape-design/components/collection-preferences";
 import { useTranslation } from 'react-i18next';
+import '../styles/ContactTablePreferences.css';
 
 const PAGE_SIZE_OPTIONS = [
   { value: 10, label: '10 Calls' },

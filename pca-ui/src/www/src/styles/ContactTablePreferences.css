@@ -1,0 +1,66 @@
+:root {
+    --custom-button-color: #2C2F88;
+    --custom-disabled-button-color: #ADAFCC;
+    --custom-text-color: #606597;
+    --custom-title-color: #3E4066;
+    --custom-background-color: #FCFCFC;
+}
+
+div[role="dialog"] * {
+    font-family: 'Helvetica', sans-serif !important;
+}
+
+.awsui_control_1wepg_176vx_153.awsui_toggle-control_4yi2u_gytnh_126.awsui_toggle-control-checked_4yi2u_gytnh_135 {
+    background-color: var(--custom-button-color) !important;
+}
+
+.awsui_confirm-button_tc96w_vp1sw_524.awsui_button_vjswe_jz1q6_101.awsui_variant-primary_vjswe_jz1q6_210 {
+    background-color: var(--custom-button-color) !important;
+    border: none !important;
+    border-radius: 40px !important;
+    color: white !important; 
+    padding: 6px 22px !important;
+    box-shadow: none !important;
+    font-size: 14px !important;
+    line-height: 22px !important;
+    font-weight: 700 !important;
+}
+
+.awsui_control_1wepg_176vx_153.awsui_toggle-control_4yi2u_gytnh_126 {
+    background-color: var(--custom-disabled-button-color) !important;
+}
+
+.awsui_cancel-button_tc96w_vp1sw_523.awsui_button_vjswe_jz1q6_101.awsui_variant-link_vjswe_jz1q6_294 {
+    color: var(--custom-button-color) !important;
+    font-size: 14px !important;
+    line-height: 22px !important;
+    font-weight: 700 !important;
+    border-radius: 40px !important;
+    padding: 6px 22px !important;
+}
+
+.awsui_heading-text_2qdw9_yzcal_264.awsui_heading-text-variant-h2_2qdw9_yzcal_275 {
+    font-family: 'Helvetica', sans-serif !important;
+    margin: 16px 0 !important;
+    font-size: 24px !important;
+    line-height: 30px !important;
+    color: #080709 !important;
+    font-weight: 700 !important;
+}
+
+.awsui_root_1fn7j_vifsx_93 > .awsui_styled-box_1fn7j_vifsx_100:not(#\9) {
+    stroke: var(--custom-text-color) !important;
+}
+
+.awsui_description_1wepg_176vx_94.awsui_description-bottom-padding_1wepg_176vx_139 {
+    color: var(--custom-text-color) !important;
+    font-weight: 400 !important;
+    line-height: 16px !important;
+    font-size: 12px !important;
+    width: 230px !important;
+    height: 48px !important;
+}
+
+.awsui_visible-content-group-label_tc96w_vp1sw_201 {
+    color: var(--custom-title-color) !important;
+}
