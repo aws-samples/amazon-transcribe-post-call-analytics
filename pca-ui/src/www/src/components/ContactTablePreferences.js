@@ -1,6 +1,7 @@
 import * as React from "react";
 import CollectionPreferences from "@cloudscape-design/components/collection-preferences";
 import { useTranslation } from 'react-i18next';
+import '../styles/ContactTablePreferences.css';
 
 const PAGE_SIZE_OPTIONS = [
   { value: 10, label: '10 Calls' },
@@ -59,26 +60,26 @@ export const ContactTablePreferences = ({
   const { t } = useTranslation();
 
   return (
-    <CollectionPreferences
-      title={t("contactTable.preferences")}
-      confirmLabel={t("confirm")}
-      cancelLabel={t("cancel")}
-      onConfirm={({ detail }) => setPreferences(detail)}
-      preferences={preferences}
-      disabled={disabled}
-      stickyColumnsPreference={{}}
-      /*pageSizePreference={{
-        title: "Page Size",
-        options: pageSizeOptions
-      }}*/
-      wrapLinesPreference={{
-        label: t('contactTable.wrapLines'),
-        description: t('contactTable.wrapLinesDescription'),
-      }}
-      visibleContentPreference={{
-        title: t('contactTable.selectVisibleColumns'),
-        options: VISIBLE_CONTENT_OPTIONS(t),
-      }}
-    />
+      <CollectionPreferences
+        title={t("contactTable.preferences")}
+        confirmLabel={t("confirm")}
+        cancelLabel={t("cancel")}
+        onConfirm={({ detail }) => setPreferences(detail)}
+        preferences={preferences}
+        disabled={disabled}
+        stickyColumnsPreference={{}}
+        /*pageSizePreference={{
+          title: "Page Size",
+          options: pageSizeOptions
+        }}*/
+        wrapLinesPreference={{
+          label: t('contactTable.wrapLines'),
+          description: t('contactTable.wrapLinesDescription'),
+        }}
+        visibleContentPreference={{
+          title: t('contactTable.selectVisibleColumns'),
+          options: VISIBLE_CONTENT_OPTIONS(t),
+        }}
+      />
   );
 }
