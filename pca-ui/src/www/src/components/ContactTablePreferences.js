@@ -60,26 +60,26 @@ export const ContactTablePreferences = ({
   const { t } = useTranslation();
 
   return (
-      <CollectionPreferences
-        title={t("contactTable.preferences")}
-        confirmLabel={t("confirm")}
-        cancelLabel={t("cancel")}
-        onConfirm={({ detail }) => setPreferences(detail)}
-        preferences={preferences}
-        disabled={disabled}
-        stickyColumnsPreference={{}}
-        /*pageSizePreference={{
-          title: "Page Size",
-          options: pageSizeOptions
-        }}*/
-        wrapLinesPreference={{
-          label: t('contactTable.wrapLines'),
-          description: t('contactTable.wrapLinesDescription'),
-        }}
-        visibleContentPreference={{
-          title: t('contactTable.selectVisibleColumns'),
-          options: VISIBLE_CONTENT_OPTIONS(t),
-        }}
-      />
+    <CollectionPreferences
+      title={t("contactTable.preferences")}
+      confirmLabel={t("confirm")}
+      cancelLabel={t("cancel")}
+      onConfirm={({ detail }) => setPreferences(detail)}
+      preferences={preferences}
+      disabled={disabled}
+      stickyColumnsPreference={{}}
+      /*pageSizePreference={{
+        title: "Page Size",
+        options: pageSizeOptions
+      }}*/
+      wrapLinesPreference={{
+        label: t('contactTable.wrapLines'),
+        description: t('contactTable.wrapLinesDescription'),
+      }}
+      visibleContentPreference={{
+        title: t('contactTable.selectVisibleColumns'),
+        options: VISIBLE_CONTENT_OPTIONS(t),
+      }}
+    />
   );
 }
