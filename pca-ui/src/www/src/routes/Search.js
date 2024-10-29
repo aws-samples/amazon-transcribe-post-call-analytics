@@ -100,6 +100,7 @@ function Search({ setAlert }) {
             <FormField label={t("utilities.language")}>
               <SpaceBetween direction="horizontal" size="l">
                 <Select
+                  placeholder={t("select")}
                   onChange={(event) => handleQueryInput(event.value, "language")}
                   options={(languageCodes || []).map((code, i) => ({
                     label: code,
@@ -132,7 +133,7 @@ function Search({ setAlert }) {
                   dateFormat="yyyy-MM-dd"
                   onChange={handleDates}
                   maxDate={new Date()}
-                  placeholderText="Select a start and end date"
+                  placeholderText={t("search.dateRange")}
                 />
                 <Button
                   className="mt-2"
@@ -150,6 +151,7 @@ function Search({ setAlert }) {
           <SpaceBetween direction="horizontal" size="l">
             <p className="align-self-end mb-0">{t('search.startWord')}</p>
               <Select
+                placeholder={t("select")}
                 className="flex-grow-1"
                 options={sentimentWhat}
                 onChange={(event) =>
@@ -162,6 +164,7 @@ function Search({ setAlert }) {
               />
               <p className="align-self-end mb-0">{t('search.middleWord')}</p>
               <Select
+                placeholder={t("select")}
                 className="flex-grow-1"
                 options={sentimentWho}
                 onChange={(event) =>
@@ -173,6 +176,7 @@ function Search({ setAlert }) {
               />
               <p className="align-self-end mb-0">{t('search.endWord')}</p>
               <Select
+                placeholder={t("select")}
                 className="flex-grow-1"
                 options={sentimentDirection}
                 onChange={(event) =>

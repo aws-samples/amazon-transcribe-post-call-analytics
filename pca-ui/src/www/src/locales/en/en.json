@@ -14,6 +14,7 @@
     "confirm": "Confirm",
     "cancel": "Cancel",
     "clear": "Clear",
+    "select": "Select",
     "chatInputPlaceholder": "Enter a question about the call.",
     "headerTitle": "Amazon Transcribe Post-Call Analytics",
     "utilities": {
@@ -143,6 +144,14 @@
         "positive": "Positive",
         "negative": "Negative",
         "entities": "Entities",
-        "jobName": "Job Name"
+        "jobName": "Job Name",
+        "dateRange": "MM/DD/YYYY",
+        "selectEntities": "Select entities"
+    },
+    "charts": {
+        "callQuarter": "Call Quarter",
+        "score": "Score",
+        "sentiment": "Sentiment (-5 to 5)",
+        "seconds": "Seconds"
     }
 }
