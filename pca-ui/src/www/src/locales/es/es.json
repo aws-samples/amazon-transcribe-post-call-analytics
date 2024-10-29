@@ -14,7 +14,8 @@
     "confirm": "Confirmar",
     "cancel": "Cancelar",
     "clear": "Borrar",
-    "chatInputPlaceholder": "Aquí puedes conversar con la IA sobre la transcripción de la llamada.",
+    "select": "Seleccionar",
+    "chatInputPlaceholder": "Escribe tu pregunta aquí.",
     "headerTitle": "Transcripción y Análisis de post llamadas de Amazon",
     "utilities": {
       "search": "Buscar",
@@ -31,7 +32,7 @@
     },
     "home": {
         "title": "Inicio",
-        "description": "Seleccione una llamada para ver los detalles.",
+        "description": "Es un listado de las llamadas disponibles. Seleccione una para ver más detalles.",
         "uploadCall": "Subir grabaciones de llamadas",
         "loading": "Cargando...",
         "noMore": "No hay más para cargar.",
@@ -99,7 +100,7 @@
         "langCode": "Idioma",
         "duration": "Duración",
         "callDuration": "Duración de la llamada",
-        "entityRecognizer": "Nombre del Detector de Entidades",
+        "entityRecognizer": "Identificador de entidades",
         "language": "Idioma del Modelo",
         "agentSentiment": "Sentimiento del Agente",
         "customerSentiment": "Sentimiento del Cliente",
@@ -112,23 +113,25 @@
     "transcribeDetail": {
         "title": "Detalles de la transcripción",
         "type": "Tipo",
-        "jobId": "ID del trabajo",
+        "jobId": "ID de procesamiento/operación",
         "fileFormat": "Formato de Archivo",
-        "sampleRate": "Tasa de Muestreo",
-        "piiRedaction": "Redacción de PII",
+        "sampleRate": "Frecuencia de muestreo",
+        "piiRedaction": "Redacción de PIL",
         "vocabulary": "Vocabulario Personalizado",
         "vocabularyFilter": "Filtro de Vocabulario",
-        "averageConfidence": "Confianza Promedio de la Palabra"
+        "averageConfidence": "Confianza promedio por palabra"
     },
     "sentiment": "Sentimiento",
-    "speakerTime": "Tiempo de Habla",
+    "callSentiment": "Sentimiento de la llamada",
+    "trend": "Tendencia",
+    "speakerTime": "Tiempo conversado",
     "comprehendSentiment": "Análisis de sentimiento",
     "transcript": "Transcripción",
     "entities": "Entidades",
     "categories": "Categorías",
     "genaiInsights": "Entendimiento de la IA",
     "genaiQuery": "Consultas a la IA",
-    "question": "Escribe tu pregunta aquí.",
+    "question": "Aquí puedes conversar con la IA sobre la transcripción de la llamada.",
     "callSummary": "Resumen de Análisis de Llamadas",
     "swapping": "Intercambiando...",
     "swapAgent": "Intercambiar Agente/Cliente",
@@ -143,6 +146,14 @@
         "positive": "Positivo",
         "negative": "Negativo",
         "entities": "Entidades",
-        "jobName": "Nombre del trabajo"
+        "jobName": "Nombre del trabajo",
+        "dateRange": "DD/MM/AAAA",
+        "selectEntities": "Seleccionar entidades"
+    },
+    "charts": {
+        "callQuarter": "Llamadas por trimestre",
+        "score": "Puntuación",
+        "sentiment": "Sentimiento (-5 a 5)",
+        "seconds": "Segundos"
     }
 }

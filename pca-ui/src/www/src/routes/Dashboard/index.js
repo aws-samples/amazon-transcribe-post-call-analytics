@@ -603,7 +603,7 @@ function Dashboard({ setAlert }) {
         <Container
           header={
             <Header variant="h2">
-              {t("sentiment")}
+              {t("callSentiment")}
             </Header>
           }>
             <SentimentChart
