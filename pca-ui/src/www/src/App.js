@@ -2,10 +2,9 @@ import {
   BrowserRouter as Router,
   Switch,
   Route,
-  NavLink,
 } from "react-router-dom";
 // import { Navbar, Nav, Container, Alert, Button } from "react-bootstrap";
-import { AppLayout,Alert,Notifications, Header, Link, BreadcrumbGroup, TopNavigation, Container, Button} from "@cloudscape-design/components"
+import { AppLayout,Alert, BreadcrumbGroup, TopNavigation} from "@cloudscape-design/components"
 import Home from "./routes/Home";
 import Search from "./routes/Search";
 import Dashboard from "./routes/Dashboard/index";
@@ -13,6 +12,7 @@ import { useState } from "react";
 import { payloadFromToken, logOut } from "./api/auth";
 import { useTranslation } from 'react-i18next';
 import "./locales/i18n";
+import logo from './assets/logo.png';
 
 const routes = [
   {
@@ -81,14 +81,16 @@ const routes = [
 
 function Navigation({ userName, email }) {
   const { t } = useTranslation();
-
-  return (
+  return (    
       <TopNavigation
-        identity={{
-          href: "/",
-          title: t('headerTitle'),
-          iconName: "settings"
-        }}
+      identity={{
+        href: "/",
+        title:  <div style={{ display: 'flex', alignItems: 'center' }}>
+        <img src={logo} alt={t('headerImageAlt')} style={{ height: 25, marginRight: '8px' }} />
+        {t('headerTitle')}
+      </div>,
+        iconName: "settings",
+      }}
         i18nStrings={{
           searchIconAriaLabel: t('searchIconAriaLabel'),
           searchDismissIconAriaLabel: t('searchDismissIconAriaLabel'),

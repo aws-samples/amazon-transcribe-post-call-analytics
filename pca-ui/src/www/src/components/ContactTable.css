@@ -108,8 +108,49 @@ td[class*="awsui_calendar-grid-cell"][aria-current="date"],
 td[class*="awsui_calendar-grid-cell_1ykar_12fgq_252"][aria-current="date"],
 td[class*="awsui_calendar-date-current-page_1ykar"] {
     color: #080709;
+
 }
 
 :root {
     --color-text-button-normal-default-476t5h: #2C2F88;
+}
+
+/* Estilo específico para la celda del día actual */
+td[aria-current="date"][class*="awsui_calendar-grid-cell"],
+td[aria-current="date"][class*="awsui_calendar-date"],
+.awsui_calendar-date-current-page_lykar_12fgq_287[aria-current="date"] {
+    background-color: #EFEFEF !important;
+}
+
+/* También apuntamos al span interno del día actual */
+td[aria-current="date"] .awsui_date-inner_lykar_12fgq_327,
+td[aria-current="date"] span[class*="awsui_date-inner"] {
+    background-color: #EFEFEF !important;
+}
+
+/* Estilo para el número dentro de la celda seleccionada
+.awsui_date-inner_lykar_12fgq_327,
+span[class*='awsui_date-inner'] {
+    color: #ffffff !important;
+    background-color: transparent !important;
+} */
+
+/* Estilo para la celda del día actual cuando está seleccionada */
+td[aria-current="date"][aria-selected="true"],
+td[class*='awsui_calendar-date-selected'][aria-current="date"] {
+    border: 2px solid #2C2F88 !important;
+    background-color: #EFEFEF !important;
+    color: #000000 !important;
+}
+
+/* Remover el background del pseudo-elemento after cuando es el día actual */
+td[aria-current="date"][aria-selected="true"]::after,
+td[class*='awsui_calendar-date-selected'][aria-current="date"]::after {
+    background-color: transparent !important;
+    color: #000000 !important;
+}
+
+
+td[aria-current="date"] span[class*='awsui_date-inner'] {
+    color: #000000 !important;
 }
