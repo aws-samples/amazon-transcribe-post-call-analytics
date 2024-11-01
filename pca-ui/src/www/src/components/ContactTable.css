@@ -9,6 +9,9 @@
     display: flex;
 }
 
+.awsui_root_wih1l_1200x_149:not(#\9) {
+    font-family: "Helvetica", "Arial", sans-serif !important;
+}
 
 .custom-popover-content {
     font-family: Helvetica;
@@ -28,11 +31,34 @@
 }
 
 .awsui_button_vjswe_juk2v_153.awsui_variant-normal_vjswe_juk2v_204:not(#\9) {
-    background: var(--color-background-button-normal-default-zr63bz, #ffffff);
-    color: #2C2F88;
+    background: #2C2F88;
     border-color: #2C2F88;
     position: relative;
     text-decoration: none;
+}
+
+.awsui_label_1f1d4_ocied_5:not(#\9) {
+    color: #FFFFFF;
+}
+
+.awsui_button_vjswe_juk2v_153.awsui_variant-normal_vjswe_juk2v_204:not(#\9):hover {
+    background: #5351FB;
+    border-color: #5351FB;
+}
+
+button[aria-label="refresh"] {
+    background: transparent !important;
+    /* Fondo transparente */
+    border: 2px solid #2C2F88 !important;
+    /* Bordes de color #2C2F88 */
+    color: #2C2F88 !important;
+    /* Color del texto, si es necesario */
+}
+
+.awsui_button_vjswe_juk2v_153[aria-label="refresh"]:hover {
+    background: #DFE8FF !important;
+    border-color: #2C2F88 !important;
+    color: #2C2F88 !important;
 }
 
 .awsui_token_19bso_p9yrw_199:not(#\9),
@@ -68,6 +94,34 @@
     background-color: #EDF3FF;
     color: #080709;
 }
+
+.awsui_breadcrumb_1kosq_1md44_145>.awsui_anchor_1kosq_1md44_155:not(#\9),
+.awsui_ghost-breadcrumb_1kosq_1md44_146>.awsui_anchor_1kosq_1md44_155:not(#\9) {
+    color: #7C91FD;
+}
+
+.awsui_anchor_1kosq_1md44_155 {
+    text-decoration: none;
+    /* Quita el subrayado por defecto */
+    transition: text-decoration 0.3s;
+    /* Transición suave */
+}
+
+.awsui_breadcrumb_1kosq_1md44_145 .awsui_anchor_1kosq_1md44_155 {
+    text-decoration: none;
+    /* Elimina el subrayado */
+}
+
+.awsui_breadcrumb_1kosq_1md44_145 .awsui_anchor_1kosq_1md44_155:hover {
+    text-decoration: underline;
+    /* Subraya solo al pasar el mouse */
+}
+
+.awsui_anchor_1kosq_1md44_155:hover {
+    text-decoration: underline;
+    /* Añade el subrayado solo al pasar el mouse */
+}
+
 
 .awsui_edit-button_19bso_p9yrw_263:not(#\9),
 .awsui_dismiss-button_19bso_p9yrw_264:not(#\9),
