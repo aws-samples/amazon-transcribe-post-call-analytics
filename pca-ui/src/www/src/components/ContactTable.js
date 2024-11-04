@@ -189,7 +189,7 @@ const useTranslatedColumnDefinitions = () => {
                 triggerType="text"
                 content={
                   <div className="custom-popover-content">
-                    <div className="custom-popover-header">{t('contactTable.callSummary')}</div>
+                    <div className="custom-popover-header">{t('callSummary')}</div>
                     <div className="custom-popover-body">{d.summary_summary}</div>
                   </div>
                 }
