@@ -12,7 +12,7 @@ const resources = {
   }
 };
 
-const preferredLanguage = localStorage.getItem('language') || 'en';
+const preferredLanguage = localStorage.getItem('language') || 'es';
 
 i18n
   .use(initReactI18next)
