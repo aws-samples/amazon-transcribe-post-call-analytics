@@ -24,7 +24,8 @@
         "signout": "Sign out",
         "language": "Language",
         "language_en": "English",
-        "language_es": "Spanish"
+        "language_es": "Spanish",
+        "security" : "Security"
     },
     "home": {
         "title": "Home",
@@ -47,7 +48,9 @@
         "dragAccept": "Drag and drop or click to select call recordings to upload. Filenames can only include characters a-z, A-Z, 0-9, period (.), underscore (_), and hyphen (-).",
         "dragReject": "Unsupported files detected",
         "dragFormat": "Valid formats: MP3, WAV, FLAC, OGG, AMR, MP4, and WEBM",
-        "uploadError": "File contains invalid characters. No spaces are allowed, and only characters a-z, A-Z, 0-9, period (.), underscore (_), and hyphen (-) are allowed."
+        "uploadError": "File contains invalid characters. No spaces are allowed, and only characters a-z, A-Z, 0-9, period (.), underscore (_), and hyphen (-) are allowed.",
+        "successfullyUploaded": "Files uploaded successfully.",
+        "uploadFailed": "An error occurred uploading file(s):"
     },
     "chat": {
         "title": "Chat",

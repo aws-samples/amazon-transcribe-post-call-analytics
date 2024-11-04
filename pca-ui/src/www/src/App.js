@@ -117,7 +117,7 @@ function Navigation({ userName, email }) {
               if (event.detail.id === "signout") logOut();
             },
             items: [            
-              { id: "security", text: "Security" },  
+              { id: "security", text: t('utilities.security') },  
               { id: "signout", text: t('utilities.signout') }
             ]
           }
