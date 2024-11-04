@@ -9,6 +9,9 @@
     display: flex;
 }
 
+.awsui_root_wih1l_1200x_149:not(#\9) {
+    font-family: "Helvetica", "Arial", sans-serif !important;
+}
 
 .custom-popover-content {
     font-family: Helvetica;
@@ -28,11 +31,34 @@
 }
 
 .awsui_button_vjswe_juk2v_153.awsui_variant-normal_vjswe_juk2v_204:not(#\9) {
-    background: var(--color-background-button-normal-default-zr63bz, #ffffff);
-    color: #2C2F88;
+    background: #2C2F88;
     border-color: #2C2F88;
     position: relative;
     text-decoration: none;
+}
+
+.awsui_label_1f1d4_ocied_5:not(#\9) {
+    color: #FFFFFF;
+}
+
+.awsui_button_vjswe_juk2v_153.awsui_variant-normal_vjswe_juk2v_204:not(#\9):hover {
+    background: #5351FB;
+    border-color: #5351FB;
+}
+
+button[aria-label="refresh"] {
+    background: transparent !important;
+    /* Fondo transparente */
+    border: 2px solid #2C2F88 !important;
+    /* Bordes de color #2C2F88 */
+    color: #2C2F88 !important;
+    /* Color del texto, si es necesario */
+}
+
+.awsui_button_vjswe_juk2v_153[aria-label="refresh"]:hover {
+    background: #DFE8FF !important;
+    border-color: #2C2F88 !important;
+    color: #2C2F88 !important;
 }
 
 .awsui_token_19bso_p9yrw_199:not(#\9),
@@ -68,6 +94,34 @@
     background-color: #EDF3FF;
     color: #080709;
 }
+
+.awsui_breadcrumb_1kosq_1md44_145>.awsui_anchor_1kosq_1md44_155:not(#\9),
+.awsui_ghost-breadcrumb_1kosq_1md44_146>.awsui_anchor_1kosq_1md44_155:not(#\9) {
+    color: #7C91FD;
+}
+
+.awsui_anchor_1kosq_1md44_155 {
+    text-decoration: none;
+    /* Quita el subrayado por defecto */
+    transition: text-decoration 0.3s;
+    /* Transición suave */
+}
+
+.awsui_breadcrumb_1kosq_1md44_145 .awsui_anchor_1kosq_1md44_155 {
+    text-decoration: none;
+    /* Elimina el subrayado */
+}
+
+.awsui_breadcrumb_1kosq_1md44_145 .awsui_anchor_1kosq_1md44_155:hover {
+    text-decoration: underline;
+    /* Subraya solo al pasar el mouse */
+}
+
+.awsui_anchor_1kosq_1md44_155:hover {
+    text-decoration: underline;
+    /* Añade el subrayado solo al pasar el mouse */
+}
+
 
 .awsui_edit-button_19bso_p9yrw_263:not(#\9),
 .awsui_dismiss-button_19bso_p9yrw_264:not(#\9),
@@ -108,8 +162,49 @@ td[class*="awsui_calendar-grid-cell"][aria-current="date"],
 td[class*="awsui_calendar-grid-cell_1ykar_12fgq_252"][aria-current="date"],
 td[class*="awsui_calendar-date-current-page_1ykar"] {
     color: #080709;
+
 }
 
 :root {
     --color-text-button-normal-default-476t5h: #2C2F88;
+}
+
+/* Estilo específico para la celda del día actual */
+td[aria-current="date"][class*="awsui_calendar-grid-cell"],
+td[aria-current="date"][class*="awsui_calendar-date"],
+.awsui_calendar-date-current-page_lykar_12fgq_287[aria-current="date"] {
+    background-color: #EFEFEF !important;
+}
+
+/* También apuntamos al span interno del día actual */
+td[aria-current="date"] .awsui_date-inner_lykar_12fgq_327,
+td[aria-current="date"] span[class*="awsui_date-inner"] {
+    background-color: #EFEFEF !important;
+}
+
+/* Estilo para el número dentro de la celda seleccionada
+.awsui_date-inner_lykar_12fgq_327,
+span[class*='awsui_date-inner'] {
+    color: #ffffff !important;
+    background-color: transparent !important;
+} */
+
+/* Estilo para la celda del día actual cuando está seleccionada */
+td[aria-current="date"][aria-selected="true"],
+td[class*='awsui_calendar-date-selected'][aria-current="date"] {
+    border: 2px solid #2C2F88 !important;
+    background-color: #EFEFEF !important;
+    color: #000000 !important;
+}
+
+/* Remover el background del pseudo-elemento after cuando es el día actual */
+td[aria-current="date"][aria-selected="true"]::after,
+td[class*='awsui_calendar-date-selected'][aria-current="date"]::after {
+    background-color: transparent !important;
+    color: #000000 !important;
+}
+
+
+td[aria-current="date"] span[class*='awsui_date-inner'] {
+    color: #000000 !important;
 }
