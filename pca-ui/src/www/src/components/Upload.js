@@ -56,7 +56,7 @@ export const Upload = () => {
 
     const successMessage = [{
         type: "success",
-        content: "Files uploaded successfully.",
+        content: t('upload.successfullyUploaded'),
         dismissible: true,
         dismissLabel: "Dismiss message",
         onDismiss: () => {setUploaded(false);},
@@ -114,7 +114,7 @@ export const Upload = () => {
             setItems((prevState) => []);
             setUploaded(true);
         } catch (err) {
-            setUploadError("An error occurred uploading file(s): " + err.toLocaleString());
+            setUploadError(t('upload.uploadFailed') + err.toLocaleString());
         } finally {
             setUploadStatus(false);
         }

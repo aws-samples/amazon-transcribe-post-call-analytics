@@ -24,7 +24,8 @@
         "signout": "Cerrar sesión",
         "language": "Idioma",
         "language_en": "Inglés",
-        "language_es": "Español"
+        "language_es": "Español",
+        "security" : "Seguridad"
     },
     "home": {
         "title": "Inicio",
@@ -42,7 +43,9 @@
         "dragReject": "Archivos no compatibles detectados",
         "dragAccept": "Arrastra y suelta o haz clic para seleccionar las grabaciones de llamadas que deseas subir. Los nombres de archivo solo pueden contener letras (a-z, A-Z), números (0-9), puntos (.), guiones bajos y medios (_ o -).",
         "dragFormat": "Los formatos admitidos son: MP3, WAV, FLAC, OGG, AMR, MP4 y WEBM.",
-        "uploadError": "El archivo contiene caracteres no válidos. No se permiten espacios y solo se permiten caracteres a-z, A-Z, 0-9, punto (.), guion bajo (_) y guion (-)."
+        "uploadError": "El archivo contiene caracteres no válidos. No se permiten espacios y solo se permiten caracteres a-z, A-Z, 0-9, punto (.), guion bajo (_) y guion (-).",
+        "successfullyUploaded": "Archivo(s) subido(s) correctamente.",
+        "uploadFailed": "Se produjo un error al subir el/los archivo(s):"
     },
     "chat": {
         "title": "Chat",
