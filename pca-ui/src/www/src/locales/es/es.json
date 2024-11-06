@@ -146,7 +146,8 @@
         "entities": "Entidades",
         "jobName": "Nombre del trabajo",
         "dateRange": "DD/MM/AAAA",
-        "selectEntities": "Seleccionar entidades"
+        "selectEntities": "Seleccionar entidades",
+        "dateRangeTitle": "Rango de fechas"
     },
     "charts": {
         "callQuarter": "Llamadas por trimestre",
