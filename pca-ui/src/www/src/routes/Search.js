@@ -124,7 +124,7 @@ function Search({ setAlert }) {
                 </Button>
               </SpaceBetween>
             </FormField>
-            <FormField label="Date Range">
+            <FormField label={t("search.dateRangeTitle")}>
               <SpaceBetween direction="horizontal" size="l">
                 <DatePicker
                   selectsRange
