@@ -150,7 +150,8 @@
         "entities": "Entities",
         "jobName": "Job Name",
         "dateRange": "MM/DD/YYYY",
-        "selectEntities": "Select entities"
+        "selectEntities": "Select entities",
+        "dateRangeTitle": "Date Range"
     },
     "charts": {
         "callQuarter": "Call Quarter",
