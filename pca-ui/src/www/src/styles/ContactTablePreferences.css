@@ -48,6 +48,10 @@ div[role="dialog"] * {
     font-weight: 700 !important;
 }
 
+#header-text {
+    color: white;
+}
+
 .awsui_root_1fn7j_vifsx_93 > .awsui_styled-box_1fn7j_vifsx_100:not(#\9) {
     stroke: var(--custom-text-color) !important;
 }

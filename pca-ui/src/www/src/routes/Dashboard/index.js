@@ -512,7 +512,7 @@ function Dashboard({ setAlert }) {
             </Button>
           ]}
       >
-        {t("callDetail")}
+        <span id="header-text">{t("callDetail")}</span>
       </Header>
     }>
     <Grid
