@@ -267,7 +267,7 @@ function Dashboard({ setAlert }) {
     }
 
     return (
-        <form onSubmit={onSubmit}>
+        <form onSubmit={onSubmit} style={{marginTop:"10px"}}>
           <Grid gridDefinition={[{ colspan: { default: 12, xxs: 9 } }, { default: 12, xxs: 3 }]}>
             {disabled ? <Spinner size="big" variant="disabled"/> : <Button disabled={disabled} iconName="refresh" variant="normal" ariaLabel="refresh">
             </Button>}
@@ -303,7 +303,7 @@ function Dashboard({ setAlert }) {
       label: t("contactTable.timestamp"),
       value: (d) => d?.ConversationAnalytics?.ConversationTime.substring(0, 19),
     },
-    { label: "Guid", value: (d) => d?.ConversationAnalytics?.GUID },
+    { label: t("contactTable.guid"), value: (d) => d?.ConversationAnalytics?.GUID },
     { label: t("contactTable.agent"), value: (d) => d?.ConversationAnalytics?.Agent },
     {
       label: t("contactTable.callDuration"),
@@ -571,7 +571,7 @@ function Dashboard({ setAlert }) {
             </Header>
           }
         >
-          <SpaceBetween size="m">
+          <SpaceBetween size="m" style={{ fontFamily: 'Helvetica' }}>
             {callDetailColumn.map((entry, j) => (
               <ValueWithLabel key={j} label={entry.label}>
                 {!data && !error ? (
@@ -692,14 +692,11 @@ function Dashboard({ setAlert }) {
         <Container
           fitHeight={true}
           header={
-            <Header variant="h2"
-              actions = {
-                <SpaceBetween direction="horizontal" size="xs">
-                  <SummaryRefresh/>
-                </SpaceBetween>
-              }
-            >
+            <Header variant="h2">
               {t("genaiInsights")}
+              <SpaceBetween direction="horizontal" size="xs">
+                <SummaryRefresh/>
+              </SpaceBetween>
             </Header>
           }
 
