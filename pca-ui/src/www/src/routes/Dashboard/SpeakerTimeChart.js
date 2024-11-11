@@ -1,10 +1,8 @@
 import { Bar } from "react-chartjs-2";
 import { colours } from "./colours";
 import { Formatter } from "../../format";
-import { useTranslation } from 'react-i18next';
 
 export const SpeakerTimeChart = ({ data = [] }) => {
-  const { t } = useTranslation();
   const options = {
     aspectRatio: 1.5,
     scales: {
