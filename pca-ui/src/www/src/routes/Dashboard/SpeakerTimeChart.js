@@ -1,8 +1,10 @@
 import { Bar } from "react-chartjs-2";
 import { colours } from "./colours";
 import { Formatter } from "../../format";
+import { useTranslation } from 'react-i18next';
 
 export const SpeakerTimeChart = ({ data = [] }) => {
+  const { t } = useTranslation();
   const options = {
     aspectRatio: 1.5,
     scales: {
@@ -43,7 +45,7 @@ export const SpeakerTimeChart = ({ data = [] }) => {
     <Bar
     aria-label="This is a chart showing speaker and caller duration by percentage."
       data={{
-        labels: ["Proportion speaking"],
+        labels: [t("speaker")],
         datasets: data.map((entry) => ({
           label: entry.label,
           data: [entry.value / totalTime],
