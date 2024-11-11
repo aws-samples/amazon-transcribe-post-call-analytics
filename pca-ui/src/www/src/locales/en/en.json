@@ -17,6 +17,7 @@
     "select": "Select",
     "chatInputPlaceholder": "Enter a question about the call.",
     "headerTitle": "Amazon Transcribe Post-Call Analytics",
+    "speaker": "Proportion speaking",
     "utilities": {
         "search": "Search",
         "blogPost": "PCA Blog Post",
