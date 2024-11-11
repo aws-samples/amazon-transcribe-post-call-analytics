@@ -17,6 +17,7 @@
     "select": "Seleccionar",
     "chatInputPlaceholder": "Escribe tu pregunta aquí.",
     "headerTitle": "Transcripción y Análisis de post llamadas de Amazon",
+    "speaker": "Porcentaje conversado",
     "utilities": {
       "search": "Buscar",
       "blogPost": "Publicación del Blog PCA",
