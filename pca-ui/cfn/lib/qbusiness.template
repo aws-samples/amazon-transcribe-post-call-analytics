@@ -1,0 +1,834 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: AWS CloudFormation template to create Q Business resources
+
+Conditions:
+  IfCreateIDC: !Equals
+    - !Ref CreateIDC
+    - 'yes'
+
+Resources:
+  IDCLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Condition: IfCreateIDC
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: SSOAdminPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sso:CreateInstance
+                  - sso:DescribeInstance
+                  - sso:ListInstances
+                  - iam:CreateServiceLinkedRole
+                  - identitystore:CreateGroup
+                  - identitystore:CreateGroupMembership
+                  - identitystore:CreateUser
+                Resource:
+                  - '*'
+
+  IDCLambda:
+    Type: AWS::Lambda::Function
+    Condition: IfCreateIDC
+    Properties:
+      Handler: index.handler
+      Runtime: python3.10
+      Timeout: 300
+      Description: Create IDC Local Instance
+      Role: !GetAtt IDCLambdaExecutionRole.Arn
+      Code:
+        ZipFile: |
+          import json
+          import time
+          import boto3
+          import cfnresponse
+          sso_client = boto3.client('sso-admin')
+          id_store_client = boto3.client('identitystore')
+          GROUPS = ["GenAI", "AllUsers"]
+          USERS = [
+              {
+                  "user_name": "john_doe",
+                  "email": "john_doe@example.com",
+                  "display_name": "John Doe",
+                  "given_name": "John",
+                  "last_name": "Doe",
+                  "groups": ["GenAI", "AllUsers"]
+              }
+          ]
+          def handler(event, context):
+              try:
+                  print('Received event: ' + json.dumps(event, indent=4, default=str))
+                  if event['RequestType'] == 'Create':
+                      print("Check for existing IDC Instance")
+                      list_inst_response = sso_client.list_instances()
+                      if list_inst_response["Instances"]:
+                          print("IDC Instance exists. Skipping creation")
+                          instance_arn = list_inst_response["Instances"][0]['InstanceArn']
+                          cfnresponse.send(event, context, cfnresponse.SUCCESS, {'InstanceArn': instance_arn}, instance_arn)
+                          return
+                      print("Creating IDC Instance")
+                      create_response = sso_client.create_instance()
+                      instance_arn = create_response['InstanceArn']
+                      identity_store_id = None
+                      for idx in range(10):
+                          instance_dsec = sso_client.describe_instance(InstanceArn=instance_arn)
+                          print("IDC Instance:" + json.dumps(instance_dsec, indent=4, default=str))
+                          if instance_dsec['Status'] != "ACTIVE":
+                              time.sleep(10)
+                          else:
+                              identity_store_id = instance_dsec['IdentityStoreId']
+                              break
+                      if identity_store_id:
+                          group_idx = {}
+                          for group in GROUPS:
+                              resp = id_store_client.create_group(
+                                  IdentityStoreId=identity_store_id,
+                                  DisplayName=group,
+                                  Description=group
+                              )
+                              print("Group Creation:" + json.dumps(resp, indent=4, default=str))
+                              group_idx[group] = resp["GroupId"]
+                          for user in USERS:
+                              user_resp = id_store_client.create_user(
+                                  IdentityStoreId=identity_store_id,
+                                  UserName=user["user_name"],
+                                  DisplayName=user["display_name"],
+                                  Emails=[{"Value": user["email"], "Type": "Work", "Primary": True}],
+                                  Name={"GivenName": user["given_name"], "FamilyName": user["last_name"]}
+                              )
+                              print("User Creation:" + json.dumps(user_resp, indent=4, default=str))
+                              # Assign groups
+                              for grp in user["groups"]:
+                                  if grp in group_idx:
+                                      member_resp = id_store_client.create_group_membership(
+                                          IdentityStoreId=identity_store_id,
+                                          GroupId=group_idx[grp],
+                                          MemberId={"UserId": user_resp["UserId"]}
+                                      )
+                                      print("Group Member Creation:" + json.dumps(member_resp, indent=4, default=str))
+                          cfnresponse.send(event, context, cfnresponse.SUCCESS, {'InstanceArn': instance_arn}, instance_arn)
+                  else:
+                      cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
+                  print("done")
+              except Exception as e:
+                  print(e)
+                  cfnresponse.send(event, context, cfnresponse.FAILED, {})
+
+  IDCInstance:
+    Type: AWS::CloudFormation::CustomResource
+    Condition: IfCreateIDC
+    Properties:
+      ServiceToken: !GetAtt IDCLambda.Arn
+
+  S3CopyLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+        - arn:aws:iam::aws:policy/CloudWatchLogsFullAccess
+      Path: /
+
+  S3CopyLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: Lambda Function with code to copy sample data to S3 bucket
+      Handler: index.lambda_handler
+      Runtime: python3.9
+      Timeout: 300
+      MemorySize: 1024
+      EphemeralStorage: 
+        Size: 2048
+      Role: !GetAtt S3CopyLambdaExecutionRole.Arn
+      Code:
+        ZipFile: |
+          import json
+          import io
+          import zipfile          
+          import logging
+          import threading
+          import boto3
+          import cfnresponse
+          import os
+          from botocore.exceptions import ClientError
+          # Initial setup
+          logger = logging.getLogger()
+          logger.setLevel(logging.INFO)
+          def copy_objects(source_bucket, dest_bucket, prefix, objects):
+              s3 = boto3.client('s3')
+              for o in objects:
+                  key = prefix + o
+                  if o == 'pca-sample-output-parsedFiles.zip':
+                    zip_obj = s3.get_object(Bucket=source_bucket, Key=key)
+                    buffer = io.BytesIO(zip_obj['Body'].read())
+            
+                    # Unzip the file
+                    with zipfile.ZipFile(buffer) as zip_file:
+                      for filename in zip_file.namelist():
+                        file_content = zip_file.read(filename)
+                    
+                        # Upload each file from the zip to the destination bucket
+                        s3.put_object(Bucket=dest_bucket, Key=filename, Body=file_content)
+                        print(f'Unzipped and uploaded: {filename}')
+
+                  else:
+                    copy_source = {
+                      'Bucket': source_bucket,
+                      'Key': key
+                    }
+                    print('copy_source: %s' % copy_source)
+                    print('dest_bucket = %s' % dest_bucket)
+                    print('key = %s' % o)
+                    s3.copy_object(CopySource=copy_source, Bucket=dest_bucket,
+                      Key=o)
+          def delete_objects(bucket, prefix, objects):
+              s3 = boto3.client('s3')
+              objects = {'Objects': [{'Key': prefix + o} for o in objects]}
+              s3.delete_objects(Bucket=bucket, Delete=objects)
+          def timeout(event, context):
+              logging.error('Execution is about to time out, sending failure response to CloudFormation')
+              cfnresponse.send(event, context, cfnresponse.FAILED, {}, None)
+          def lambda_handler(event, context):
+              # make sure we send a failure to CloudFormation if the function
+              # is going to timeout
+              timer = threading.Timer((context.get_remaining_time_in_millis()
+                      / 1000.00) - 0.5, timeout, args=[event, context])
+              timer.start()
+              print('Received event: %s' % json.dumps(event))
+              status = cfnresponse.SUCCESS
+              try:
+                  source_bucket = event['ResourceProperties']['SourceBucket']
+                  dest_bucket = event['ResourceProperties']['DestBucket']
+                  prefix = event['ResourceProperties']['Prefix']
+                  objects = event['ResourceProperties']['Objects']
+                  if event['RequestType'] == 'Delete':
+                      delete_objects(dest_bucket, prefix, objects)
+                  else:
+                      copy_objects(source_bucket, dest_bucket, prefix, objects)
+              except Exception as e:
+                  logging.error('Exception: %s' % e, exc_info=True)
+                  status = cfnresponse.FAILED
+              finally:
+                  timer.cancel()
+                  cfnresponse.send(event, context, status, {}, None)
+
+  S3CopyCustomResource:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: !GetAtt S3CopyLambda.Arn
+      SourceBucket: !Ref AssetBucketName
+      DestBucket: !Ref S3Bucket
+      Prefix: !Ref AssetBucketPrefix
+      Objects:
+        - pca-sample-output-parsedFiles.zip
+
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  DataSourceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: ''
+            Effect: Allow
+            Principal:
+              Service:
+                - qbusiness.amazonaws.com
+            Action: sts:AssumeRole
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
+              ArnLike:
+                aws:SourceArn: !Sub arn:aws:qbusiness:${AWS::Region}:${AWS::AccountId}:application/*
+      Policies:
+        - PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                Resource: !Sub
+                  - arn:aws:s3:::${bucket}/*
+                  - bucket: !Ref S3Bucket
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                Resource: !Sub
+                  - arn:aws:s3:::${bucket}
+                  - bucket: !Ref S3Bucket
+              - Effect: Allow
+                Action:
+                  - qbusiness:BatchPutDocument
+                  - qbusiness:BatchDeleteDocument
+                  - qbusiness:PutGroup
+                  - qbusiness:CreateUser
+                  - qbusiness:DeleteGroup
+                  - qbusiness:UpdateUser
+                  - qbusiness:ListGroups
+                Resource:
+                  - !Sub arn:aws:qbusiness:${AWS::Region}:${AWS::AccountId}:application/*
+                  - !Sub arn:aws:qbusiness:${AWS::Region}:${AWS::AccountId}:application/*/index/*
+                  - !Sub arn:aws:qbusiness:${AWS::Region}:${AWS::AccountId}:application/*/index/*/data-source/*
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource:
+                  - !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:secret_id
+              - Effect: Allow
+                Action:
+                  - kms:Decrypt
+                Resource:
+                  - !Sub arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/key_id
+          PolicyName: DataSourcePolicy
+
+  WebExperienceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: ''
+            Effect: Allow
+            Principal:
+              Service: application.qbusiness.amazonaws.com
+            Action:
+              - sts:AssumeRole
+              - sts:SetContext
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
+              ArnLike:
+                aws:SourceArn: !Sub arn:aws:qbusiness:${AWS::Region}:${AWS::AccountId}:application/*
+      Policies:
+        - PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - qbusiness:Chat
+                  - qbusiness:ChatSync
+                  - qbusiness:ListMessages
+                  - qbusiness:ListConversations
+                  - qbusiness:DeleteConversation
+                  - qbusiness:PutFeedback
+                  - qbusiness:GetWebExperience
+                  - qbusiness:GetApplication
+                  - qbusiness:ListPlugins
+                  - qbusiness:GetChatControlsConfiguration
+                Resource:
+                  - !Sub arn:aws:qbusiness:${AWS::Region}:${AWS::AccountId}:application/*
+              - Effect: Allow
+                Action:
+                  - kms:Decrypt
+                Resource:
+                  - !Sub arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/key_id
+              - Effect: Allow
+                Action:
+                  - qapps:CreateQApp
+                  - qapps:PredictProblemStatementFromConversation
+                  - qapps:PredictQAppFromProblemStatement
+                  - qapps:CopyQApp
+                  - qapps:GetQApp
+                  - qapps:ListQApps
+                  - qapps:UpdateQApp
+                  - qapps:DeleteQApp
+                  - qapps:AssociateQAppWithUser
+                  - qapps:DisassociateQAppFromUser
+                  - qapps:ImportDocumentToQApp
+                  - qapps:ImportDocumentToQAppSession
+                  - qapps:CreateLibraryItem
+                  - qapps:GetLibraryItem
+                  - qapps:UpdateLibraryItem
+                  - qapps:CreateLibraryItemReview
+                  - qapps:ListLibraryItems
+                  - qapps:CreateSubscriptionToken
+                  - qapps:StartQAppSession
+                  - qapps:StopQAppSession
+                Resource:
+                  - !Sub arn:aws:qbusiness:${AWS::Region}:${AWS::AccountId}:application/*
+          PolicyName: WebExperiencePolicy
+
+  QBusinessApp:
+    Type: AWS::QBusiness::Application
+    Properties:
+      DisplayName: MyQBusinessApp
+      Description: This is my Amazon Q Business Application
+      IdentityCenterInstanceArn: !GetAtt IDCInstance.InstanceArn
+      RoleArn: !Sub arn:aws:iam::${AWS::AccountId}:role/aws-service-role/qbusiness.amazonaws.com/AWSServiceRoleForQBusiness
+    DependsOn:
+      - IDCInstance
+
+  QBusinessIndex:
+    Type: AWS::QBusiness::Index
+    Properties:
+      ApplicationId: !Ref QBusinessApp
+      DisplayName: MyIndex
+      CapacityConfiguration:
+        Units: 1
+      Type: ENTERPRISE
+    DependsOn:
+      - QBusinessApp
+
+  QBusinessNativeRetriever:
+    Type: AWS::QBusiness::Retriever
+    Properties:
+      ApplicationId: !Ref QBusinessApp
+      DisplayName: MyNativeRetriever
+      Configuration:
+        NativeIndexConfiguration:
+          IndexId: !Select
+            - 1
+            - !Split
+              - '|'
+              - !Ref QBusinessIndex
+      Type: NATIVE_INDEX
+      RoleArn: !Sub arn:aws:iam::${AWS::AccountId}:role/aws-service-role/qbusiness.amazonaws.com/AWSServiceRoleForQBusiness
+    DependsOn:
+      - QBusinessIndex
+
+  QBusinessWebExperience:
+    Type: AWS::QBusiness::WebExperience
+    Properties:
+      ApplicationId: !Ref QBusinessApp
+      RoleArn: !GetAtt WebExperienceRole.Arn
+    DependsOn:
+      - QBusinessNativeRetriever
+
+  ## LAST STEP - create datasource and sync after metadata added
+  QBusinessDataSource:
+    Type: AWS::QBusiness::DataSource
+    Properties:
+      ApplicationId: !Ref QBusinessApp
+      DisplayName: MyDataSource
+      IndexId: !Select
+        - 1
+        - !Split
+          - '|'
+          - !Ref QBusinessIndex
+      RoleArn: !GetAtt DataSourceRole.Arn
+      Configuration:
+        syncMode: FULL_CRAWL
+        type: S3
+        version: 1.0.0
+        connectionConfiguration:
+          repositoryEndpointMetadata:
+            BucketName: !Ref S3Bucket
+        repositoryConfigurations:
+          document:
+            fieldMappings:
+              - indexFieldName: s3_document_id
+                indexFieldType: STRING
+                dataSourceFieldName: s3_document_id
+        additionalProperties:
+          inclusionPatterns: []
+          exclusionPatterns: []
+          inclusionPrefixes: []
+          exclusionPrefixes: []
+          maxFileSizeInMegaBytes: '50'
+          metadataFilesPrefix: meta/
+    DependsOn:
+      - InvokeGenerateMetadata
+
+  StartSyncLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: QBusinessPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - qbusiness:StartDataSourceSyncJob
+                Resource: '*'
+    DependsOn:
+      - InvokeGenerateMetadata
+
+  StartSyncLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: index.lambda_handler
+      Runtime: python3.10
+      Timeout: 300
+      Description: Start Q Business Data Source Sync Job
+      Role: !GetAtt StartSyncLambdaExecutionRole.Arn
+      Code:
+        ZipFile: |
+          import json
+          import boto3
+          import urllib3
+          client = boto3.client('qbusiness')
+          SUCCESS = "SUCCESS"
+          FAILED = "FAILED"
+          http = urllib3.PoolManager()
+          def send_response(event, context, responseStatus, responseData, physicalResourceId=None, noEcho=False, reason=None):
+              responseUrl = event.get('ResponseURL')
+              responseBody = {
+                  'Status': responseStatus,
+                  'Reason': reason or "See the details in CloudWatch Log Stream: " + context.log_stream_name,
+                  'PhysicalResourceId': physicalResourceId or context.log_stream_name,
+                  'StackId': event['StackId'],
+                  'RequestId': event['RequestId'],
+                  'LogicalResourceId': event['LogicalResourceId'],
+                  'NoEcho': noEcho,
+                  'Data': responseData
+              }
+              json_responseBody = json.dumps(responseBody)
+              headers = {
+                  'content-type': '',
+                  'content-length': str(len(json_responseBody))
+              }
+              try:
+                  response = http.request('PUT', responseUrl, body=json_responseBody.encode('utf-8'), headers=headers)
+                  print("Status code:", response.status)
+              except Exception as e:
+                  print("send(..) failed executing requests.put(..):", str(e))
+          def lambda_handler(event, context):
+              try:
+                  app_id = event['ResourceProperties']['ApplicationId']
+                  index_id = event['ResourceProperties']['IndexId']
+                  ds_id = event['ResourceProperties']['DataSourceId']
+                  print(f"ApplicationId: {app_id}, Length: {len(app_id)}")
+                  print(f"IndexId: {index_id}, Length: {len(index_id)}")
+                  print(f"DataSourceId: {ds_id}, Length: {len(ds_id)}")
+                  response = client.start_data_source_sync_job(
+                      dataSourceId=ds_id,
+                      applicationId=app_id,
+                      indexId=index_id
+                  )
+                  # Print the entire response for debugging
+                  print(f"Response from start_data_source_sync_job: {json.dumps(response, indent=2)}")
+                  # Check if 'executionId' is in the response
+                  if 'executionId' in response:
+                      print(f"Sync job started: {response['executionId']}")
+                      if 'ResponseURL' in event:
+                          send_response(event, context, SUCCESS, {
+                              'Message': 'Data source sync job started successfully'
+                          })
+                      else:
+                          return {
+                              'statusCode': 200,
+                              'body': json.dumps('Data source sync job started successfully')
+                          }
+                  else:
+                      print("Error: 'executionId' not found in response")
+                      if 'ResponseURL' in event:
+                          send_response(event, context, FAILED, {
+                              'Message': 'Error: executionId not found in response'
+                          })
+                      else:
+                          return {
+                              'statusCode': 500,
+                              'body': json.dumps('Error: executionId not found in response')
+                          }
+              except Exception as e:
+                  print(f"Error starting sync job: {e}")
+                  if 'ResponseURL' in event:
+                      send_response(event, context, FAILED, {
+                          'Message': f'Error starting sync job: {str(e)}'
+                      })
+                  else:
+                      return {
+                          'statusCode': 500,
+                          'body': json.dumps(f'Error starting sync job: {str(e)}')
+                      }
+
+  # ## Do this as a last step
+  StartSyncLambdaTrigger:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: !GetAtt StartSyncLambda.Arn
+      ApplicationId: !Ref QBusinessApp
+      IndexId: !Select
+        - 1
+        - !Split
+          - '|'
+          - !Ref QBusinessIndex
+      DataSourceId: !Select
+        - 1
+        - !Split
+          - '|'
+          - !Ref QBusinessDataSource
+
+  CreateServiceLinkedRoleFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: index.lambda_handler
+      Role: !GetAtt IDCLambdaExecutionRole.Arn
+      Code:
+        ZipFile: |
+          import json
+          import boto3
+          import cfnresponse
+          from datetime import datetime
+          def lambda_handler(event, context):
+              iam_client = boto3.client('iam')
+              service_name = 'qbusiness.amazonaws.com'
+              try:
+                  response = iam_client.create_service_linked_role(
+                      AWSServiceName=service_name
+                  )
+                  physical_resource_id = response['Role']['RoleName']
+                  # Function to handle non-serializable objects
+                  def default_serializer(o):
+                      if isinstance(o, datetime):
+                          return o.isoformat()
+                      raise TypeError(f'Object of type {type(o)} is not JSON serializable')
+                  response_data = json.loads(json.dumps(response, default=default_serializer))  # Serialize datetime objects
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data, physical_resource_id)
+              except Exception as e:
+                  cfnresponse.send(event, context, cfnresponse.FAILED, {'Message': str(e)})
+              return
+      Runtime: python3.8
+      Timeout: 300
+
+  CreateServiceLinkedRole:
+    Type: Custom::CreateServiceLinkedRole
+    Properties:
+      ServiceToken: !GetAtt CreateServiceLinkedRoleFunction.Arn
+
+  ### Cloudfront dist - run after s3 is created and data is copied
+
+  CloudFrontOriginAccessIdentity:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: !Sub ${AWS::StackName} Origin Access Identity
+
+  CloudFrontOriginAccessControl:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub ${S3Bucket}.s3.us-east-1.amazonaws.com
+        Description: Origin Access Control for S3 Bucket
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Origins:
+          - DomainName: !GetAtt S3Bucket.DomainName
+            Id: !Ref S3Bucket
+            S3OriginConfig: {}
+            OriginAccessControlId: !Ref CloudFrontOriginAccessControl
+        DefaultCacheBehavior:
+          TargetOriginId: !Ref S3Bucket
+          ViewerProtocolPolicy: allow-all
+          AllowedMethods:
+            - GET
+            - HEAD
+          CachedMethods:
+            - GET
+            - HEAD
+          Compress: true
+          ForwardedValues:
+            QueryString: false
+            Cookies:
+              Forward: none
+        ViewerCertificate:
+          CloudFrontDefaultCertificate: true
+        PriceClass: PriceClass_100
+        HttpVersion: http2
+        IPV6Enabled: true
+        ContinuousDeploymentPolicyId: ''
+        Staging: false
+
+  S3BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref S3Bucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowCloudFrontServicePrincipal
+            Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub arn:aws:s3:::${S3Bucket}/*
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistribution}
+    DependsOn:
+      - CloudFrontDistribution
+
+  ## Metadata file generation
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: LambdaS3Policy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:ListBucket
+                Resource:
+                  - !Sub arn:aws:s3:::${S3Bucket}/*
+                  - !Sub arn:aws:s3:::${S3Bucket}
+
+  LambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-GenerateMetadata
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Runtime: python3.9
+      Timeout: 300
+      MemorySize: 1024
+      EphemeralStorage:
+        Size: 2048
+      Environment:
+        Variables:
+          CLOUDFRONT_DOMAIN: !GetAtt CloudFrontDistribution.DomainName
+          BUCKET_NAME: !Ref S3Bucket
+      Code:
+        ZipFile: |
+          import json
+          import boto3
+          import os
+          import cfnresponse
+          s3 = boto3.client('s3')
+          def handler(event, context):
+              try:
+                  # Check if the environment variables are set
+                  cloudfront_domain = os.getenv('CLOUDFRONT_DOMAIN')
+                  bucket_name = os.getenv('BUCKET_NAME')
+                  if not cloudfront_domain or not bucket_name:
+                      raise ValueError("Environment variables CLOUDFRONT_DOMAIN and BUCKET_NAME must be set")
+                  # List objects in the bucket
+                  response = s3.list_objects_v2(Bucket=bucket_name)
+                  for obj in response.get('Contents', []):
+                      key = obj['Key']
+                      if not key.startswith('meta/') and not key.endswith('.metadata.json'):
+                          metadata = {
+                              "DocumentId": key,
+                              "Attributes": {
+                                  "_source_uri": f"https://{cloudfront_domain}/{key}"
+                              },
+                              "Title": key.rsplit('/', 1)[-1]
+                          }
+                          metadata_key = f"meta/{key}.metadata.json"
+                          s3.put_object(
+                              Bucket=bucket_name,
+                              Key=metadata_key,
+                              Body=json.dumps(metadata),
+                              ContentType='application/json'
+                          )
+                  # Send success response to CloudFormation
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
+              except ValueError as ve:
+                  print("Environment variable error: ", str(ve))
+                  # Send failure response to CloudFormation with specific error message
+                  cfnresponse.send(event, context, cfnresponse.FAILED, {'Reason': str(ve)})
+              except Exception as e:
+                  print("Error occurred: ", str(e))
+                  # Send failure response to CloudFormation
+                  cfnresponse.send(event, context, cfnresponse.FAILED, {})
+
+  InvokeGenerateMetadata:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: !GetAtt LambdaFunction.Arn
+    DependsOn:
+      - CloudFrontDistribution
+      - S3CopyCustomResource
+
+### Parameters
+
+Parameters:
+  AssetBucketName:
+    Type: String
+    Default: Not-needed-for-self-paced-lab-in-customer-account
+    Description: Name of the event asset bucket. For self paced labs in customer
+      account, please leave the default value as is.
+  AssetBucketPrefix:
+    Type: String
+    Default: Not-needed-for-self-paced-lab-in-customer-account
+    Description: Prefix for the asset bucket. For self paced labs in customer
+      account, please leave the default value as is.
+  CreateIDC:
+    Type: String
+    Default: 'no'
+    AllowedValues:
+      - 'no'
+      - 'yes'
+    Description: Whether this stack should create AWS IAM Identity Center instance
+      and setup users/groups. Answer "Yes" only if the AWS account does not have
+      IDC enabled and is allow listed to enable the same. If not sure, leave as
+      default of "no".
+
+Outputs:
+  S3BucketUrl:
+    Description: Your S3 bucket to be used as a data source
+    Value: !Join
+      - ''
+      - - https://console.aws.amazon.com/s3/home?bucket=
+        - !Ref S3Bucket
+
+  IDCInstanceArn:
+    Condition: IfCreateIDC
+    Description: AWS IAM Identity Center instance Arn
+    Value: !GetAtt IDCInstance.InstanceArn
+
+  S3BucketNameExport:
+    Description: The name of your S3 bucket
+    Value: !Ref S3Bucket
+    Export:
+      Name: ws-infra-setup-S3BucketName
+
+  QAppWebURL:
+    Description: QApps UI URL
+    Value: !GetAtt QBusinessWebExperience.DefaultEndpoint

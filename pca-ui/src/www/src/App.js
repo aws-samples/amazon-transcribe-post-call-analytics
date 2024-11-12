@@ -5,14 +5,29 @@ import {
   NavLink,
 } from "react-router-dom";
 // import { Navbar, Nav, Container, Alert, Button } from "react-bootstrap";
-import { AppLayout,Alert,Notifications, Header, Link, BreadcrumbGroup, TopNavigation, Container, Button} from "@cloudscape-design/components"
+import { AppLayout,Alert,Notifications, Header, Link, BreadcrumbGroup, TopNavigation, Container, Button, Icon } from "@cloudscape-design/components"
 import Home from "./routes/Home";
 import Search from "./routes/Search";
 import Dashboard from "./routes/Dashboard/index";
 import { useState } from "react";
 import { payloadFromToken, logOut } from "./api/auth";
+import QBusinessApp from "./routes/QBusinessApp"; // Add this import
 
 const routes = [
+  {
+    path: "/qbusinessapp",
+    name: "QBusinessApp",
+    Component: QBusinessApp,
+    Breadcrumb: () => {
+      return <BreadcrumbGroup
+        items={[
+          { text: "Home", href: "../" },
+          { text: "Q Business App", href: "#" }
+        ]}
+        ariaLabel="Breadcrumbs"
+      />
+    }
+  },
   {
     path: "/search",
     name: "Search",
@@ -90,6 +105,12 @@ function Navigation({ userName, email }) {
         overflowMenuDismissIconAriaLabel: "Close menu"
       }}
       utilities={[
+        {
+          type: "button",
+          text: "Q Business App",
+          iconSvg: <Icon name="contact" />,
+          href: "/qbusinessapp",
+        },
         {
           type: "button",
           text: "Search",

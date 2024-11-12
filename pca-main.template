@@ -4,6 +4,10 @@ Description: Amazon Transcribe Post Call Analytics - PCA (v0.7.11) (uksb-1sn29lk
 
 Parameters:
 
+  AssetBucketName:
+    Type: String
+    Description: Bucket where parsed transcripts are stored.
+
   AdminUsername:
     Type: String
     Default: "admin"
@@ -1168,6 +1172,7 @@ Resources:
         DataPrefix: !Ref OutputBucketParsedResults
         Environment: !Ref Environment
         GenAIQueryType: !Ref GenAIQuery
+        AssetBucketName: !Ref AssetBucketName
         GenAIQueryBedrockModelId: !Ref GenAIQueryBedrockModelId
         FetchTranscriptArn: !GetAtt PCAServer.Outputs.FetchTranscriptArn
         SummarizerArn: !GetAtt PCAServer.Outputs.SummarizerArn

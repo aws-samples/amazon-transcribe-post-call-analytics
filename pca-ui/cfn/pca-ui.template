@@ -124,6 +124,16 @@ Resources:
       Type: String
       Value: "0"
 
+  QBusiness:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: lib/qbusiness.template
+      TimeoutInMinutes: 20
+      Parameters:
+        CreateIDC: "yes"
+        AssetBucketName:
+        AssetBucketPrefix: "source/"
+
   Web:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -186,6 +196,7 @@ Resources:
       TemplateURL: lib/deploy.template
       Parameters:
         Bucket: !GetAtt Web.Outputs.Bucket
+        QAppWebURL: !GetAtt QBusiness.Outputs.QAppWebURL
         AudioBucket: !Ref AudioBucket
         AuthUri: !GetAtt Cognito.Outputs.BaseUri
         AuthClientId: !GetAtt Cognito.Outputs.UserPoolClientId

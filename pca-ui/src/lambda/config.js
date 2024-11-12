@@ -32,6 +32,9 @@ window.pcaSettings = {
     genai: {
         query: ${props.GenAIQuery}
     }
+    qwebappurl: {
+        uri: ${props.QWebAppURL}
+    }
 };`;
 
   s3.upload({
