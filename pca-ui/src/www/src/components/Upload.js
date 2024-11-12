@@ -13,6 +13,7 @@ import { Header, Container, TokenGroup } from '@cloudscape-design/components';
 import { useDangerAlert } from "../hooks/useAlert";
 import { useTranslation } from 'react-i18next';
 import "../locales/i18n";
+import Icon from "@cloudscape-design/components/icon";
 
 const baseStyle = {
     flex: 1,
@@ -22,7 +23,7 @@ const baseStyle = {
     padding: '20px',
     borderWidth: 3,
     borderRadius: 10,
-    borderColor: '#eeeeee',
+    borderColor: '#2C2F88',
     borderStyle: 'dashed',
     backgroundColor: '#fafafa',
     color: '#737373',
@@ -36,7 +37,8 @@ const container = {
 };
 
 const focusedStyle = {
-    borderColor: '#2196f3'
+    borderColor: '#2C2F88',
+    backgroundColor: '#EDF3FF',
 };
 
 const acceptStyle = {
@@ -137,7 +139,16 @@ export const Upload = () => {
             <Form
                 actions={
                     <SpaceBetween direction='horizontal' size='xs'>
-                        {uploadStatus ? <Button disabled={true} loading >{t("upload.uploading")}</Button> : <Button variant="normal">{t("upload.upload")}</Button>}
+                       {uploadStatus ? (
+                        <Button disabled={true} loading>{t("upload.uploading")}</Button>
+                        ) : (
+                        <Button variant="normal">
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'white' }}>
+                            <Icon name="add-plus" size="small" variant="inverted" />
+                            {t("upload.upload")}
+                            </div>
+                        </Button>
+                        )}
                     </SpaceBetween>
                 }
             >
