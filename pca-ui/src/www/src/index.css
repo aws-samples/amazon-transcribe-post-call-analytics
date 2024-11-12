@@ -97,3 +97,16 @@ span.audio-start {
 .awsui_token-box_dm8gx_1e6km_154 svg path {
   stroke: #002b80 !important;
 }
+
+.awsui_button_vjswe_jz1q6_101.awsui_variant-primary_vjswe_jz1q6_210:not(#\9):hover{
+  background-color: #5351FB!important;
+  border-color: #5351FB!important;
+  color: white!important;
+  border-color: #5351FB!important;
+}
+.awsui_button_vjswe_jz1q6_101.awsui_variant-primary_vjswe_jz1q6_210:not(#\9){
+background-color: #2C2F88!important;
+border-color: #2C2F88!important;
+color: white!important;
+border-color: #2C2F88!important;
+}
