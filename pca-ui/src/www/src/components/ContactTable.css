@@ -139,7 +139,7 @@ button[aria-label="refresh"] {
 }
 
 [class*='awsui_variant-normal'] {
-    color: white !important;
+    color: #4C4F7D !important;
 }
 
 [class*='awsui_button'][class*='awsui_variant-link'] {
@@ -208,3 +208,17 @@ td[class*='awsui_calendar-date-selected'][aria-current="date"]::after {
 td[aria-current="date"] span[class*='awsui_date-inner'] {
     color: #000000 !important;
 }
+
+#root > div:nth-child(2) > main > div.awsui_container_hyvsj_1s8d9_719.awsui_content-type-default_hyvsj_1s8d9_773.awsui_split-panel-position-bottom_hyvsj_1s8d9_681.awsui_has-breadcrumbs_hyvsj_1s8d9_167.awsui_has-dynamic-overlap-height_hyvsj_1s8d9_181.awsui_is-navigation-open_hyvsj_1s8d9_750.awsui_content_1fj9k_1csvr_21 > div > div.awsui_content_5gtk3_hwj9s_142 > div > div:nth-child(6) > div > div > div.awsui_header_14iqq_1r2h5_176.awsui_with-paddings_14iqq_1r2h5_206 > div > div > div > h2 > span > div > div > form > div > div > div > button {
+  background-color: #ffffff !important;
+  border-color: #2C2F88!important;
+}
+
+#root > div:nth-child(2) > main > div.awsui_container_hyvsj_1s8d9_719.awsui_content-type-default_hyvsj_1s8d9_773.awsui_split-panel-position-bottom_hyvsj_1s8d9_681.awsui_has-breadcrumbs_hyvsj_1s8d9_167.awsui_has-dynamic-overlap-height_hyvsj_1s8d9_181.awsui_is-navigation-open_hyvsj_1s8d9_750.awsui_content_1fj9k_1csvr_21 > div > div.awsui_content_5gtk3_hwj9s_142 > div > div:nth-child(6) > div > div > div.awsui_header_14iqq_1r2h5_176.awsui_with-paddings_14iqq_1r2h5_206 > div > div > div > h2 > span > div > div > form > div > div > div > button > span {
+  color: #2C2F88 !important;
+}
+
+#root > div:nth-child(2) > main > div.awsui_container_hyvsj_1s8d9_719.awsui_content-type-default_hyvsj_1s8d9_773.awsui_split-panel-position-bottom_hyvsj_1s8d9_681.awsui_has-breadcrumbs_hyvsj_1s8d9_167.awsui_has-dynamic-overlap-height_hyvsj_1s8d9_181.awsui_is-navigation-open_hyvsj_1s8d9_750.awsui_content_1fj9k_1csvr_21 > div > div.awsui_content_5gtk3_hwj9s_142 > div > div:nth-child(6) > div > div > div.awsui_header_14iqq_1r2h5_176.awsui_with-paddings_14iqq_1r2h5_206 > div > div > div > h2 > span > div > div > form > div > div > div > button:hover {
+    background-color: #DFE8FF !important;
+}
+
