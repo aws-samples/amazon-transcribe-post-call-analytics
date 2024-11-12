@@ -637,7 +637,7 @@ Resources:
     Type: AWS::CloudFront::OriginAccessControl
     Properties:
       OriginAccessControlConfig:
-        Name: !Sub ${S3Bucket}.s3.us-east-1.amazonaws.com
+        Name: Q Business App Origin Access Control 
         Description: Origin Access Control for S3 Bucket
         OriginAccessControlOriginType: s3
         SigningBehavior: always
