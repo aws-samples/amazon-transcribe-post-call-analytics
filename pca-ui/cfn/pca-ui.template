@@ -3,6 +3,10 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description: Amazon Transcribe Post Call Analytics - PCA UI
 
 Parameters:
+  AssetBucketName:
+    Type: String
+    Description: Asset bucket
+
   AdminUsername:
     Type: String
     Default: "admin"
@@ -131,7 +135,7 @@ Resources:
       TimeoutInMinutes: 20
       Parameters:
         CreateIDC: "yes"
-        AssetBucketName:
+        AssetBucketName: !Ref AssetBucketName
         AssetBucketPrefix: "source/"
 
   Web:
