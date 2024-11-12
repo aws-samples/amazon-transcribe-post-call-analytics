@@ -832,3 +832,11 @@ Outputs:
   QAppWebURL:
     Description: QApps UI URL
     Value: !GetAtt QBusinessWebExperience.DefaultEndpoint
+
+  QWebExperienceId:
+    Description: Q Web experience ID
+    Value: !GetAtt QBusinessWebExperience.WebExperienceId    
+
+  QAppId:
+    Description: Q Business Application ID
+    Value: !Ref QBusinessApp

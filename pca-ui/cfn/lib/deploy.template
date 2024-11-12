@@ -9,6 +9,15 @@ Parameters:
   QAppWebURL:
     Type: String
 
+  QWebExperienceId: 
+    Type: String
+  
+  QAppId: 
+    Type: String
+
+  WebUri:
+    Type: String
+
   AudioBucket:
     Type: String
 
@@ -112,6 +121,48 @@ Resources:
       Region: !Ref AWS::Region
       GenAIQuery: !Ref EnableGenAIQuery
       QAppWebURL: !Ref QAppWebURL
+
+  QUpdateWebExperienceRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: update-web-experience
+          PolicyDocument:
+            Statement:
+              Effect: Allow
+              Action:
+                - qbusiness:UpdateWebExperience
+              Resource: "*"
+
+  QUpdateWebExperienceFunction:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      Code: ../../src/qbusiness
+      Environment:
+        Variables:
+          Q_WEB_EXPERIENCE_ID: !Ref QWebExperienceId
+          Q_APPLICATION_ID: !Ref QAppId
+          PCA_WEB_URI: !Ref WebUri
+      Handler: index.lambda_handler
+      Role: !GetAtt QUpdateWebExperienceRole.Arn
+      Runtime: python3.11
+      Timeout: 900
+
+  QUpdateWebExperience:
+    Type: "AWS::CloudFormation::CustomResource"
+    Properties:
+      ServiceToken: !GetAtt QUpdateWebExperienceFunction.Arn
+      Counter: !Ref DeployCountValue
+      Version: "0.7.8"
 
 Outputs:
 

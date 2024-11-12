@@ -31,9 +31,9 @@ window.pcaSettings = {
     },
     genai: {
         query: ${props.GenAIQuery}
-    }
+    },
     qwebappurl: {
-        uri: ${props.QWebAppURL}
+        uri: ${props.QAppWebURL}
     }
 };`;
 

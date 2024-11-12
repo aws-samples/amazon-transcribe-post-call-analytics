@@ -201,6 +201,9 @@ Resources:
       Parameters:
         Bucket: !GetAtt Web.Outputs.Bucket
         QAppWebURL: !GetAtt QBusiness.Outputs.QAppWebURL
+        QWebExperienceId: !GetAtt QBusiness.Outputs.QWebExperienceId
+        QAppId: !GetAtt QBusiness.Outputs.QAppId
+        WebUri: !GetAtt Web.Outputs.Uri
         AudioBucket: !Ref AudioBucket
         AuthUri: !GetAtt Cognito.Outputs.BaseUri
         AuthClientId: !GetAtt Cognito.Outputs.UserPoolClientId
