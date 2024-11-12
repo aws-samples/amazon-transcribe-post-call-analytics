@@ -139,7 +139,7 @@ button[aria-label="refresh"] {
 }
 
 [class*='awsui_variant-normal'] {
-    color: #4C4F7D !important;
+    color: white !important;
 }
 
 [class*='awsui_button'][class*='awsui_variant-link'] {
