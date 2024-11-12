@@ -146,6 +146,7 @@ Resources:
       Parameters:
         AudioBucket: !Ref AudioBucket
         DataBucket: !Ref DataBucket
+        QAppWebURL: !GetAtt QBusiness.Outputs.QAppWebURL
 
   Cognito:
     Type: AWS::CloudFormation::Stack

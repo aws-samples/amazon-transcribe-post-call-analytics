@@ -106,7 +106,7 @@ Resources:
     Properties:
       ServiceToken: !GetAtt DeployFunction.Arn
       Counter: !Ref DeployCountValue
-      Version: "0.7.8"
+      Version: "0.7.9"
 
   Configure:
     Type: "AWS::CloudFormation::CustomResource"
@@ -121,6 +121,7 @@ Resources:
       Region: !Ref AWS::Region
       GenAIQuery: !Ref EnableGenAIQuery
       QAppWebURL: !Ref QAppWebURL
+      Version: "0.7.9"
 
   QUpdateWebExperienceRole:
     Type: "AWS::IAM::Role"
@@ -162,7 +163,7 @@ Resources:
     Properties:
       ServiceToken: !GetAtt QUpdateWebExperienceFunction.Arn
       Counter: !Ref DeployCountValue
-      Version: "0.7.8"
+      Version: "0.7.9"
 
 Outputs:
 
