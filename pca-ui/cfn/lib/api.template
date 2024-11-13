@@ -11,6 +11,9 @@ Parameters:
   AudioBucketPrefix:
     Type: String
 
+  BedrockRegion:
+    Type: String
+
   DataBucket:
     Type: String
 
@@ -269,6 +272,7 @@ Resources:
       Environment:
         Variables:
           QUERY_TYPE: !Ref GenAIQueryType
+          AWS_REGION_OVERRIDE: !Ref BedrockRegion
           BEDROCK_MODEL_ID: !Ref GenAIQueryBedrockModelId
           FETCH_TRANSCRIPT_LAMBDA_ARN: !Ref FetchTranscriptArn
           ANTHROPIC_MODEL_IDENTIFIER: "claude-2"

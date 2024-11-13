@@ -1,4 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
 
 Description: Amazon Transcribe Post Call Analytics - PCA UI - Deploy
 
@@ -123,103 +124,162 @@ Resources:
       QAppWebURL: !Ref QAppWebURL
       Version: "0.7.9"
 
-  QUpdateWebExperienceRole:
-    Type: "AWS::IAM::Role"
+##########################################################################
+# CodeBuild
+##########################################################################
+
+  PCAUICodeBuildServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: codebuild.amazonaws.com
+      Policies:
+        - PolicyName: ecs-service
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Resource:
+                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/*"
+                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/*:*"
+                Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+              - Resource: "*"
+                Effect: Allow
+                Action:
+                  - qbusiness:UpdateWebExperience
+
+  PCAUICodeBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Description: !Sub >-
+        Builds docker images and the website of stack: ${AWS::StackName}
+      ServiceRole: !Ref PCAUICodeBuildServiceRole
+      EncryptionKey: alias/aws/s3
+      Artifacts:
+        Type: NO_ARTIFACTS
+      Source:
+        Type: NO_SOURCE
+        BuildSpec: |
+          version: 0.2
+          phases:
+            pre_build:
+              commands:
+                - echo ${Q_WEB_EXPERIENCE_ID}
+                - echo `ls -altr`
+                - echo `pwd`
+            build:
+              commands:
+                - echo Build started on `date`
+            post_build:
+              commands:
+                - echo Build completed on `date`
+      Environment:
+        ComputeType: BUILD_GENERAL1_MEDIUM
+        Image: aws/codebuild/amazonlinux2-x86_64-standard:5.0
+        Type: LINUX_CONTAINER
+        PrivilegedMode: true
+        EnvironmentVariables:
+          - Name: AWS_DEFAULT_REGION
+            Value: !Ref AWS::Region
+          - Name: AWS_ACCOUNT_ID
+            Value: !Ref AWS::AccountId
+          - Name: Q_WEB_EXPERIENCE_ID  
+            Value: !Ref QWebExperienceId
+          - Name: Q_APPLICATION_ID
+            Value: !Ref QAppId
+          - Name: PCA_WEB_URI
+            Value: !Ref WebUri
+      TimeoutInMinutes: 10
+
+  LambdaCodeBuildStartBuildExecutionRole:
+    Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
+        Version: "2012-10-17"
         Statement:
           - Effect: Allow
             Principal:
-              Service: lambda.amazonaws.com
+              Service:
+                - lambda.amazonaws.com
             Action:
               - sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Path: "/"
       Policies:
-        - PolicyName: update-web-experience
+        - PolicyName: root
           PolicyDocument:
+            Version: "2012-10-17"
             Statement:
-              Effect: Allow
-              Action:
-                - qbusiness:UpdateWebExperience
-              Resource: "*"
+              - Effect: Allow
+                Action:
+                  - codebuild:StartBuild
+                  - codebuild:BatchGetBuilds
+                Resource: !GetAtt PCAUICodeBuildProject.Arn
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: "*"
+          # Used by custom resource helper poller
+          # https://github.com/aws-cloudformation/custom-resource-helper
+        - PolicyName: CustomResourcePoller
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - events:PutRule
+                  - events:DeleteRule
+                  - events:PutTargets
+                  - events:RemoveTargets
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:rule/*"
+              - Effect: Allow
+                Action:
+                  - lambda:AddPermission
+                  - lambda:RemovePermission
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:*"
 
-  QUpdateWebExperienceFunction:
-    Type: "AWS::Lambda::Function"
+  CodeBuildRun:
+    Type: Custom::CodeBuildRun
     Properties:
-      Environment:
-        Variables:
-          Q_WEB_EXPERIENCE_ID: !Ref QWebExperienceId
-          Q_APPLICATION_ID: !Ref QAppId
-          PCA_WEB_URI: !Ref WebUri
-      Handler: index.lambda_handler
-      Role: !GetAtt QUpdateWebExperienceRole.Arn
-      Runtime: python3.11
-      Timeout: 900
-      Code:
-        ZipFile: |
-          import boto3
-          import os
-          import json
-          import urllib.parse
-          import cfnresponse
+      ServiceToken: !GetAtt LambdaCodeBuildStartBuild.Arn
+      BuildProjectName: !Ref PCAUICodeBuildProject
 
-          client = boto3.client('qbusiness')
-
-          Q_WEB_EXPERIENCE_ID = os.getenv('Q_WEB_EXPERIENCE_ID','')
-          Q_APPLICATION_ID = os.getenv('Q_APPLICATION_ID', '')
-          PCA_WEB_URI = os.getenv('PCA_WEB_URI', '')
-
-          def update_web_experience():
-              try:
-                  response = client.update_web_experience(
-                      applicationId=Q_APPLICATION_ID,
-                      webExperienceId=Q_WEB_EXPERIENCE_ID,
-                      authenticationConfiguration={
-                          'allowedDomainOrigins': [PCA_WEB_URI]
-                      }
-                  )
-                  return response
-              except client.exceptions.ResourceNotFoundException as e:
-                  print(f"Resource not found: {e}")
-              except client.exceptions.ValidationException as e:
-                  print(f"Validation error: {e}")
-              except client.exceptions.AccessDeniedException as e:
-                  print(f"Access denied: {e}")
-              except client.exceptions.ThrottlingException as e:
-                  print(f"Throttling error: {e}")
-              except client.exceptions.InternalServerException as e:
-                  print(f"Internal server error: {e}")
-              except Exception as e:
-                  print(f"An unexpected error occurred: {e}")
-
-              return None
-
-          def lambda_handler(event, context):
-              response_data = {}
-
-              try:
-                  update_web_experience()
-                  cfnresponse.send(event,
-                                  context,
-                                  cfnresponse.SUCCESS,
-                                  response_data)
-
-              except Exception as e:
-                  print("Operation failed...")
-                  print(str(e))
-                  response_data['Data'] = str(e)
-                  cfnresponse.send(event,
-                                  context,
-                                  cfnresponse.FAILED,
-                                  response_data)        
-
-  QUpdateWebExperience:
-    Type: "AWS::CloudFormation::CustomResource"
+  LambdaCodeBuildStartBuild:
+    Type: AWS::Serverless::Function
     Properties:
-      ServiceToken: !GetAtt QUpdateWebExperienceFunction.Arn
-      Counter: !Ref DeployCountValue
-      Version: "0.7.9"
+      Role: !GetAtt LambdaCodeBuildStartBuildExecutionRole.Arn
+      Runtime: python3.12
+      Timeout: 60
+      MemorySize: 128
+      Handler: lambda_start_codebuild.handler
+      CodeUri: ../../src/qbusiness/start_codebuild
+      Description: This AWS Lambda Function kicks off a code build job.
+      LoggingConfig:
+        LogGroup:
+          Fn::Sub: /${AWS::StackName}/lambda/LambdaCodeBuildStartBuild
+    DependsOn:
+      - LambdaCodeBuildStartBuildLogGroup
+
+  LambdaCodeBuildStartBuildLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Sub: /${AWS::StackName}/lambda/LambdaCodeBuildStartBuild
+      RetentionInDays:
+        Ref: CloudWatchLogsExpirationInDays
+
 
 Outputs:
 

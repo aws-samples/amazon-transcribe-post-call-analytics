@@ -8,6 +8,9 @@ Parameters:
     Type: String
     Description: Bucket where parsed transcripts are stored.
 
+  BedrockRegion:
+    Type: String
+
   AdminUsername:
     Type: String
     Default: "admin"
@@ -505,6 +508,11 @@ Parameters:
 Metadata:
     AWS::CloudFormation::Interface:
         ParameterGroups:
+            - Label:
+                default: Miscellaneous
+              Parameters:
+                  - AssetBucketName
+                  - BedrockRegion
             - Label:
                 default: Admin User
               Parameters:
@@ -1134,6 +1142,7 @@ Resources:
       Parameters:
         ffmpegDownloadUrl: !Ref ffmpegDownloadUrl
         CallSummarization: !Ref CallSummarization
+        BedrockRegion: !Ref BedrockRegion
         SummarizationBedrockModelId: !Ref SummarizationBedrockModelId
         SummarizationSageMakerInitialInstanceCount: !Ref SummarizationSageMakerInitialInstanceCount
         SummarizationLLMThirdPartyApiKey: !If 
@@ -1156,6 +1165,7 @@ Resources:
       Parameters:
         AdminUsername: !Ref AdminUsername
         AdminEmail: !Ref AdminEmail
+        BedrockRegion: !Ref BedrockRegion
         AllowedSignUpEmailDomain: !Ref AllowedSignUpEmailDomain
         MainStackName: !Ref AWS::StackName
         AudioBucket:

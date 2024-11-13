@@ -33,7 +33,7 @@ window.pcaSettings = {
         query: ${props.GenAIQuery}
     },
     qwebappurl: {
-        uri: ${props.QAppWebURL}
+        uri: "${props.QAppWebURL}"
     }
 };`;
 

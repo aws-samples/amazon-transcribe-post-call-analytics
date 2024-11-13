@@ -90,6 +90,10 @@ npm install
 npm run build || exit 1
 popd
 
+pushd pca-ui/src/qbusiness/start_codebuild
+pip install -r requirements.txt -t .
+popd
+
 # Build and deploy embedded MediaSearch project
 echo "Initialize and update git submodules"
 git submodule init

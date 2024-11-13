@@ -18,6 +18,9 @@ Parameters:
   PyUtilsLayer:
     Type: String
 
+  BedrockRegion:
+    Type: String
+
   SupportFilesBucketName:
     Type: AWS::SSM::Parameter::Value<String>
     Default: SupportFilesBucketName
@@ -270,6 +273,7 @@ Resources:
       Environment:
         Variables:
           AWS_DATA_PATH: "/opt/models"
+          AWS_REGION_OVERRIDE: !Ref BedrockRegion
           FETCH_TRANSCRIPT_LAMBDA_ARN: !GetAtt SFFetchTranscript.Arn
           BEDROCK_MODEL_ID: !Ref SummarizationBedrockModelId
           LLM_TABLE_NAME: !Ref LLMTableName
