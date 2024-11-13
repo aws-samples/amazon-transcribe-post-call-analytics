@@ -179,11 +179,14 @@ Resources:
             pre_build:
               commands:
                 - echo ${Q_WEB_EXPERIENCE_ID}
-                - echo `ls -altr`
-                - echo `pwd`
+                - echo ${PCA_WEB_URI}
+                - URL="${PCA_WEB_URI%/}"
+                - echo ${URL}
+                - echo `aws --version`
             build:
               commands:
                 - echo Build started on `date`
+                - echo `aws qbusiness update-web-experience --application-id ${Q_APPLICATION_ID} --web-experience-id ${Q_WEB_EXPERIENCE_ID} --origins ${URL}`
             post_build:
               commands:
                 - echo Build completed on `date`
