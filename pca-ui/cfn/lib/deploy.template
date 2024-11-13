@@ -42,6 +42,11 @@ Parameters:
     AllowedValues: [true, false]
     Description: true or false to enable or disable the genai query prompt
 
+  CloudWatchLogsExpirationInDays:
+    Type: Number
+    Default: 14
+    Description: The number of days log events are kept in CloudWatch Logs.
+
 Resources:
   Layer:
     Type: "AWS::Lambda::LayerVersion"
