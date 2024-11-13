@@ -8,6 +8,10 @@ Parameters:
     Type: String
     Description: Bucket where parsed transcripts are stored.
 
+  AssetBucketPrefix:
+    Type: String
+    Description: Bucket where parsed transcripts are stored.
+
   BedrockRegion:
     Type: String
 
@@ -512,6 +516,7 @@ Metadata:
                 default: Miscellaneous
               Parameters:
                   - AssetBucketName
+                  - AssetBucketPrefix
                   - BedrockRegion
             - Label:
                 default: Admin User
@@ -1183,6 +1188,7 @@ Resources:
         Environment: !Ref Environment
         GenAIQueryType: !Ref GenAIQuery
         AssetBucketName: !Ref AssetBucketName
+        AssetBucketPrefix: !Ref AssetBucketPrefix
         GenAIQueryBedrockModelId: !Ref GenAIQueryBedrockModelId
         FetchTranscriptArn: !GetAtt PCAServer.Outputs.FetchTranscriptArn
         SummarizerArn: !GetAtt PCAServer.Outputs.SummarizerArn

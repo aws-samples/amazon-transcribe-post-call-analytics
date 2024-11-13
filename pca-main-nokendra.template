@@ -7,6 +7,10 @@ Parameters:
     Type: String
     Description: Bucket where parsed transcripts are stored.
 
+  AssetBucketPrefix:
+    Type: String
+    Description: Bucket where parsed transcripts are stored.
+
   BedrockRegion:
     Type: String
 
@@ -470,6 +474,7 @@ Metadata:
                 default: Miscellaneous
               Parameters:
                   - AssetBucketName
+                  - AssetBucketPrefix
                   - BedrockRegion
             - Label:
                 default: Admin User

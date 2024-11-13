@@ -7,6 +7,10 @@ Parameters:
     Type: String
     Description: Asset bucket
 
+  AssetBucketPrefix:
+    Type: String
+    Description: Asset bucket
+
   AdminUsername:
     Type: String
     Default: "admin"
@@ -139,7 +143,7 @@ Resources:
       Parameters:
         CreateIDC: "yes"
         AssetBucketName: !Ref AssetBucketName
-        AssetBucketPrefix: "source/"
+        AssetBucketPrefix: !Ref AssetBucketPrefix
 
   Web:
     Type: AWS::CloudFormation::Stack
