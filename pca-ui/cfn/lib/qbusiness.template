@@ -335,7 +335,11 @@ Resources:
                   - qbusiness:Chat
                   - qbusiness:ChatSync
                   - qbusiness:ListMessages
+                  - qbusiness:ListDataSources
+                  - qapps:ListCategories
                   - qbusiness:ListConversations
+                  - qbusiness:ListRetrievers
+                  - qbusiness:ListIndices
                   - qbusiness:DeleteConversation
                   - qbusiness:PutFeedback
                   - qbusiness:GetWebExperience
@@ -372,7 +376,9 @@ Resources:
                   - qapps:StartQAppSession
                   - qapps:StopQAppSession
                 Resource:
+                  - !Sub arn:aws:qapps:${AWS::Region}:${AWS::AccountId}:application/*
                   - !Sub arn:aws:qbusiness:${AWS::Region}:${AWS::AccountId}:application/*
+
           PolicyName: WebExperiencePolicy
 
   QBusinessApp:
