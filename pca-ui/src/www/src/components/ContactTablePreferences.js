@@ -1,5 +1,7 @@
 import * as React from "react";
 import CollectionPreferences from "@cloudscape-design/components/collection-preferences";
+import { useTranslation } from 'react-i18next';
+import '../styles/ContactTablePreferences.css';
 
 const PAGE_SIZE_OPTIONS = [
   { value: 10, label: '10 Calls' },
@@ -7,23 +9,23 @@ const PAGE_SIZE_OPTIONS = [
   { value: 100, label: '100 Calls' },
 ]
 
-const VISIBLE_CONTENT_OPTIONS = [{
-  label: 'Call list properties',
+const VISIBLE_CONTENT_OPTIONS = (t) => [{
+  label: t('contactTable.callListProperties'),
   options: [
     /*{ id: "timestamp", label: "Timestamp", visible: true },
     { id: "jobName", label: "Job Name", visible: true },*/
-    { id: "status", label: "Status", visible: true },
-    { id: "guid", label: "Guid",  visible: false },
-    { id: "agent", label: "Agent",  visible: false },
-    { id: "customer", label: "Customer",  visible: false },
-    { id: "queue", label: "Queue", visible: false },
-    { id: "summary_resolved", label: "Resolved", visible: true },
-    { id: "summary_topic", label: "Topic", visible: true },
-    { id: "summary_product", label: "Product", visible: true },
-    { id: "summary_summary", label: "Summary", visible: true },
-    { id: "callerSentimentScore",  label: "Cust Sentiment", visible: true },
-    { id: "langCode", label: "Lang Code", visible: true },
-    { id: "duration", label: "Duration", visible: true },
+    { id: "status", label: t("contactTable.status"), visible: true },
+    { id: "guid", label: t("contactTable.guid"), visible: false },
+    { id: "agent", label: t("contactTable.agent"), visible: false },
+    { id: "customer", label: t("contactTable.customer"), visible: false },
+    { id: "queue", label: t("contactTable.queue"), visible: false },
+    { id: "summary_resolved", label: t("contactTable.summary_resolved"), visible: true },
+    { id: "summary_topic", label: t("contactTable.summary_topic"), visible: true },
+    { id: "summary_product", label: t("contactTable.summary_product"), visible: true },
+    { id: "summary_summary", label: t("contactTable.summary_summary"), visible: true },
+    { id: "callerSentimentScore", label: t("contactTable.callerSentimentScore"), visible: true },
+    { id: "langCode", label: t("contactTable.langCode"), visible: true },
+    { id: "duration", label: t("contactTable.duration"), visible: true },
     /*{ id: "menu", label: "Menu", visible: true }*/
   ]
 }];
@@ -54,27 +56,30 @@ export const ContactTablePreferences = ({
   setPreferences,
   disabled,
   pageSizeOptions = PAGE_SIZE_OPTIONS,
-  visibleContentOptions = VISIBLE_CONTENT_OPTIONS,
-}) => (
-  <CollectionPreferences
-    title="Preferences"
-    confirmLabel="Confirm"
-    cancelLabel="Cancel"
-    onConfirm={({ detail }) => setPreferences(detail)}
-    preferences={preferences}
-    disabled={disabled}
-    stickyColumnsPreference={{}}
-    /*pageSizePreference={{
-      title: "Page Size",
-      options: pageSizeOptions
-    }}*/
-    wrapLinesPreference={{
-      label: 'Wrap lines',
-      description: 'Check to see all the text and wrap the lines',
-    }}
-    visibleContentPreference={{
-      title: 'Select visible columns',
-      options: visibleContentOptions,
-    }}
-  />
-);
+}) => {
+  const { t } = useTranslation();
+
+  return (
+    <CollectionPreferences
+      title={t("contactTable.preferences")}
+      confirmLabel={t("confirm")}
+      cancelLabel={t("cancel")}
+      onConfirm={({ detail }) => setPreferences(detail)}
+      preferences={preferences}
+      disabled={disabled}
+      stickyColumnsPreference={{}}
+      /*pageSizePreference={{
+        title: "Page Size",
+        options: pageSizeOptions
+      }}*/
+      wrapLinesPreference={{
+        label: t('contactTable.wrapLines'),
+        description: t('contactTable.wrapLinesDescription'),
+      }}
+      visibleContentPreference={{
+        title: t('contactTable.selectVisibleColumns'),
+        options: VISIBLE_CONTENT_OPTIONS(t),
+      }}
+    />
+  );
+}

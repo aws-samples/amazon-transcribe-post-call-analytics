@@ -21,6 +21,7 @@ import { range } from "../../util";
 import { Sentiment } from "../../components/Sentiment";
 import { ChatInput } from "../../components/ChatInput";
 import { Button, ContentLayout, Spinner, Link, Header, Grid, Container, SpaceBetween, Input, FormField, TextContent } from '@cloudscape-design/components';
+import { useTranslation } from 'react-i18next';
 
 const getSentimentTrends = (d, target, labels) => {
   const id = Object.entries(labels).find(([_, v]) => v === target)?.[0];
@@ -57,6 +58,8 @@ function Dashboard({ setAlert }) {
   const { mutate } = useSWRConfig();
   const audioElem = useRef();
   const transcriptElem = useRef();
+
+  const { t } = useTranslation();
 
   const { data, error } = useSWR(`/get/${key}`, () => get(key), {
     revalidateIfStale: true,
@@ -264,7 +267,7 @@ function Dashboard({ setAlert }) {
     }
 
     return (
-        <form onSubmit={onSubmit}>
+        <form onSubmit={onSubmit} style={{marginTop:"10px"}}>
           <Grid gridDefinition={[{ colspan: { default: 12, xxs: 9 } }, { default: 12, xxs: 3 }]}>
             {disabled ? <Spinner size="big" variant="disabled"/> : <Button disabled={disabled} iconName="refresh" variant="normal" ariaLabel="refresh">
             </Button>}
@@ -297,21 +300,21 @@ function Dashboard({ setAlert }) {
 
   const callDetailColumn = [
     {
-      label: "Timestamp",
+      label: t("contactTable.timestamp"),
       value: (d) => d?.ConversationAnalytics?.ConversationTime.substring(0, 19),
     },
-    { label: "Guid", value: (d) => d?.ConversationAnalytics?.GUID },
-    { label: "Agent", value: (d) => d?.ConversationAnalytics?.Agent },
+    { label: t("contactTable.guid"), value: (d) => d?.ConversationAnalytics?.GUID },
+    { label: t("contactTable.agent"), value: (d) => d?.ConversationAnalytics?.Agent },
     {
-      label: "Call Duration",
+      label: t("contactTable.callDuration"),
       value: (d) => Formatter.Time(d.ConversationAnalytics.Duration),
     },
     {
-      label: "Entity Recognizer Name",
+      label: t("contactTable.entityRecognizer"),
       value: (d) => d?.ConversationAnalytics?.EntityRecognizerName,
     },
     {
-      label: "Language Model",
+      label: t("contactTable.language"),
       value: (d) =>
           usedCustomLanguageModel
             ? d?.ConversationAnalytics?.LanguageCode + " [" +
@@ -319,7 +322,7 @@ function Dashboard({ setAlert }) {
             : d?.ConversationAnalytics?.LanguageCode
     },
     {
-      label: "Agent Sentiment",
+      label: t("contactTable.agentSentiment"),
       value: (d) => (
         <Sentiment
           score={getSentimentTrends(d, "Agent", speakerLabels)?.SentimentScore}
@@ -328,7 +331,7 @@ function Dashboard({ setAlert }) {
       ),
     },
     {
-      label: "Customer Sentiment",
+      label: t("contactTable.customerSentiment"),
       value: (d) => (
         <Sentiment
           score={
@@ -344,7 +347,7 @@ function Dashboard({ setAlert }) {
 
   const transcribeDetailColumn = [
     {
-      label: "Type",
+      label: t("transcribeDetail.type"),
       value: (d) =>
         isTranscribeCallAnalyticsMode
           ? hasTranscribeStreamingSession
@@ -355,7 +358,7 @@ function Dashboard({ setAlert }) {
             : "Transcribe"
     },
     {
-      label: "Job Id",
+      label: t("transcribeDetail.jobId"),
       value: (d) => (
         <div key='jobIdKey' className="text-break">
           {
@@ -366,39 +369,39 @@ function Dashboard({ setAlert }) {
       ),
     },
     {
-      label: "File Format",
+      label: t("transcribeDetail.fileFormat"),
       value: (d) =>
         d?.ConversationAnalytics?.SourceInformation[0]?.TranscribeJobInfo
           ?.MediaFormat,
     },
     {
-      label: "Sample Rate",
+      label: t("transcribeDetail.sampleRate"),
       value: (d) =>
         d?.ConversationAnalytics?.SourceInformation[0]?.TranscribeJobInfo
           ?.MediaSampleRateHertz,
     },
     {
-      label: "PII Redaction",
+      label: t("transcribeDetail.piiRedaction"),
       value: (d) =>
         d?.ConversationAnalytics?.SourceInformation[0]?.TranscribeJobInfo
           ?.RedactedTranscript === true
-          ? "Enabled"
-          : "Disabled"
+          ? t("enabled")
+          : t("disabled"),
     },
     {
-      label: "Custom Vocabulary",
+      label: t("transcribeDetail.vocabulary"),
       value: (d) =>
         d?.ConversationAnalytics?.SourceInformation[0]?.TranscribeJobInfo
           ?.VocabularyName,
     },
     {
-      label: "Vocabulary Filter",
+      label: t("transcribeDetail.vocabularyFilter"),
       value: (d) =>
         d.ConversationAnalytics.SourceInformation[0]?.TranscribeJobInfo
           ?.VocabularyFilter,
     },
     {
-      label: "Average Word Confidence",
+      label: t("transcribeDetail.averageConfidence"),
       value: (d) =>
         Formatter.Percentage(
           d.ConversationAnalytics.SourceInformation[0]?.TranscribeJobInfo
@@ -444,58 +447,60 @@ function Dashboard({ setAlert }) {
   };
 
   const issuesTab = () => {
-    return <div key='issuesTab'>
+    return <div key='issuesTab' style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
       {data?.ConversationAnalytics?.IssuesDetected?.length > 0 ? 
         data?.ConversationAnalytics?.IssuesDetected?.map((issue, j) => (
           <Tag key={j}
             style={{
               "--highlight-colour": "yellow",
+              fontFamily: 'Helvetica, Arial, sans-serif'
             }}
           >
             {issue.Text}
           </Tag>
-        )) : <div tag='no-issue'>No issues detected.</div>
+        )) : <div tag='no-issue' style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>No issues detected.</div>
       }
     </div>
   }
   const actionItemsTab = () => {
-    return <div key='actionItemsTab'>
+    return <div key='actionItemsTab' style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
       {data?.ConversationAnalytics?.ActionItemsDetected?.length > 0 ? 
       data?.ConversationAnalytics?.ActionItemsDetected?.map(
         (actionItem, j) => (
           <Tag key={j}
             style={{
               "--highlight-colour": "LightPink",
+              fontFamily: 'Helvetica, Arial, sans-serif'
             }}
           >
             {actionItem.Text}
           </Tag>
         )
-        ) : <div tag='no-action-items'>No action items detected.</div>
-      }
+      ) : <div tag='no-action-items' style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>No action items detected.</div>
+    }
     </div>
   }
 
   const outcomesTab = () => {
-    return <div key='outcomesTab'>
+    return <div key='outcomesTab' style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
       {data?.ConversationAnalytics?.OutcomesDetected?.length > 0 ?
         data?.ConversationAnalytics?.OutcomesDetected?.map(
         (outcome, j ) => (
           <Tag key={j}
             style={{
               "--highlight-colour": "Aquamarine",
+              fontFamily: 'Helvetica, Arial, sans-serif'
             }}
           >
             {outcome.Text}
           </Tag>
         )
-        ): <div tag='no-outcomes'>No outcomes detected.</div>
+      ): <div tag='no-outcomes' style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>No outcomes detected.</div>
     }
     </div>
   }
 
   
-
   return (
     <ContentLayout 
     header={
@@ -503,11 +508,11 @@ function Dashboard({ setAlert }) {
           variant="h2"
           actions={[
             <Button key='swapAgent' onClick={swapAgent} disabled={isSwapping} className="float-end">
-              {isSwapping ? "Swapping..." : "Swap Agent/Caller"}
+              {isSwapping ? t("swapping") : t("swapAgent")}
             </Button>
           ]}
       >
-        Call Details
+        <span id="header-text">{t("callDetail")}</span>
       </Header>
     }>
     <Grid
@@ -561,12 +566,12 @@ function Dashboard({ setAlert }) {
         <Container
           fitHeight={true}
           header={
-            <Header variant="h2">
-              Call Metadata
+            <Header variant="h2" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+              {t("callMetadata")}
             </Header>
           }
         >
-          <SpaceBetween size="m">
+          <SpaceBetween size="m" style={{ fontFamily: 'Helvetica' }}>
             {callDetailColumn.map((entry, j) => (
               <ValueWithLabel key={j} label={entry.label}>
                 {!data && !error ? (
@@ -582,7 +587,7 @@ function Dashboard({ setAlert }) {
           fitHeight={true}
           header={
             <Header variant="h2">
-              Transcribe Details
+              {t("transcribeDetail.title")}
             </Header>
           }
         >
@@ -601,14 +606,14 @@ function Dashboard({ setAlert }) {
         <Container
           header={
             <Header variant="h2">
-              Sentiment
+              {t("callSentiment")}
             </Header>
           }>
             <SentimentChart
               data={data?.ConversationAnalytics?.SentimentTrends}
               speakerOrder={speakerLabels}
             />
-            <Header variant="h2">Speaker Time</Header>
+            <Header variant="h2">{t("speakerTime")}</Header>
             <SpeakerTimeChart
               data={Object.entries(
                 data?.ConversationAnalytics?.SpeakerTime || {}
@@ -639,7 +644,7 @@ function Dashboard({ setAlert }) {
           <Container
             header={
               <Header variant="h2">
-                Comprehend Sentiment
+                {t("comprehendSentiment")}
               </Header>
             }
           >
@@ -654,7 +659,7 @@ function Dashboard({ setAlert }) {
           fitHeight={true}
           header={
             <Header variant="h2">
-              Entities
+              {t("entities")}
             </Header>
           }
         >
@@ -687,14 +692,11 @@ function Dashboard({ setAlert }) {
         <Container
           fitHeight={true}
           header={
-            <Header variant="h2"
-              actions = {
-                <SpaceBetween direction="horizontal" size="xs">
-                  <SummaryRefresh/>
-                </SpaceBetween>
-              }
-            >
-              Generative AI Insights
+            <Header variant="h2">
+              {t("genaiInsights")}
+              <SpaceBetween direction="horizontal" size="xs">
+                <SummaryRefresh/>
+              </SpaceBetween>
             </Header>
           }
 
@@ -713,7 +715,7 @@ function Dashboard({ setAlert }) {
             fitHeight={false}
             header={
               <Header variant="h2">
-                Generative AI Query
+                {t("genaiQuery")}
               </Header>
             }
             /* For future use. :) */
@@ -727,7 +729,7 @@ function Dashboard({ setAlert }) {
                   <ValueWithLabel key={i} index={i} label={entry.label}>
                       {entry.value === '...' ? <div style={{height:'30px'}}><Spinner/></div> : entry.value}
                     </ValueWithLabel>
-                )) : <ValueWithLabel key='nosummary'>Ask a question below.</ValueWithLabel>}
+                )) : <ValueWithLabel key='nosummary'>{t("question")}</ValueWithLabel>}
               </SpaceBetween>
             </div>
           </Container>
@@ -738,24 +740,24 @@ function Dashboard({ setAlert }) {
             fitHeight={false}
             header={
                 <Header variant="h2">
-                  Call Analytics Summary
+                  {t("callSummary")}
                 </Header>
             }
             
           >
-            <div style={{minHeight:'38em'}}>
-              {!data && !error ? (
-                <h4>No summary available.</h4>
+          <div style={{ minHeight: '38em', fontFamily: 'Helvetica, Arial, sans-serif' }}>
+            {!data && !error ? (
+                <h4 style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>No summary available.</h4>
               ) : (
                   <SpaceBetween size="l">
-                    <ValueWithLabel key='issues' label="Issue">
-                      {issuesTab()}
+                  <ValueWithLabel key='outcomes' label="Outcomes" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+                    {issuesTab()}
                     </ValueWithLabel>
-                    <ValueWithLabel key='actionItems' label="Action Items">
-                      {actionItemsTab()}
+                    <ValueWithLabel key='outcomes' label="Outcomes" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+                    {actionItemsTab()}
                     </ValueWithLabel>
-                    <ValueWithLabel key='outcomes' label="Outcomes">
-                      {outcomesTab()}
+                    <ValueWithLabel key='outcomes' label="Outcomes" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+                    {outcomesTab()}
                     </ValueWithLabel>
                   </SpaceBetween>
               )}
@@ -790,7 +792,7 @@ function Dashboard({ setAlert }) {
                 </SpaceBetween>
               }
             >
-              Transcript
+              {t("transcript")}
             </Header>
         }>
           <div ref={transcriptElem}>

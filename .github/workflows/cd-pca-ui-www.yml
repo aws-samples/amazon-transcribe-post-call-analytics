@@ -1,0 +1,57 @@
+name: PCA UI www CD
+
+on:
+  push:
+    tags: 
+      - "alpha-*.*.*"
+
+#oidc encima de oauth 2.0
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions/setup-node@v1
+        with:
+          node-version: 14
+          cache: 'npm'
+
+      - name: install
+        run: npm i
+        working-directory: ./pca-ui/src/www
+
+      - name: Run unit tests
+        run: npm t
+        working-directory: ./pca-ui/src/www
+
+      - name: compile dist
+        run: CI=false npm run build
+        working-directory: ./pca-ui/src/www
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-region: ${{ secrets.AWS_BUCKET_REGION }}
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_BUCKET_ACCOUNT }}:role/GithubActionsS3Role
+          role-session-name: GithubSession # OIDC
+
+      - name: Check login
+        run: aws sts get-caller-identity
+
+      - name: Generate version file
+        run: echo "NOW=$(date +'%Y-%m-%dT%H:%M:%S')" >> $GITHUB_ENV
+
+      - name: Write version file
+        run: echo "{ \"name\"":" \"Evoltis PCA\", \"version\"":" \""${{  github.ref_name }}"\", \"publishDate\"":"\""$NOW"\"}" >> ./pca-ui/src/www/build/version.json
+
+      - name: Upload to S3
+        run: aws s3 sync ./pca-ui/src/www/build s3://${{ secrets.AWS_BUCKET_NAME }} --delete --exclude "config.js"
+
+      - name: Create Cloudfront invalidation
+        run: aws cloudfront create-invalidation --distribution-id EJO9SDT3WF3I8 --paths "/index.html" "/version.json"

@@ -11,6 +11,9 @@ import {useCallback, useMemo } from 'react';
 import Button from "@cloudscape-design/components/button";
 import { Header, Container, TokenGroup } from '@cloudscape-design/components';
 import { useDangerAlert } from "../hooks/useAlert";
+import { useTranslation } from 'react-i18next';
+import "../locales/i18n";
+import Icon from "@cloudscape-design/components/icon";
 
 const baseStyle = {
     flex: 1,
@@ -20,7 +23,7 @@ const baseStyle = {
     padding: '20px',
     borderWidth: 3,
     borderRadius: 10,
-    borderColor: '#eeeeee',
+    borderColor: '#2C2F88',
     borderStyle: 'dashed',
     backgroundColor: '#fafafa',
     color: '#737373',
@@ -34,7 +37,8 @@ const container = {
 };
 
 const focusedStyle = {
-    borderColor: '#2196f3'
+    borderColor: '#2C2F88',
+    backgroundColor: '#EDF3FF',
 };
 
 const acceptStyle = {
@@ -50,9 +54,11 @@ export const Upload = () => {
     const [items, setItems] = React.useState([]);
     const [uploaded, setUploaded] = React.useState(false);
     const [uploadError, setUploadError] = React.useState("");
+    const { t } = useTranslation();
+
     const successMessage = [{
         type: "success",
-        content: "Files uploaded successfully.",
+        content: t('upload.successfullyUploaded'),
         dismissible: true,
         dismissLabel: "Dismiss message",
         onDismiss: () => {setUploaded(false);},
@@ -88,7 +94,7 @@ export const Upload = () => {
             'video/*': ['.mp4', '.webm'],
         }, validator: file => {
             if (!/^[a-zA-Z0-9._-]+$/.test(file.name)) {
-                setUploadError("File contains invalid characters. No spaces are allowed, and only characters a-z, A-Z, 0-9, period (.), underscore (_), and hyphen (-) are allowed.");
+                setUploadError(t("upload.uploadError"));
                 return {
                     code: "filename-invalid",
                     message: `Invalid character in file name: ${file.name}`
@@ -110,7 +116,7 @@ export const Upload = () => {
             setItems((prevState) => []);
             setUploaded(true);
         } catch (err) {
-            setUploadError("An error occurred uploading file(s): " + err.toLocaleString());
+            setUploadError(t('upload.uploadFailed') + err.toLocaleString());
         } finally {
             setUploadStatus(false);
         }
@@ -133,14 +139,23 @@ export const Upload = () => {
             <Form
                 actions={
                     <SpaceBetween direction='horizontal' size='xs'>
-                        {uploadStatus ? <Button disabled={true} loading >Uploading</Button> : <Button variant="normal">Upload</Button>}
+                       {uploadStatus ? (
+                        <Button disabled={true} loading>{t("upload.uploading")}</Button>
+                        ) : (
+                        <Button variant="normal">
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'white' }}>
+                            <Icon name="add-plus" size="small" variant="inverted" />
+                            {t("upload.upload")}
+                            </div>
+                        </Button>
+                        )}
                     </SpaceBetween>
                 }
             >
                 <Container
                     header={
                         <Header variant="h2">
-                            Upload call recordings
+                            {t('upload.title')}
                         </Header>
                     }
                     footer={
@@ -155,11 +170,11 @@ export const Upload = () => {
                     <div className="container">
                         <div {...getRootProps({style})}>
                             <input {...getInputProps()} />
-                            {isDragAccept && (<p>Drag and drop or click to select call recordings to upload. Filenames can only include characters a-z, A-Z, 0-9, period (.), underscore (_), and hyphen (-).
-                            <br></br>Valid formats: MP3, WAV, FLAC, OGG, AMR, MP4, and WEBM</p>)}
+                            {isDragAccept && (<p>{t('upload.dragAccept')}
+                            <br></br>{t("upload.dragFormat")}</p>)}
                             {isDragReject && (<p>Unsupported files detected</p>)}
-                            {!isDragActive && (<p>Drag and drop or click to select call recordings to upload. Filenames can only include characters a-z, A-Z, 0-9, period (.), underscore (_), and hyphen (-).
-                             <br></br>Valid formats: MP3, WAV, FLAC, OGG, AMR, MP4, and WEBM</p>)}
+                            {!isDragActive && (<p>{t('upload.dragAccept')}
+                             <br></br>{t("upload.dragFormat")}</p>)}
                         </div>
                     </div>
                     <aside>

@@ -1,8 +1,6 @@
 import { SentimentIcon } from "../../components/SentimentIcon";
 import { Formatter } from "../../format";
 import {Tag} from "../../components/Tag";
-import { Box } from '@cloudscape-design/components';
-
 
 const getTranscriptDetails = (allSegments) => {
   let offsetStartValue = 0;
@@ -46,8 +44,8 @@ export const TranscriptSegment = ({
   ivr,
   categoryList,
 }) => (
-  <div style={{display:"flex", paddingBottom:"1rem"}}>
-    <div style={{margin: "0.4rem"}}>
+  <div style={{display:"flex", paddingBottom:"1rem", fontFamily: "Helvetica"}}>
+    <div style={{paddingRight:"5px"}}>
       <SentimentIcon score={score} size="2em" />
     </div>
     <div>

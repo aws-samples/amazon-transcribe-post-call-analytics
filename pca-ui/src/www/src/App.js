@@ -2,15 +2,17 @@ import {
   BrowserRouter as Router,
   Switch,
   Route,
-  NavLink,
 } from "react-router-dom";
 // import { Navbar, Nav, Container, Alert, Button } from "react-bootstrap";
-import { AppLayout,Alert,Notifications, Header, Link, BreadcrumbGroup, TopNavigation, Container, Button} from "@cloudscape-design/components"
+import { AppLayout,Alert, BreadcrumbGroup, TopNavigation} from "@cloudscape-design/components"
 import Home from "./routes/Home";
 import Search from "./routes/Search";
 import Dashboard from "./routes/Dashboard/index";
 import { useState } from "react";
 import { payloadFromToken, logOut } from "./api/auth";
+import { useTranslation } from 'react-i18next';
+import "./locales/i18n";
+import logo from './assets/logo.png';
 
 const routes = [
   {
@@ -18,10 +20,11 @@ const routes = [
     name: "Search",
     Component: Search,
     Breadcrumb: () => {
+      const { t } = useTranslation();
       return <BreadcrumbGroup
         items={[
-          { text: "Home", href: "../" },
-          { text: "Search", href: "search" }
+          { text: t("home.title"), href: "../" },
+          { text: t("utilities.search"), href: "search" }
         ]}
         ariaLabel="Breadcrumbs"
       />
@@ -32,10 +35,11 @@ const routes = [
     name: "Search",
     Component: Search,
     Breadcrumb: () => {
+      const { t } = useTranslation();
       return <BreadcrumbGroup
         items={[
-          { text: "Home", href: "../" },
-          { text: "Search", href: "search" }
+          { text: t("home.title"), href: "../" },
+          { text: t("utilities.search"), href: "search" }
         ]}
         ariaLabel="Breadcrumbs"
       />
@@ -47,11 +51,12 @@ const routes = [
     hide: true,
     Component: Dashboard,
     Breadcrumb: () => {
+      const { t } = useTranslation();
       return <BreadcrumbGroup
         items={[
-          { text: "Home", href: "../../" },
-          { text: "Call List", href: "../../" },
-          { text: "Call Details", href: "#" },
+          { text: t('home.title'), href: "../../" },
+          { text: t('callList'), href: "../../" },
+          { text: t('callDetail'), href: "#" },
         ]}
         ariaLabel="Breadcrumbs"
       />
@@ -62,10 +67,11 @@ const routes = [
     name: "Call List",
     Component: Home,
     Breadcrumb: () => {
+      const { t } = useTranslation();
       return <BreadcrumbGroup
         items={[
-          { text: "Home", href: "#" },
-          { text: "Call List", href: "#" },
+          { text: t("home.title"), href: "#" },
+          { text: t("callList"), href: "#" },
         ]}
         ariaLabel="Breadcrumbs"
       />
@@ -74,77 +80,50 @@ const routes = [
 ];
 
 function Navigation({ userName, email }) {
-  return (
-    <TopNavigation
+  const { t } = useTranslation();
+  return (    
+      <TopNavigation
       identity={{
         href: "/",
-        title: "Amazon Transcribe Post-Call Analytics",
-        iconName: "settings"
+        title:  <div style={{ display: 'flex', alignItems: 'center' }}>
+        <img src={logo} alt={t('headerImageAlt')} style={{ height: 25, marginRight: '8px' }} />
+        {t('headerTitle')}
+      </div>,
+        iconName: "settings",
       }}
-      i18nStrings={{
-        searchIconAriaLabel: "Search",
-        searchDismissIconAriaLabel: "Close search",
-        overflowMenuTriggerText: "More",
-        overflowMenuTitleText: "All",
-        overflowMenuBackIconAriaLabel: "Back",
-        overflowMenuDismissIconAriaLabel: "Close menu"
-      }}
-      utilities={[
-        {
-          type: "button",
-          text: "Search",
-          iconName: "search",
-          href: "search",
-          externalIconAriaLabel: " (opens in a new tab)"
-        },
-        {
-          type: "button",
-          text: "PCA Blog Post",
-          href: "https://amazon.com/post-call-analytics",
-          external: true,
-          externalIconAriaLabel: " (opens in a new tab)"
-        },
-        {
-          type: "menu-dropdown",
-          text: userName,
-          description: email,
-          iconName: "user-profile",
-          onItemClick: (event) => {
-            console.log(event);
-            if (event.detail.id === "signout") logOut();
+        i18nStrings={{
+          searchIconAriaLabel: t('searchIconAriaLabel'),
+          searchDismissIconAriaLabel: t('searchDismissIconAriaLabel'),
+          overflowMenuTriggerText: t('overflowMenuTriggerText'),
+          overflowMenuTitleText: t('overflowMenuTitleText'),
+          overflowMenuBackIconAriaLabel: t('overflowMenuBackIconAriaLabel'),
+          overflowMenuDismissIconAriaLabel: t('overflowMenuDismissIconAriaLabel')
+        }}
+        utilities={[
+          {
+            type: "button",
+            text: t('utilities.search'),
+            iconName: "search",
+            href: "search",
+            externalIconAriaLabel: " (opens in a new tab)"
           },
-          items: [
-            /* { id: "profile", text: "Profile" },
-            { id: "preferences", text: "Preferences" },
-            { id: "security", text: "Security" },*/
-            {
-              id: "support-group",
-              text: "Support",
-              items: [
-                {
-                  id: "documentation",
-                  text: "GitHub/Readme",
-                  href: "https://github.com/aws-samples/amazon-transcribe-post-call-analytics/",
-                  external: true,
-                  externalIconAriaLabel:
-                    " (opens in new tab)"
-                },
-                {
-                  id: "feedback",
-                  text: "Blog Post",
-                  href: "https://amazon.com/post-call-analytics",
-                  external: true,
-                  externalIconAriaLabel:
-                    " (opens in new tab)"
-                }
-              ]
+          {
+            type: "menu-dropdown",
+            text: userName,
+            description: email,
+            iconName: "user-profile",
+            onItemClick: (event) => {
+              console.log(event);
+              if (event.detail.id === "signout") logOut();
             },
-            { id: "signout", text: "Sign out" }
-          ]
-        }
-
-      ]}
-    />
+            items: [            
+              { id: "security", text: t('utilities.security') },  
+              { id: "signout", text: t('utilities.signout') }
+            ]
+          }
+          
+        ]}
+      />
   );
 }
 
