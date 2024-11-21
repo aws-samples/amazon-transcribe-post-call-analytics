@@ -1,13 +1,22 @@
-import { FiTrendingDown, FiTrendingUp } from "react-icons/fi";
-import { MdTrendingFlat } from "react-icons/md";
+const TrendUpSVG = ({ style }) => (
+  <img src="/trending_up.svg" alt="Up" style={style} />
+);
 
-export const TrendIcon = ({ trend, size = "1.5em" }) => {
+const TrendDownSVG = ({ style }) => (
+  <img src="/trending_down.svg" alt="Down" style={style} />
+);
+
+const TrendFlatSVG = ({ style }) => (
+  <img src="/trending_flat.svg" alt="Flat" style={style} />
+);
+
+export const TrendIcon = ({ trend, style }) => {
   if (trend >= 0.4) {
-    return <FiTrendingUp color="green" size={size} />;
+    return <TrendUpSVG style={style} />;
   }
 
   if (trend <= -0.4) {
-    return <FiTrendingDown color="red" size={size} />;
+    return <TrendDownSVG style={style} />;
   }
-  return <MdTrendingFlat color="grey" size={size} />;
+  return <TrendFlatSVG style={style} />;
 };

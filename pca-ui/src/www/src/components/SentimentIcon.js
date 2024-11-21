@@ -1,13 +1,23 @@
-import { FiSmile, FiMeh, FiFrown } from "react-icons/fi";
+const SmileSVG = ({ style }) => (
+  <img src="/smile.svg" alt="Smile" style={{ ...style, width: '28px', height: '28px' }} />
+);
 
-export const SentimentIcon = ({ score, size = "1.5em" }) => {
+const BadSVG = ({ style }) => (
+  <img src="/bad.svg" alt="Bad" style={{ ...style, width: '28px', height: '28px' }} />
+);
+
+const NeutralSVG = ({ style }) => (
+  <img src="/neutral.svg" alt="Neutral" style={{ ...style, width: '28px', height: '28px' }} />
+);
+
+export const SentimentIcon = ({ score, style }) => {
   if (score > 0) {
-    return <FiSmile color="green" size={size} />;
+    return <SmileSVG style={style} />;
   }
 
   if (score < 0) {
-    return <FiFrown color="red" size={size} />;
+    return <BadSVG style={style} />;
   }
 
-  return <FiMeh color="grey" size={size} />;
+  return <NeutralSVG style={style} />;
 };

@@ -1,0 +1,21 @@
+.custom-popover {
+    width: 567px !important;
+    height: 496px !important;
+    border-radius: 2px !important;
+    background-color: #FFFFFF !important;
+}
+  
+.custom-popover-header {
+    font-weight: bold;
+    color: #080709 !important;
+}
+  
+.custom-popover-body {
+    font-size: 14px;
+    padding-top: 10px !important;
+    color: #000000 !important;
+}
+
+.awsui_body_xjuzf_1tf1x_325 {
+    padding-top: 10px !important;
+}
