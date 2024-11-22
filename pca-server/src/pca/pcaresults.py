@@ -81,6 +81,7 @@ class ConversationAnalytics:
         self.actions_detected = []
         self.outcomes_detected = []
         self.summary = {}
+        self.voc_summary = {}
         self.telephony = None
         self.transcribe_job = TranscribeJobInfo()
         self.contact_summary = {}
@@ -113,6 +114,7 @@ class ConversationAnalytics:
                             "EntityRecognizerName": self.entity_recognizer,
                             "SentimentTrends": self.sentiment_trends,
                             "Summary": self.summary,
+                            "VOCSummary": self.voc_summary,
                             "ContactSummary": self.contact_summary
                             }
 
@@ -170,6 +172,8 @@ class ConversationAnalytics:
             self.telephony = json_input["Telephony"]
         if "Summary" in json_input:
             self.summary = json_input["Summary"]
+        if "VOCSummary" in json_input:
+            self.voc_summary = json_input["VOCSummary"]
         if "ContactSummary" in json_input:
             self.contact_summary = json_input["ContactSummary"]
 
