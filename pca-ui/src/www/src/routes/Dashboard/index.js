@@ -739,34 +739,7 @@ function Dashboard({ setAlert }) {
             )) : <ValueWithLabel key='nosummary'>No Summary Available</ValueWithLabel>}
           </SpaceBetween>
         </Container>
-        
-        {window.pcaSettings.genai.query && (
-          <Container
-            fitHeight={false}
-            style={{ maxWidth: "100%!important" }}
 
-            header={
-              <Header variant="h2">
-                {t("genaiQuery")}
-              </Header>
-            }
-            /* For future use. :) */
-            footer={
-              <ChatInput submitQuery={submitQuery} />
-            }
-          >
-            <div id="chatDiv" style={{overflow: "hidden", overflowY:'auto', height:'30em'}}>
-              <SpaceBetween size="m">
-                {genAiQueries.length > 0 ? genAiQueries.map((entry, i) => (
-                  <ValueWithLabel key={i} index={i} label={entry.label}>
-                      {entry.value === '...' ? <div style={{height:'30px'}}><Spinner/></div> : entry.value}
-                    </ValueWithLabel>
-                )) : <ValueWithLabel key='nosummary'>{t("question")}</ValueWithLabel>}
-              </SpaceBetween>
-            </div>
-          </Container>
-        )}
-        
         {isTranscribeCallAnalyticsMode && (
           <Container
             fitHeight={false}
@@ -796,6 +769,33 @@ function Dashboard({ setAlert }) {
             </div>
         </Container>
         )}
+        
+        {window.pcaSettings.genai.query && (
+          <Container
+            fitHeight={false}
+            style={{ maxWidth: "100%!important" }}
+
+            header={
+              <Header variant="h2">
+                {t("genaiQuery")}
+              </Header>
+            }
+            /* For future use. :) */
+            footer={
+              <ChatInput submitQuery={submitQuery} />
+            }
+          >
+            <div id="chatDiv" style={{overflow: "hidden", overflowY:'auto', height:'30em'}}>
+              <SpaceBetween size="m">
+                {genAiQueries.length > 0 ? genAiQueries.map((entry, i) => (
+                  <ValueWithLabel key={i} index={i} label={entry.label}>
+                      {entry.value === '...' ? <div style={{height:'30px'}}><Spinner/></div> : entry.value}
+                    </ValueWithLabel>
+                )) : <ValueWithLabel key='nosummary'>{t("question")}</ValueWithLabel>}
+              </SpaceBetween>
+            </div>
+          </Container>
+        )}        
         <Container
           header={
             <Header
