@@ -132,6 +132,7 @@
     "entities": "Entities",
     "categories": "Categories",
     "genaiInsights": "Generative AI Insights",
+    "VOCInsights": "Voice of the Customer",
     "genaiQuery": "Generative AI Query",
     "question": "Ask a question below.",
     "callSummary": "Call Analytics Summary",

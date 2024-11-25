@@ -129,6 +129,7 @@
     "entities": "Entidades",
     "categories": "Categorías",
     "genaiInsights": "Entendimiento de la IA",
+    "VOCInsights": "Voz del cliente",
     "genaiQuery": "Consultas a la IA",
     "question": "Aquí puedes conversar con la IA sobre la transcripción de la llamada.",
     "callSummary": "Resumen de Análisis de Llamadas",
