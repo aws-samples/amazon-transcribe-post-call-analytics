@@ -17,16 +17,22 @@ export const ChatInput = ({submitQuery}) => {
   }
 
   return (
-    <form onSubmit={onSubmit}>
-      <Grid gridDefinition={[{ colspan: { default: 12, xxs: 9 } }, { default: 12, xxs: 3 }]}>
+    <form onSubmit={onSubmit} style={{ width: '100%', margin: '0 auto' }}>
+      <Grid 
+        gridDefinition={[
+          { colspan: { default: 11, xxs: 11 } }, 
+          { colspan: { default: 1, xxs: 1 } }
+        ]}
+        disableGutters={true}
+      >
         <Input
           placeholder={t("chatInputPlaceholder")}
           onChange={({ detail }) => setInputQuery(detail.value)}
           value={inputQuery}
         />
-          <Button type="submit">
+        <Button type="submit" fullWidth>
           {t("submit")}
-          </Button>
+        </Button>
       </Grid>
     </form>
   );
