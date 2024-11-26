@@ -375,6 +375,7 @@ Resources:
                   - qapps:CreateSubscriptionToken
                   - qapps:StartQAppSession
                   - qapps:StopQAppSession
+                  - qapps:DescribeQAppPermissions
                 Resource:
                   - !Sub arn:aws:qapps:${AWS::Region}:${AWS::AccountId}:application/*
                   - !Sub arn:aws:qbusiness:${AWS::Region}:${AWS::AccountId}:application/*
