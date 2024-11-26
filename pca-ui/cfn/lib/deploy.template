@@ -210,7 +210,6 @@ Resources:
             Value: !Ref QAppId
           - Name: PCA_WEB_URI
             Value: !Ref WebUri
-      TimeoutInMinutes: 10
 
   LambdaCodeBuildStartBuildExecutionRole:
     Type: AWS::IAM::Role

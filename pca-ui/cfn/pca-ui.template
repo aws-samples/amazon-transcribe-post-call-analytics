@@ -139,7 +139,6 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: lib/qbusiness.template
-      TimeoutInMinutes: 20
       Parameters:
         CreateIDC: "yes"
         AssetBucketName: !Ref AssetBucketName
@@ -149,7 +148,6 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: lib/web.template
-      TimeoutInMinutes: 20
       Parameters:
         AudioBucket: !Ref AudioBucket
         DataBucket: !Ref DataBucket
