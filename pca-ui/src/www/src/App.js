@@ -16,6 +16,21 @@ import logo from './assets/logo.png';
 
 const routes = [
   {
+    path: "/analytics",
+    name: "Analytics",
+    Component: CallAnalytics,
+    Breadcrumb: () => {
+      const { t } = useTranslation();
+      return <BreadcrumbGroup
+        items={[
+          { text: t("home.title"), href: "../" },
+          { text: t("analytics.header"), href: "#" }
+        ]}
+        ariaLabel="Breadcrumbs"
+      />
+    }
+  },
+  {
     path: "/search",
     name: "Search",
     Component: Search,

@@ -109,6 +109,14 @@
         "wrapLines": "Ajustar líneas",
         "wrapLinesDescription": "Marca esta casilla para visualizar los títulos completos y ajustar las líneas automáticamente."
     },
+    "analytics": {
+      "header": "Análisis de Llamadas",
+      "dashboard": "Panel de Análisis",
+      "download": "Descargar Reporte",
+      "downloading": "Descargando...",
+      "time": "Distribución de Duración de Llamadas", 
+      "distribution": "Distribución de Estado del Resumen"
+    },
     "transcribeDetail": {
         "title": "Detalles de la transcripción",
         "type": "Tipo",
