@@ -8,6 +8,7 @@ import { AppLayout,Alert, BreadcrumbGroup, TopNavigation} from "@cloudscape-desi
 import Home from "./routes/Home";
 import Search from "./routes/Search";
 import Dashboard from "./routes/Dashboard/index";
+import CallAnalytics from "./routes/CallAnalytics";
 import { useState } from "react";
 import { payloadFromToken, logOut } from "./api/auth";
 import { useTranslation } from 'react-i18next';
