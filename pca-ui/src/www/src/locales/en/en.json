@@ -114,6 +114,14 @@
         "wrapLines": "Wrap Lines",
         "wrapLinesDescription": "Check to see all the text and wrap the lines"
     },
+    "analytics": {
+        "header": "Call Analytics",
+        "dashboard": "Analytics Dashboard", 
+        "download": "Download Report",
+        "downloading": "Downloading...",
+        "time": "Call Duration Distribution",
+        "distribution": "Summary Status Distribution"
+    },
     "transcribeDetail": {
         "title": "Transcribe Details",
         "type": "Type",

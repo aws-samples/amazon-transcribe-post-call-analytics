@@ -5,7 +5,7 @@ import { list } from "../api/api";
 import { ContactTable } from "../components/ContactTable";
 import { Upload } from "../components/Upload";
 import ExpandableSection from "@cloudscape-design/components/expandable-section";
-
+import { useHistory } from 'react-router-dom';
 
 import { useDangerAlert } from "../hooks/useAlert";
 import { presign } from "../api/api";
@@ -56,6 +56,7 @@ function Home({ setAlert }) {
 
   const { data, error, size, setSize } = useSWRInfinite(getKey, fetcher);
   const [value, setValue] = React.useState([]);
+  const history = useHistory();
 
   const { t } = useTranslation();
 
@@ -109,6 +110,12 @@ function Home({ setAlert }) {
                 ? t("home.noMore")
                 : t("home.loadMore")}
             </Button>
+            <Button
+            variant="normal"
+            onClick={() => history.push('/analytics')}
+          >
+            {t("analytics.header")}
+          </Button>
           </Grid>
         </Container>
         
