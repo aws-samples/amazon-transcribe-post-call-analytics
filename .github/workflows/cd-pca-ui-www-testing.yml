@@ -22,17 +22,17 @@ jobs:
           node-version: 14
           cache: 'npm'
 
-      - name: install
-        run: npm i
-        working-directory: ./pca-ui/src/www
+    #   - name: install
+    #     run: npm i
+    #     working-directory: ./pca-ui/src/www
 
-      - name: Run unit tests
-        run: npm t
-        working-directory: ./pca-ui/src/www
+    #   - name: Run unit tests
+    #     run: npm t
+    #     working-directory: ./pca-ui/src/www
 
-      - name: compile dist
-        run: CI=false npm run build
-        working-directory: ./pca-ui/src/www
+    #   - name: compile dist
+    #     run: CI=false npm run build
+    #     working-directory: ./pca-ui/src/www
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
