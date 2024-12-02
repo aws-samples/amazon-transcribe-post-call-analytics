@@ -39,7 +39,7 @@ jobs:
         with:
           aws-region: ${{ secrets.AWS_BUCKET_REGION }}
           role-to-assume: arn:aws:iam::147997163080:role/GithubActionsS3Role
-          role-session-name: GithubSession # OIDC
+          role-session-name: GithubSessionTesting # OIDC
 
       - name: Check login
         run: aws sts get-caller-identity
