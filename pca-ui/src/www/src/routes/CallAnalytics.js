@@ -57,7 +57,7 @@ const CallAnalytics = ({ setAlert }) => {
       Correcto: 0,
       Rechazable: 0
     };
-
+    console.log(records);
     // Solo contar registros con valores válidos
     records.forEach(record => {
     Object.entries(record).forEach(([key, value]) => {
