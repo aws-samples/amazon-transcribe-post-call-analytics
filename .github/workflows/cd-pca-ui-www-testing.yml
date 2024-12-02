@@ -37,7 +37,7 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
-          aws-region: ${{ secrets.AWS_BUCKET_REGION }}
+          aws-region: us-east-1
           role-to-assume: arn:aws:iam::147997163080:role/GithubActionsS3Role
           role-session-name: GithubSessionTesting # OIDC
 
