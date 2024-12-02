@@ -6,7 +6,16 @@ import { list } from "../api/api";
 import { useTranslation } from 'react-i18next';
 import * as XLSX from 'xlsx';
 
-const COLORS = ['#0088FE', '#00C49F', '#FF8042'];
+const COLORS = ['#9FADFF', '#97E697', '#FB5151'];
+
+const EXCEL_COL_WIDTHS = [
+  { wch: 20 },  // Agent
+  { wch: 10 },  // Duration
+  { wch: 30 },  // Name
+  { wch: 25 },  // Location
+  { wch: 35 },  // Summary
+  { wch: 20 }   // Summary_Product
+];
 
 const CallAnalytics = ({ setAlert }) => {
   const [isDownloading, setIsDownloading] = useState(false);
@@ -20,20 +29,28 @@ const CallAnalytics = ({ setAlert }) => {
 
   const fetchData = async () => {
     try {
-      const response = await list({ count: 100 });
+      const response = await list({ count: 3000 });
       processChartData(response.Records || []);
     } catch (error) {
       console.error(error);
     }
   };
+  
+  const isValidDuration = (duration) => {
+    const parsed = parseFloat(duration);
+    return !isNaN(parsed) && parsed > 0;
+  };
 
   const processChartData = (records) => {
     const durationRanges = records.reduce((acc, call) => {
-      const duration = Math.floor(parseFloat(call.duration) / 60);
-      const range = `${duration}-${duration + 1} min`;
-      acc[range] = (acc[range] || 0) + 1;
+      if (call.duration && isValidDuration(call.duration)) {
+        const durationInMinutes = Math.floor(parseFloat(call.duration) / 60);
+        const range = `${durationInMinutes}-${durationInMinutes + 1} min`;
+        acc[range] = (acc[range] || 0) + 1;
+      }
       return acc;
     }, {});
+
 
     const statusCounts = {
       Observable: 0,
@@ -41,25 +58,35 @@ const CallAnalytics = ({ setAlert }) => {
       Rechazable: 0
     };
 
+    // Solo contar registros con valores válidos
     records.forEach(record => {
-      Object.entries(record).forEach(([key, value]) => {
-        if (key.startsWith('summary_') && value in statusCounts) {
-          statusCounts[value]++;
-        }
-      });
+    Object.entries(record).forEach(([key, value]) => {
+      if (key.startsWith('summary_') && value && value in statusCounts) {
+        statusCounts[value]++;
+      }
     });
+  });
 
-    setChartData({
-      durationData: Object.entries(durationRanges).map(([range, count]) => ({
+  setChartData({
+    durationData: Object.entries(durationRanges)
+      .map(([range, count]) => ({
         range,
         count
-      })),
-      pieData: Object.entries(statusCounts).map(([name, value]) => ({
+      }))
+      .sort((a, b) => {
+        // Ordenar por el primer número en el rango
+        const aNum = parseInt(a.range.split('-')[0]);
+        const bNum = parseInt(b.range.split('-')[0]);
+        return aNum - bNum;
+      }),
+    pieData: Object.entries(statusCounts)
+      .filter(([_, value]) => value > 0) // Solo incluir valores mayores que 0
+      .map(([name, value]) => ({
         name,
         value
       }))
-    });
-  };
+  });
+};
 
   const getAll = async () => {
     const response = await list({ count: 3000 });
@@ -70,10 +97,12 @@ const CallAnalytics = ({ setAlert }) => {
       Duration: r.duration,
       Name: r.jobName,
       Location: r.location?.replace(/\//g, ' '),
-      ...Object.fromEntries(Object.entries(r).filter(([k]) => k.startsWith('summary_')))
+      Summary: r.summary_summary,
+      Summary_Product: r.summary_product,
     }));
 
     const ws = XLSX.utils.json_to_sheet(transformedRecords);
+    ws['!cols'] = EXCEL_COL_WIDTHS;
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Records");
     XLSX.writeFile(wb, "Resumen.xlsx");
@@ -123,7 +152,7 @@ const CallAnalytics = ({ setAlert }) => {
                 <XAxis dataKey="range" />
                 <YAxis />
                 <Tooltip />
-                <Bar dataKey="count" fill="#8884d8" />
+                <Bar dataKey="count" fill="#5351FB" />
               </BarChart>
             </ResponsiveContainer>
           </div>
