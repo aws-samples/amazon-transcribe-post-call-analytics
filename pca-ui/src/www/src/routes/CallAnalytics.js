@@ -41,6 +41,15 @@ const CallAnalytics = ({ setAlert }) => {
     return !isNaN(parsed) && parsed > 0;
   };
 
+  const normalizeStatus = (status) => {
+    if (!status) return null;
+    status = status.trim().toLowerCase();
+    if (status.includes('observable')) return 'Observable';
+    if (status.includes('correcto')) return 'Correcto';
+    if (status.includes('rechazable')) return 'Rechazable';
+    return null;
+  };
+  
   const processChartData = (records) => {
     const durationRanges = records.reduce((acc, call) => {
       if (call.duration && isValidDuration(call.duration)) {
@@ -57,36 +66,35 @@ const CallAnalytics = ({ setAlert }) => {
       Correcto: 0,
       Rechazable: 0
     };
-    console.log(records);
-    // Solo contar registros con valores válidos
     records.forEach(record => {
-    Object.entries(record).forEach(([key, value]) => {
-      if (key.startsWith('summary_') && value && value in statusCounts) {
-        statusCounts[value]++;
-      }
+      Object.entries(record).forEach(([key, value]) => {
+        if (key.startsWith('summary_')) {
+          const normalizedStatus = normalizeStatus(value);
+          if (normalizedStatus && normalizedStatus in statusCounts) {
+            statusCounts[normalizedStatus]++;
+          }
+        }
+      });
     });
-  });
 
-  setChartData({
-    durationData: Object.entries(durationRanges)
-      .map(([range, count]) => ({
-        range,
-        count
-      }))
-      .sort((a, b) => {
-        // Ordenar por el primer número en el rango
-        const aNum = parseInt(a.range.split('-')[0]);
-        const bNum = parseInt(b.range.split('-')[0]);
-        return aNum - bNum;
-      }),
-    pieData: Object.entries(statusCounts)
-      .filter(([_, value]) => value > 0) // Solo incluir valores mayores que 0
-      .map(([name, value]) => ({
-        name,
-        value
-      }))
-  });
-};
+    setChartData({
+      durationData: Object.entries(durationRanges)
+        .map(([range, count]) => ({
+          range,
+          count
+        }))
+        .sort((a, b) => {
+          const aNum = parseInt(a.range.split('-')[0]);
+          const bNum = parseInt(b.range.split('-')[0]);
+          return aNum - bNum;
+        }),
+      pieData: Object.entries(statusCounts)
+        .map(([name, value]) => ({
+          name,
+          value
+        }))
+    });
+  };
 
   const getAll = async () => {
     const response = await list({ count: 3000 });
