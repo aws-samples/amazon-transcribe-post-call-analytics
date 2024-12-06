@@ -422,7 +422,7 @@ function Dashboard({ setAlert }) {
       Object.entries(data?.ConversationAnalytics?.VOCSummary).map(([key, value]) => {
         
       return {
-        label: key,
+        label: data?.ConversationAnalytics?.SummaryKeyValue[key] || key,
         value: (value instanceof Array ? value.join(', ') : value)
       }
       }) : []);
