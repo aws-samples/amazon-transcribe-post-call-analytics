@@ -412,10 +412,10 @@ function Dashboard({ setAlert }) {
 
   let genAiSummary = (data?.ConversationAnalytics?.Summary ?
     Object.entries(data?.ConversationAnalytics?.Summary).map(([key, value]) => {
-    return {
-      label: key,
-      value: (value instanceof Array ? value.join(', ') : value)
-    }
+      return {
+        label: data?.ConversationAnalytics?.SummaryKeyValue[key] || key, // Usa SummaryKeyValue si existe
+        value: (value instanceof Array ? value.join(', ') : value)
+      }
     }) : []);
 
     let VOCSummary = (data?.ConversationAnalytics?.VOCSummary ?
