@@ -163,11 +163,53 @@ def get_templates_from_dynamodb():
                 prompt = prompt_templates[k]['S'].replace("<br>", "\n")
                 index = k.find('#')
                 k_stripped = k[index+1:]
-                templates.append({ k_stripped:prompt })
+                templates.append({'key': k_stripped, 'prompt': prompt, 'source': 'TemplateQuality'})
     except Exception as e:
         print ("Exception:", e)
         raise (e)
     return templates
+
+def get_templates_from_dynamodb_v2():
+    templates = []
+    try:
+        SUMMARY_PROMPT_TEMPLATE = dynamodb_client.get_item(Key={'LLMPromptTemplateId': {'S': 'LLMPromptVOCSummaryTemplate'}},
+                                                     TableName=LLM_TABLE_NAME)
+
+        print ("Prompt Template:", SUMMARY_PROMPT_TEMPLATE['Item'])
+
+        prompt_templates = SUMMARY_PROMPT_TEMPLATE["Item"]
+
+        for k in sorted(prompt_templates):
+            if (k != "LLMPromptTemplateId"):
+                prompt = prompt_templates[k]['S'].replace("<br>", "\n")
+                index = k.find('#')
+                k_stripped = k[index+1:]
+                templates.append({'key': k_stripped, 'prompt': prompt, 'source': 'TemplateVOC'})
+    except Exception as e:
+        print ("Exception:", e)
+        raise (e)
+    return templates
+
+def get_summary_key_value_from_dynamodb():
+    key_value_results = {}
+    try:
+        response = dynamodb_client.get_item(
+            Key={'LLMPromptTemplateId': {'S': 'LLMPromptSummaryKeyValue'}},
+            TableName=LLM_TABLE_NAME
+        )
+
+        print("Prompt Name:", response['Item'])
+
+        prompt_templates = response["Item"]
+
+        for k, v in prompt_templates.items():
+            if k != "LLMPromptTemplateId":
+                key_value_results[k] = v['S'].replace("<br>", "\n")
+    except Exception as e:
+        print("Exception:", e)
+        raise e
+
+    return key_value_results
 
 def generate_anthropic_summary(transcript):
 
@@ -211,12 +253,14 @@ def generate_anthropic_summary(transcript):
 def generate_bedrock_summary(transcript, api_mode):
 
     # first check to see if this is one prompt, or many prompts as a json
-    templates = get_templates_from_dynamodb()
-    result = {}
+    templates = get_templates_from_dynamodb() + get_templates_from_dynamodb_v2()
+    qualityResult = {}
+    vocResult = {}
     for item in templates:
-        key = list(item.keys())[0]
+        key = item['key']
+        prompt = item['prompt']
+        source = item['source']
 
-        prompt = item[key] 
         # Quick fix for Titan
         prompt = modify_prompt_based_on_model(BEDROCK_MODEL_ID, prompt)
 
@@ -228,8 +272,11 @@ def generate_bedrock_summary(transcript, api_mode):
                 "temperature": 0
             }
             generated_text = call_bedrock(parameters, prompt)
-            result[key] = generated_text
-    if len(result.keys()) == 1:
+            if source == 'TemplateQuality':
+                qualityResult[key] = generated_text
+            else:
+                vocResult[key] = generated_text
+    if len(qualityResult.keys()) == 1:
         # This is a single node JSON with value that can be either:
         # A single inference that returns a string value
         # OR
@@ -237,13 +284,13 @@ def generate_bedrock_summary(transcript, api_mode):
         # Refer to https://github.com/aws-samples/amazon-transcribe-post-call-analytics/blob/develop/docs/generative_ai.md#generative-ai-insights
         # for more details.
         try:
-            parsed_json = json.loads(result[list(result.keys())[0]])
+            parsed_json = json.loads(qualityResult[list(qualityResult.keys())[0]])
             print("Nested JSON...")
             return json.dumps(parsed_json)
         except:
             print("Not nested JSON...")
-            return json.dumps(result)
-    return json.dumps(result)
+            return json.dumps(qualityResult), json.dumps(vocResult)
+    return json.dumps(qualityResult), json.dumps(vocResult)
 
 def modify_prompt_based_on_model(model_id, prompt):
     if model_id == "amazon.titan-text-express-v1":
@@ -299,6 +346,7 @@ def lambda_handler(event, context):
 
     # --------- Summarize Here ----------
     summary = 'No Summary Available'
+    voc_summary = 'No VOC Summary Available'
     transcript_str = get_transcript_str(event["interimResultsFile"])
     summary_json = None
 
@@ -319,9 +367,10 @@ def lambda_handler(event, context):
             print(err)
     elif SUMMARIZE_TYPE == 'BEDROCK' or SUMMARIZE_TYPE == 'BEDROCK+TCA':
         try:
-            summary = generate_bedrock_summary(transcript_str, pca_results.analytics.transcribe_job.api_mode)
+            summary, voc_summary = generate_bedrock_summary(transcript_str, pca_results.analytics.transcribe_job.api_mode)
             try: 
                 summary_json = json.loads(summary)
+                voc_summary_json = json.loads(voc_summary)
             except:
                 print('no json detected in summary.')
         except Exception as err:
@@ -345,6 +394,22 @@ def lambda_handler(event, context):
         pca_results.analytics.summary = {}
         pca_results.analytics.summary['Summary'] = summary
         print("Summary: " + summary)
+
+    if voc_summary_json:
+        pca_results.analytics.voc_summary = voc_summary_json
+        print("Summary JSON: " + voc_summary)
+    elif SUMMARIZE_TYPE != 'TCA-ONLY':
+        pca_results.analytics.voc_summary = {}
+        pca_results.analytics.voc_summary['VOCSummary'] = voc_summary
+        print("VOCSummary: " + voc_summary)
+    # Try to get key value template from DynamoDB for match with summary title prompts    
+    try:
+        summary_key_value = get_summary_key_value_from_dynamodb()
+        pca_results.analytics.summary_key_value = summary_key_value
+        print("Summary Key-Value: ", summary_key_value)
+    except Exception as err:
+        print("An error occurred fetching summary key-value from DynamoDB")
+        print(err)
     
     # Write out back to interim file
     pca_results.write_results_to_s3(bucket=cf.appConfig[cf.CONF_S3BUCKET_OUTPUT],
