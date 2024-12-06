@@ -14,7 +14,7 @@ const generateTabs = (data) => {
           <Tag
             key={j}
             className="me-2 mb-1"
-            style={{ "--highlight-colour": getEntityColor(e.Name), "color": "#FCFCFC" }}
+            style={{ "--highlight-colour": getEntityColor(e.Name)}}
           >
             {x}
           </Tag>
