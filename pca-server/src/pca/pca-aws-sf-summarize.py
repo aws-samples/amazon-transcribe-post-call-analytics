@@ -172,7 +172,7 @@ def get_templates_from_dynamodb():
 def get_templates_from_dynamodb_v2():
     templates = []
     try:
-        SUMMARY_PROMPT_TEMPLATE = dynamodb_client.get_item(Key={'LLMPromptTemplateId': {'S': 'LLMPromptSummaryTemplate2'}},
+        SUMMARY_PROMPT_TEMPLATE = dynamodb_client.get_item(Key={'LLMPromptTemplateId': {'S': 'LLMPromptVOCSummaryTemplate'}},
                                                      TableName=LLM_TABLE_NAME)
 
         print ("Prompt Template:", SUMMARY_PROMPT_TEMPLATE['Item'])
@@ -189,6 +189,27 @@ def get_templates_from_dynamodb_v2():
         print ("Exception:", e)
         raise (e)
     return templates
+
+def get_summary_key_value_from_dynamodb():
+    key_value_results = {}
+    try:
+        response = dynamodb_client.get_item(
+            Key={'LLMPromptTemplateId': {'S': 'LLMPromptSummaryKeyValue'}},
+            TableName=LLM_TABLE_NAME
+        )
+
+        print("Prompt Name:", response['Item'])
+
+        prompt_templates = response["Item"]
+
+        for k, v in prompt_templates.items():
+            if k != "LLMPromptTemplateId":
+                key_value_results[k] = v['S'].replace("<br>", "\n")
+    except Exception as e:
+        print("Exception:", e)
+        raise e
+
+    return key_value_results
 
 def generate_anthropic_summary(transcript):
 
@@ -381,6 +402,14 @@ def lambda_handler(event, context):
         pca_results.analytics.voc_summary = {}
         pca_results.analytics.voc_summary['VOCSummary'] = voc_summary
         print("VOCSummary: " + voc_summary)
+    # Try to get key value template from DynamoDB for match with summary title prompts    
+    try:
+        summary_key_value = get_summary_key_value_from_dynamodb()
+        pca_results.analytics.summary_key_value = summary_key_value
+        print("Summary Key-Value: ", summary_key_value)
+    except Exception as err:
+        print("An error occurred fetching summary key-value from DynamoDB")
+        print(err)
     
     # Write out back to interim file
     pca_results.write_results_to_s3(bucket=cf.appConfig[cf.CONF_S3BUCKET_OUTPUT],
