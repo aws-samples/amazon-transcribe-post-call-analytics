@@ -976,6 +976,43 @@ class TranscribeParser:
             agent = 'None'
         self.analytics.agent = agent
 
+    def set_titleParams(self, filename):
+        '''         
+        Example: the regex '_SUP_(.*?)_' '_BC_(.*?)_' '_CT_(.*?)_' parses        
+        '''
+        regex = "_SUP_(.*?)_"
+        print(f"INFO: Parsing sup from filename '{filename}' using regex: '{regex}'.")
+        try:
+            match = re.search(regex, filename)
+            sup = " ".join(match.groups()) or 'None'
+            print(f"INFO: Parsed sup: '{sup}'")
+        except:
+            print(f"WARNING: Unable to parse sup name/ID from filename {filename}, using regex: '{regex}'. Defaulting to 'None'.")
+            sup = 'None'
+        self.analytics.titleSupervisor = sup
+
+        regex = "_BC_(.*?)_"
+        print(f"INFO: Parsing bc from filename '{filename}' using regex: '{regex}'.")
+        try:
+            match = re.search(regex, filename)
+            bc = " ".join(match.groups()) or 'None'
+            print(f"INFO: Parsed bc: '{bc}'")
+        except:
+            print(f"WARNING: Unable to parse bc name/ID from filename {filename}, using regex: '{regex}'. Defaulting to 'None'.")
+            bc = 'None'
+        self.analytics.titleBank = bc
+
+        regex = "_CT_(.*?)_"
+        print(f"INFO: Parsing ct from filename '{filename}' using regex: '{regex}'.")
+        try:
+            match = re.search(regex, filename)
+            ct = " ".join(match.groups()) or 'None'
+            print(f"INFO: Parsed ct: '{ct}'")
+        except:
+            print(f"WARNING: Unable to parse ct name/ID from filename {filename}, using regex: '{regex}'. Defaulting to 'None'.")
+            ct = 'None'
+        self.analytics.titleCallType = ct
+
     def set_cust(self, filename):
         '''
         Regular Expression (regex) used to parse Customer from audio filenames. 
@@ -1120,6 +1157,7 @@ class TranscribeParser:
         job_name = self.analytics.transcribe_job.transcribe_job_name
         self.set_guid(job_name)
         self.set_agent(job_name)
+        self.set_titleParams(job_name)
         self.set_cust(job_name)
         self.calculate_transcribe_conversation_time(job_name)
 
