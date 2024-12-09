@@ -64,6 +64,9 @@ class ConversationAnalytics:
         self.conversationLanguageCode = ""
         self.guid = ""
         self.agent = ""
+        self.titleSupervisor = ""
+        self.titleBank = ""
+        self.titleCallType = ""
         self.agent_list = []
         self.cust = ""
         self.conversationTime = ""
@@ -103,6 +106,9 @@ class ConversationAnalytics:
         # Extract the information from our structures and create the output results JSON
         conv_header_info = {"GUID": self.guid,
                             "Agent": self.agent,
+                            "TitleSupervisor": self.titleSupervisor,
+                            "TitleBank": self.titleBank,
+                            "TitleCallType": self.titleCallType,
                             "Agents": self.agent_list,
                             "Cust": self.cust,
                             "ConversationTime": self.conversationTime,
@@ -155,6 +161,9 @@ class ConversationAnalytics:
         # Extract the information from our structures and create the output results JSON
         self.guid = json_input["GUID"]
         self.agent = json_input["Agent"]
+        self.titleSupervisor = json_input["TitleSupervisor"]
+        self.titleBank = json_input["TitleBank"]
+        self.titleCallType = json_input["TitleCallType"]
         self.cust = json_input["Cust"]
         self.conversationTime = json_input["ConversationTime"]
         self.conversationLocation = json_input["ConversationLocation"]
