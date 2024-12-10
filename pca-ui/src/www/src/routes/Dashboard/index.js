@@ -305,6 +305,9 @@ function Dashboard({ setAlert }) {
     },
     { label: t("contactTable.guid"), value: (d) => d?.ConversationAnalytics?.GUID },
     { label: t("contactTable.agent"), value: (d) => d?.ConversationAnalytics?.Agent },
+    { label: t("contactTable.supervisor"), value: (d) => d?.ConversationAnalytics?.TitleSupervisor },
+    { label: t("contactTable.banco"), value: (d) => d?.ConversationAnalytics?.TitleBank },
+    { label: t("contactTable.callType"), value: (d) => d?.ConversationAnalytics?.TitleCallType },
     {
       label: t("contactTable.callDuration"),
       value: (d) => Formatter.Time(d.ConversationAnalytics.Duration),
