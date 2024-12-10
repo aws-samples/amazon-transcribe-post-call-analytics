@@ -107,7 +107,10 @@
         "preferences": "Preferencias",
         "selectVisibleColumns": "Seleccionar columnas visibles",
         "wrapLines": "Ajustar líneas",
-        "wrapLinesDescription": "Marca esta casilla para visualizar los títulos completos y ajustar las líneas automáticamente."
+        "wrapLinesDescription": "Marca esta casilla para visualizar los títulos completos y ajustar las líneas automáticamente.",
+        "supervisor": "Supervisor",
+        "banco": "Banco",
+        "callType": "Tipo de llamada"
     },
     "analytics": {
       "header": "Análisis de Llamadas",

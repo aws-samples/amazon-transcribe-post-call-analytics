@@ -112,7 +112,10 @@
         "preferences": "Preferences",
         "selectVisibleColumns": "Select visible columns",
         "wrapLines": "Wrap Lines",
-        "wrapLinesDescription": "Check to see all the text and wrap the lines"
+        "wrapLinesDescription": "Check to see all the text and wrap the lines",
+        "supervisor": "Supervisor",
+        "banco": "Bank",
+        "callType": "Call Type"
     },
     "analytics": {
         "header": "Call Analytics",
