@@ -1,5 +1,5 @@
 //import { Table } from "react-bootstrap";
-import React from "react";
+import React, { useEffect, useState } from 'react';
 import { useCollection } from '@cloudscape-design/collection-hooks';
 import { Table, TextFilter, Pagination, CollectionPreferences, PropertyFilter } from '@cloudscape-design/components';
 import { useHistory } from "react-router-dom";
@@ -18,6 +18,7 @@ import Icon from "@cloudscape-design/components/icon";
 import Link from "@cloudscape-design/components/link";
 import { useTranslation } from 'react-i18next';
 import "../styles/CustomPopover.css";
+import { getpromptskeyvalue } from "../api/api";
 
 const COLUMN_DEFINITIONS = [
   {
@@ -97,35 +98,68 @@ const COLUMN_DEFINITIONS = [
     minWidth:130
   },
   {
-    id: "summary_resolved",
-    header: "Resolved",
-    cell: (d) => d.summary_resolved,
+    id: "uno",
+    header: "Uno",
+    cell: (d) => d.summary_uno,
     isRowHeader: true,
-    sortingField: "summary_resolved",
+    sortingField: "summary_uno",
     minWidth:130
   },
   {
-    id: "summary_topic",
-    header: "Topic",
-    cell: (d) => d.summary_topic,
+    id: "dos",
+    header: "Dos",
+    cell: (d) => d.summary_dos,
     isRowHeader: true,
-    sortingField: "summary_topic",
-    Width:130
-  },
-  {
-    id: "summary_product",
-    header: "Product",
-    cell: (d) => d.summary_product,
-    isRowHeader: true,
-    sortingField: "summary_product",
+    sortingField: "summary_dos",
     minWidth:130
   },
   {
-    id: "summary_summary",
-    header: "Summary",
+    id: "tres",
+    header: "Tres",
+    cell: (d) => d.summary_tres,
     isRowHeader: true,
-    sortingField: "summary_summary",
-    minWidth:200
+    sortingField: "summary_tres",
+    minWidth:130
+  },
+  {
+    id: "cuatro",
+    header: "Cuatro",
+    cell: (d) => d.summary_cuatro,
+    isRowHeader: true,
+    sortingField: "summary_cuatro",
+    minWidth:130
+  },
+  {
+    id: "cinco",
+    header: "Cinco",
+    cell: (d) => d.summary_cinco,
+    isRowHeader: true,
+    sortingField: "summary_cinco",
+    minWidth:130
+  },
+  {
+    id: "seis",
+    header: "Seis",
+    cell: (d) => d.summary_seis,
+    isRowHeader: true,
+    sortingField: "summary_seis",
+    minWidth:130
+  },
+  {
+    id: "siete",
+    header: "Siete",
+    cell: (d) => d.summary_siete,
+    isRowHeader: true,
+    sortingField: "summary_siete",
+    minWidth:130
+  },
+  {
+    id: "ocho",
+    header: "Ocho",
+    cell: (d) => d.summary_ocho,
+    isRowHeader: true,
+    sortingField: "summary_ocho",
+    minWidth:130
   },
   {
     id: "callerSentimentScore",
@@ -172,52 +206,37 @@ const NoMatches = ({ children }) => (
   </tr>
 );
 
-const useTranslatedColumnDefinitions = () => {
+const getPromptsKeyValue = async () => {
+  const response = await getpromptskeyvalue();
+  return response;
+};
+
+const useTranslatedColumnDefinitions = (promptsKeyValue) => {
   const { t } = useTranslation();
+  
 
   return COLUMN_DEFINITIONS.map(column => ({
     ...column,
-    header: t(`contactTable.${column.id}`),
-    cell: column.id === "summary_summary" 
-      ? (d) => {
-          if (d.summary_summary !== undefined) {
-            return (
-              <Popover
-                dismissButton={false}
-                position="top"
-                size="large"
-                triggerType="text"
-                content={
-                  <div className="custom-popover-content">
-                    <div className="custom-popover-header">{t('callSummary')}</div>
-                    <div className="custom-popover-body">{d.summary_summary}</div>
-                  </div>
-                }
-                renderWithPortal={true}
-                className="custom-popover"
-              >
-                {(d.summary_summary.length > 20 ? d.summary_summary.substring(0, 20) + "..." : d.summary_summary)}
-              </Popover>
-            )
-          }
-          return <div style={{
-            fontFamily: 'Helvetica',
-            fontSize: '14px',
-            fontWeight: 400,
-            lineHeight: '22px',
-            textAlign: 'left',
-            color: '#000000'
-          }}>n/a</div>;
-        }
-      : column.cell
+    header: promptsKeyValue[column.id] || t(`contactTable.${column.id}`),
+    cell: column.cell
   }));
 };
 
 export const ContactTable = ({ data = [], loading = false, empty, header, variant='embedded' }) => {
   const history = useHistory();
 
+  const [promptsKeyValue, setPromptsKeyValue] = useState({});
+
+  useEffect(() => {
+    const fetchPromptsKeyValue = async () => {
+      const response = await getPromptsKeyValue();
+      setPromptsKeyValue(response);
+    };
+    fetchPromptsKeyValue();
+  }, []);
+
   const { t } = useTranslation();
-  const translatedColumnDefinitions = useTranslatedColumnDefinitions();
+  const translatedColumnDefinitions = useTranslatedColumnDefinitions(promptsKeyValue);
 
   const [preferences, setPreferences] = useLocalStorage(
     'contact-table-preferences',
@@ -286,22 +305,52 @@ export const ContactTable = ({ data = [], loading = false, empty, header, varian
             groupValuesLabel: "Queues"
           },
           {
-            key: "summary_resolved",
+            key: "summary_uno",
             operators: ["=", "!=", ":", "!:"],
-            propertyLabel: t("contactTable.summary_resolved"),
-            groupValuesLabel: "Resolved"
+            propertyLabel: promptsKeyValue.uno,
+            groupValuesLabel: promptsKeyValue.uno
           },
           {
-            key: "summary_topic",
+            key: "summary_dos",
             operators: ["=", "!=", ":", "!:"],
-            propertyLabel: t("contactTable.summary_topic"),
-            groupValuesLabel: "Topics"
+            propertyLabel: promptsKeyValue.dos,
+            groupValuesLabel: promptsKeyValue.dos
           },
           {
-            key: "summary_product",
+            key: "summary_tres",
             operators: ["=", "!=", ":", "!:"],
-            propertyLabel: t("contactTable.summary_product"),
-            groupValuesLabel: "Products"
+            propertyLabel: promptsKeyValue.tres,
+            groupValuesLabel: promptsKeyValue.tres
+          },
+          {
+            key: "summary_cuatro",
+            operators: ["=", "!=", ":", "!:"],
+            propertyLabel: promptsKeyValue.cuatro,
+            groupValuesLabel: promptsKeyValue.cuatro
+          },
+          {
+            key: "summary_cinco",
+            operators: ["=", "!=", ":", "!:"],
+            propertyLabel: promptsKeyValue.cinco,
+            groupValuesLabel: promptsKeyValue.cinco
+          },
+          {
+            key: "summary_seis",
+            operators: ["=", "!=", ":", "!:"],
+            propertyLabel: promptsKeyValue.seis,
+            groupValuesLabel: promptsKeyValue.seis
+          },
+          {
+            key: "summary_siete",
+            operators: ["=", "!=", ":", "!:"],
+            propertyLabel: promptsKeyValue.siete,
+            groupValuesLabel: promptsKeyValue.siete
+          },
+          {
+            key: "summary_ocho",
+            operators: ["=", "!=", ":", "!:"],
+            propertyLabel: promptsKeyValue.ocho,
+            groupValuesLabel: promptsKeyValue.ocho
           },
           {
             key: "lang",
@@ -390,7 +439,7 @@ export const ContactTable = ({ data = [], loading = false, empty, header, varian
       }
 
       preferences={
-        <ContactTablePreferences preferences={preferences} setPreferences={setPreferences} />
+        <ContactTablePreferences preferences={preferences} setPreferences={setPreferences} promptsKeyValue={promptsKeyValue}/>
       }
       visibleColumns={['jobName', ...preferences.visibleContent]}
     />

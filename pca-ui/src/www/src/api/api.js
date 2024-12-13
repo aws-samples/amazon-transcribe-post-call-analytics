@@ -77,6 +77,10 @@ export async function entities(key) {
   return getRequest("entities");
 }
 
+export async function getpromptskeyvalue(key) {
+  return getRequest("promptkeyvalue");
+}
+
 export async function languages(key) {
   return getRequest("languages");
 }

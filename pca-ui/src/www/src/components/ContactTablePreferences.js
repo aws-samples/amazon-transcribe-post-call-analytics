@@ -9,7 +9,7 @@ const PAGE_SIZE_OPTIONS = [
   { value: 100, label: '100 Calls' },
 ]
 
-const VISIBLE_CONTENT_OPTIONS = (t) => [{
+const VISIBLE_CONTENT_OPTIONS = (t, promptsKeyValue) => [{
   label: t('contactTable.callListProperties'),
   options: [
     /*{ id: "timestamp", label: "Timestamp", visible: true },
@@ -19,10 +19,14 @@ const VISIBLE_CONTENT_OPTIONS = (t) => [{
     { id: "agent", label: t("contactTable.agent"), visible: false },
     { id: "customer", label: t("contactTable.customer"), visible: false },
     { id: "queue", label: t("contactTable.queue"), visible: false },
-    { id: "summary_resolved", label: t("contactTable.summary_resolved"), visible: true },
-    { id: "summary_topic", label: t("contactTable.summary_topic"), visible: true },
-    { id: "summary_product", label: t("contactTable.summary_product"), visible: true },
-    { id: "summary_summary", label: t("contactTable.summary_summary"), visible: true },
+    { id: "uno", label: promptsKeyValue.uno, visible: true },
+    { id: "dos", label: promptsKeyValue.dos, visible: true },
+    { id: "tres", label: promptsKeyValue.tres, visible: true },
+    { id: "cuatro", label: promptsKeyValue.cuatro, visible: true },
+    { id: "cinco", label: promptsKeyValue.cinco, visible: true },
+    { id: "seis", label: promptsKeyValue.seis, visible: true },
+    { id: "siete", label: promptsKeyValue.siete, visible: true },
+    { id: "ocho", label: promptsKeyValue.ocho, visible: true },
     { id: "callerSentimentScore", label: t("contactTable.callerSentimentScore"), visible: true },
     { id: "langCode", label: t("contactTable.langCode"), visible: true },
     { id: "duration", label: t("contactTable.duration"), visible: true },
@@ -41,10 +45,7 @@ export const DEFAULT_PREFERENCES = {
     'jobName',
     'status',
     'agent',
-    'summary_resolved',
-    'summary_topic',
-    'summary_product',
-    'summary_summary',
+    "uno",
     'callerSentimentScore',
     'langCode',
     'duration'
@@ -54,6 +55,7 @@ export const DEFAULT_PREFERENCES = {
 export const ContactTablePreferences = ({
   preferences,
   setPreferences,
+  promptsKeyValue,
   disabled,
   pageSizeOptions = PAGE_SIZE_OPTIONS,
 }) => {
@@ -78,7 +80,7 @@ export const ContactTablePreferences = ({
       }}
       visibleContentPreference={{
         title: t('contactTable.selectVisibleColumns'),
-        options: VISIBLE_CONTENT_OPTIONS(t),
+        options: VISIBLE_CONTENT_OPTIONS(t, promptsKeyValue),
       }}
     />
   );
