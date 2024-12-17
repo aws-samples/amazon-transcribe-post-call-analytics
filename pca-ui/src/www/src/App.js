@@ -106,8 +106,6 @@ function Navigation({ userName, email }) {
       .catch(error => console.error('Error fetching version:', error));
   }, []);
 
-  console.log("version", version);
-
   return (    
       <TopNavigation
       identity={{
