@@ -98,70 +98,6 @@ const COLUMN_DEFINITIONS = [
     minWidth:130
   },
   {
-    id: "uno",
-    header: "Uno",
-    cell: (d) => d.summary_uno,
-    isRowHeader: true,
-    sortingField: "summary_uno",
-    minWidth:130
-  },
-  {
-    id: "dos",
-    header: "Dos",
-    cell: (d) => d.summary_dos,
-    isRowHeader: true,
-    sortingField: "summary_dos",
-    minWidth:130
-  },
-  {
-    id: "tres",
-    header: "Tres",
-    cell: (d) => d.summary_tres,
-    isRowHeader: true,
-    sortingField: "summary_tres",
-    minWidth:130
-  },
-  {
-    id: "cuatro",
-    header: "Cuatro",
-    cell: (d) => d.summary_cuatro,
-    isRowHeader: true,
-    sortingField: "summary_cuatro",
-    minWidth:130
-  },
-  {
-    id: "cinco",
-    header: "Cinco",
-    cell: (d) => d.summary_cinco,
-    isRowHeader: true,
-    sortingField: "summary_cinco",
-    minWidth:130
-  },
-  {
-    id: "seis",
-    header: "Seis",
-    cell: (d) => d.summary_seis,
-    isRowHeader: true,
-    sortingField: "summary_seis",
-    minWidth:130
-  },
-  {
-    id: "siete",
-    header: "Siete",
-    cell: (d) => d.summary_siete,
-    isRowHeader: true,
-    sortingField: "summary_siete",
-    minWidth:130
-  },
-  {
-    id: "ocho",
-    header: "Ocho",
-    cell: (d) => d.summary_ocho,
-    isRowHeader: true,
-    sortingField: "summary_ocho",
-    minWidth:130
-  },
-  {
     id: "callerSentimentScore",
     header: "Cust Sent",
     sortingField: "callerSentimentScore",
@@ -214,10 +150,9 @@ const getPromptsKeyValue = async () => {
 const useTranslatedColumnDefinitions = (promptsKeyValue) => {
   const { t } = useTranslation();
   
-
   return COLUMN_DEFINITIONS.map(column => ({
     ...column,
-    header: promptsKeyValue[column.id] || t(`contactTable.${column.id}`),
+    header: t(`contactTable.${column.id}`),
     cell: column.cell
   }));
 };
@@ -234,6 +169,15 @@ export const ContactTable = ({ data = [], loading = false, empty, header, varian
     };
     fetchPromptsKeyValue();
   }, []);
+
+  const summaryColumns = Object.keys(promptsKeyValue).map((key) => ({
+    id: key,
+    header: promptsKeyValue[key],
+    cell: (d) => d[`summary_${key}`] || d[`voc_summary_${key}`],
+    isRowHeader: true,
+    minWidth: 130,
+  }));
+
 
   const { t } = useTranslation();
   const translatedColumnDefinitions = useTranslatedColumnDefinitions(promptsKeyValue);
@@ -255,6 +199,20 @@ export const ContactTable = ({ data = [], loading = false, empty, header, varian
     tokens: [],
     operation: "and"
   });
+
+  const summaryFields = Object.keys(promptsKeyValue).map((key) => ({
+    key: `summary_${key}`,
+    operators: ["=", "!=", ":", "!:"],
+    propertyLabel: promptsKeyValue[key],
+    groupValuesLabel: promptsKeyValue[key],
+  }));
+
+  const vocSummaryFields = Object.keys(promptsKeyValue).map((key) => ({
+    key: `voc_summary_${key}`,
+    operators: ["=", "!=", ":", "!:"],
+    propertyLabel: promptsKeyValue[key],
+    groupValuesLabel: promptsKeyValue[key],
+  }));
 
 
   const { items, actions, filteredItemsCount, collectionProps, paginationProps, propertyFilterProps } = useCollection(
@@ -305,54 +263,6 @@ export const ContactTable = ({ data = [], loading = false, empty, header, varian
             groupValuesLabel: "Queues"
           },
           {
-            key: "summary_uno",
-            operators: ["=", "!=", ":", "!:"],
-            propertyLabel: promptsKeyValue.uno,
-            groupValuesLabel: promptsKeyValue.uno
-          },
-          {
-            key: "summary_dos",
-            operators: ["=", "!=", ":", "!:"],
-            propertyLabel: promptsKeyValue.dos,
-            groupValuesLabel: promptsKeyValue.dos
-          },
-          {
-            key: "summary_tres",
-            operators: ["=", "!=", ":", "!:"],
-            propertyLabel: promptsKeyValue.tres,
-            groupValuesLabel: promptsKeyValue.tres
-          },
-          {
-            key: "summary_cuatro",
-            operators: ["=", "!=", ":", "!:"],
-            propertyLabel: promptsKeyValue.cuatro,
-            groupValuesLabel: promptsKeyValue.cuatro
-          },
-          {
-            key: "summary_cinco",
-            operators: ["=", "!=", ":", "!:"],
-            propertyLabel: promptsKeyValue.cinco,
-            groupValuesLabel: promptsKeyValue.cinco
-          },
-          {
-            key: "summary_seis",
-            operators: ["=", "!=", ":", "!:"],
-            propertyLabel: promptsKeyValue.seis,
-            groupValuesLabel: promptsKeyValue.seis
-          },
-          {
-            key: "summary_siete",
-            operators: ["=", "!=", ":", "!:"],
-            propertyLabel: promptsKeyValue.siete,
-            groupValuesLabel: promptsKeyValue.siete
-          },
-          {
-            key: "summary_ocho",
-            operators: ["=", "!=", ":", "!:"],
-            propertyLabel: promptsKeyValue.ocho,
-            groupValuesLabel: promptsKeyValue.ocho
-          },
-          {
             key: "lang",
             operators: ["=", "!=", ":", "!:"],
             propertyLabel: t("contactTable.langCode"),
@@ -364,7 +274,9 @@ export const ContactTable = ({ data = [], loading = false, empty, header, varian
             operators: ['<', '<=', '>', '>='],
             propertyLabel: t("contactTable.duration"),
             groupValuesLabel: "Durations"
-          }
+          },
+          ...summaryFields,
+          ...vocSummaryFields
         ],
         empty: (
           <div>No Calls.</div>
@@ -383,7 +295,7 @@ export const ContactTable = ({ data = [], loading = false, empty, header, varian
       {...collectionProps}
       header={header}
       variant={variant}
-      columnDefinitions={translatedColumnDefinitions}
+      columnDefinitions={[...translatedColumnDefinitions, ...summaryColumns]}
       columnDisplay={preferences.contentDisplay}
       items={items}
       //pagination={<Pagination {...paginationProps} />}
