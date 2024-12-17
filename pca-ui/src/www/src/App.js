@@ -9,7 +9,7 @@ import Home from "./routes/Home";
 import Search from "./routes/Search";
 import Dashboard from "./routes/Dashboard/index";
 import CallAnalytics from "./routes/CallAnalytics";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { payloadFromToken, logOut } from "./api/auth";
 import { useTranslation } from 'react-i18next';
 import "./locales/i18n";
@@ -97,6 +97,17 @@ const routes = [
 
 function Navigation({ userName, email }) {
   const { t } = useTranslation();
+  const [version, setVersion] = useState('');
+
+  useEffect(() => {
+    fetch('/version.json')
+      .then(response => response.json())
+      .then(data => setVersion(data.version))
+      .catch(error => console.error('Error fetching version:', error));
+  }, []);
+
+  console.log("version", version);
+
   return (    
       <TopNavigation
       identity={{
@@ -133,7 +144,7 @@ function Navigation({ userName, email }) {
               if (event.detail.id === "signout") logOut();
             },
             items: [            
-              { id: "security", text: t('utilities.security') },  
+              { id: "version", text: `Version: ${version}` },
               { id: "signout", text: t('utilities.signout') }
             ]
           }
