@@ -162,7 +162,7 @@
         "dateRangeTitle": "Date Range"
     },
     "charts": {
-        "callQuarter": "Call Quarter",
+        "callQuarter": "Customer Journey Sentiment",
         "score": "Score",
         "sentiment": "Sentiment (-5 to 5)",
         "seconds": "Seconds"
