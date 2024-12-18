@@ -159,7 +159,7 @@
         "dateRangeTitle": "Rango de fechas"
     },
     "charts": {
-        "callQuarter": "Llamadas por trimestre",
+        "callQuarter": "Sentimiento en el Customer Journey",
         "score": "Puntuación",
         "sentiment": "Sentimiento (-5 a 5)",
         "seconds": "Segundos"
