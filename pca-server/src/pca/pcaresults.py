@@ -1,5 +1,5 @@
 """
-This python function is part of the main processing workflow.  It contains the data structures and functions
+V1.1.1 This python function is part of the main processing workflow.  It contains the data structures and functions
 required to hold the results of a post-processing run, as well as being responsible for generating the output
 JSON that is stored in S3.
 

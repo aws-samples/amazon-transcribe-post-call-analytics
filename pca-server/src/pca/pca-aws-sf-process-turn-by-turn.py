@@ -1,5 +1,5 @@
 """
-This python function is part of the main processing workflow.  Parses the output from an Amazon Transcribe job into
+V1.1.1 This python function is part of the main processing workflow.  Parses the output from an Amazon Transcribe job into
 turn-by-turn speech segments with sentiment analysis scores from Amazon Comprehend
 
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
