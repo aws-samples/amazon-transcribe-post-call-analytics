@@ -1,5 +1,5 @@
 """
-This python function is part of the main processing workflow.
+v1.1.1 This python function is part of the main processing workflow.
 It performs summarization of the call if summarization was enabled.
 
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
