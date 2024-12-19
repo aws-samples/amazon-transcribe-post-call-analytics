@@ -162,13 +162,13 @@ export const ContactTable = ({ data = [], loading = false, empty, header, varian
 
   const [promptsKeyValue, setPromptsKeyValue] = useState({});
 
-  useEffect(() => {
-    const fetchPromptsKeyValue = async () => {
-      const response = await getPromptsKeyValue();
-      setPromptsKeyValue(response);
-    };
-    fetchPromptsKeyValue();
-  }, []);
+  // useEffect(() => {
+  //   const fetchPromptsKeyValue = async () => {
+  //     const response = await getPromptsKeyValue();
+  //     setPromptsKeyValue(response);
+  //   };
+  //   fetchPromptsKeyValue();
+  // }, []);
 
   const summaryColumns = Object.keys(promptsKeyValue).map((key) => ({
     id: key,
@@ -275,8 +275,6 @@ export const ContactTable = ({ data = [], loading = false, empty, header, varian
             propertyLabel: t("contactTable.duration"),
             groupValuesLabel: "Durations"
           },
-          ...summaryFields,
-          ...vocSummaryFields
         ],
         empty: (
           <div>No Calls.</div>
@@ -295,7 +293,7 @@ export const ContactTable = ({ data = [], loading = false, empty, header, varian
       {...collectionProps}
       header={header}
       variant={variant}
-      columnDefinitions={[...translatedColumnDefinitions, ...summaryColumns]}
+      columnDefinitions={translatedColumnDefinitions}
       columnDisplay={preferences.contentDisplay}
       items={items}
       //pagination={<Pagination {...paginationProps} />}
