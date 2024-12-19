@@ -22,7 +22,6 @@ const VISIBLE_CONTENT_OPTIONS = (t, dynamicFields) => [{
     { id: "callerSentimentScore", label: t("contactTable.callerSentimentScore"), visible: true },
     { id: "langCode", label: t("contactTable.langCode"), visible: true },
     { id: "duration", label: t("contactTable.duration"), visible: true },
-    ...dynamicFields
     /*{ id: "menu", label: "Menu", visible: true }*/
   ]
 }];
