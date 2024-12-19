@@ -110,12 +110,12 @@ function Home({ setAlert }) {
                 ? t("home.noMore")
                 : t("home.loadMore")}
             </Button>
-            <Button
+            {/* <Button
             variant="normal"
             onClick={() => history.push('/analytics')}
           >
             {t("analytics.header")}
-          </Button>
+          </Button> */}
           </Grid>
         </Container>
         
