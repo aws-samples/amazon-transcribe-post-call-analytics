@@ -163,7 +163,7 @@ def get_templates_from_dynamodb():
                 prompt = prompt_templates[k]['S'].replace("<br>", "\n")
                 index = k.find('#')
                 k_stripped = k[index+1:]
-                templates.append({'key': k_stripped, 'prompt': prompt, 'source': 'TemplateQuality'})
+                templates.append({'key': k_stripped, 'prompt': prompt, 'source': 'TemplateSummary'})
     except Exception as e:
         print ("Exception:", e)
         raise (e)
@@ -185,6 +185,27 @@ def get_templates_from_dynamodb_v2():
                 index = k.find('#')
                 k_stripped = k[index+1:]
                 templates.append({'key': k_stripped, 'prompt': prompt, 'source': 'TemplateVOC'})
+    except Exception as e:
+        print ("Exception:", e)
+        raise (e)
+    return templates
+
+def get_templates_from_dynamodb_quality_eval():
+    templates = []
+    try:
+        SUMMARY_PROMPT_TEMPLATE = dynamodb_client.get_item(Key={'LLMPromptTemplateId': {'S': 'LLMPromptQualityEvalTemplate'}},
+                                                     TableName=LLM_TABLE_NAME)
+
+        print ("Prompt Template:", SUMMARY_PROMPT_TEMPLATE['Item'])
+
+        prompt_templates = SUMMARY_PROMPT_TEMPLATE["Item"]
+
+        for k in sorted(prompt_templates):
+            if (k != "LLMPromptTemplateId"):
+                prompt = prompt_templates[k]['S'].replace("<br>", "\n")
+                index = k.find('#')
+                k_stripped = k[index+1:]
+                templates.append({'key': k_stripped, 'prompt': prompt, 'source': 'TemplateQualityEval'})
     except Exception as e:
         print ("Exception:", e)
         raise (e)
@@ -253,9 +274,10 @@ def generate_anthropic_summary(transcript):
 def generate_bedrock_summary(transcript, api_mode):
 
     # first check to see if this is one prompt, or many prompts as a json
-    templates = get_templates_from_dynamodb() + get_templates_from_dynamodb_v2()
-    qualityResult = {}
+    templates = get_templates_from_dynamodb() + get_templates_from_dynamodb_v2() + get_templates_from_dynamodb_quality_eval()
+    summaryResult = {}
     vocResult = {}
+    qualityEvalResult = {}
     for item in templates:
         key = item['key']
         prompt = item['prompt']
@@ -272,11 +294,13 @@ def generate_bedrock_summary(transcript, api_mode):
                 "temperature": 0
             }
             generated_text = call_bedrock(parameters, prompt)
-            if source == 'TemplateQuality':
-                qualityResult[key] = generated_text
-            else:
+            if source == 'TemplateSummary':
+                summaryResult[key] = generated_text
+            elif source == 'TemplateVOC':
                 vocResult[key] = generated_text
-    if len(qualityResult.keys()) == 1:
+            else:
+                qualityEvalResult[key] = generated_text
+    if len(summaryResult.keys()) == 1:
         # This is a single node JSON with value that can be either:
         # A single inference that returns a string value
         # OR
@@ -284,13 +308,13 @@ def generate_bedrock_summary(transcript, api_mode):
         # Refer to https://github.com/aws-samples/amazon-transcribe-post-call-analytics/blob/develop/docs/generative_ai.md#generative-ai-insights
         # for more details.
         try:
-            parsed_json = json.loads(qualityResult[list(qualityResult.keys())[0]])
+            parsed_json = json.loads(summaryResult[list(summaryResult.keys())[0]])
             print("Nested JSON...")
             return json.dumps(parsed_json)
         except:
             print("Not nested JSON...")
-            return json.dumps(qualityResult), json.dumps(vocResult)
-    return json.dumps(qualityResult), json.dumps(vocResult)
+            return json.dumps(summaryResult), json.dumps(vocResult), json.dumps(qualityEvalResult)
+    return json.dumps(summaryResult), json.dumps(vocResult), json.dumps(qualityEvalResult)
 
 def modify_prompt_based_on_model(model_id, prompt):
     if model_id == "amazon.titan-text-express-v1":
@@ -347,6 +371,7 @@ def lambda_handler(event, context):
     # --------- Summarize Here ----------
     summary = 'No Summary Available'
     voc_summary = 'No VOC Summary Available'
+    quality_eval = 'No Quality Evaluation Available'
     transcript_str = get_transcript_str(event["interimResultsFile"])
     summary_json = None
 
@@ -367,10 +392,11 @@ def lambda_handler(event, context):
             print(err)
     elif SUMMARIZE_TYPE == 'BEDROCK' or SUMMARIZE_TYPE == 'BEDROCK+TCA':
         try:
-            summary, voc_summary = generate_bedrock_summary(transcript_str, pca_results.analytics.transcribe_job.api_mode)
+            summary, voc_summary, quality_eval = generate_bedrock_summary(transcript_str, pca_results.analytics.transcribe_job.api_mode)
             try: 
                 summary_json = json.loads(summary)
                 voc_summary_json = json.loads(voc_summary)
+                quality_eval_json = json.loads(quality_eval)
             except:
                 print('no json detected in summary.')
         except Exception as err:
@@ -402,6 +428,14 @@ def lambda_handler(event, context):
         pca_results.analytics.voc_summary = {}
         pca_results.analytics.voc_summary['VOCSummary'] = voc_summary
         print("VOCSummary: " + voc_summary)
+        
+    if quality_eval_json:
+        pca_results.analytics.quality_eval = quality_eval_json
+        print("Quality Evaluation JSON: " + quality_eval)
+    elif SUMMARIZE_TYPE != 'TCA-ONLY':
+        pca_results.analytics.quality_eval = {}
+        pca_results.analytics.quality_eval['QualityEvaluation'] = quality_eval
+        print("QualityEvaluation: " + quality_eval)
     # Try to get key value template from DynamoDB for match with summary title prompts    
     try:
         summary_key_value = get_summary_key_value_from_dynamodb()

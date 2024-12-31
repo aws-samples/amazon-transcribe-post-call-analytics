@@ -413,8 +413,8 @@ function Dashboard({ setAlert }) {
     },
   ];
 
-  let genAiSummary = (data?.ConversationAnalytics?.Summary ?
-    Object.entries(data?.ConversationAnalytics?.Summary).map(([key, value]) => {
+  let genAiSummary = (data?.ConversationAnalytics?.QualityEvaluation ?
+    Object.entries(data?.ConversationAnalytics?.QualityEvaluation).map(([key, value]) => {
       return {
         label: data?.ConversationAnalytics?.SummaryKeyValue[key] || key,
         value: (value instanceof Array ? value.join(', ') : value)
