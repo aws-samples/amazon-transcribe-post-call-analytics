@@ -699,7 +699,7 @@ function Dashboard({ setAlert }) {
           )}
         </Container>
 
-        {isTranscribeCallAnalyticsMode && (
+        {/* {isTranscribeCallAnalyticsMode && (
           <Container
             fitHeight={true}
             header={
@@ -717,7 +717,7 @@ function Dashboard({ setAlert }) {
               />
             )}
           </Container>
-        )}
+        )} */}
         <Container
           fitHeight={true}
           header={
