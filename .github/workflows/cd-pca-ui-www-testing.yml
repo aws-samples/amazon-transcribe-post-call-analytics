@@ -51,7 +51,7 @@ jobs:
         run: echo "{ \"name\"":" \"Evoltis PCA\", \"version\"":" \""${{  github.ref_name }}"\", \"publishDate\"":"\""$NOW"\"}" >> ./pca-ui/src/www/build/version.json
 
       - name: Upload to S3
-        run: aws s3 sync ./pca-ui/src/www/build s3://evatesting-pcaui-1kaqct739gwls-web-swdh3-webbucket-qsmadvlynpla --delete --exclude "config.js"
+        run: aws s3 sync ./pca-ui/src/www/build s3://evatesting-pcaui-m7udya0or5ci-web-1beqxl-webbucket-jbkq0ovhnqz2 --delete --exclude "config.js"
 
       - name: Create Cloudfront invalidation
-        run: aws cloudfront create-invalidation --distribution-id E15LAU1V49TSVL --paths "/index.html" "/version.json"
+        run: aws cloudfront create-invalidation --distribution-id E3TC9T8IFT3VQB --paths "/index.html" "/version.json"
