@@ -354,8 +354,8 @@ Parameters:
     
   DatabaseName:
     Type: String
-    Default: 'pca'
-    Description: Glue catalog database name used to contain tables/views for SQL integration.
+    AllowedPattern: "[a-zA-Z0-9_-]+"
+    Description: (Required) Glue catalog database name used to contain tables/views for SQL integration.
 
   EnablePcaDashboards:
     Type: String
@@ -848,6 +848,7 @@ Resources:
     Properties:
       TemplateURL: pca-ssm/cfn/ssm.template
       Parameters:
+        StackName: !Ref 'AWS::StackName'
         BulkUploadBucketName:
           !If
           - ShouldCreateBulkUploadBucket
@@ -918,6 +919,8 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: pca-server/cfn/lib/python-utilities.template
+      Parameters:
+        ParentStackName: !Ref 'AWS::StackName'
 
   BedrockBoto3Layer:
     Type: AWS::CloudFormation::Stack
@@ -944,6 +947,8 @@ Resources:
     Properties:
       TemplateURL: pca-server/cfn/pca-server.template
       Parameters:
+        DatabaseName: !Ref DatabaseName
+        ParentStackName: !Ref 'AWS::StackName'
         ffmpegDownloadUrl: !Ref ffmpegDownloadUrl
         CallSummarization: !Ref CallSummarization
         SummarizationBedrockModelId: !Ref SummarizationBedrockModelId
@@ -966,6 +971,7 @@ Resources:
     Properties:
       TemplateURL: pca-ui/cfn/pca-ui.template
       Parameters:
+        ParentStackName: !Ref 'AWS::StackName'
         AdminUsername: !Ref AdminUsername
         AdminEmail: !Ref AdminEmail
         AllowedSignUpEmailDomain: !Ref AllowedSignUpEmailDomain

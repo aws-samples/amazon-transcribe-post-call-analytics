@@ -5,10 +5,13 @@ Description: Amazon Transcribe Post Call Analytics - PCA Server - Install python
 Transform: AWS::Serverless-2016-10-31
 
 Parameters:
+  ParentStackName:
+    Type: String
+    Description: Name of the parent stack
 
-  SupportFilesBucketName:
-    Type: AWS::SSM::Parameter::Value<String>
-    Default: SupportFilesBucketName
+#  SupportFilesBucketName:
+#    Type: AWS::SSM::Parameter::Value<String>
+#    Default: SupportFilesBucketName
 
   PyZipName:
     Type: String
@@ -36,7 +39,7 @@ Resources:
                 Resource:
                   !Sub
                     - 'arn:aws:s3:::${bucket}*'
-                    - bucket: !Ref SupportFilesBucketName
+                    - bucket: !Sub '{{resolve:ssm:${ParentStackName}-SupportFilesBucketName}}'
                 Action:
                   - 's3:PutObject'
           PolicyName: PyUtilsZipFunctionS3Policy
@@ -51,7 +54,7 @@ Resources:
       MemorySize: 1024
       Environment:
         Variables:
-          SUPPORT_FILES_BUCKET: !Ref SupportFilesBucketName
+          SUPPORT_FILES_BUCKET: !Sub '{{resolve:ssm:${ParentStackName}-SupportFilesBucketName}}'
           PY_ZIP_NAME: !Ref PyZipName
       Code:
         ZipFile: |
@@ -118,7 +121,7 @@ Resources:
       CompatibleRuntimes:
         - python3.11
       Content:
-        S3Bucket: !Ref SupportFilesBucketName
+        S3Bucket: !Sub '{{resolve:ssm:${ParentStackName}-SupportFilesBucketName}}'
         S3Key: !Ref PyZipName
 
 Outputs:
