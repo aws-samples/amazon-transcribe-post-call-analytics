@@ -5,10 +5,6 @@ Description: Amazon Transcribe Post Call Analytics - PCA Server - S3 Trigger
 Transform: AWS::Serverless-2016-10-31
 
 Parameters:
-  ParentStackName:
-    Type: String
-    Description: Name of the parent stack
-
   TableName:
     Type: String
 
@@ -18,21 +14,21 @@ Parameters:
   PyUtilsLayer:
     Type: String
 
-#  InputBucketName:
-#    Type: AWS::SSM::Parameter::Value<String>
-#    Default: InputBucketName
-#
-#  InputBucketRawAudio:
-#    Type: AWS::SSM::Parameter::Value<String>
-#    Default: InputBucketRawAudio
-#
-#  InputBucketOrigTranscripts:
-#    Type: AWS::SSM::Parameter::Value<String>
-#    Default: InputBucketOrigTranscripts
-#
-#  StepFunctionName:
-#    Type: AWS::SSM::Parameter::Value<String>
-#    Default: StepFunctionName
+  InputBucketName:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: InputBucketName
+
+  InputBucketRawAudio:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: InputBucketRawAudio
+    
+  InputBucketOrigTranscripts:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: InputBucketOrigTranscripts
+
+  StepFunctionName:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: StepFunctionName
 
   Summarize:
     Type: String
@@ -50,7 +46,6 @@ Resources:
       Environment:
         Variables:
           SUMMARIZE: !Ref Summarize
-          STACK_NAME: !Ref ParentStackName
       CodeUri:  ../../src/pca
       Handler: pca-aws-file-drop-trigger.lambda_handler
       Layers:
@@ -65,15 +60,8 @@ Resources:
           - s3:ListBucket
           - s3:GetObject
           Resource:
-            - !Join
-              - ''
-              - - 'arn:aws:s3:::'
-                - !Sub '{{resolve:ssm:${ParentStackName}-InputBucketName}}'
-            - !Join
-              - ''
-              - - 'arn:aws:s3:::'
-                - !Sub '{{resolve:ssm:${ParentStackName}-InputBucketName}}'
-                - '/*'
+          - !Sub arn:aws:s3:::${InputBucketName}
+          - !Sub arn:aws:s3:::${InputBucketName}/*
       - Statement:
         - Sid: SSMGetParameterPolicy    
           Effect: Allow
@@ -89,16 +77,7 @@ Resources:
         - Sid: StartExecutionPolicy
           Effect: Allow
           Action: states:StartExecution
-          Resource: #!Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${StepFunctionName}
-          - !Join
-            - ''
-            - - 'arn:aws:states:'
-              - !Ref 'AWS::Region'
-              - ':'
-              - !Ref 'AWS::AccountId'
-              - ':stateMachine:'
-              - !Sub '{{resolve:ssm:${ParentStackName}-StepFunctionName}}'
-
+          Resource: !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${StepFunctionName}
 
     
   FileDropTriggerPermission:
@@ -108,10 +87,7 @@ Resources:
       Action: lambda:InvokeFunction
       Principal: s3.amazonaws.com
       SourceAccount: !Ref AWS::AccountId
-      SourceArn: !Join
-         - ''
-         - - 'arn:aws:s3:::'
-           - !Sub '{{resolve:ssm:${ParentStackName}-InputBucketName}}'
+      SourceArn: !Sub arn:aws:s3:::${InputBucketName}
 
   ConfigureBucketRole:
     Type: "AWS::IAM::Role"
@@ -133,10 +109,7 @@ Resources:
               Action:
                 - s3:GetBucketNotification
                 - s3:PutBucketNotification
-              Resource: !Join
-                - ''
-                - - 'arn:aws:s3:::'
-                  - !Sub '{{resolve:ssm:${ParentStackName}-InputBucketName}}'
+              Resource: !Sub arn:aws:s3:::${InputBucketName}
 
   ConfigureBucketFunction:
     Type: "AWS::Lambda::Function"
@@ -155,8 +128,8 @@ Resources:
       - FileDropTriggerPermission
     Properties:
       ServiceToken: !GetAtt ConfigureBucketFunction.Arn
-      BucketName: !Sub '{{resolve:ssm:${ParentStackName}-InputBucketName}}'
-      Prefix: !Sub '{{resolve:ssm:${ParentStackName}-InputBucketRawAudio}}'
+      BucketName: !Ref InputBucketName
+      Prefix: !Ref InputBucketRawAudio
       LambdaArn: !GetAtt FileDropTrigger.Arn
       FileUpload: "true"
 
@@ -167,8 +140,8 @@ Resources:
       - ConfigureBucket
     Properties:
       ServiceToken: !GetAtt ConfigureBucketFunction.Arn
-      BucketName: !Sub '{{resolve:ssm:${ParentStackName}-InputBucketName}}'
-      Prefix: !Sub '{{resolve:ssm:${ParentStackName}-InputBucketOrigTranscripts}}'
+      BucketName: !Ref InputBucketName
+      Prefix: !Ref InputBucketOrigTranscripts
       LambdaArn: !GetAtt FileDropTrigger.Arn
 
   TranscribeEventbridge:
@@ -207,7 +180,6 @@ Resources:
         Variables:
           TableName: !Ref TableName
           AWS_DATA_PATH: "/opt/models"
-          STACK_NAME: !Ref ParentStackName
       Policies:
       - arn:aws:iam::aws:policy/AmazonTranscribeReadOnlyAccess
       - Statement:

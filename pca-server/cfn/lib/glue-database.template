@@ -5,25 +5,18 @@ Description: Amazon Transcribe Post Call Analytics - PCA Server - Glue Catalog D
 Transform: AWS::Serverless-2016-10-31
 
 Parameters:
-  ParentStackName:
-    Type: String
-    Description: Name of the parent stack
 
-#  DatabaseName:
-#    Type: AWS::SSM::Parameter::Value<String>
-    #Default: DatabaseName
+  DatabaseName:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: DatabaseName
 
-#  DatabaseName:
-#    Type: String
-#    Description: Glue catalog database name used to contain tables/views for SQL integration.
-
-#  OutputBucketName:
-#    Type: AWS::SSM::Parameter::Value<String>
-#    Default: OutputBucketName
-#
-#  OutputBucketParsedResults:
-#    Type: AWS::SSM::Parameter::Value<String>
-#    Default: OutputBucketParsedResults
+  OutputBucketName:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: OutputBucketName
+    
+  OutputBucketParsedResults:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: OutputBucketParsedResults
 
 Resources:
 
@@ -33,14 +26,8 @@ Resources:
       CatalogId: !Ref AWS::AccountId
       DatabaseInput: 
         Description: Post Call Analytics
-        LocationUri: !Join
-            - ''
-            - - 's3://'
-              - !Sub '{{resolve:ssm:${ParentStackName}-OutputBucketName}}'
-              - '/'
-              - !Sub '{{resolve:ssm:${ParentStackName}-OutputBucketParsedResults}}'
-              - '/'
-        Name: !Sub "{{resolve:ssm:${ParentStackName}-DatabaseName}}"
+        LocationUri: !Sub 's3://${OutputBucketName}/${OutputBucketParsedResults}/'
+        Name: !Ref DatabaseName
 
   ParsedResultsTable:
     Type: AWS::Glue::Table
@@ -61,13 +48,7 @@ Resources:
           Compressed: false
           NumberOfBuckets: -1
           InputFormat: org.apache.hadoop.mapred.TextInputFormat
-          Location: !Join
-              - ''
-              - - 's3://'
-                - !Sub '{{resolve:ssm:${ParentStackName}-OutputBucketName}}'
-                - '/'
-                - !Sub '{{resolve:ssm:${ParentStackName}-OutputBucketParsedResults}}'
-                - '/'
+          Location: !Sub 's3://${OutputBucketName}/${OutputBucketParsedResults}/'
           OutputFormat: org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat
           SerdeInfo: 
             Name: JSON

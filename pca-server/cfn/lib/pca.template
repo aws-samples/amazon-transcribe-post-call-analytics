@@ -1,14 +1,10 @@
-AWSTemplateFormatVersion: '2010-09-09'
+AWSTemplateFormatVersion: "2010-09-09"
 
 Description: Amazon Transcribe Post Call Analytics - PCA Server - PCA State Machine
 
 Transform: AWS::Serverless-2016-10-31
 
 Parameters:
-  ParentStackName:
-    Type: String
-    Description: Name of the parent stack
-
   TableName:
     Type: String
 
@@ -22,33 +18,33 @@ Parameters:
   PyUtilsLayer:
     Type: String
 
-#  SupportFilesBucketName:
-#    Type: AWS::SSM::Parameter::Value<String>
-#    Default: SupportFilesBucketName
+  SupportFilesBucketName:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: SupportFilesBucketName
 
-#  StepFunctionName:
-#    Type: AWS::SSM::Parameter::Value<String>
-#    Default: StepFunctionName
+  StepFunctionName:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: StepFunctionName
+    
+  InputBucketName:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: InputBucketName
 
-#  InputBucketName:
-#    Type: AWS::SSM::Parameter::Value<String>
-#    Default: InputBucketName
-
-  CallSummarization:
+  CallSummarization: 
     Type: String
-    Default: DISABLED
-  SummarizationSagemakerEndpointName:
+    Default: 'DISABLED'
+  SummarizationSagemakerEndpointName: 
     Type: String
     Default: ''
-  SummarizationSagemakerEndpointArn:
+  SummarizationSagemakerEndpointArn: 
     Type: String
     Default: ''
   SummarizationLLMThirdPartyApiKey:
     Type: String
-    Description: |
+    Description: >
       Secrets manager secret Arn containing the third party LLM API key
     Default: ''
-  SummarizationLambdaFunctionArn:
+  SummarizationLambdaFunctionArn: 
     Type: String
     Default: ''
   SummarizationBedrockModelId:
@@ -65,26 +61,20 @@ Globals:
     Timeout: 60
 
 Conditions:
-  ProvisionedSageMakerEndpoint: !Equals
-    - !Ref CallSummarization
-    - SAGEMAKER
-  HasCustomSummarizerLambda: !Equals
-    - !Ref CallSummarization
-    - LAMBDA
-  HasAnthropicSummary: !Equals
-    - !Ref CallSummarization
-    - ANTHROPIC
+  ProvisionedSageMakerEndpoint: !Equals [!Ref CallSummarization, "SAGEMAKER"]
+  HasCustomSummarizerLambda: !Equals [!Ref CallSummarization, "LAMBDA"]
+  HasAnthropicSummary: !Equals [!Ref CallSummarization, "ANTHROPIC"]
 
 Resources:
   FFMPEGLayer:
-    Type: AWS::Lambda::LayerVersion
+    Type: "AWS::Lambda::LayerVersion"
     Properties:
       Content:
-        S3Bucket: !Sub "{{resolve:ssm:${ParentStackName}-SupportFilesBucketName}}"
+        S3Bucket: !Ref SupportFilesBucketName
         S3Key: !Ref FFMPEGZipName
 
   TranscribeRole:
-    Type: AWS::IAM::Role
+    Type: "AWS::IAM::Role"
     Properties:
       AssumeRolePolicyDocument:
         Statement:
@@ -101,7 +91,7 @@ Resources:
         - arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess
 
   TranscribeLambdaRole:
-    Type: AWS::IAM::Role
+    Type: "AWS::IAM::Role"
     Properties:
       AssumeRolePolicyDocument:
         Statement:
@@ -132,17 +122,8 @@ Resources:
                   - s3:PutObject
                   - s3:DeleteObject
                 Resource:
-                  #- !Sub arn:aws:s3:::${InputBucketName}
-                  #- !Sub arn:aws:s3:::${InputBucketName}/*
-                  - !Join
-                    - ''
-                    - - 'arn:aws:s3:::'
-                      - !Sub '{{resolve:ssm:${ParentStackName}-InputBucketName}}'
-                  - !Join
-                    - ''
-                    - - 'arn:aws:s3:::'
-                      - !Sub '{{resolve:ssm:${ParentStackName}-InputBucketName}}'
-                      - '/*'
+                  - !Sub arn:aws:s3:::${InputBucketName}
+                  - !Sub arn:aws:s3:::${InputBucketName}/*
         - PolicyName: SSMGetParameterPolicy
           PolicyDocument:
             Statement:
@@ -153,9 +134,9 @@ Resources:
                 Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*
 
   SFStartTranscribeJob:
-    Type: AWS::Serverless::Function
+    Type: "AWS::Serverless::Function"
     Properties:
-      CodeUri: ../../src/pca
+      CodeUri:  ../../src/pca
       Handler: pca-aws-sf-start-transcribe-job.lambda_handler
       EphemeralStorage:
         Size: 4096
@@ -166,14 +147,13 @@ Resources:
       Environment:
         Variables:
           RoleArn: !GetAtt TranscribeRole.Arn
-          AWS_DATA_PATH: /opt/models
-          STACK_NAME: !Ref ParentStackName
+          AWS_DATA_PATH: "/opt/models"
       Role: !GetAtt TranscribeLambdaRole.Arn
 
   SFExtractJobHeader:
-    Type: AWS::Serverless::Function
+    Type: "AWS::Serverless::Function"
     Properties:
-      CodeUri: ../../src/pca
+      CodeUri:  ../../src/pca
       Handler: pca-aws-sf-extract-job-header.lambda_handler
       MemorySize: 1024
       Timeout: 900
@@ -181,17 +161,16 @@ Resources:
         - !Ref Boto3Layer
       Environment:
         Variables:
-          AWS_DATA_PATH: /opt/models
-          STACK_NAME: !Ref ParentStackName
+          AWS_DATA_PATH: "/opt/models"
       Policies:
         - arn:aws:iam::aws:policy/AmazonTranscribeReadOnlyAccess
         - arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess
         - arn:aws:iam::aws:policy/AmazonS3FullAccess
 
   SFExtractTranscriptHeader:
-    Type: AWS::Serverless::Function
+    Type: "AWS::Serverless::Function"
     Properties:
-      CodeUri: ../../src/pca
+      CodeUri:  ../../src/pca
       Handler: pca-aws-sf-extract-transcript-header.lambda_handler
       MemorySize: 1024
       Timeout: 900
@@ -200,16 +179,15 @@ Resources:
         - !Ref FFMPEGLayer
       Environment:
         Variables:
-          AWS_DATA_PATH: /opt/models
-          STACK_NAME: !Ref ParentStackName
+          AWS_DATA_PATH: "/opt/models"
       Policies:
         - arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess
         - arn:aws:iam::aws:policy/AmazonS3FullAccess
 
   SFProcessTurn:
-    Type: AWS::Serverless::Function
+    Type: "AWS::Serverless::Function"
     Properties:
-      CodeUri: ../../src/pca
+      CodeUri:  ../../src/pca
       Handler: pca-aws-sf-process-turn-by-turn.lambda_handler
       MemorySize: 1024
       Timeout: 900
@@ -218,8 +196,7 @@ Resources:
         - !Ref Boto3Layer
       Environment:
         Variables:
-          AWS_DATA_PATH: /opt/models
-          STACK_NAME: !Ref ParentStackName
+          AWS_DATA_PATH: "/opt/models"
       Policies:
         - arn:aws:iam::aws:policy/AmazonTranscribeReadOnlyAccess
         - arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess
@@ -228,69 +205,63 @@ Resources:
         - arn:aws:iam::aws:policy/AmazonKendraFullAccess
 
   SFFinalProcessing:
-    Type: AWS::Serverless::Function
+    Type: "AWS::Serverless::Function"
     Properties:
-      CodeUri: ../../src/pca
+      CodeUri:  ../../src/pca
       Handler: pca-aws-sf-post-processing.lambda_handler
       Layers:
         - !Ref Boto3Layer
       Environment:
         Variables:
-          AWS_DATA_PATH: /opt/models
-          STACK_NAME: !Ref ParentStackName
+          AWS_DATA_PATH: "/opt/models"
       Policies:
         - arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess
         - arn:aws:iam::aws:policy/AmazonS3FullAccess
 
   SFCTRGenesys:
-    Type: AWS::Serverless::Function
+    Type: "AWS::Serverless::Function"
     Properties:
-      CodeUri: ../../src/pca
+      CodeUri:  ../../src/pca
       Handler: pca-aws-sf-ctr-genesys.lambda_handler
       Layers:
         - !Ref Boto3Layer
       Environment:
         Variables:
-          AWS_DATA_PATH: /opt/models
-          STACK_NAME: !Ref ParentStackName
+          AWS_DATA_PATH: "/opt/models"
       Policies:
         - arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess
         - arn:aws:iam::aws:policy/AmazonS3FullAccess
 
   SFPostCTRProcessing:
-    Type: AWS::Serverless::Function
+    Type: "AWS::Serverless::Function"
     Properties:
-      CodeUri: ../../src/pca
+      CodeUri:  ../../src/pca
       Handler: pca-aws-sf-post-ctr-processing.lambda_handler
       Layers:
         - !Ref Boto3Layer
       Environment:
         Variables:
-          AWS_DATA_PATH: /opt/models
-          STACK_NAME: !Ref ParentStackName
+          AWS_DATA_PATH: "/opt/models"
       Policies:
         - arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess
         - arn:aws:iam::aws:policy/AmazonS3FullAccess
-
+  
   SFFetchTranscript:
-    Type: AWS::Serverless::Function
+    Type: "AWS::Serverless::Function"
     Properties:
       Runtime: python3.11
-      CodeUri: ../../src/pca
+      CodeUri:  ../../src/pca
       Handler: pca-aws-fetch-transcript.lambda_handler
-      Environment:
-        Variables:
-          STACK_NAME: !Ref ParentStackName
       Timeout: 900
       Policies:
         - arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess
         - arn:aws:iam::aws:policy/AmazonS3FullAccess
 
   SFSummarize:
-    Type: AWS::Serverless::Function
+    Type: "AWS::Serverless::Function"
     Properties:
       Runtime: python3.11
-      CodeUri: ../../src/pca
+      CodeUri:  ../../src/pca
       Handler: pca-aws-sf-summarize.lambda_handler
       Timeout: 900
       Layers:
@@ -298,8 +269,7 @@ Resources:
         - !Ref Boto3Layer
       Environment:
         Variables:
-          STACK_NAME: !Ref ParentStackName
-          AWS_DATA_PATH: /opt/models
+          AWS_DATA_PATH: "/opt/models"
           FETCH_TRANSCRIPT_LAMBDA_ARN: !GetAtt SFFetchTranscript.Arn
           BEDROCK_MODEL_ID: !Ref SummarizationBedrockModelId
           LLM_TABLE_NAME: !Ref LLMTableName
@@ -307,9 +277,9 @@ Resources:
           SUMMARY_SAGEMAKER_ENDPOINT: !Ref SummarizationSagemakerEndpointName
           ANTHROPIC_API_KEY: !Ref SummarizationLLMThirdPartyApiKey
           SUMMARY_LAMBDA_ARN: !Ref SummarizationLambdaFunctionArn
-          ANTHROPIC_MODEL_IDENTIFIER: claude-v1.3-100k
-          ANTHROPIC_ENDPOINT_URL: https://api.anthropic.com/v1/complete
-          TOKEN_COUNT: !If
+          ANTHROPIC_MODEL_IDENTIFIER: "claude-v1.3-100k"
+          ANTHROPIC_ENDPOINT_URL: "https://api.anthropic.com/v1/complete"
+          TOKEN_COUNT: !If 
             - ProvisionedSageMakerEndpoint
             - 1024
             - 0
@@ -317,87 +287,82 @@ Resources:
         - arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess
         - arn:aws:iam::aws:policy/AmazonS3FullAccess
         - Statement:
-            - Sid: InvokeGetTranscript
+          - Sid: InvokeGetTranscript
+            Effect: Allow
+            Action:
+              - lambda:InvokeFunction
+            Resource: !GetAtt SFFetchTranscript.Arn
+          - Sid: DynamoDBAccess
+            Effect: Allow
+            Resource: !Sub arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${LLMTableName}
+            Action:
+              - 'dynamodb:GetItem'
+          - Sid: InvokeBedrock
+            Effect: Allow
+            Action: 
+              - bedrock:InvokeModel
+            Resource:
+              - !Sub "arn:${AWS::Partition}:bedrock:*::foundation-model/*"
+              - !Sub "arn:${AWS::Partition}:bedrock:*:${AWS::AccountId}:custom-model/*"
+          - !If 
+            - HasAnthropicSummary
+            - Sid: SecretsManagerPolicy
+              Effect: Allow
+              Action:
+                - 'secretsmanager:GetResourcePolicy'
+                - 'secretsmanager:GetSecretValue'
+                - 'secretsmanager:DescribeSecret'
+                - 'secretsmanager:ListSecretVersionIds'
+              Resource: !Ref SummarizationLLMThirdPartyApiKey
+            - !Ref "AWS::NoValue"
+          - !If 
+            - ProvisionedSageMakerEndpoint
+            - Sid: InvokeSummarizer
+              Effect: Allow
+              Action:
+                - sagemaker:InvokeEndpoint
+              Resource: !Ref SummarizationSagemakerEndpointArn
+            - !Ref "AWS::NoValue"
+          - !If 
+            - HasCustomSummarizerLambda
+            - Sid: SummarizationLambda
               Effect: Allow
               Action:
                 - lambda:InvokeFunction
-              Resource: !GetAtt SFFetchTranscript.Arn
-            - Sid: DynamoDBAccess
-              Effect: Allow
-              Resource: !Sub arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${LLMTableName}
-              Action:
-                - dynamodb:GetItem
-            - Sid: InvokeBedrock
-              Effect: Allow
-              Action:
-                - bedrock:InvokeModel
-              Resource:
-                - !Sub arn:${AWS::Partition}:bedrock:*::foundation-model/*
-                - !Sub arn:${AWS::Partition}:bedrock:*:${AWS::AccountId}:custom-model/*
-            - !If
-              - HasAnthropicSummary
-              - Sid: SecretsManagerPolicy
-                Effect: Allow
-                Action:
-                  - secretsmanager:GetResourcePolicy
-                  - secretsmanager:GetSecretValue
-                  - secretsmanager:DescribeSecret
-                  - secretsmanager:ListSecretVersionIds
-                Resource: !Ref SummarizationLLMThirdPartyApiKey
-              - !Ref AWS::NoValue
-            - !If
-              - ProvisionedSageMakerEndpoint
-              - Sid: InvokeSummarizer
-                Effect: Allow
-                Action:
-                  - sagemaker:InvokeEndpoint
-                Resource: !Ref SummarizationSagemakerEndpointArn
-              - !Ref AWS::NoValue
-            - !If
-              - HasCustomSummarizerLambda
-              - Sid: SummarizationLambda
-                Effect: Allow
-                Action:
-                  - lambda:InvokeFunction
-                Resource: !Ref SummarizationLambdaFunctionArn
-              - !Ref AWS::NoValue
+              Resource: !Ref SummarizationLambdaFunctionArn
+            - !Ref "AWS::NoValue"
 
   SFAwaitNotification:
-    Type: AWS::Serverless::Function
+    Type: "AWS::Serverless::Function"
     Properties:
-      CodeUri: ../../src/pca
+      CodeUri:  ../../src/pca
       Handler: pca-aws-sf-wait-for-transcribe-notification.lambda_handler
       Environment:
         Variables:
           TableName: !Ref TableName
-          STACK_NAME: !Ref ParentStackName
       Policies:
         - arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess
 
   SFTranscribeFailed:
-    Type: AWS::Serverless::Function
+    Type: "AWS::Serverless::Function"
     Properties:
-      CodeUri: ../../src/pca
+      CodeUri:  ../../src/pca
       Handler: pca-aws-sf-transcribe-failed.lambda_handler
       Environment:
         Variables:
           RoleArn: !GetAtt TranscribeRole.Arn
-          STACK_NAME: !Ref ParentStackName
       Policies:
         - arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess
         - arn:aws:iam::aws:policy/AmazonS3FullAccess
 
   LogGroup:
     Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Join
-        - ''
-        - - '/aws/vendedlogs/'
-          - !Sub "{{resolve:ssm:${ParentStackName}-StepFunctionName}}"
+    Properties: 
+      LogGroupName: !Sub '/aws/vendedlogs/${StepFunctionName}'
       RetentionInDays: 90
 
   Role:
-    Type: AWS::IAM::Role
+    Type: "AWS::IAM::Role"
     Properties:
       AssumeRolePolicyDocument:
         Statement:
@@ -425,22 +390,22 @@ Resources:
         - PolicyName: CloudWatchLogs
           PolicyDocument:
             Statement:
-              - Effect: Allow
-                Action:
-                  - logs:CreateLogDelivery
-                  - logs:GetLogDelivery
-                  - logs:UpdateLogDelivery
-                  - logs:DeleteLogDelivery
-                  - logs:ListLogDeliveries
-                  - logs:PutResourcePolicy
-                  - logs:DescribeResourcePolicies
-                  - logs:DescribeLogGroups
-                Resource: '*'
+            - Effect: Allow
+              Action:
+              - logs:CreateLogDelivery
+              - logs:GetLogDelivery
+              - logs:UpdateLogDelivery
+              - logs:DeleteLogDelivery
+              - logs:ListLogDeliveries
+              - logs:PutResourcePolicy
+              - logs:DescribeResourcePolicies
+              - logs:DescribeLogGroups
+              Resource: "*"
 
   StateMachine:
-    Type: AWS::StepFunctions::StateMachine
+    Type: "AWS::StepFunctions::StateMachine"
     Properties:
-      StateMachineName: !Sub "{{resolve:ssm:${ParentStackName}-StepFunctionName}}"
+      StateMachineName: !Ref StepFunctionName
       DefinitionS3Location: ./pca-definition.json
       DefinitionSubstitutions:
         SFExtractJobHeaderArn: !GetAtt SFExtractJobHeader.Arn

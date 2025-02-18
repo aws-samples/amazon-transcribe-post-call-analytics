@@ -5,13 +5,10 @@ Description: Amazon Transcribe Post Call Analytics - PCA Server - FFMPEG Downloa
 Transform: AWS::Serverless-2016-10-31
 
 Parameters:
-  ParentStackName:
-    Type: String
-    Description: Name of the parent stack
 
-#  SupportFilesBucketName:
-#    Type: AWS::SSM::Parameter::Value<String>
-#    Default: SupportFilesBucketName
+  SupportFilesBucketName:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: SupportFilesBucketName
     
   FFMPEGZipName:
     Type: String
@@ -45,7 +42,7 @@ Resources:
                 Resource: 
                   !Sub
                     - 'arn:aws:s3:::${bucket}*'
-                    - bucket: !Sub '{{resolve:ssm:${ParentStackName}-SupportFilesBucketName}}'
+                    - bucket: !Ref SupportFilesBucketName
                 Action:
                   - 's3:PutObject'
           PolicyName: ffmpegZipFunctionS3Policy
@@ -61,7 +58,7 @@ Resources:
       Environment:
         Variables:
           FFMPEG_DOWNLOAD_URL: !Ref ffmpegDownloadUrl
-          SUPPORT_FILES_BUCKET: !Sub '{{resolve:ssm:${ParentStackName}-SupportFilesBucketName}}'
+          SUPPORT_FILES_BUCKET: !Ref SupportFilesBucketName
           FFMPEG_ZIP_NAME: !Ref FFMPEGZipName
       Code:
         ZipFile: |
