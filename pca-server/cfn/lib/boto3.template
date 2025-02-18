@@ -5,13 +5,10 @@ Description: Amazon Transcribe Post Call Analytics - PCA Server - Boto3 Layer Zi
 Transform: AWS::Serverless-2016-10-31
 
 Parameters:
-  ParentStackName:
-    Type: String
-    Description: Name of the parent stack
 
-#  SupportFilesBucketName:
-#    Type: AWS::SSM::Parameter::Value<String>
-#    Default: SupportFilesBucketName
+  SupportFilesBucketName:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: SupportFilesBucketName
 
   Boto3ZipName:
     Type: String
@@ -39,7 +36,7 @@ Resources:
                 Resource: 
                   !Sub
                     - 'arn:aws:s3:::${bucket}*'
-                    - bucket: !Sub '{{resolve:ssm:${ParentStackName}-SupportFilesBucketName}}'
+                    - bucket: !Ref SupportFilesBucketName
                 Action:
                   - 's3:PutObject'
           PolicyName: boto3ZipFunctionS3Policy
@@ -54,7 +51,7 @@ Resources:
       MemorySize: 512
       Environment:
         Variables:
-          SUPPORT_FILES_BUCKET: !Sub '{{resolve:ssm:${ParentStackName}-SupportFilesBucketName}}'
+          SUPPORT_FILES_BUCKET: !Ref SupportFilesBucketName
           BOTO3_ZIP_NAME: !Ref Boto3ZipName
       Code:
         ZipFile: |
@@ -127,7 +124,7 @@ Resources:
     DependsOn: boto3Zip
     Properties:
       Content:
-        S3Bucket: !Sub '{{resolve:ssm:${ParentStackName}-SupportFilesBucketName}}'
+        S3Bucket: !Ref SupportFilesBucketName
         S3Key: !Ref Boto3ZipName
 
 Outputs:

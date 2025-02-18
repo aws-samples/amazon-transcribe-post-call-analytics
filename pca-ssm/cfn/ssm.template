@@ -1,43 +1,46 @@
-AWSTemplateFormatVersion: '2010-09-09'
+AWSTemplateFormatVersion: "2010-09-09"
 
 Description: Amazon Transcribe Post Call Analytics - PCA SSM Parameters
 
 Parameters:
-  StackName:
-    Type: String
-    Description: Name of the parent stack
 
   BulkUploadBucketName:
     Type: String
-    Description: (Optional) Existing bucket where files can be dropped, and a
-      secondary Step Function can be  manually enabled to drip feed them into
-      the system.  Leave blank to automatically create new bucket.
+    Description: >-
+      (Optional) Existing bucket where files can be dropped, and a secondary Step Function can be 
+      manually enabled to drip feed them into the system. 
+      Leave blank to automatically create new bucket.
 
   BulkUploadMaxDripRate:
     Type: String
-    Default: '25'
-    Description: Maximum number of files that the bulk uploader will move to the PCA
-      source bucket in one pass
+    Default: "25"
+    Description: Maximum number of files that the bulk uploader will move to the PCA source bucket in one pass
 
   BulkUploadMaxTranscribeJobs:
     Type: String
-    Default: '50'
-    Description: Number of concurrent Transcribe jobs (executing or queuing) where
-      bulk upload will pause
+    Default: "50"
+    Description: Number of concurrent Transcribe jobs (executing or queuing) where bulk upload will pause
 
   CallSummarization:
-    Default: BEDROCK
+    Default: 'BEDROCK'
     Type: String
     AllowedValues:
-      - DISABLED
-      - BEDROCK+TCA
-      - BEDROCK
-      - TCA-ONLY
-      - SAGEMAKER
-      - ANTHROPIC
-      - LAMBDA
-    Description: |
-      Set to enable call summarization by a Large Language Model.  The BEDROCK+TCA will use Transcribe Call Analytics for summarization and Bedrock for other analytics.  The BEDROCK option requires you to choose one of the supported model IDs from the provided list (SummarizationBedrockModelId). You must also accept access to that model in the Amazon Bedrock > Model Access console. The TCA-ONLY option will not use Bedrock, but will only use Transcribe Call Analytics summarization. The SAGEMAKER option uses a SageMaker endpoint with the pretrained bart-large-cnn-samsum model with a ml.m5.xlarge instance type.   The LAMBDA option requires you to provide a function ARN below.  The ANTHROPIC option is a third party service, and you must enter your Anthropic API key in the Third Party LLM API Key section.
+      - 'DISABLED'
+      - 'BEDROCK+TCA'
+      - 'BEDROCK'
+      - 'TCA-ONLY'
+      - 'SAGEMAKER'
+      - 'ANTHROPIC'
+      - 'LAMBDA'
+    Description: >
+      Set to enable call summarization by a Large Language Model. 
+      The BEDROCK+TCA will use Transcribe Call Analytics for summarization and Bedrock for other analytics. 
+      The BEDROCK option requires you to choose one of the supported model IDs from the provided list (SummarizationBedrockModelId).
+      You must also accept access to that model in the Amazon Bedrock > Model Access console.
+      The TCA-ONLY option will not use Bedrock, but will only use Transcribe Call Analytics summarization.
+      The SAGEMAKER option uses a SageMaker endpoint with the pretrained bart-large-cnn-samsum model with a ml.m5.xlarge instance type.  
+      The LAMBDA option requires you to provide a function ARN below. 
+      The ANTHROPIC option is a third party service, and you must enter your Anthropic API key in the Third Party LLM API Key section. 
 
   ComprehendLanguages:
     Type: String
@@ -47,47 +50,37 @@ Parameters:
   ContentRedactionLanguages:
     Type: String
     Default: en-US
-    Description: Languages supported by Transcribe's Content Redaction feature,
-      separated by " | "
+    Description: Languages supported by Transcribe's Content Redaction feature, separated by " | "
 
   ConversationLocation:
     Type: String
     Default: America/New_York
-    Description: Name of the timezone location for the call source - this is the TZ
-      database name from
-      https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+    Description: Name of the timezone location for the call source - this is the TZ database name from https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
 
   EntityRecognizerEndpoint:
     Type: String
     Default: undefined
-    Description: Name of the custom entity recognizer for Amazon Comprehend (not
-      including language suffix, e.g. -en). If one cannot be found then simple
-      entity string matching is attempted instead
+    Description: Name of the custom entity recognizer for Amazon Comprehend (not including language suffix, e.g. -en). If one cannot be found then simple entity string matching is attempted instead
 
   EntityStringMap:
     Type: String
     Default: sample-entities.csv
-    Description: Basename of a CSV file containing item/Entity maps for when we
-      don't have data for Comprehend Custom Entities (not including language
-      suffix, e.g. -en)
+    Description: Basename of a CSV file containing item/Entity maps for when we don't have data for Comprehend Custom Entities (not including language suffix, e.g. -en)
 
   EntityThreshold:
     Type: String
-    Default: '0.5'
+    Default: "0.5"
     Description: Confidence threshold where we accept the custom entity detection result
 
   EntityTypes:
     Type: String
-    Default: PERSON | LOCATION | ORGANIZATION | COMMERCIAL_ITEM | EVENT | DATE |
-      QUANTITY | TITLE
-    Description: Entity types supported by Comprehend's standard entity detection,
-      separated by " | "
+    Default: PERSON | LOCATION | ORGANIZATION | COMMERCIAL_ITEM | EVENT | DATE | QUANTITY | TITLE
+    Description: Entity types supported by Comprehend's standard entity detection, separated by " | "
 
   InputBucketAudioPlayback:
     Type: String
     Default: playbackAudio
-    Description: Folder that holds the audio files to playback in the browser when
-      original audio cannot be used
+    Description: Folder that holds the audio files to playback in the browser when original audio cannot be used
 
   InputBucketFailedTranscriptions:
     Type: String
@@ -96,8 +89,9 @@ Parameters:
 
   InputBucketName:
     Type: String
-    Description: (Optional) Existing bucket holding all audio files for the
-      system.  Leave blank to automatically create new bucket.
+    Description: >-
+      (Optional) Existing bucket holding all audio files for the system. 
+      Leave blank to automatically create new bucket.
 
   InputBucketRawAudio:
     Type: String
@@ -107,37 +101,36 @@ Parameters:
   InputBucketOrigTranscripts:
     Type: String
     Default: originalTranscripts
-    Description: Folder that holds Transcripts from other applications (e.g. Live
-      Call Analytics) that are to be processed as if PCA had processed that
-      audio
+    Description: >-
+      Folder that holds Transcripts from other applications (e.g. Live Call Analytics) that are to be
+      processed as if PCA had processed that audio
 
   MaxSpeakers:
     Type: String
-    Default: '2'
+    Default: "2"
     Description: Maximum number of speakers that are expected on a call
 
   MinSentimentNegative:
     Type: String
-    Default: '2.0'
-    Description: Minimum sentiment level required to declare a phrase as having
-      negative sentiment, in the range 0.0-5.0
+    Default: "2.0"
+    Description: Minimum sentiment level required to declare a phrase as having negative sentiment, in the range 0.0-5.0
 
   MinSentimentPositive:
     Type: String
-    Default: '2.0'
-    Description: Minimum sentiment level required to declare a phrase as having
-      positive sentiment, in the range 0.0-5.0
+    Default: "2.0"
+    Description: Minimum sentiment level required to declare a phrase as having positive sentiment, in the range 0.0-5.0
 
   OutputBucketName:
     Type: String
-    Description: (Optional) Existing bucket where Transcribe output files are
-      delivered.  Leave blank to automatically create new bucket.
+    Description: >-
+      (Optional) Existing bucket where Transcribe output files are delivered. 
+      Leave blank to automatically create new bucket.
 
   OutputBucketTranscribeResults:
     Type: String
     Default: transcribeResults
     Description: Folder within the output S3 bucket where Transcribe results are written
-
+    
   OutputBucketParsedResults:
     Type: String
     Default: parsedFiles
@@ -146,49 +139,49 @@ Parameters:
   SpeakerNames:
     Type: String
     Default: Caller | Agent
-    Description: Tags used for speaker names in transcripts, in channel/speaker
-      order, separated by " | ". For Call Analytics the name Agent must exist in
-      either the first or second posision
+    Description: >-
+        Tags used for speaker names in transcripts, in channel/speaker order, separated by " | ".
+        For Call Analytics the name Agent must exist in either the first or second posision
 
   SpeakerSeparationType:
     Type: String
     Default: channel
-    Description: Separation mode for speakers - must be speaker (mono) channel
-      (stereo/auto-select)
+    Description: Separation mode for speakers - must be speaker (mono) channel (stereo/auto-select)
 
   StepFunctionName:
     Type: String
-    #Default: PostCallAnalyticsWorkflow
+    Default: PostCallAnalyticsWorkflow
     Description: Name of Step Functions workflow that orchestrates this process
 
   BulkUploadStepFunctionName:
     Type: String
-    #Default: BulkUploadWorkflow
+    Default: BulkUploadWorkflow
     Description: Name of Step Functions workflow that orchestrates the bulk import process
 
   SupportFilesBucketName:
     Type: String
-    Description: (Optional) Existing bucket that hold supporting files, such as
-      the  file-based entity recognition mapping files.  Leave blank to
-      automatically create new bucket.
+    Description: >-
+      (Optional) Existing bucket that hold supporting files, such as the 
+      file-based entity recognition mapping files. 
+      Leave blank to automatically create new bucket.
 
   TranscribeApiMode:
     Type: String
     Default: analytics
-    Description: Specifies which Transcribe API to use for new jobs - must be
-      standard or analytics
+    Description: Specifies which Transcribe API to use for new jobs - must be standard or analytics
 
   TelephonyCTRType:
     Type: String
     Default: none
-    Description: Type of telephony system that will deliver Contact Trace Record
-      files along with the audio recordings
+    Description: Type of telephony system that will deliver Contact Trace Record files along with the audio recordings
 
   TelephonyCTRFileSuffix:
     Type: String
     Default: none
-    Description: |
-      File number suffixes for the CTR file(s) associated with the chosen telephony type, separated by " | ". For Genesys, this needs two entries: one for the conversation CTR file, and one for the call-specific file. Other telephony systems may need fewer or additional entries, please consult the documentation.
+    Description: >
+      File number suffixes for the CTR file(s) associated with the chosen telephony type, separated by " | ".
+      For Genesys, this needs two entries: one for the conversation CTR file, and one for the call-specific file.
+      Other telephony systems may need fewer or additional entries, please consult the documentation.
 
   CallRedactionTranscript:
     Type: String
@@ -198,472 +191,486 @@ Parameters:
   CallRedactionAudio:
     Type: String
     Default: true
-    Description: When transcript redaction is enabled in Call Analytics, only allow
-      playback of the redacted audio
+    Description: When transcript redaction is enabled in Call Analytics, only allow playback of the redacted audio
 
   TranscribeLanguages:
     Type: String
     Default: en-US
-    Description: Language to be used for Transcription - multiple entries separated
-      by " | " will trigger Language Detection
+    Description: Language to be used for Transcription - multiple entries separated by " | " will trigger Language Detection
 
   VocabFilterMode:
     Type: String
     Default: mask
-    Description: The mode to use for vocabulary filtering - must be one of mask or
-      remove (tag is not supported)
+    Description: The mode to use for vocabulary filtering - must be one of mask or remove (tag is not supported)
 
   VocabFilterName:
     Type: String
     Default: undefined
-    Description: Name of the vocabulary filter to use for Transcribe (not including
-      language suffix, e.g. -en)
+    Description: Name of the vocabulary filter to use for Transcribe (not including language suffix, e.g. -en)
 
   VocabularyName:
     Type: String
     Default: undefined
-    Description: Name of the custom vocabulary to use for Transcribe (not including
-      language suffix, e.g. -en-US)
+    Description: Name of the custom vocabulary to use for Transcribe (not including language suffix, e.g. -en-US)
 
   CustomLangModelName:
     Type: String
     Default: undefined
-    Description: Name of the custom language model to use for Transcribe (omit the
-      language suffix, e.g. -en-US)
+    Description: Name of the custom language model to use for Transcribe (omit the language suffix, e.g. -en-US)
 
   FilenameDatetimeRegex:
     Type: String
-    Default: (\d{4})-(\d{2})-(\d{2})T(\d{2})-(\d{2})-(\d{2})
-    Description: |
-      Regular Expression (regex) used to parse call Date/Time from audio filenames.  Each datetime field (year, month, etc.) must be matched using a separate parenthesized group in the regex.  Example: the regex '(\d{4})-(\d{2})-(\d{2})T(\d{2})-(\d{2})-(\d{2})' parses the filename: CallAudioFile-2021-12-01T07-55-51.wav into a value list: [2021, 12, 01, 07, 55, 51] The next parameter, FilenameDatetimeFieldMap, maps the values to datetime field codes. If the filename doesn't match the regex pattern, the current time is used as the call timestamp.
+    Default: '(\d{4})-(\d{2})-(\d{2})T(\d{2})-(\d{2})-(\d{2})'
+    Description: >
+      Regular Expression (regex) used to parse call Date/Time from audio filenames. 
+      Each datetime field (year, month, etc.) must be matched using a separate parenthesized group in the regex. 
+      Example: the regex '(\d{4})-(\d{2})-(\d{2})T(\d{2})-(\d{2})-(\d{2})' parses
+      the filename: CallAudioFile-2021-12-01T07-55-51.wav into a value list: [2021, 12, 01, 07, 55, 51]
+      The next parameter, FilenameDatetimeFieldMap, maps the values to datetime field codes.
+      If the filename doesn't match the regex pattern, the current time is used as the call timestamp.
 
   FilenameDatetimeFieldMap:
     Type: String
     Default: '%Y %m %d %H %M %S'
-    Description: |
-      Space separated ordered sequence of time field codes as used by Python's datetime.strptime() function.  Each field code refers to a corresponding value parsed by the regex parameter filenameTimestampRegex.  Example: the mapping '%Y %m %d %H %M %S' assembles the regex output values [2021, 12, 01, 07, 55, 51] into the full datetime: '2021-12-01 07:55:51'.   If the field map doesn't match the value list parsed by the regex, then the current time is used as the call timestamp.
+    Description: >
+      Space separated ordered sequence of time field codes as used by Python's datetime.strptime() function. 
+      Each field code refers to a corresponding value parsed by the regex parameter filenameTimestampRegex. 
+      Example: the mapping '%Y %m %d %H %M %S' assembles the regex output values [2021, 12, 01, 07, 55, 51]
+      into the full datetime: '2021-12-01 07:55:51'.  
+      If the field map doesn't match the value list parsed by the regex, then the current time is used as the call timestamp.
 
   FilenameGUIDRegex:
     Type: String
-    Default: _GUID_(.*?)_
-    Description: |
-      Regular Expression (regex) used to parse call GUID from audio filenames.  The GUID value must be matched using a parenthesized group in the regex.  Example: the regex '_GUID_(.*?)_' parses the filename: AutoRepairs1_CUST_12345_GUID_2a602c1a-4ca3-4d37-a933-444d575c0222_AGENT_BobS_DATETIME_07.55.51.067-09-16-2021.wav  to extract the GUID value '2a602c1a-4ca3-4d37-a933-444d575c0222'.
+    Default: '_GUID_(.*?)_'
+    Description: >
+      Regular Expression (regex) used to parse call GUID from audio filenames. 
+      The GUID value must be matched using a parenthesized group in the regex. 
+      Example: the regex '_GUID_(.*?)_' parses
+      the filename: AutoRepairs1_CUST_12345_GUID_2a602c1a-4ca3-4d37-a933-444d575c0222_AGENT_BobS_DATETIME_07.55.51.067-09-16-2021.wav 
+      to extract the GUID value '2a602c1a-4ca3-4d37-a933-444d575c0222'.
 
   FilenameAgentRegex:
     Type: String
-    Default: _AGENT_(.*?)_
-    Description: |
-      Regular Expression (regex) used to parse call AGENT from audio filenames.  The AGENT value must be matched using a parenthesized group in the regex.  Example: the regex '_AGENT_(.*?)_' parses the filename: AutoRepairs1_CUST_12345_GUID_2a602c1a-4ca3-4d37-a933-444d575c0222_AGENT_BobS_DATETIME_07.55.51.067-09-16-2021.wav  to extract the AGENT value 'BobS'.
-
+    Default: '_AGENT_(.*?)_'
+    Description: >
+      Regular Expression (regex) used to parse call AGENT from audio filenames. 
+      The AGENT value must be matched using a parenthesized group in the regex. 
+      Example: the regex '_AGENT_(.*?)_' parses
+      the filename: AutoRepairs1_CUST_12345_GUID_2a602c1a-4ca3-4d37-a933-444d575c0222_AGENT_BobS_DATETIME_07.55.51.067-09-16-2021.wav 
+      to extract the AGENT value 'BobS'.  
+      
   FilenameCustRegex:
     Type: String
-    Default: _CUST_(.*?)_
-    Description: |
-      Regular Expression (regex) used to parse Customer from audio filenames.  The customer id value must be matched using one or more parenthesized groups in the regex.  Example: the regex '_CUST_(.*?)_' parses the filename: AutoRepairs1_CUST_12345_GUID_2a602c1a-4ca3-4d37-a933-444d575c0222_AGENT_BobS_DATETIME_07.55.51.067-09-16-2021.wav  to extract the Customer value '12345'.
+    Default: '_CUST_(.*?)_'
+    Description: >
+      Regular Expression (regex) used to parse Customer from audio filenames. 
+      The customer id value must be matched using one or more parenthesized groups in the regex. 
+      Example: the regex '_CUST_(.*?)_' parses
+      the filename: AutoRepairs1_CUST_12345_GUID_2a602c1a-4ca3-4d37-a933-444d575c0222_AGENT_BobS_DATETIME_07.55.51.067-09-16-2021.wav 
+      to extract the Customer value '12345'.
 
   KendraIndexId:
     Type: String
-    Description: Kendra Index ID, or empty string if call transcription indexing is
-      not enabled
-
+    Description: Kendra Index ID, or empty string if call transcription indexing is not enabled 
+    
   #WebUri:
   #  Type: String
   #  Description: PCA Web Application URI
-
+    
   DatabaseName:
     Type: String
-    Description: Glue catalog database name used to contain tables/views for SQL
-      integration.
-
+    Default: 'pca'
+    Description: Glue catalog database name used to contain tables/views for SQL integration.
+      
 Resources:
   BulkUploadBucketParameter:
-    Type: AWS::SSM::Parameter
+    Type: "AWS::SSM::Parameter"
     Properties:
-      Name: !Sub ${StackName}-BulkUploadBucket
+      Name: BulkUploadBucket
       Type: String
-      Description: Bucket where files can be dropped, and a secondary Step Function
-        can be manually enabled to drip feed them into the system
+      Description: Bucket where files can be dropped, and a secondary Step Function can be manually enabled to drip feed them into the system
       Value: !Ref BulkUploadBucketName
 
   BulkUploadMaxDripRateParameter:
-    Type: AWS::SSM::Parameter
+    Type: "AWS::SSM::Parameter"
     Properties:
-      Name: !Sub ${StackName}-BulkUploadMaxDripRate
+      Name: BulkUploadMaxDripRate
       Type: String
-      Description: Maximum number of files that the bulk uploader will move to the PCA
-        source bucket in one pass
+      Description: Maximum number of files that the bulk uploader will move to the PCA source bucket in one pass
       Value: !Ref BulkUploadMaxDripRate
 
   BulkUploadMaxTranscribeJobsParameter:
-    Type: AWS::SSM::Parameter
+    Type: "AWS::SSM::Parameter"
     Properties:
-      Name: !Sub ${StackName}-BulkUploadMaxTranscribeJobs
+      Name: BulkUploadMaxTranscribeJobs
       Type: String
-      Description: Number of concurrent Transcribe jobs (executing or queuing) where
-        bulk upload will pause
+      Description: Number of concurrent Transcribe jobs (executing or queuing) where bulk upload will pause
       Value: !Ref BulkUploadMaxTranscribeJobs
 
   CallSummarizationParameter:
-    Type: AWS::SSM::Parameter
+    Type: "AWS::SSM::Parameter"
     Properties:
-      Name: !Sub ${StackName}-CallSummarization
+      Name: CallSummarization
       Type: String
-      Description: 'What type of call summarization to use. '
+      Description: >-
+        What type of call summarization to use. 
       Value: !Ref CallSummarization
 
   ComprehendLanguagesParameter:
-    Type: AWS::SSM::Parameter
+    Type: "AWS::SSM::Parameter"
     Properties:
-      Name: !Sub ${StackName}-ComprehendLanguages
+      Name: ComprehendLanguages
       Type: String
       Description: Languages supported by Comprehend's standard calls, separated by " | "
       Value: !Ref ComprehendLanguages
 
   ContentRedactionLanguagesParameter:
-    Type: AWS::SSM::Parameter
+    Type: "AWS::SSM::Parameter"
     Properties:
-      Name: !Sub ${StackName}-ContentRedactionLanguages
+      Name: ContentRedactionLanguages
       Type: String
-      Description: Languages supported by Transcribe's Content Redaction feature,
-        separated by " | "
+      Description: Languages supported by Transcribe's Content Redaction feature, separated by " | "
       Value: !Ref ContentRedactionLanguages
 
   ConversationLocationParameter:
-    Type: AWS::SSM::Parameter
+    Type: "AWS::SSM::Parameter"
     Properties:
-      Name: !Sub ${StackName}-ConversationLocation
+      Name: ConversationLocation
       Type: String
-      Description: Name of the timezone location for the call source - this is the TZ
-        database name from
-        https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+      Description: Name of the timezone location for the call source - this is the TZ database name from https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
       Value: !Ref ConversationLocation
 
   EntityRecognizerEndpointParameter:
-    Type: AWS::SSM::Parameter
+    Type: "AWS::SSM::Parameter"
     Properties:
-      Name: !Sub ${StackName}-EntityRecognizerEndpoint
+      Name: EntityRecognizerEndpoint
       Type: String
-      Description: Name of the custom entity recognizer for Amazon Comprehend (not
-        including language suffix, e.g. -en). If one cannot be found then simple
-        entity string matching is attempted instead
+      Description: Name of the custom entity recognizer for Amazon Comprehend (not including language suffix, e.g. -en). If one cannot be found then simple entity string matching is attempted instead
       Value: !Ref EntityRecognizerEndpoint
 
   EntityStringMapParameter:
-    Type: AWS::SSM::Parameter
+    Type: "AWS::SSM::Parameter"
     Properties:
-      Name: !Sub ${StackName}-EntityStringMap
+      Name: EntityStringMap
       Type: String
-      Description: Basename of a CSV file containing item/Entity maps for when we
-        don't have data for Comprehend Custom Entities (not including language
-        suffix, e.g. -en)
+      Description: Basename of a CSV file containing item/Entity maps for when we don't have data for Comprehend Custom Entities (not including language suffix, e.g. -en)
       Value: !Ref EntityStringMap
 
   EntityThresholdParameter:
-    Type: AWS::SSM::Parameter
+    Type: "AWS::SSM::Parameter"
     Properties:
-      Name: !Sub ${StackName}-EntityThreshold
+      Name: EntityThreshold
       Type: String
       Description: Confidence threshold where we accept the custom entity detection result
       Value: !Ref EntityThreshold
 
   EntityTypesParameter:
-    Type: AWS::SSM::Parameter
+    Type: "AWS::SSM::Parameter"
     Properties:
-      Name: !Sub ${StackName}-EntityTypes
+      Name: EntityTypes
       Type: String
-      Description: Entity types supported by Comprehend's standard entity detection,
-        separated by " | "
+      Description: Entity types supported by Comprehend's standard entity detection, separated by " | "
       Value: !Ref EntityTypes
 
   InputBucketAudioPlaybackParameter:
-    Type: AWS::SSM::Parameter
+    Type: "AWS::SSM::Parameter"
     Properties:
-      Name: !Sub ${StackName}-InputBucketAudioPlayback
+      Name: InputBucketAudioPlayback
       Type: String
-      Description: Folder that holds the audio to playback in the browser when
-        original audio cannot be used
+      Description: Folder that holds the audio to playback in the browser when original audio cannot be used
       Value: !Ref InputBucketAudioPlayback
 
   InputBucketFailedTranscriptionsParameter:
-    Type: AWS::SSM::Parameter
+    Type: "AWS::SSM::Parameter"
     Properties:
-      Name: !Sub ${StackName}-InputBucketFailedTranscriptions
+      Name: InputBucketFailedTranscriptions
       Type: String
       Description: Folder that holds audio files that for some reason failed transcription
       Value: !Ref InputBucketFailedTranscriptions
 
   InputBucketNameParameter:
-    Type: AWS::SSM::Parameter
+    Type: "AWS::SSM::Parameter"
     Properties:
-      Name: !Sub ${StackName}-InputBucketName
+      Name: InputBucketName
       Type: String
       Description: Bucket where where audio files are delivered
       Value: !Ref InputBucketName
 
   InputBucketRawAudioParameter:
-    Type: AWS::SSM::Parameter
+    Type: "AWS::SSM::Parameter"
     Properties:
-      Name: !Sub ${StackName}-InputBucketRawAudio
+      Name: InputBucketRawAudio
       Type: String
       Description: Folder that holds the original call audio to be ingested
       Value: !Ref InputBucketRawAudio
 
   InputBucketOrigTranscriptsParameter:
-    Type: AWS::SSM::Parameter
+    Type: "AWS::SSM::Parameter"
     Properties:
-      Name: !Sub ${StackName}-InputBucketOrigTranscripts
+      Name: InputBucketOrigTranscripts
       Type: String
-      Description: |
-        Folder that holds Transcripts from other applications (e.g. Live Call Analytics) that are to be processed as if PCA had processed that audio
+      Description: >
+        Folder that holds Transcripts from other applications (e.g. Live Call Analytics) that are to be
+        processed as if PCA had processed that audio
       Value: !Ref InputBucketOrigTranscripts
 
   MaxSpeakersParameter:
-    Type: AWS::SSM::Parameter
+    Type: "AWS::SSM::Parameter"
     Properties:
-      Name: !Sub ${StackName}-MaxSpeakers
+      Name: MaxSpeakers
       Type: String
       Description: Maximum number of speakers that are expected on a call
       Value: !Ref MaxSpeakers
 
   MinSentimentNegativeParameter:
-    Type: AWS::SSM::Parameter
+    Type: "AWS::SSM::Parameter"
     Properties:
-      Name: !Sub ${StackName}-MinSentimentNegative
+      Name: MinSentimentNegative
       Type: String
-      Description: Minimum sentiment level required to declare a phrase as having
-        negative sentiment
+      Description: Minimum sentiment level required to declare a phrase as having negative sentiment
       Value: !Ref MinSentimentNegative
 
   MinSentimentPositiveParameter:
-    Type: AWS::SSM::Parameter
+    Type: "AWS::SSM::Parameter"
     Properties:
-      Name: !Sub ${StackName}-MinSentimentPositive
+      Name: MinSentimentPositive
       Type: String
-      Description: Minimum sentiment level required to declare a phrase as having
-        positive sentiment
+      Description: Minimum sentiment level required to declare a phrase as having positive sentiment
       Value: !Ref MinSentimentPositive
 
   OutputBucketNameParameter:
-    Type: AWS::SSM::Parameter
+    Type: "AWS::SSM::Parameter"
     Properties:
-      Name: !Sub ${StackName}-OutputBucketName
+      Name: OutputBucketName
       Type: String
       Description: Bucket where Transcribe output files are delivered
       Value: !Ref OutputBucketName
 
   OutputBucketTranscribeResultsParameter:
-    Type: AWS::SSM::Parameter
+    Type: "AWS::SSM::Parameter"
     Properties:
-      Name: !Sub ${StackName}-OutputBucketTranscribeResults
+      Name: OutputBucketTranscribeResults
       Type: String
       Description: Folder within the output S3 bucket where Transcribe results are written
-      Value: !Ref OutputBucketTranscribeResults
+      Value: !Ref OutputBucketTranscribeResults  
 
   OutputBucketParsedResultsParameter:
-    Type: AWS::SSM::Parameter
+    Type: "AWS::SSM::Parameter"
     Properties:
-      Name: !Sub ${StackName}-OutputBucketParsedResults
+      Name: OutputBucketParsedResults
       Type: String
       Description: Folder within the output S3 bucket where parsed results are written
       Value: !Ref OutputBucketParsedResults
 
   SpeakerNamesParameter:
-    Type: AWS::SSM::Parameter
+    Type: "AWS::SSM::Parameter"
     Properties:
-      Name: !Sub ${StackName}-SpeakerNames
+      Name: SpeakerNames
       Type: String
       Description: Default tags used for speaker names, separated by " | "
       Value: !Ref SpeakerNames
 
   SpeakerSeparationTypeParameter:
-    Type: AWS::SSM::Parameter
+    Type: "AWS::SSM::Parameter"
     Properties:
-      Name: !Sub ${StackName}-SpeakerSeparationType
+      Name: SpeakerSeparationType
       Type: String
-      Description: Separation mode for speakers, either explicitly Speaker or Channel,
-        or Auto where audio stereo=>Channel and mono=>Speaker
+      Description: Separation mode for speakers, either explicitly Speaker or Channel, or Auto where audio stereo=>Channel and mono=>Speaker
       Value: !Ref SpeakerSeparationType
 
   StepFunctionNameParameter:
-    Type: AWS::SSM::Parameter
+    Type: "AWS::SSM::Parameter"
     Properties:
-      Name: !Sub ${StackName}-StepFunctionName
+      Name: StepFunctionName
       Type: String
       Description: Name of Step Functions workflow that orchestrates this process
-      Value: !Sub ${StackName}-${StepFunctionName}
+      Value: !Ref StepFunctionName
 
   BulkUploadStepFunctionNameParameter:
-    Type: AWS::SSM::Parameter
+    Type: "AWS::SSM::Parameter"
     Properties:
-      Name: !Sub ${StackName}-BulkUploadStepFunctionName
+      Name: BulkUploadStepFunctionName
       Type: String
       Description: Name of Step Functions workflow that orchestrates the bulk import process
-      Value: !Sub ${StackName}-${BulkUploadStepFunctionName}
-
+      Value: !Ref BulkUploadStepFunctionName
+      
   SupportFilesBucketNameParameter:
-    Type: AWS::SSM::Parameter
+    Type: "AWS::SSM::Parameter"
     Properties:
-      Name: !Sub ${StackName}-SupportFilesBucketName
+      Name: SupportFilesBucketName
       Type: String
-      Description: Bucket that hold supporting files, such as the file-based entity
-        recognition mapping files
+      Description: Bucket that hold supporting files, such as the file-based entity recognition mapping files
       Value: !Ref SupportFilesBucketName
 
   TranscribeApiModeParameter:
-    Type: AWS::SSM::Parameter
+    Type: "AWS::SSM::Parameter"
     Properties:
-      Name: !Sub ${StackName}-TranscribeApiMode
+      Name: TranscribeApiMode
       Type: String
-      Description: Specifies which Transcribe API to use for new jobs - must be
-        standard or analytics
+      Description: Specifies which Transcribe API to use for new jobs - must be standard or analytics
       Value: !Ref TranscribeApiMode
 
   TelephonyCTRTypeParameter:
-    Type: AWS::SSM::Parameter
+    Type: "AWS::SSM::Parameter"
     Properties:
-      Name: !Sub ${StackName}-TelephonyCTRType
+      Name: TelephonyCTRType
       Type: String
-      Description: Type of telephony system that will deliver Contact Trace Record
-        files along with the audio recordings
+      Description: Type of telephony system that will deliver Contact Trace Record files along with the audio recordings
       Value: !Ref TelephonyCTRType
 
   TelephonyCTRFileSuffixParameter:
-    Type: AWS::SSM::Parameter
+    Type: "AWS::SSM::Parameter"
     Properties:
-      Name: !Sub ${StackName}-TelephonyCTRFileSuffix
+      Name: TelephonyCTRFileSuffix
       Type: String
-      Description: |
-        File name suffixes for the CTR file(s) associated with the chosen telephony type, separated by " | ". For Genesys, this needs two entries: one for the conversation CTR file, and one for the call-specific file. Other telephony systems may need fewer or additional entries, please consult the documentation.rdings
+      Description: >
+        File name suffixes for the CTR file(s) associated with the chosen telephony type, separated by " | ".
+        For Genesys, this needs two entries: one for the conversation CTR file, and one for the call-specific file.
+        Other telephony systems may need fewer or additional entries, please consult the documentation.rdings
       Value: !Ref TelephonyCTRFileSuffix
 
   CallRedactionTranscriptParameter:
-    Type: AWS::SSM::Parameter
+    Type: "AWS::SSM::Parameter"
     Properties:
-      Name: !Sub ${StackName}-CallRedactionTranscript
+      Name: CallRedactionTranscript
       Type: String
       Description: Enable or disable Transcribe's redaction feature
       Value: !Ref CallRedactionTranscript
 
   CallRedactionAudioParameter:
-    Type: AWS::SSM::Parameter
+    Type: "AWS::SSM::Parameter"
     Properties:
-      Name: !Sub ${StackName}-CallRedactionAudio
+      Name: CallRedactionAudio
       Type: String
-      Description: When transcript redaction is enabled in Call Analytics, only allow
-        playback of the redacted audio
+      Description: When transcript redaction is enabled in Call Analytics, only allow playback of the redacted audio
       Value: !Ref CallRedactionAudio
 
   TranscribeLanguagesParameter:
-    Type: AWS::SSM::Parameter
+    Type: "AWS::SSM::Parameter"
     Properties:
-      Name: !Sub ${StackName}-TranscribeLanguages
+      Name: TranscribeLanguages
       Type: String
-      Description: Language to be used for Transcription - multiple entries separated
-        by " | " will trigger Language Detection
+      Description: Language to be used for Transcription - multiple entries separated by " | " will trigger Language Detection
       Value: !Ref TranscribeLanguages
 
   VocabFilterModeParameter:
-    Type: AWS::SSM::Parameter
+    Type: "AWS::SSM::Parameter"
     Properties:
-      Name: !Sub ${StackName}-VocabFilterMode
+      Name: VocabFilterMode
       Type: String
-      Description: The mode to use for vocabulary filtering - must be one of mask or
-        remove (tag is not supported)
+      Description: The mode to use for vocabulary filtering - must be one of mask or remove (tag is not supported)
       Value: !Ref VocabFilterMode
 
   VocabFilterNameParameter:
-    Type: AWS::SSM::Parameter
+    Type: "AWS::SSM::Parameter"
     Properties:
-      Name: !Sub ${StackName}-VocabFilterName
+      Name: VocabFilterName
       Type: String
-      Description: Name of the vocabulary filter to use for Transcribe (not including
-        language suffix, e.g. -en-US)
+      Description: Name of the vocabulary filter to use for Transcribe (not including language suffix, e.g. -en-US)
       Value: !Ref VocabFilterName
 
   VocabularyNameParameter:
-    Type: AWS::SSM::Parameter
+    Type: "AWS::SSM::Parameter"
     Properties:
-      Name: !Sub ${StackName}-VocabularyName
+      Name: VocabularyName
       Type: String
-      Description: Name of the custom vocabulary to use for Transcribe (not including
-        language suffix, e.g. -en-US)
+      Description: Name of the custom vocabulary to use for Transcribe (not including language suffix, e.g. -en-US)
       Value: !Ref VocabularyName
 
   CustomLangModelNameParameter:
-    Type: AWS::SSM::Parameter
+    Type: "AWS::SSM::Parameter"
     Properties:
-      Name: !Sub ${StackName}-CustomLangModelName
+      Name: CustomLangModelName
       Type: String
-      Description: Name of the custom language model to use for Transcribe (omit the
-        language suffix, e.g. -en-US)
+      Description: Name of the custom language model to use for Transcribe (omit the language suffix, e.g. -en-US)
       Value: !Ref CustomLangModelName
 
   FilenameDatetimeRegexParameter:
-    Type: AWS::SSM::Parameter
+    Type: "AWS::SSM::Parameter"
     Properties:
-      Name: !Sub ${StackName}-FilenameDatetimeRegex
+      Name: FilenameDatetimeRegex
       Type: String
       Value: !Ref FilenameDatetimeRegex
-      Description: |
-        Regular Expression (regex) used to parse call Date/Time from audio filenames.  Each datetime field (year, month, etc.) must be matched using a separate parenthesized group in the regex.  Example: the regex '(\d{2}).(\d{2}).(\d{2}).(\d{3})-(\d{2})-(\d{2})-(\d{4})' parses the filename: CallAudioFile-09.25.51.067-09-26-2019.wav into a value list: [09, 25, 51, 067, 09, 26, 2019] The next parameter, FilenameDatetimeFieldMap, maps the values to datetime field codes. If the filename doesn't match the regex pattern, the current time is used as the call timestamp.
+      Description: >
+        Regular Expression (regex) used to parse call Date/Time from audio filenames. 
+        Each datetime field (year, month, etc.) must be matched using a separate parenthesized group in the regex. 
+        Example: the regex '(\d{2}).(\d{2}).(\d{2}).(\d{3})-(\d{2})-(\d{2})-(\d{4})' parses
+        the filename: CallAudioFile-09.25.51.067-09-26-2019.wav into a value list: [09, 25, 51, 067, 09, 26, 2019]
+        The next parameter, FilenameDatetimeFieldMap, maps the values to datetime field codes.
+        If the filename doesn't match the regex pattern, the current time is used as the call timestamp.
 
   FilenameDatetimeFieldMapParameter:
-    Type: AWS::SSM::Parameter
+    Type: "AWS::SSM::Parameter"
     Properties:
-      Name: !Sub ${StackName}-FilenameDatetimeFieldMap
+      Name: FilenameDatetimeFieldMap
       Type: String
       Value: !Ref FilenameDatetimeFieldMap
-      Description: |
-        Space separated ordered sequence of time field codes as used by Python's datetime.strptime() function.  Each field code refers to a corresponding value parsed by the regex parameter filenameTimestampRegex.  Example: the mapping '%H %M %S %f %m %d %Y' assembles the regex output values [09, 25, 51, 067, 09, 26, 2019] into the full datetime: '2019-09-26 09:25:51.067000'.   If the field map doesn't match the value list parsed by the regex, then the current time is used as the call timestamp.
+      Description: >
+        Space separated ordered sequence of time field codes as used by Python's datetime.strptime() function. 
+        Each field code refers to a corresponding value parsed by the regex parameter filenameTimestampRegex. 
+        Example: the mapping '%H %M %S %f %m %d %Y' assembles the regex output values [09, 25, 51, 067, 09, 26, 2019]
+        into the full datetime: '2019-09-26 09:25:51.067000'.  
+        If the field map doesn't match the value list parsed by the regex, then the current time is used as the call timestamp.
 
   FilenameGUIDRegexParameter:
-    Type: AWS::SSM::Parameter
+    Type: "AWS::SSM::Parameter"
     Properties:
-      Name: !Sub ${StackName}-FilenameGUIDRegex
+      Name: FilenameGUIDRegex
       Type: String
       Value: !Ref FilenameGUIDRegex
-      Description: |
-        Regular Expression (regex) used to parse call GUID from audio filenames.  The GUID value must be matched using one or more parenthesized groups in the regex.  Example: the regex '_GUID_(.*?)_' parses the filename: AutoRepairs1_CUST_12345_GUID_2a602c1a-4ca3-4d37-a933-444d575c0222_AGENT_BobS_DATETIME_07.55.51.067-09-16-2021.wav  to extract the GUID value '2a602c1a-4ca3-4d37-a933-444d575c0222'.
+      Description: >
+        Regular Expression (regex) used to parse call GUID from audio filenames. 
+        The GUID value must be matched using one or more parenthesized groups in the regex. 
+        Example: the regex '_GUID_(.*?)_' parses
+        the filename: AutoRepairs1_CUST_12345_GUID_2a602c1a-4ca3-4d37-a933-444d575c0222_AGENT_BobS_DATETIME_07.55.51.067-09-16-2021.wav 
+        to extract the GUID value '2a602c1a-4ca3-4d37-a933-444d575c0222'.
 
   FilenameAgentRegexParameter:
-    Type: AWS::SSM::Parameter
+    Type: "AWS::SSM::Parameter"
     Properties:
-      Name: !Sub ${StackName}-FilenameAgentRegex
+      Name: FilenameAgentRegex
       Type: String
       Value: !Ref FilenameAgentRegex
-      Description: |
-        Regular Expression (regex) used to parse call AGENT from audio filenames.  The AGENT value must be matched using one or more parenthesized groups in the regex.  Example: the regex '_AGENT_(.*?)_' parses the filename: AutoRepairs1_CUST_12345_GUID_2a602c1a-4ca3-4d37-a933-444d575c0222_AGENT_BobS_DATETIME_07.55.51.067-09-16-2021.wav  to extract the AGENT value 'BobS'.
+      Description: >
+        Regular Expression (regex) used to parse call AGENT from audio filenames. 
+        The AGENT value must be matched using one or more parenthesized groups in the regex. 
+        Example: the regex '_AGENT_(.*?)_' parses
+        the filename: AutoRepairs1_CUST_12345_GUID_2a602c1a-4ca3-4d37-a933-444d575c0222_AGENT_BobS_DATETIME_07.55.51.067-09-16-2021.wav 
+        to extract the AGENT value 'BobS'.
 
   FilenameCustRegexParameter:
-    Type: AWS::SSM::Parameter
+    Type: "AWS::SSM::Parameter"
     Properties:
-      Name: !Sub ${StackName}-FilenameCustRegex
+      Name: FilenameCustRegex
       Type: String
       Value: !Ref FilenameCustRegex
-      Description: |
-        Regular Expression (regex) used to parse Customer from audio filenames.  The customer id value must be matched using one or more parenthesized groups in the regex.  Example: the regex '_CUST_(.*?)_' parses the filename: AutoRepairs1_CUST_12345_GUID_2a602c1a-4ca3-4d37-a933-444d575c0222_AGENT_BobS_DATETIME_07.55.51.067-09-16-2021.wav  to extract the Customer value '12345'.
+      Description: >
+        Regular Expression (regex) used to parse Customer from audio filenames. 
+        The customer id value must be matched using one or more parenthesized groups in the regex. 
+        Example: the regex '_CUST_(.*?)_' parses
+        the filename: AutoRepairs1_CUST_12345_GUID_2a602c1a-4ca3-4d37-a933-444d575c0222_AGENT_BobS_DATETIME_07.55.51.067-09-16-2021.wav 
+        to extract the Customer value '12345'.
 
   KendraIndexIdParameter:
-    Type: AWS::SSM::Parameter
+    Type: "AWS::SSM::Parameter"
     Properties:
-      Name: !Sub ${StackName}-KendraIndexId
+      Name: KendraIndexId
       Type: String
       Value: !Ref KendraIndexId
-      Description: Kendra Index ID, or empty string if call transcription indexing is
-        not enabled
-
+      Description: Kendra Index ID, or empty string if call transcription indexing is not enabled
+      
   #WebUriParameter:
   #  Type: "AWS::SSM::Parameter"
   #  Properties:
-  #    Name: !Sub '${StackName}-WebUri'
+  #    Name: WebUri
   #    Type: String
   #    Value: !Ref WebUri
   #    Description: PCA Web Application URI
 
   DatabaseNameParameter:
-    Type: AWS::SSM::Parameter
+    Type: "AWS::SSM::Parameter"
     Properties:
-      Name: !Sub ${StackName}-DatabaseName
+      Name: DatabaseName
       Type: String
       Value: !Ref DatabaseName
       Description: PCA Glue catalog database name
