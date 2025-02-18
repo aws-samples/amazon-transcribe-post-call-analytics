@@ -9,10 +9,6 @@ Parameters:
     Type: String
     Description: Name of the parent stack
 
-#  SupportFilesBucketName:
-#    Type: AWS::SSM::Parameter::Value<String>
-#    Default: SupportFilesBucketName
-
   PyZipName:
     Type: String
     Default: python-utils-layer-v2.zip

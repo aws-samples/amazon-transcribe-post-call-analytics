@@ -9,22 +9,6 @@ Parameters:
     Type: String
     Description: Name of the parent stack
 
-#  DatabaseName:
-#    Type: AWS::SSM::Parameter::Value<String>
-    #Default: DatabaseName
-
-#  DatabaseName:
-#    Type: String
-#    Description: Glue catalog database name used to contain tables/views for SQL integration.
-
-#  OutputBucketName:
-#    Type: AWS::SSM::Parameter::Value<String>
-#    Default: OutputBucketName
-#
-#  OutputBucketParsedResults:
-#    Type: AWS::SSM::Parameter::Value<String>
-#    Default: OutputBucketParsedResults
-
 Resources:
 
   Database:

@@ -8,10 +8,6 @@ Parameters:
   ParentStackName:
     Type: String
     Description: Name of the parent stack
-
-#  SupportFilesBucketName:
-#    Type: AWS::SSM::Parameter::Value<String>
-#    Default: SupportFilesBucketName
     
   FFMPEGZipName:
     Type: String

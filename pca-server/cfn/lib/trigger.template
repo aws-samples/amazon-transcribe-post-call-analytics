@@ -18,22 +18,6 @@ Parameters:
   PyUtilsLayer:
     Type: String
 
-#  InputBucketName:
-#    Type: AWS::SSM::Parameter::Value<String>
-#    Default: InputBucketName
-#
-#  InputBucketRawAudio:
-#    Type: AWS::SSM::Parameter::Value<String>
-#    Default: InputBucketRawAudio
-#
-#  InputBucketOrigTranscripts:
-#    Type: AWS::SSM::Parameter::Value<String>
-#    Default: InputBucketOrigTranscripts
-#
-#  StepFunctionName:
-#    Type: AWS::SSM::Parameter::Value<String>
-#    Default: StepFunctionName
-
   Summarize:
     Type: String
 

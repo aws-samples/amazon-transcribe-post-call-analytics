@@ -22,18 +22,6 @@ Parameters:
   PyUtilsLayer:
     Type: String
 
-#  SupportFilesBucketName:
-#    Type: AWS::SSM::Parameter::Value<String>
-#    Default: SupportFilesBucketName
-
-#  StepFunctionName:
-#    Type: AWS::SSM::Parameter::Value<String>
-#    Default: StepFunctionName
-
-#  InputBucketName:
-#    Type: AWS::SSM::Parameter::Value<String>
-#    Default: InputBucketName
-
   CallSummarization:
     Type: String
     Default: DISABLED
