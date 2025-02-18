@@ -73,7 +73,7 @@ Resources:
         - Sid: StartExecutionPolicy
           Effect: Allow
           Action: states:StartExecution
-          Resource: #!Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${StepFunctionName}
+          Resource:
           - !Join
             - ''
             - - 'arn:aws:states:'
