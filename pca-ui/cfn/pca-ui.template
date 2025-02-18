@@ -3,6 +3,10 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description: Amazon Transcribe Post Call Analytics - PCA UI
 
 Parameters:
+  ParentStackName:
+    Type: String
+    Description: Name of the parent stack
+
   AdminUsername:
     Type: String
     Default: "admin"
@@ -201,7 +205,7 @@ Resources:
   WebUriParameter:
     Type: "AWS::SSM::Parameter"
     Properties:
-      Name: WebUiUri
+      Name: !Sub ${ParentStackName}-WebUiUri
       Type: String
       Value: !GetAtt Web.Outputs.Uri
       Description: PCA Web Application URI
