@@ -859,7 +859,6 @@ Resources:
   SSM:
     Type: AWS::CloudFormation::Stack
     DependsOn: LLMPromptConfigure
-    Condition: ShouldCreateDatabase
     Properties:
       TemplateURL: pca-ssm/cfn/ssm.template
       Parameters:
