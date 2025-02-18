@@ -9,7 +9,8 @@ Parameters:
 
   DatabaseName:
     Type: String
-    Description: Glue catalog database name used to contain tables/views for SQL integration.
+    Description: Glue catalog database name used to contain tables/views for SQL
+      integration.
 
   ffmpegDownloadUrl:
     Type: String
@@ -174,6 +175,7 @@ Resources:
       TemplateURL: lib/glue-database.template
       Parameters:
         ParentStackName: !Ref ParentStackName
+        Database: !Ref DatabaseName
 
 
   ##########################################################################

@@ -5,18 +5,9 @@ Description: Amazon Transcribe Post Call Analytics - PCA Server - Load sample au
 Transform: AWS::Serverless-2016-10-31
 
 Parameters:
-
-  SupportFilesBucketName:
-    Type: AWS::SSM::Parameter::Value<String>
-    Default: SupportFilesBucketName
-    
-  InputBucketName:
-    Type: AWS::SSM::Parameter::Value<String>
-    Default: InputBucketName
-
-  InputBucketRawAudio:
-    Type: AWS::SSM::Parameter::Value<String>
-    Default: InputBucketRawAudio
+  ParentStackName:
+    Type: String
+    Description: Name of the parent stack
   
   # DependsOn parameters used only to force conditional dependency from main stack
   DependsOnPCAServer:
@@ -57,8 +48,12 @@ Resources:
               Action:
                 - s3:PutObject
               Resource:
-                - !Sub arn:aws:s3:::${InputBucketName}/*
-                - !Sub arn:aws:s3:::${SupportFilesBucketName}/*
+                - !Sub
+                  - 'arn:aws:s3:::${bucket}/*'
+                  - bucket: !Sub '{{resolve:ssm:${ParentStackName}-InputBucketName}}'
+                - !Sub
+                  - 'arn:aws:s3:::${bucket}/*'
+                  - bucket: !Sub '{{resolve:ssm:${ParentStackName}-SupportFilesBucketName}}'
 
 
   CopySamplesFunction:
@@ -71,9 +66,9 @@ Resources:
       Role: !GetAtt CopySamplesRole.Arn
       Environment:
         Variables:
-          SUPPORTFILES_BUCKET_NAME: !Ref SupportFilesBucketName
-          INPUT_BUCKET_NAME: !Ref InputBucketName
-          INPUT_BUCKET_RAW_AUDIO: !Ref InputBucketRawAudio
+          SUPPORTFILES_BUCKET_NAME: !Sub '{{resolve:ssm:${ParentStackName}-SupportFilesBucketName}}'
+          INPUT_BUCKET_NAME: !Sub '{{resolve:ssm:${ParentStackName}-InputBucketName}}'
+          INPUT_BUCKET_RAW_AUDIO: !Sub '{{resolve:ssm:${ParentStackName}-InputBucketRawAudio}}'
 
   CopySamples:
     Type: "AWS::CloudFormation::CustomResource"
