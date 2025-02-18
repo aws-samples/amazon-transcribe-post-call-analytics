@@ -158,12 +158,10 @@ Parameters:
 
   StepFunctionName:
     Type: String
-    #Default: PostCallAnalyticsWorkflow
     Description: Name of Step Functions workflow that orchestrates this process
 
   BulkUploadStepFunctionName:
     Type: String
-    #Default: BulkUploadWorkflow
     Description: Name of Step Functions workflow that orchestrates the bulk import process
 
   SupportFilesBucketName:
