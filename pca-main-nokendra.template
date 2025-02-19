@@ -352,10 +352,10 @@ Parameters:
       - PROD
     Default: PROD
     
-  DatabaseName:
+  GlueDatabaseName:
     Type: String
-    Default: 'pca'
-    Description: Glue catalog database name used to contain tables/views for SQL integration.
+    AllowedPattern: "^$|[a-z0-9_-]+"
+    Description: (Optional) Glue catalog database name in lowercase characters used to contain tables/views for SQL integration.
 
   EnablePcaDashboards:
     Type: String
@@ -495,7 +495,7 @@ Metadata:
                 default: Advanced analytics and reporting
               Parameters:
                   - EnablePcaDashboards
-                  - DatabaseName
+                  - GlueDatabaseName
             - Label:
                 default: S3 Bucket Names and Retention Policy
               Parameters:
@@ -674,6 +674,19 @@ Resources:
               SSEAlgorithm: AES256
 
   ########################################################
+  # Glue Database
+  ########################################################
+
+  PCADatabase:
+    Type: AWS::Glue::Database
+    Properties:
+      CatalogId: !Ref AWS::AccountId
+      DatabaseInput:
+        Name: !Ref GlueDatabaseName
+        Description: Post Call Analytics
+        LocationUri: !Sub 's3://${OutputBucket}/${OutputBucketParsedResults}/'
+
+  ########################################################
   # If Bedrock Models are selected, verify that Bedrock 
   # is available in the region, and that models are enabled
   ########################################################
@@ -848,6 +861,7 @@ Resources:
     Properties:
       TemplateURL: pca-ssm/cfn/ssm.template
       Parameters:
+        StackName: !Ref 'AWS::StackName'
         BulkUploadBucketName:
           !If
           - ShouldCreateBulkUploadBucket
@@ -911,13 +925,15 @@ Resources:
           - 'None'
           - 'None'
         # WebUri: !GetAtt PCAUI.Outputs.WebUri
-        DatabaseName: !Ref DatabaseName
+        DatabaseName: !Ref PCADatabase
 
   PythonUtilsLayer:
     DependsOn: SSM
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: pca-server/cfn/lib/python-utilities.template
+      Parameters:
+        ParentStackName: !Ref 'AWS::StackName'
 
   BedrockBoto3Layer:
     Type: AWS::CloudFormation::Stack
@@ -944,6 +960,8 @@ Resources:
     Properties:
       TemplateURL: pca-server/cfn/pca-server.template
       Parameters:
+        DatabaseName: !Ref PCADatabase
+        ParentStackName: !Ref 'AWS::StackName'
         ffmpegDownloadUrl: !Ref ffmpegDownloadUrl
         CallSummarization: !Ref CallSummarization
         SummarizationBedrockModelId: !Ref SummarizationBedrockModelId
@@ -966,6 +984,7 @@ Resources:
     Properties:
       TemplateURL: pca-ui/cfn/pca-ui.template
       Parameters:
+        ParentStackName: !Ref 'AWS::StackName'
         AdminUsername: !Ref AdminUsername
         AdminEmail: !Ref AdminEmail
         AllowedSignUpEmailDomain: !Ref AllowedSignUpEmailDomain
@@ -1005,7 +1024,7 @@ Resources:
     Properties:
       TemplateURL: build/pca-dashboards.yaml
       Parameters:
-        PcaGlueCatalogDatabaseName: !Ref DatabaseName
+        PcaGlueCatalogDatabaseName: !Ref PCADatabase
         PcaOutputBucket: 
           !If
           - ShouldCreateOutputBucket
@@ -1023,6 +1042,7 @@ Resources:
     Properties:
       TemplateURL: pca-samples/copy-samples.template
       Parameters:
+        ParentStackName: !Ref 'AWS::StackName'
         DependsOnPCAServer: !Ref PCAServer
         DependsOnPCAUI: !If [ShouldEnableGui, !Ref PCAUI, !Ref AWS::NoValue]
         DependsOnPCADashboards: !If

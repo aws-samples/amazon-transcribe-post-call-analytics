@@ -5,17 +5,9 @@ Description: Amazon Transcribe Post Call Analytics - PCA Server - BulkImport Sta
 Transform: AWS::Serverless-2016-10-31
 
 Parameters:
-  BulkUploadStepFunctionName:
-    Type: AWS::SSM::Parameter::Value<String>
-    Default: BulkUploadStepFunctionName
-
-  BulkUploadBucketName:
-    Type: AWS::SSM::Parameter::Value<String>
-    Default: BulkUploadBucket
-    
-  InputBucketName:
-    Type: AWS::SSM::Parameter::Value<String>
-    Default: InputBucketName
+  ParentStackName:
+    Type: String
+    Description: Name of the parent stack
 
 Globals:
   Function:
@@ -37,8 +29,15 @@ Resources:
           - s3:ListBucket
           - s3:GetObject
           Resource:
-          - !Sub arn:aws:s3:::${BulkUploadBucketName}
-          - !Sub arn:aws:s3:::${BulkUploadBucketName}/*
+            - !Join
+              - ''
+              - - 'arn:aws:s3:::'
+                - !Sub '{{resolve:ssm:${ParentStackName}-BulkUploadBucket}}'
+            - !Join
+              - ''
+              - - 'arn:aws:s3:::'
+                - !Sub '{{resolve:ssm:${ParentStackName}-BulkUploadBucket}}'
+                - '/*'
       - Statement:
         - Sid: SSMGetParameterPolicy    
           Effect: Allow
@@ -62,10 +61,24 @@ Resources:
             - s3:PutObject
             - s3:DeleteObject
           Resource:
-            - !Sub arn:aws:s3:::${BulkUploadBucketName}
-            - !Sub arn:aws:s3:::${BulkUploadBucketName}/*
-            - !Sub arn:aws:s3:::${InputBucketName}
-            - !Sub arn:aws:s3:::${InputBucketName}/*
+            - !Join
+              - ''
+              - - 'arn:aws:s3:::'
+                - !Sub '{{resolve:ssm:${ParentStackName}-BulkUploadBucket}}'
+            - !Join
+              - ''
+              - - 'arn:aws:s3:::'
+                - !Sub '{{resolve:ssm:${ParentStackName}-BulkUploadBucket}}'
+                - '/*'
+            - !Join
+              - ''
+              - - 'arn:aws:s3:::'
+                - !Sub '{{resolve:ssm:${ParentStackName}-InputBucketName}}'
+            - !Join
+              - ''
+              - - 'arn:aws:s3:::'
+                - !Sub '{{resolve:ssm:${ParentStackName}-InputBucketName}}'
+                - '/*'
 
   BulkQueueSpace:
     Type: "AWS::Serverless::Function"
@@ -78,8 +91,11 @@ Resources:
 
   LogGroup:
     Type: AWS::Logs::LogGroup
-    Properties: 
-      LogGroupName: !Sub '/aws/vendedlogs/${BulkUploadStepFunctionName}'
+    Properties:
+      LogGroupName: !Join
+        - ''
+        - - '/aws/vendedlogs/'
+          - !Sub "{{resolve:ssm:${ParentStackName}-BulkUploadStepFunctionName}}"
       RetentionInDays: 90
 
   Role:
@@ -119,7 +135,7 @@ Resources:
   StateMachine:
     Type: "AWS::StepFunctions::StateMachine"
     Properties:
-      StateMachineName: !Ref BulkUploadStepFunctionName
+      StateMachineName: !Sub "{{resolve:ssm:${ParentStackName}-BulkUploadStepFunctionName}}"
       DefinitionS3Location: ./bulk-definition.json
       DefinitionSubstitutions:
         BulkFilesCountArn: !GetAtt BulkFilesCount.Arn

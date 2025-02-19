@@ -3,6 +3,15 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description: Amazon Transcribe Post Call Analytics - PCA Server
 
 Parameters:
+  ParentStackName:
+    Type: String
+    Description: Name of the parent stack
+
+  DatabaseName:
+    Type: String
+    Description: Glue catalog database name used to contain tables/views for SQL
+      integration.
+
   ffmpegDownloadUrl:
     Type: String
     Default: http://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz
@@ -96,6 +105,7 @@ Resources:
     Properties:
       TemplateURL: lib/ffmpeg.template
       Parameters:
+        ParentStackName: !Ref ParentStackName
         ffmpegDownloadUrl: !Ref ffmpegDownloadUrl
 
   BOTO3:
@@ -103,6 +113,8 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: lib/boto3.template
+      Parameters:
+        ParentStackName: !Ref ParentStackName
 
   DDB:
     Type: AWS::CloudFormation::Stack
@@ -114,6 +126,7 @@ Resources:
     Properties:
       TemplateURL: lib/pca.template
       Parameters:
+        ParentStackName: !Ref ParentStackName
         TableName: !GetAtt DDB.Outputs.TableName
         FFMPEGZipName: !GetAtt FFMPEG.Outputs.FFMPEGZipName
         Boto3Layer:  !If 
@@ -140,6 +153,7 @@ Resources:
     Properties:
       TemplateURL: lib/trigger.template
       Parameters:
+        ParentStackName: !Ref ParentStackName
         TableName: !GetAtt DDB.Outputs.TableName
         Boto3Layer: !If 
           - ShouldCreateBoto3Layer
@@ -152,11 +166,17 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: lib/bulk.template
+      Parameters:
+        ParentStackName: !Ref ParentStackName
       
   GlueDatabase:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: lib/glue-database.template
+      Parameters:
+        ParentStackName: !Ref ParentStackName
+        Database: !Ref DatabaseName
+
 
   ##########################################################################
   # Transcript Summary
