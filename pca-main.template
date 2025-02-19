@@ -1241,6 +1241,7 @@ Resources:
     Properties:
       TemplateURL: pca-samples/copy-samples.template
       Parameters:
+        ParentStackName: !Ref 'AWS::StackName'
         DependsOnPCAServer: !Ref PCAServer
         DependsOnPCAUI: !If [ShouldEnableGui, !Ref PCAUI, !Ref AWS::NoValue]
         DependsOnPCADashboards: !If
