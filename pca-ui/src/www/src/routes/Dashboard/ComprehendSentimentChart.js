@@ -1,6 +1,7 @@
 import { colours } from "./colours";
 import { Line } from "react-chartjs-2";
 import { Placeholder } from "react-bootstrap";
+import { useTranslation } from 'react-i18next';
 
 const getRenderOrder = (key) => {
   if (key === 'Interruptions') return 1;
@@ -12,6 +13,8 @@ const getRenderOrder = (key) => {
 }
 
 export const ComprehendSentimentChart = ({ comprehendSentimentData, speakerLabels }) => {
+  const { t } = useTranslation();
+
   if (comprehendSentimentData === undefined) {
     return <Placeholder />
   }
@@ -75,14 +78,14 @@ export const ComprehendSentimentChart = ({ comprehendSentimentData, speakerLabel
             offset: false,
             display: true,
             position: "left",
-            title: { text: "Seconds", display: true },
+            title: { text: t("charts.seconds"), display: true },
           },
           y: {
             display: true,
             stacked: false,
             offset: false,
             position: "left",
-            title: { text: "Sentiment (-5 to 5)", display: true },
+            title: { text: t("charts.sentiment"), display: true },
             suggestedMin: -5,
             suggestedMax: 5
           },
