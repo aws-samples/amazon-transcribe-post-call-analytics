@@ -574,7 +574,7 @@ Conditions:
   ShouldCreateInputBucket: !Equals [!Ref InputBucketName, '']
   ShouldCreateOutputBucket: !Equals [!Ref OutputBucketName, '']
   ShouldCreateSupportFilesBucket: !Equals [!Ref SupportFilesBucketName, '']
-  ShouldCreateDatabase: !Equals [!Ref GlueDatabaseName, '']
+  #ShouldCreateDatabase: !Equals [!Ref GlueDatabaseName, '']
   ShouldEnableGui: !Not [!Equals [!Ref EnableGui, false]]
   ShouldEnableKendraSearch: !Not [!Equals [!Ref EnableTranscriptKendraSearch, 'No']]
   ShouldCreateKendraIndexDeveloperEdition: !Equals [!Ref EnableTranscriptKendraSearch, 'Yes, create new Kendra Index (Developer Edition)']
@@ -678,12 +678,13 @@ Resources:
   # Glue Database
   ########################################################
 
-  DatabaseName:
-    Condition: ShouldCreateDatabase
+  GlueDatabase:
+    #Condition: ShouldCreateDatabase
     Type: AWS::Glue::Database
     Properties:
       CatalogId: !Ref AWS::AccountId
       DatabaseInput:
+        Name: !Ref GlueDatabaseName
         Description: Post Call Analytics
         LocationUri: !Sub 's3://${OutputBucket}/${OutputBucketParsedResults}/'
 
@@ -926,7 +927,7 @@ Resources:
           - 'None'
           - 'None'
         # WebUri: !GetAtt PCAUI.Outputs.WebUri
-        DatabaseName: !Ref DatabaseName
+        DatabaseName: !Ref GlueDatabase
 
   PythonUtilsLayer:
     DependsOn: SSM
@@ -961,7 +962,7 @@ Resources:
     Properties:
       TemplateURL: pca-server/cfn/pca-server.template
       Parameters:
-        DatabaseName: !Ref DatabaseName
+        DatabaseName: !Ref GlueDatabase
         ParentStackName: !Ref 'AWS::StackName'
         ffmpegDownloadUrl: !Ref ffmpegDownloadUrl
         CallSummarization: !Ref CallSummarization
@@ -1025,7 +1026,7 @@ Resources:
     Properties:
       TemplateURL: build/pca-dashboards.yaml
       Parameters:
-        PcaGlueCatalogDatabaseName: !Ref DatabaseName
+        PcaGlueCatalogDatabaseName: !Ref GlueDatabase
         PcaOutputBucket: 
           !If
           - ShouldCreateOutputBucket
