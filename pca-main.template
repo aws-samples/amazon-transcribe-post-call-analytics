@@ -730,6 +730,7 @@ Resources:
     Properties:
       CatalogId: !Ref AWS::AccountId
       DatabaseInput:
+        Name: !Ref GlueDatabaseName
         Description: Post Call Analytics
         LocationUri: !Sub 's3://${OutputBucket}/${OutputBucketParsedResults}/'
 
