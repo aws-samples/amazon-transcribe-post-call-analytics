@@ -678,7 +678,6 @@ Resources:
   ########################################################
 
   PCADatabase:
-    #Condition: ShouldCreateDatabase
     Type: AWS::Glue::Database
     Properties:
       CatalogId: !Ref AWS::AccountId

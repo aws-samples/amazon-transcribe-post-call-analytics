@@ -615,7 +615,6 @@ Conditions:
   ShouldCreateInputBucket: !Equals [!Ref InputBucketName, '']
   ShouldCreateOutputBucket: !Equals [!Ref OutputBucketName, '']
   ShouldCreateSupportFilesBucket: !Equals [!Ref SupportFilesBucketName, '']
-  ShouldCreateDatabase: !Equals [!Ref GlueDatabaseName, '']
   ShouldEnableGui: !Not [!Equals [!Ref EnableGui, "false"]]
   ShouldEnableKendraSearch: !Not [!Equals [!Ref EnableTranscriptKendraSearch, 'No']]
   ShouldCreateKendraIndexDeveloperEdition: !Equals [!Ref EnableTranscriptKendraSearch, 'Yes, create new Kendra Index (Developer Edition)']
@@ -727,7 +726,6 @@ Resources:
   ########################################################
 
   PCADatabase:
-    Condition: ShouldCreateDatabase
     Type: AWS::Glue::Database
     Properties:
       CatalogId: !Ref AWS::AccountId
