@@ -726,7 +726,7 @@ Resources:
   # Glue Database
   ########################################################
 
-  GlueDatabase:
+  PCADatabase:
     Condition: ShouldCreateDatabase
     Type: AWS::Glue::Database
     Properties:
@@ -1110,7 +1110,7 @@ Resources:
           - !Ref KendraIndex
           - 'None'
         # WebUri: !GetAtt PCAUI.Outputs.WebUri
-        DatabaseName: !Ref GlueDatabase
+        DatabaseName: !Ref PCADatabase
 
   PythonUtilsLayer:
     DependsOn: SSM
@@ -1145,7 +1145,7 @@ Resources:
     Properties:
       TemplateURL: pca-server/cfn/pca-server.template
       Parameters:
-        DatabaseName: !Ref GlueDatabase
+        DatabaseName: !Ref PCADatabase
         ParentStackName: !Ref 'AWS::StackName'
         ffmpegDownloadUrl: !Ref ffmpegDownloadUrl
         CallSummarization: !Ref CallSummarization
@@ -1224,7 +1224,7 @@ Resources:
     Properties:
       TemplateURL: build/pca-dashboards.yaml
       Parameters:
-        PcaGlueCatalogDatabaseName: !Ref GlueDatabase
+        PcaGlueCatalogDatabaseName: !Ref PCADatabase
         PcaOutputBucket: 
           !If
           - ShouldCreateOutputBucket
