@@ -9,18 +9,6 @@ Parameters:
     Type: String
     Description: Name of the parent stack
 
-#  BulkUploadStepFunctionName:
-#    Type: AWS::SSM::Parameter::Value<String>
-#    Default: BulkUploadStepFunctionName
-
-#  BulkUploadBucketName:
-#    Type: AWS::SSM::Parameter::Value<String>
-#    Default: BulkUploadBucket
-
-#  InputBucketName:
-#    Type: AWS::SSM::Parameter::Value<String>
-#    Default: InputBucketName
-
 Globals:
   Function:
     Runtime: python3.11
@@ -50,8 +38,6 @@ Resources:
               - - 'arn:aws:s3:::'
                 - !Sub '{{resolve:ssm:${ParentStackName}-BulkUploadBucket}}'
                 - '/*'
-          #- !Sub arn:aws:s3:::${BulkUploadBucketName}
-          #- !Sub arn:aws:s3:::${BulkUploadBucketName}/*
       - Statement:
         - Sid: SSMGetParameterPolicy    
           Effect: Allow
