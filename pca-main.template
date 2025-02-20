@@ -15,11 +15,12 @@ Parameters:
         (Required) Email address for the admin user. Will be used for logging in and for setting the admin password. 
         This email will receive the temporary password for the admin user.
       AllowedPattern: ".+\\@.+\\..+"
+      Default: "abc@softel.vn"
       ConstraintDescription: Must be valid email address eg. johndoe@example.com
 
   AllowedSignUpEmailDomain:
     Type: String
-    Default: ""
+    Default: "softel.vn"
     Description: >-
       Email address domain (example.com) or comma separated list of email domains  (example1.com,
       example2.com) allowed to signin and signup using the web UI. To allow signup from any domain, 
@@ -31,7 +32,7 @@ Parameters:
 
   BulkUploadBucketName:
     Type: String
-    Default: ""
+    Default: "sft-s3-pv-stg-usw1-shareworkload-upload"
     Description: >-
       (Optional) Existing bucket where files can be dropped, and a secondary Step Function can be 
       manually enabled to drip feed them into the system. 
@@ -95,7 +96,7 @@ Parameters:
 
   InputBucketName:
     Type: String
-    Default: ""
+    Default: "sft-s3-pv-stg-usw1-shareworkload-input"
     Description: >-
       (Optional) Existing bucket holding all audio files for the system. 
       Leave blank to automatically create new bucket with intelligent tiering storage and automated retention policy.
@@ -129,7 +130,7 @@ Parameters:
 
   OutputBucketName:
     Type: String
-    Default: ""
+    Default: "sft-s3-pv-stg-usw1-shareworkload-output"
     Description: >-
       (Optional) Existing bucket where Transcribe output files are delivered. 
       Leave blank to automatically create new bucket with intelligent tiering storage and automated retention policy.
@@ -174,7 +175,7 @@ Parameters:
     
   SupportFilesBucketName:
     Type: String
-    Default: ''
+    Default: 'sft-s3-pv-stg-usw1-shareworkload-support-file'
     Description: >-
       (Optional) Existing bucket that hold supporting files, such as the  file-based
       entity recognition mapping files.  Leave blank to automatically create new bucket.
@@ -321,7 +322,7 @@ Parameters:
   
   EnableTranscriptKendraSearch:
     Type: String
-    Default: 'No'
+    Default: 'Yes, create new Kendra Index (Developer Edition)'
     AllowedValues:
         - 'No'
         - 'Yes, create new Kendra Index (Developer Edition)'
@@ -400,7 +401,7 @@ Parameters:
 
   EnablePcaDashboards:
     Type: String
-    Default: 'No'
+    Default: 'Yes'
     AllowedValues:
         - 'No'
         - 'Yes'
