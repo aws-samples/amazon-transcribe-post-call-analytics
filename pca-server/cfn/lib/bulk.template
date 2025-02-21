@@ -11,7 +11,7 @@ Parameters:
 
 Globals:
   Function:
-    Runtime: python3.11
+    Runtime: python3.13
     MemorySize: 1024
     Timeout: 60
 

@@ -73,11 +73,6 @@ Parameters:
     Description: >
       (Optional) If 'CallSummarization' is LAMBDA, provide ARN for a Lambda function. 
 
-  Boto3LayerArn:
-    Default: ''
-    Type: String
-    Description: External Boto3 Layer Arn to use. If none is provided, one will be created automatically via boto3.template
-
   PyUtilsLayerArn:
     Type: String
     Description: PyUtils layer arn from main stack.
@@ -88,7 +83,6 @@ Parameters:
 
 
 Conditions:
-  ShouldCreateBoto3Layer: !Equals [!Ref Boto3LayerArn, '']
   ShouldDeployBedrockSummarizer: !Or [
     !Equals [!Ref CallSummarization, "BEDROCK"],
     !Equals [!Ref CallSummarization, "BEDROCK+TCA"],
@@ -111,14 +105,6 @@ Resources:
         ParentStackName: !Ref ParentStackName
         ffmpegDownloadUrl: !Ref ffmpegDownloadUrl
 
-  BOTO3:
-    Condition: ShouldCreateBoto3Layer
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: lib/boto3.template
-      Parameters:
-        ParentStackName: !Ref ParentStackName
-
   DDB:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -132,10 +118,6 @@ Resources:
         ParentStackName: !Ref ParentStackName
         TableName: !GetAtt DDB.Outputs.TableName
         FFMPEGZipName: !GetAtt FFMPEG.Outputs.FFMPEGZipName
-        Boto3Layer:  !If 
-          - ShouldCreateBoto3Layer
-          - !GetAtt BOTO3.Outputs.Boto3Layer
-          - !Ref Boto3LayerArn
         PyUtilsLayer: !Ref PyUtilsLayerArn
         CallSummarization: !Ref CallSummarization
         SummarizationBedrockModelId: !Ref SummarizationBedrockModelId
@@ -158,10 +140,6 @@ Resources:
       Parameters:
         ParentStackName: !Ref ParentStackName
         TableName: !GetAtt DDB.Outputs.TableName
-        Boto3Layer: !If 
-          - ShouldCreateBoto3Layer
-          - !GetAtt BOTO3.Outputs.Boto3Layer
-          - !Ref Boto3LayerArn
         PyUtilsLayer: !Ref PyUtilsLayerArn
         Summarize: !If [IsTranscriptSummaryEnabled, "true", "false"]
 

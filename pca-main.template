@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 
-Description: Amazon Transcribe Post Call Analytics - PCA (v0.7.12) (uksb-1sn29lk73, SO9071)
+Description: Amazon Transcribe Post Call Analytics - PCA (v0.7.13) (uksb-1sn29lk73, SO9071)
 
 Parameters:
 
@@ -626,12 +626,6 @@ Conditions:
   ShouldCreateKendraIndexDeveloperEdition: !Equals [!Ref EnableTranscriptKendraSearch, 'Yes, create new Kendra Index (Developer Edition)']
   ShouldDeployPcaDashboards: !Equals [!Ref EnablePcaDashboards, 'Yes']
   ShouldLoadSampleFiles: !Equals [!Ref loadSampleAudioFiles, 'true']
-  ShouldDeployBedrockBoto3Layer: !Or [
-    !Equals [!Ref CallSummarization, 'BEDROCK'], 
-    !Equals [!Ref CallSummarization, 'BEDROCK+TCA'], 
-    !Equals [!Ref CallSummarization, 'TCA-ONLY'], 
-    !Equals [!Ref GenAIQuery, 'BEDROCK'],
-  ]
   ShouldDeployLLMThirdPartyApiKey: !And [!Not [!Equals [!Ref SummarizationLLMThirdPartyApiKey, '']], !Not [!Equals [!Ref SummarizationLLMThirdPartyApiKey, undefined]]]
   ShouldTestBedrockModelId: !And [
     !Or [
@@ -917,7 +911,7 @@ Resources:
     Properties:
       Handler: index.lambda_handler
       Role: !GetAtt 'TestBedrockModelFunctionRole.Arn'
-      Runtime: python3.11
+      Runtime: python3.13
       Timeout: 60
       MemorySize: 128
       Code: 
@@ -927,9 +921,6 @@ Resources:
           import subprocess
           import os
           import sys
-          print("install latest boto3 to get bedrock service support")
-          subprocess.check_call([sys.executable, '-m', 'pip', 'install', '--target', '/tmp', 'boto3'])
-          sys.path.insert(0,'/tmp')
           import boto3
           from botocore.config import Config
           
@@ -1090,12 +1081,6 @@ Resources:
       Parameters:
         ParentStackName: !Ref 'AWS::StackName'
 
-  BedrockBoto3Layer:
-    Type: AWS::CloudFormation::Stack
-    # Condition: ShouldDeployBedrockBoto3Layer
-    Properties:
-      TemplateURL: pca-boto3-bedrock/template.yaml
-
   LLMThirdPartyApiKeySecret:
     Condition: ShouldDeployLLMThirdPartyApiKey
     Type: AWS::SecretsManager::Secret
@@ -1127,10 +1112,6 @@ Resources:
           - ''
         SummarizationLambdaFunctionArn: !Ref SummarizationLambdaFunctionArn
         PyUtilsLayerArn: !GetAtt PythonUtilsLayer.Outputs.PyUtilsLayer
-        Boto3LayerArn: !If
-          - ShouldDeployBedrockBoto3Layer
-          - !GetAtt BedrockBoto3Layer.Outputs.Boto3Layer
-          - ''
         LLMTableName: !GetAtt LLMPromptConfigure.Outputs.LLMTableName
 
   PCAUI:
@@ -1167,10 +1148,6 @@ Resources:
           - !Ref LLMThirdPartyApiKeySecret
           - ''
         PyUtilsLayerArn: !GetAtt PythonUtilsLayer.Outputs.PyUtilsLayer
-        Boto3LayerArn: !If
-          - ShouldDeployBedrockBoto3Layer
-          - !GetAtt BedrockBoto3Layer.Outputs.Boto3Layer
-          - ''
         LLMTableName: !GetAtt LLMPromptConfigure.Outputs.LLMTableName
 
   MediaSearchKendraFinder:
@@ -1249,7 +1226,7 @@ Resources:
     Condition: ShouldDeployPcaDashboards
     Properties:
       Handler: index.handler
-      Runtime: python3.11
+      Runtime: python3.13
       Role: !GetAtt QuickSightEnabledCheckFunctionRole.Arn
       Code: 
         ZipFile: !Sub |

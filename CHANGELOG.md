@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.13] - 2025-02-21
+
+### Fixed
+- Remove Boto3 layer from all Lambda functions as Bedrock features are available in the base Boto package deployed in Lambda
+- Updated all Lambda functions to Python 3.13 runtime
+
 ## [0.7.12] - 2025-02-21
 
 ### Added
@@ -290,6 +296,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial release
 
 [Unreleased]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/compare/main...develop
+[0.7.13]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.7.13
 [0.7.12]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.7.12
 [0.7.11]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.7.11
 [0.7.10]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.7.10
