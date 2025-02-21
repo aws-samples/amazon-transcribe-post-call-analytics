@@ -16,6 +16,11 @@
 # export AWS_DEFAULT_REGION=eu-west-1
 ##############################################################################################
 
+# Set architecture for npm/node
+export npm_config_arch=x64
+alias npm="arch -x86_64 npm"
+alias node="arch -x86_64 node"
+
 if ! [ -x "$(command -v npm)" ]; then
   echo 'Error: npm is not installed and required.' >&2
   exit 1
