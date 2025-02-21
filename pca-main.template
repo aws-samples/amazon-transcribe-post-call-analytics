@@ -425,14 +425,17 @@ Parameters:
 
   GenAIQueryBedrockModelId:
     Type: String
-    Default: anthropic.claude-3-haiku-20240307-v1:0
+    Default: us.amazon.nova-lite-v1:0
     AllowedValues:
       - anthropic.claude-3-haiku-20240307-v1:0
       - anthropic.claude-3-sonnet-20240229-v1:0
-      - amazon.titan-text-express-v1
-      - anthropic.claude-v1
-      - anthropic.claude-instant-v1
-      - anthropic.claude-v2
+      - us.amazon.nova-micro-v1:0
+      - us.amazon.nova-lite-v1:0
+      - us.amazon.nova-pro-v1:0
+      - us.anthropic.claude-3-5-haiku-20241022-v1:0
+      - us.anthropic.claude-3-5-sonnet-20241022-v2:0
+      - eu.anthropic.claude-3-5-sonnet-20240620-v1:0
+      - apac.anthropic.claude-3-5-sonnet-20240620-v1:0
     Description: (Optional) If 'GenAIQuery' is BEDROCK, which Bedrock model to use.
 
   CallSummarization:
@@ -458,14 +461,17 @@ Parameters:
 
   SummarizationBedrockModelId:
     Type: String
-    Default: anthropic.claude-3-haiku-20240307-v1:0
+    Default: us.amazon.nova-lite-v1:0
     AllowedValues:
       - anthropic.claude-3-haiku-20240307-v1:0
       - anthropic.claude-3-sonnet-20240229-v1:0
-      - amazon.titan-text-express-v1
-      - anthropic.claude-v1
-      - anthropic.claude-instant-v1
-      - anthropic.claude-v2
+      - us.amazon.nova-micro-v1:0
+      - us.amazon.nova-lite-v1:0
+      - us.amazon.nova-pro-v1:0
+      - us.anthropic.claude-3-5-haiku-20241022-v1:0
+      - us.anthropic.claude-3-5-sonnet-20241022-v2:0
+      - eu.anthropic.claude-3-5-sonnet-20240620-v1:0
+      - apac.anthropic.claude-3-5-sonnet-20240620-v1:0
     Description: (Optional) If 'CallSummarization' is BEDROCK, which Bedrock model to use. 
 
   TestBedrockModelId:
@@ -897,6 +903,12 @@ Resources:
                 Resource:
                   - !Sub "arn:${AWS::Partition}:bedrock:*::foundation-model/*"
                   - !Sub "arn:${AWS::Partition}:bedrock:*:${AWS::AccountId}:custom-model/*"
+                  - !Sub "arn:aws:bedrock:${AWS::Region}:${AWS::AccountId}:inference-profile/*"
+              - Effect: Allow
+                Action:
+                  - "bedrock:GetInferenceProfile"
+                Resource:
+                  - !Sub "arn:aws:bedrock:${AWS::Region}:${AWS::AccountId}:inference-profile/*"
           PolicyName: BedrockPolicy
 
   TestBedrockModelFunction:
@@ -919,76 +931,38 @@ Resources:
           subprocess.check_call([sys.executable, '-m', 'pip', 'install', '--target', '/tmp', 'boto3'])
           sys.path.insert(0,'/tmp')
           import boto3
-
+          from botocore.config import Config
+          
           # Defaults
           AWS_REGION = os.environ["AWS_REGION_OVERRIDE"] if "AWS_REGION_OVERRIDE" in os.environ else os.environ["AWS_REGION"]
           ENDPOINT_URL = os.environ.get("ENDPOINT_URL", f'https://bedrock-runtime.{AWS_REGION}.amazonaws.com')
           DEFAULT_MAX_TOKENS = 128
 
-          def get_request_body(modelId, parameters, prompt):
-              provider = modelId.split(".")[0]
-              request_body = None
-              if provider == "anthropic":
-                  if 'claude-3' in modelId:
-                      request_body = {
-                          "max_tokens": DEFAULT_MAX_TOKENS,
-                          "messages": [{"role": "user", "content": prompt}],
-                          "anthropic_version": "bedrock-2023-05-31"
-                      }
-                  else:    
-                      request_body = {
-                          "prompt": prompt,
-                          "max_tokens_to_sample": DEFAULT_MAX_TOKENS
-                      } 
+          def get_generate_text(response):
+            return response["output"]["message"]["content"][0]["text"]
 
-                  request_body.update(parameters)
-              elif provider == "ai21":
-                  request_body = {
-                      "prompt": prompt,
-                      "maxTokens": DEFAULT_MAX_TOKENS
-                  }
-                  request_body.update(parameters)
-              elif provider == "amazon":
-                  textGenerationConfig = {
-                      "maxTokenCount": DEFAULT_MAX_TOKENS
-                  }
-                  textGenerationConfig.update(parameters)
-                  request_body = {
-                      "inputText": prompt,
-                      "textGenerationConfig": textGenerationConfig
-                  }
-              else:
-                  raise Exception("Unsupported provider: ", provider)
-              return request_body
+          def call_llm(prompt, modelId):
+              client = boto3.client(
+                service_name='bedrock-runtime', 
+                region_name=AWS_REGION, 
+                endpoint_url=ENDPOINT_URL, 
+                config=Config(retries={'max_attempts': 50, 'mode': 'adaptive'})
+              )
+              
+              message = {
+                  'role': 'user',
+                  'content': [{'text': prompt}]
+              }
 
-          def get_generate_text(modelId, response):
-              provider = modelId.split(".")[0]
-              generated_text = None
-              if provider == "anthropic":
-                  if 'claude-3' in modelId:
-                      response_raw = json.loads(response.get("body").read().decode())
-                      generated_text = response_raw.get('content')[0].get('text')
-          
-                  else:
-                      response_body = json.loads(response.get("body").read().decode())
-                      generated_text = response_body.get("completion")
-              elif provider == "ai21":
-                  response_body = json.loads(response.get("body").read())
-                  generated_text = response_body.get("completions")[0].get("data").get("text")
-              elif provider == "amazon":
-                  response_body = json.loads(response.get("body").read())
-                  generated_text = response_body.get("results")[0].get("outputText")
-              else:
-                  raise Exception("Unsupported provider: ", provider)
-              return generated_text
-
-          def call_llm(parameters, prompt):
-              modelId = parameters.pop("modelId")
-              body = get_request_body(modelId, parameters, prompt)
-              print("ModelId", modelId, "-  Body: ", body)
-              client = boto3.client(service_name='bedrock-runtime', region_name=AWS_REGION, endpoint_url=ENDPOINT_URL)
-              response = client.invoke_model(body=json.dumps(body), modelId=modelId, accept='application/json', contentType='application/json')
-              generated_text = get_generate_text(modelId, response)
+              response = client.converse(
+                  modelId=modelId,
+                  messages=[message],
+                  inferenceConfig={
+                      'maxTokens': DEFAULT_MAX_TOKENS,
+                      'temperature': 0
+                  }
+              )
+              generated_text = get_generate_text(response)
               return generated_text
 
           def lambda_handler(event, context):
@@ -1004,12 +978,9 @@ Resources:
                       # Test LLMModel
                       llmModelId = event['ResourceProperties'].get('LLMModelId', '')
                       modelId = llmModelId
-                      parameters = {
-                          "modelId": modelId,
-                          "temperature": 0
-                      }
+
                       print(f"Testing {modelId}")
-                      call_llm(parameters, prompt)            
+                      call_llm(prompt, modelId)            
                   except Exception as e:
                       status = cfnresponse.FAILED
                       reason = f"Exception thrown testing ModelId='{modelId}'. Check that Amazon Bedrock is available in your region, and that model is activated in your Amazon Bedrock account - {e}"

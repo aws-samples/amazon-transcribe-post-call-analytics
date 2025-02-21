@@ -322,6 +322,13 @@ Resources:
               Resource:
                 - !Sub arn:${AWS::Partition}:bedrock:*::foundation-model/*
                 - !Sub arn:${AWS::Partition}:bedrock:*:${AWS::AccountId}:custom-model/*
+                - !Sub arn:aws:bedrock:${AWS::Region}:${AWS::AccountId}:inference-profile/*
+            - Sid: BedrockGetInferenceProfile
+              Effect: Allow
+              Action:
+                - bedrock:GetInferenceProfile
+              Resource:
+                - !Sub arn:aws:bedrock:${AWS::Region}:${AWS::AccountId}:inference-profile/*
             - !If
               - HasAnthropicSummary
               - Sid: SecretsManagerPolicy
