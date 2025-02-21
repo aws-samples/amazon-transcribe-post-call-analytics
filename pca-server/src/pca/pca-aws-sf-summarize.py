@@ -35,13 +35,6 @@ bedrock_client = None
 s3Client = boto3.client('s3')
 dynamodb_client = boto3.client('dynamodb')
 
-config = Config(
-   retries = {
-      'max_attempts': 100,
-      'mode': 'adaptive'
-   }
-)
-
 def get_third_party_llm_secret():
     print("Getting API key from Secrets Manager")
     secrets_client = boto3.client('secretsmanager')
@@ -56,76 +49,43 @@ def get_third_party_llm_secret():
 
 def get_bedrock_client():
     print("Connecting to Bedrock Service: ", BEDROCK_ENDPOINT_URL)
-    client = boto3.client(service_name='bedrock-runtime', region_name=AWS_REGION, endpoint_url=BEDROCK_ENDPOINT_URL, config=config)
+    client = boto3.client(
+        service_name='bedrock-runtime', 
+        region_name=AWS_REGION, 
+        endpoint_url=BEDROCK_ENDPOINT_URL,
+        config=Config(retries={'max_attempts': 50, 'mode': 'adaptive'})
+    )
     return client
-    
-def get_bedrock_request_body(modelId, parameters, prompt):
-    provider = modelId.split(".")[0]
-    request_body = None
-    if provider == "anthropic":
-        if 'claude-3' in modelId:
-            request_body = {
-                "max_tokens": MAX_TOKENS,
-                "messages": [{"role": "user", "content": prompt}],
-                "anthropic_version": "bedrock-2023-05-31"
-            }
-        else:    
-            request_body = {
-                "prompt": prompt,
-                "max_tokens_to_sample": MAX_TOKENS
-            } 
-        request_body.update(parameters)
-    elif provider == "ai21":
-        request_body = {
-            "prompt": prompt,
-            "maxTokens": MAX_TOKENS
-        }
-        request_body.update(parameters)
-    elif provider == "amazon":
-        textGenerationConfig = {
-            "maxTokenCount": MAX_TOKENS
-        }
-        textGenerationConfig.update(parameters)
-        request_body = {
-            "inputText": prompt,
-            "textGenerationConfig": textGenerationConfig
-        }
-    else:
-        raise Exception("Unsupported provider: ", provider)
-    return request_body
 
-def get_bedrock_generate_text(modelId, response):
-    print("generating response with ", modelId)
-    provider = modelId.split(".")[0]
-    generated_text = None
-    if provider == "anthropic":
-        if 'claude-3' in modelId:
-            response_raw = json.loads(response.get("body").read().decode())
-            generated_text = response_raw.get('content')[0].get('text')
-
-        else:
-            response_body = json.loads(response.get("body").read().decode())
-            generated_text = response_body.get("completion")
-    elif provider == "ai21":
-        response_body = json.loads(response.get("body").read())
-        generated_text = response_body.get("completions")[0].get("data").get("text")
-    elif provider == "amazon":
-        response_body = json.loads(response.get("body").read())
-        generated_text = response_body.get("results")[0].get("outputText")
-    else:
-        raise Exception("Unsupported provider: ", provider)
+def get_bedrock_generate_text(response):
+    generated_text = response["output"]["message"]["content"][0]["text"]
     generated_text = generated_text.replace('```','')
     return generated_text
 
-def call_bedrock(parameters, prompt):
+def call_bedrock(prompt, temperature, max_tokens):
     global bedrock_client
     modelId = BEDROCK_MODEL_ID
-    body = get_bedrock_request_body(modelId, parameters, prompt)
-    print("ModelId", modelId, "-  Body: ", body)
+
+    print(f"Bedrock request - ModelId: {modelId} Temperature: {temperature} Max Tokens: {max_tokens}")
+    
     if (bedrock_client is None):
         bedrock_client = get_bedrock_client()
-    response = bedrock_client.invoke_model(body=json.dumps(body), modelId=modelId, accept='application/json', contentType='application/json')
-    generated_text = get_bedrock_generate_text(modelId, response)
+
+    message = {
+        "role": "user",
+        "content": [{"text": prompt}]
+    }
+
+    response = bedrock_client.converse(
+        modelId=modelId,
+        messages=[message],
+        inferenceConfig={
+            "maxTokens": max_tokens,
+            "temperature": temperature
+        }
+    )
+    
+    generated_text = get_bedrock_generate_text(response)
     return generated_text
 
 def generate_sagemaker_summary(transcript):
@@ -224,10 +184,7 @@ def generate_bedrock_summary(transcript, api_mode):
             continue
         else: 
             prompt = prompt.replace("{transcript}", transcript)
-            parameters = {
-                "temperature": 0
-            }
-            generated_text = call_bedrock(parameters, prompt)
+            generated_text = call_bedrock(prompt, 0, MAX_TOKENS)
             result[key] = generated_text
     if len(result.keys()) == 1:
         # This is a single node JSON with value that can be either:
