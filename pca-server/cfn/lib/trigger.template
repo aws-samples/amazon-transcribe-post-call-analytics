@@ -12,9 +12,6 @@ Parameters:
   TableName:
     Type: String
 
-  Boto3Layer:
-    Type: String
-
   PyUtilsLayer:
     Type: String
 
@@ -23,7 +20,7 @@ Parameters:
 
 Globals:
   Function:
-    Runtime: python3.11
+    Runtime: python3.13
     MemorySize: 128
     Timeout: 15
 
@@ -38,7 +35,6 @@ Resources:
       CodeUri:  ../../src/pca
       Handler: pca-aws-file-drop-trigger.lambda_handler
       Layers:
-        - !Ref Boto3Layer
         - !Ref PyUtilsLayer
       Policies:
       - arn:aws:iam::aws:policy/AmazonTranscribeReadOnlyAccess
@@ -160,8 +156,6 @@ Resources:
     Properties:
       CodeUri:  ../../src/pca
       Handler: pca-transcribe-eventbridge.lambda_handler
-      Layers:
-        - !Ref Boto3Layer
       Events:
         StandardEventBridge:
           Type: EventBridgeRule

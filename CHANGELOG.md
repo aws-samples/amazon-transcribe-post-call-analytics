@@ -20,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fixed: Only one PCA stack may be sucessfully deployed in a given account/region due to fixed SSM parameter names - PR #291, #293
 - Fixed: Current publish.sh does not work with ARM chipsets such as the Apple M series. Set x86_64 arch for local build - PR #288
+- Remove Boto3 layer from all Lambda functions as Bedrock features are available in the base Boto package deployed in Lambda
+- Updated all Lambda functions to Python 3.13 runtime
 
 
 ## [0.7.11] - 2024-10-09

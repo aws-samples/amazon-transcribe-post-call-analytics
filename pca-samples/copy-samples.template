@@ -22,7 +22,7 @@ Parameters:
 
 Globals:
   Function:
-    Runtime: python3.11
+    Runtime: python3.13
     MemorySize: 1024
     Timeout: 60
 
@@ -61,7 +61,7 @@ Resources:
     Properties:
       Code:  ./src
       Handler: copy-samples.lambda_handler
-      Runtime: python3.11
+      Runtime: python3.13
       Timeout: 300
       Role: !GetAtt CopySamplesRole.Arn
       Environment:
