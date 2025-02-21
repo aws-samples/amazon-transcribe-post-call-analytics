@@ -7,12 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- Added support for Amazon Nova models (amazon.nova-micro-v1:0, amazon.nova-lite-v1:0, amazon.nova-pro-v1:0)
-- Updated Anthropic Claude models to the latest 3.5 versions (anthropic.claude-3-5-haiku-20241022-v1:0, anthropic.claude-3-5-sonnet-20241022-v2:0)
-- Removed older versions of Amazon Titan and Anthropic Claude models (amazon.titan-text-express-v1, anthropic.claude-v1, anthropic.claude-instant-v1, anthropic.claude-v2)
-- Refactored Bedrock calls to use the Converse API eliminating the need for custom model specific payloads
-- Refactored all model invocation to use Inference Profiles. This is required for Nova models. It is also applied to Anthropic models for consistency and improved scalability.
-- Added adaptive retry configuration to Bedrock api calls to add some tolerance for quota throttling exceptions (at the expense of latency)
+## [0.7.12] - 2025-02-21
+
+### Added
+- Added support for Amazon Nova models (amazon.nova-micro-v1:0, amazon.nova-lite-v1:0, amazon.nova-pro-v1:0) - PR #295
+- Updated Anthropic Claude models to the latest 3.5 versions (anthropic.claude-3-5-haiku-20241022-v1:0, anthropic.claude-3-5-sonnet-20241022-v2:0) - PR #295
+- Removed older versions of Amazon Titan and Anthropic Claude models (amazon.titan-text-express-v1, anthropic.claude-v1, anthropic.claude-instant-v1, anthropic.claude-v2) - PR #295
+- Refactored Bedrock calls to use the Converse API eliminating the need for custom model specific payloads - PR #295
+- Refactored all model invocation to use Inference Profiles. This is required for Nova models. It is also applied to Anthropic models for consistency and improved scalability. - PR #295
+- Added adaptive retry configuration to Bedrock api calls to add some tolerance for quota throttling exceptions (at the expense of latency) - PR #295
+
+### Fixed
+- Fixed: Only one PCA stack may be sucessfully deployed in a given account/region due to fixed SSM parameter names - PR #291, #293
+- Fixed: Current publish.sh does not work with ARM chipsets such as the Apple M series. Set x86_64 arch for local build - PR #288
+
 
 ## [0.7.11] - 2024-10-09
 
