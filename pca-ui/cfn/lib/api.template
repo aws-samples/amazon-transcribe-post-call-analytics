@@ -327,7 +327,7 @@ Resources:
                   - 'secretsmanager:ListSecretVersionIds'
                 Resource: !Ref LLMThirdPartyApiKey
               - !Ref "AWS::NoValue"
-      Runtime: python3.11
+      Runtime: python3.13
 
   GenAIRefreshSummaryFunction:
     Type: "AWS::Serverless::Function"
@@ -358,7 +358,7 @@ Resources:
             Action:
               - lambda:InvokeFunction
             Resource: !Ref SummarizerArn
-      Runtime: python3.11
+      Runtime: python3.13
 
   GeneratePresignedURLFunction:
     Type: "AWS::Serverless::Function"

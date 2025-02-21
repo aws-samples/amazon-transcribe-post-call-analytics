@@ -917,7 +917,7 @@ Resources:
     Properties:
       Handler: index.lambda_handler
       Role: !GetAtt 'TestBedrockModelFunctionRole.Arn'
-      Runtime: python3.11
+      Runtime: python3.13
       Timeout: 60
       MemorySize: 128
       Code: 
@@ -1249,7 +1249,7 @@ Resources:
     Condition: ShouldDeployPcaDashboards
     Properties:
       Handler: index.handler
-      Runtime: python3.11
+      Runtime: python3.13
       Role: !GetAtt QuickSightEnabledCheckFunctionRole.Arn
       Code: 
         ZipFile: !Sub |

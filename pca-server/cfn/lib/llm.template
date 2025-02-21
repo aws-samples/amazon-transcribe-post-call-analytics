@@ -84,7 +84,7 @@ Resources:
       Code:  ../../src/llm
       Handler: llm_prompt_upload.lambda_handler
       Role: !GetAtt ConfigureDynamoDBRole.Arn
-      Runtime: python3.11
+      Runtime: python3.13
       MemorySize: 128
       Timeout: 60
       Environment:
