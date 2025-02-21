@@ -3,18 +3,22 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description: Amazon Transcribe Post Call Analytics - PCA UI
 
 Parameters:
+  ParentStackName:
+    Type: String
+    Description: Name of the parent stack
+
   AdminUsername:
     Type: String
     Default: "admin"
     Description: (Required) Username for admin user
-    
+
   AdminEmail:
-      Type: String
-      Description: >-
-        (Required) Email address for the admin user. Will be used for logging in and for setting the admin password. 
-        This email will receive the temporary password for the admin user.
-      AllowedPattern: ".+\\@.+\\..+"
-      ConstraintDescription: Must be valid email address eg. johndoe@example.com
+    Type: String
+    Description: >-
+      (Required) Email address for the admin user. Will be used for logging in and for setting the admin password. 
+      This email will receive the temporary password for the admin user.
+    AllowedPattern: ".+\\@.+\\..+"
+    ConstraintDescription: Must be valid email address eg. johndoe@example.com
 
   AllowedSignUpEmailDomain:
     Type: String
@@ -26,7 +30,7 @@ Parameters:
       If left empty, signup via the web UI is disabled and users will have to be created
       using
       Cognito.
-    AllowedPattern: '^(\*||([\w-]+\.)+[\w-]{2,6}(, *([\w-]+\.)+[\w-]{2,6})*)$' 
+    AllowedPattern: '^(\*||([\w-]+\.)+[\w-]{2,6}(, *([\w-]+\.)+[\w-]{2,6})*)$'
 
   AudioBucket:
     Type: String
@@ -64,17 +68,20 @@ Parameters:
       - 'LAMBDA'
       - 'ANTHROPIC'
     Description: This is what model to use for GenAIQuery.
-  
+
   GenAIQueryBedrockModelId:
     Type: String
-    Default: anthropic.claude-3-haiku-20240307-v1:0
+    Default: us.amazon.nova-lite-v1:0
     AllowedValues:
       - anthropic.claude-3-haiku-20240307-v1:0
       - anthropic.claude-3-sonnet-20240229-v1:0
-      - amazon.titan-text-express-v1
-      - anthropic.claude-v1
-      - anthropic.claude-instant-v1
-      - anthropic.claude-v2
+      - us.amazon.nova-micro-v1:0
+      - us.amazon.nova-lite-v1:0
+      - us.amazon.nova-pro-v1:0
+      - us.anthropic.claude-3-5-haiku-20241022-v1:0
+      - us.anthropic.claude-3-5-sonnet-20241022-v2:0
+      - eu.anthropic.claude-3-5-sonnet-20240620-v1:0
+      - apac.anthropic.claude-3-5-sonnet-20240620-v1:0
     Description: (Optional) If 'GenAIQuery' is BEDROCK, which Bedrock model to use.
 
   LLMThirdPartyApiKey:
@@ -97,7 +104,7 @@ Parameters:
     Default: ''
     Type: String
     Description: External Boto3 Layer Arn to use. If none is provided, one will be created automatically via boto3.template
-    
+
   PyUtilsLayerArn:
     Default: ''
     Type: String
@@ -143,7 +150,7 @@ Resources:
         AllowedSignUpEmailDomain: !Ref AllowedSignUpEmailDomain
         WebUri: !GetAtt Web.Outputs.Uri
         Environment: !Ref Environment
-        Name: 
+        Name:
           !If
           - isMainStackNameEmpty
           - !Ref AWS::StackName
@@ -193,7 +200,7 @@ Resources:
         DeployCountName: !Ref DeployCount
         DeployCountValue: !Ref DeployCount
         # DistributionId: !GetAtt Web.Outputs.DistributionId
-        EnableGenAIQuery: !If 
+        EnableGenAIQuery: !If
           - ShouldEnableGenAIQuery
           - 'true'
           - 'false'
@@ -201,7 +208,7 @@ Resources:
   WebUriParameter:
     Type: "AWS::SSM::Parameter"
     Properties:
-      Name: WebUiUri
+      Name: !Sub ${ParentStackName}-WebUiUri
       Type: String
       Value: !GetAtt Web.Outputs.Uri
       Description: PCA Web Application URI
