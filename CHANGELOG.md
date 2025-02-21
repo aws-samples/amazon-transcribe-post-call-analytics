@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Refactored Bedrock calls to use the Converse API eliminating the need for custom model specific payloads
 - Refactored all model invocation to use Inference Profiles. This is required for Nova models. It is also applied to Anthropic models for consistency and improved scalability.
 - Added adaptive retry configuration to Bedrock api calls to add some tolerance for quota throttling exceptions (at the expense of latency)
+- Remove Boto3 layer from all Lambda functions as Bedrock features are available in the base Boto package deployed in Lambda
+- Updated all Lambda functions to Python 3.13 runtime
+
 
 ## [0.7.11] - 2024-10-09
 

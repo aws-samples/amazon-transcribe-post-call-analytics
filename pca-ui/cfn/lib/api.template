@@ -62,11 +62,6 @@ Parameters:
       Secrets manager secret Arn containing the third party LLM API key
     Default: ''
 
-  Boto3LayerArn:
-    Default: ''
-    Type: String
-    Description: External Boto3 Layer Arn to use. If none is provided, one will be created automatically via boto3.template
-
   PyUtilsLayerArn:
     Type: String
     Description: External PyUtils Layer Arn to use.
@@ -76,7 +71,6 @@ Parameters:
     Description: The DynamoDB table name where the summary and query prompt templates are stored.
 
 Conditions:
-  ShouldAddBoto3Layer: !Not [!Equals [!Ref Boto3LayerArn, '']]
   HasAnthropicSummary: !Equals [!Ref GenAIQueryType, 'ANTHROPIC']
 
 Resources:
@@ -265,10 +259,6 @@ Resources:
       Timeout: 900
       Layers:
         - !Ref PyUtilsLayerArn
-        - !If 
-          - ShouldAddBoto3Layer
-          - !Ref Boto3LayerArn
-          - !Ref AWS::NoValue
       Environment:
         Variables:
           QUERY_TYPE: !Ref GenAIQueryType
@@ -327,7 +317,7 @@ Resources:
                   - 'secretsmanager:ListSecretVersionIds'
                 Resource: !Ref LLMThirdPartyApiKey
               - !Ref "AWS::NoValue"
-      Runtime: python3.11
+      Runtime: python3.13
 
   GenAIRefreshSummaryFunction:
     Type: "AWS::Serverless::Function"
@@ -337,10 +327,6 @@ Resources:
       Timeout: 900
       Layers:
         - !Ref PyUtilsLayerArn
-        - !If
-          - ShouldAddBoto3Layer
-          - !Ref Boto3LayerArn
-          - !Ref AWS::NoValue
       Environment:
         Variables:
           SUMMARIZER_ARN: !Ref SummarizerArn
@@ -358,7 +344,7 @@ Resources:
             Action:
               - lambda:InvokeFunction
             Resource: !Ref SummarizerArn
-      Runtime: python3.11
+      Runtime: python3.13
 
   GeneratePresignedURLFunction:
     Type: "AWS::Serverless::Function"

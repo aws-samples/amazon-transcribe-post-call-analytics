@@ -16,9 +16,6 @@ Parameters:
     Type: String
     Default: ffmpeg.zip
 
-  Boto3Layer:
-    Type: String
-
   PyUtilsLayer:
     Type: String
 
@@ -48,7 +45,7 @@ Parameters:
 
 Globals:
   Function:
-    Runtime: python3.11
+    Runtime: python3.13
     MemorySize: 1024
     Timeout: 60
 
@@ -150,7 +147,6 @@ Resources:
       Timeout: 300
       Layers:
         - !Ref FFMPEGLayer
-        - !Ref Boto3Layer
       Environment:
         Variables:
           RoleArn: !GetAtt TranscribeRole.Arn
@@ -165,8 +161,6 @@ Resources:
       Handler: pca-aws-sf-extract-job-header.lambda_handler
       MemorySize: 1024
       Timeout: 900
-      Layers:
-        - !Ref Boto3Layer
       Environment:
         Variables:
           AWS_DATA_PATH: /opt/models
@@ -184,7 +178,6 @@ Resources:
       MemorySize: 1024
       Timeout: 900
       Layers:
-        - !Ref Boto3Layer
         - !Ref FFMPEGLayer
       Environment:
         Variables:
@@ -203,7 +196,6 @@ Resources:
       Timeout: 900
       Layers:
         - !Ref FFMPEGLayer
-        - !Ref Boto3Layer
       Environment:
         Variables:
           AWS_DATA_PATH: /opt/models
@@ -220,8 +212,6 @@ Resources:
     Properties:
       CodeUri: ../../src/pca
       Handler: pca-aws-sf-post-processing.lambda_handler
-      Layers:
-        - !Ref Boto3Layer
       Environment:
         Variables:
           AWS_DATA_PATH: /opt/models
@@ -235,8 +225,6 @@ Resources:
     Properties:
       CodeUri: ../../src/pca
       Handler: pca-aws-sf-ctr-genesys.lambda_handler
-      Layers:
-        - !Ref Boto3Layer
       Environment:
         Variables:
           AWS_DATA_PATH: /opt/models
@@ -250,8 +238,6 @@ Resources:
     Properties:
       CodeUri: ../../src/pca
       Handler: pca-aws-sf-post-ctr-processing.lambda_handler
-      Layers:
-        - !Ref Boto3Layer
       Environment:
         Variables:
           AWS_DATA_PATH: /opt/models
@@ -263,7 +249,7 @@ Resources:
   SFFetchTranscript:
     Type: AWS::Serverless::Function
     Properties:
-      Runtime: python3.11
+      Runtime: python3.13
       CodeUri: ../../src/pca
       Handler: pca-aws-fetch-transcript.lambda_handler
       Environment:
@@ -277,13 +263,12 @@ Resources:
   SFSummarize:
     Type: AWS::Serverless::Function
     Properties:
-      Runtime: python3.11
+      Runtime: python3.13
       CodeUri: ../../src/pca
       Handler: pca-aws-sf-summarize.lambda_handler
       Timeout: 900
       Layers:
         - !Ref PyUtilsLayer
-        - !Ref Boto3Layer
       Environment:
         Variables:
           STACK_NAME: !Ref ParentStackName

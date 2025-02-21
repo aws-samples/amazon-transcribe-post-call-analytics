@@ -50,7 +50,7 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       Handler: index.handler
-      Runtime: python3.11
+      Runtime: python3.13
       Role: !GetAtt 'ffmpegZipFunctionRole.Arn'
       Timeout: 300
       MemorySize: 1024

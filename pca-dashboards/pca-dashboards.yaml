@@ -286,7 +286,7 @@ Resources:
 
             MemorySize: 128
             Role: !GetAtt FirehoseTransformationLambdaRoleForPca.Arn
-            Runtime: "python3.11"
+            Runtime: "python3.13"
             Timeout: 600
             TracingConfig:
                 Mode: "PassThrough"
