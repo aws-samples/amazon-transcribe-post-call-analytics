@@ -1153,3 +1153,11 @@ Outputs:
   LLMPromptQueryTemplate:
     Description: The LLM query prompt template in DynamoDB Table - open to customise query prompts.
     Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/dynamodbv2/home?region=${AWS::Region}#edit-item?itemMode=2&pk=LLMPromptQueryTemplate&route=ROUTE_ITEM_EXPLORER&sk=&table=${LLMPromptConfigure.Outputs.LLMTableName}"
+
+  LLMCallConflictTemplate:
+    Description: The LLM call conflict template in DynamoDB Table - open to customise conflict analysis prompts.
+    Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/dynamodbv2/home?region=${AWS::Region}#edit-item?itemMode=2&pk=LLMCallConflictTemplate&route=ROUTE_ITEM_EXPLORER&sk=&table=${LLMPromptConfigure.Outputs.LLMTableName}"
+    
+  LLMPromptSpeakerTemplate:
+    Description: The LLM speaker analysis template in DynamoDB Table - open to customise speaker analysis prompts.
+    Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/dynamodbv2/home?region=${AWS::Region}#edit-item?itemMode=2&pk=LLMPromptSpeakerTemplate&route=ROUTE_ITEM_EXPLORER&sk=&table=${LLMPromptConfigure.Outputs.LLMTableName}"

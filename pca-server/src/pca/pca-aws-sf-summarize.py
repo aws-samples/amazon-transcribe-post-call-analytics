@@ -25,6 +25,7 @@ TOKEN_COUNT = int(os.getenv('TOKEN_COUNT', '0')) # default 0 - do not truncate.
 SUMMARY_LAMBDA_ARN = os.getenv('SUMMARY_LAMBDA_ARN','')
 FETCH_TRANSCRIPT_LAMBDA_ARN = os.getenv('FETCH_TRANSCRIPT_LAMBDA_ARN','')
 BEDROCK_MODEL_ID = os.environ.get("BEDROCK_MODEL_ID","amazon.titan-text-express-v1")
+BEDROCK_MODEL_REASONING_ID = os.environ.get("BEDROCK_MODEL_REASONING_ID","")
 BEDROCK_ENDPOINT_URL = os.environ.get("ENDPOINT_URL", f'https://bedrock-runtime.{AWS_REGION}.amazonaws.com')
 LLM_TABLE_NAME = os.getenv('LLM_TABLE_NAME')
 
@@ -128,6 +129,218 @@ def get_templates_from_dynamodb():
         print ("Exception:", e)
         raise (e)
     return templates
+
+def get_speaker_validation_prompt_from_dynamodb():
+    """
+    Gets the speaker validation prompt from DynamoDB.
+    Similar to get_templates_from_dynamodb() but specific for speaker validation.
+    """
+    try:
+        # Get the template from DynamoDB
+        SPEAKER_PROMPT_TEMPLATE = dynamodb_client.get_item(
+            Key={'LLMPromptTemplateId': {'S': 'LLMPromptSpeakerTemplate'}},
+            TableName=LLM_TABLE_NAME
+        )
+        
+        prompt = SPEAKER_PROMPT_TEMPLATE["Item"].get('SpeakerPrompt', {}).get('S', '')
+                
+        if not prompt:
+            raise Exception("No speaker validation prompt found in DynamoDB")
+            
+        # Replace encoded line breaks if they exist
+        prompt = prompt.replace("<br>", "\n")
+        
+        return prompt
+        
+    except Exception as e:
+        print("Exception getting speaker prompt:", e)
+        # Return a default prompt in case of error
+        return """Please analyze this conversation and determine if the speakers are correctly labeled as AGENT and CUSTOMER. 
+                 Return a JSON with {{"isCorrect": boolean, "confidence": float}} where confidence is between 0 and 1."""
+    
+def generate_speaker_validation(transcript, bedrock_client=None):
+    """
+    Validates speaker roles in call transcripts using Amazon Bedrock.
+    
+    Args:
+        prompt (str): The formatted prompt containing transcript and requirements
+        bedrock_client (boto3.client, optional): Pre-configured Bedrock client
+        
+    Returns:
+        dict: Contains isCorrect (bool) and confidence (float) values
+    """
+    try:
+        base_prompt = get_speaker_validation_prompt_from_dynamodb()
+        full_prompt = base_prompt.replace("{transcript}", transcript)
+        
+        clean_prompt = modify_prompt_based_on_model(BEDROCK_MODEL_REASONING_ID, full_prompt)
+        
+        parameters = {
+            "temperature": 0,
+            "top_p": 1, 
+            "max_tokens": 256  
+        }
+        
+        # Initialize Bedrock client if not provided
+        if not bedrock_client:
+            bedrock_client = get_bedrock_client()
+            
+        try:            
+            body = get_bedrock_request_body(BEDROCK_MODEL_REASONING_ID, parameters, clean_prompt)
+
+            print(f"Calling Bedrock with prompt: {clean_prompt}")
+            response = bedrock_client.invoke_model(
+                body=json.dumps(body),
+                modelId=BEDROCK_MODEL_REASONING_ID,
+                accept='application/json',
+                contentType='application/json'
+            )
+            print(f"Bedrock model: {BEDROCK_MODEL_REASONING_ID}")
+            generated_text = get_bedrock_generate_text(BEDROCK_MODEL_REASONING_ID, response)
+            print(f"Bedrock response: {response} and {type(generated_text)} and {generated_text}")
+
+            json_str = generated_text[generated_text.find('{'):generated_text.rfind('}')+1]
+            return json.loads(json_str)            
+            
+        except (json.JSONDecodeError, ValueError) as e:
+            print(f"Error parsing Bedrock response: {e}")
+            return {"isCorrect": True, "confidence": 0.85}
+            
+        except Exception as e:
+            print(f"Error calling Bedrock: {e}")
+            return {"isCorrect": True, "confidence": 0.85}
+            
+    except Exception as e:
+        print(f"Unexpected error in speaker validation: {e}")
+        return {"isCorrect": True, "confidence": 0.85}
+
+def get_conflict_prompt_from_dynamodb():
+    """
+    Gets the conflict detection prompt from DynamoDB.
+    """
+    try:
+        # Get the template from DynamoDB
+        CONFLICT_PROMPT_TEMPLATE = dynamodb_client.get_item(
+            Key={'LLMPromptTemplateId': {'S': 'LLMCallConflictTemplate'}},
+            TableName=LLM_TABLE_NAME
+        )
+        
+        prompt = CONFLICT_PROMPT_TEMPLATE["Item"].get('ConflictPrompt', {}).get('S', '')
+                
+        if not prompt:
+            raise Exception("No conflict detection prompt found in DynamoDB")
+            
+        # Replace encoded line breaks if they exist
+        prompt = prompt.replace("<br>", "\n")
+        
+        return prompt
+        
+    except Exception as e:
+        print("Exception getting conflict prompt:", e)
+        # Return a default prompt in case of error
+        return """Given the transcript of a conversation, analyze it for signs of connection issues, such as:
+                 - Multiple repeated greetings ("hello")
+                 - Explicit connection verification phrases ("can you hear me")
+                 - Voicemail messages
+                 If at least two of these patterns are found, classify it as having connection issues.
+                 IMPORTANT: RETURN ONLY a JSON with two fields:
+                 'hasConflict': boolean indicating if issues were detected
+                 'confidence': float between 0 and 1 indicating the detection confidence level
+                 Transcript: {transcript}"""
+
+def generate_conflict_validation(transcript, bedrock_client=None):
+    """
+    Validates conflicts in transcripts using Amazon Bedrock.
+    
+    Args:
+        transcript (str): The transcript to analyze
+        bedrock_client (boto3.client, optional): Pre-configured Bedrock client
+        
+    Returns:
+        dict: Contains hasConflict (bool) and confidence (float)
+    """
+    try:
+        base_prompt = get_conflict_prompt_from_dynamodb()
+        full_prompt = base_prompt.replace("{transcript}", transcript)
+        
+        clean_prompt = modify_prompt_based_on_model(BEDROCK_MODEL_REASONING_ID, full_prompt)
+        
+        parameters = {
+            "temperature": 0,
+            "top_p": 1, 
+            "max_tokens": 256
+        }
+        
+        # Initialize Bedrock client if not provided
+        if not bedrock_client:
+            bedrock_client = get_bedrock_client()
+            
+        try:
+            body = get_bedrock_request_body(BEDROCK_MODEL_REASONING_ID, parameters, clean_prompt)
+
+            print(f"Calling Bedrock with prompt: {clean_prompt}")
+            response = bedrock_client.invoke_model(
+                body=json.dumps(body),
+                modelId=BEDROCK_MODEL_REASONING_ID,
+                accept='application/json',
+                contentType='application/json'
+            )
+            print(f"Bedrock model: {BEDROCK_MODEL_REASONING_ID}")
+            generated_text = get_bedrock_generate_text(BEDROCK_MODEL_REASONING_ID, response)
+            print(f"Bedrock response: {generated_text}")
+
+            # Extract JSON from the response
+            json_str = generated_text[generated_text.find('{'):generated_text.rfind('}')+1]
+            return json.loads(json_str)
+            
+        except (json.JSONDecodeError, ValueError) as e:
+            print(f"Error parsing Bedrock response: {e}")
+            return {"hasConflict": False, "confidence": 0.85}
+            
+        except Exception as e:
+            print(f"Error calling Bedrock: {e}")
+            return {"hasConflict": False, "confidence": 0.85}
+            
+    except Exception as e:
+        print(f"Unexpected error in conflict validation: {e}")
+        return {"hasConflict": False, "confidence": 0.85}
+
+
+def get_bedrock_request_body(modelId, parameters, prompt):
+    provider = modelId.split(".")[0]
+    request_body = None
+    if provider == "anthropic":
+        if 'claude-3' in modelId:
+            request_body = {
+                "max_tokens": MAX_TOKENS,
+                "messages": [{"role": "user", "content": prompt}],
+                "anthropic_version": "bedrock-2023-05-31"
+            }
+        else:    
+            request_body = {
+                "prompt": prompt,
+                "max_tokens_to_sample": MAX_TOKENS
+            } 
+        request_body.update(parameters)
+    elif provider == "ai21":
+        request_body = {
+            "prompt": prompt,
+            "maxTokens": MAX_TOKENS
+        }
+        request_body.update(parameters)
+    elif provider == "amazon":
+        textGenerationConfig = {
+            "maxTokenCount": MAX_TOKENS
+        }
+        textGenerationConfig.update(parameters)
+        request_body = {
+            "inputText": prompt,
+            "textGenerationConfig": textGenerationConfig
+        }
+    else:
+        raise Exception("Unsupported provider: ", provider)
+    return request_body
+
 
 def generate_anthropic_summary(transcript):
 
@@ -247,6 +460,11 @@ def lambda_handler(event, context):
     
     print(event)
 
+    if event.get('operation') == 'SPEAKER_DETECTION':
+        return generate_speaker_validation(event['transcript'])
+    elif event.get('operation') == 'SPEAKER_CONFLICT':
+        return generate_conflict_validation(event['transcript'])
+    
     # Load our configuration data
     cf.loadConfiguration()
 

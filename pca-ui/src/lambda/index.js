@@ -1,3 +1,4 @@
+// V1.1.4 DVA-301 Detect conflicts This Lambda function is triggered by an S3 event and processes the JSON file created by the Transcribe job.
 const AWS = require("aws-sdk");
 const s3 = new AWS.S3();
 const ddb = new AWS.DynamoDB();
@@ -53,6 +54,8 @@ async function createRecord(record) {
     const parsed = JSON.parse(body);
     console.log("Parsed:", parsed);
 
+    const hasConflict = checkForConflict(parsed.ConversationAnalytics);
+
     const jobInfo =
       parsed.ConversationAnalytics.SourceInformation[0].TranscribeJobInfo;
 
@@ -62,10 +65,11 @@ async function createRecord(record) {
     console.log("Timestamp:", timestamp);
 
     const defaultId = "spk_1";
-    const callerId =
-      parsed.ConversationAnalytics.SpeakerLabels.find(
-        (labelObj) => labelObj.DisplayText === "Customer"
-      ).Speaker || defaultId;
+    const callerId = !hasConflict && parsed.ConversationAnalytics.SpeakerLabels.length > 0 
+        ? parsed.ConversationAnalytics.SpeakerLabels.find(
+            (labelObj) => labelObj.DisplayText === "Customer"
+          )?.Speaker || defaultId
+        : defaultId;
 
     let dataJson = {
         key: key,
@@ -76,14 +80,16 @@ async function createRecord(record) {
             // parsed.SpeechSegments[parsed.SpeechSegments.length - 1].SegmentEndTime,
         timestamp: timestamp,
         location: parsed.ConversationAnalytics.ConversationLocation,
-        callerSentimentScore:
-            parsed.ConversationAnalytics.SentimentTrends[callerId].SentimentScore,
-        callerSentimentChange:
-            parsed.ConversationAnalytics.SentimentTrends[callerId].SentimentChange,
+        callerSentimentScore: !hasConflict 
+            ? parsed.ConversationAnalytics.SentimentTrends[callerId]?.SentimentScore || null
+            : null,
+        callerSentimentChange: !hasConflict 
+            ? parsed.ConversationAnalytics.SentimentTrends[callerId]?.SentimentChange || null
+            : null,
         agent: parsed.ConversationAnalytics.Agent,
         customer: parsed.ConversationAnalytics.Cust,
         guid: parsed.ConversationAnalytics.GUID,
-        status: "Done",
+        status: hasConflict ? "Rechazado" : "Done",
     };
 
     
@@ -115,38 +121,37 @@ async function createRecord(record) {
     let items = [makeItem(callId, "call", timestamp, data)];
 
     // Sentiment entries
-    const sentiments = parsed.ConversationAnalytics.SentimentTrends;
-
-    Object.entries(sentiments).map(([k, v]) => {
-      items.push(
-        makeItem(
-          callId,
-          `sentiment#${k === callerId ? "caller" : "agent"}#average`,
-          v.SentimentScore,
-          data
-        ),
-        makeItem(
-          callId,
-          `sentiment#${k === callerId ? "caller" : "agent"}#trend`,
-          v.SentimentChange,
-          data
-        )
-      );
-    });
-
-
-    // Entities
-    parsed.ConversationAnalytics.CustomEntities.forEach((entity) => {
-        entity.Values.forEach((value) => {
-            const entityId = `entity#${value}`;
-
-            // Entity record
-            items.push(makeItem(entityId, "entity", 0, entity.Name));
-
-            // Entity search record
-            items.push(makeItem(callId, entityId, 0, data));
+    if (!hasConflict) {
+        const sentiments = parsed.ConversationAnalytics.SentimentTrends;
+        Object.entries(sentiments).map(([k, v]) => {
+        items.push(
+            makeItem(
+            callId,
+            `sentiment#${k === callerId ? "caller" : "agent"}#average`,
+            v.SentimentScore,
+            data
+            ),
+            makeItem(
+            callId,
+            `sentiment#${k === callerId ? "caller" : "agent"}#trend`,
+            v.SentimentChange,
+            data
+            )
+        );
         });
-    });
+        // Entities
+        parsed.ConversationAnalytics.CustomEntities.forEach((entity) => {
+            entity.Values.forEach((value) => {
+                const entityId = `entity#${value}`;
+
+                // Entity record
+                items.push(makeItem(entityId, "entity", 0, entity.Name));
+
+                // Entity search record
+                items.push(makeItem(callId, entityId, 0, data));
+            });
+        });
+    }
 
     // Language
     const language = parsed.ConversationAnalytics.LanguageCode;
@@ -236,6 +241,21 @@ async function deleteKey(key) {
                 .promise();
         })
     );
+}
+
+function checkForConflict(analytics) {
+    // Check if the critical fields are empty
+    console.log("Analytics:", analytics);
+    const criticalFieldsEmpty = 
+        (!analytics.SpeakerLabels || analytics.SpeakerLabels.length === 0) &&
+        (!analytics.CustomEntities || analytics.CustomEntities.length === 0) &&
+        (!analytics.SentimentTrends || Object.keys(analytics.SentimentTrends).length === 0) &&
+        (!analytics.Summary || Object.keys(analytics.Summary).length === 0) &&
+        (!analytics.SpeechSegments || analytics.SpeechSegments.length === 0);
+    
+    const hasZeroDuration = parseFloat(analytics.Duration) === 0.0;
+
+    return criticalFieldsEmpty || hasZeroDuration;
 }
 
 exports.handler = async function (event, context) {

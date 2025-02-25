@@ -102,7 +102,26 @@
           "IntervalSeconds": 5,
           "ErrorEquals": ["Lambda.Unknown"]
       }],
-      "Next": "ProcessTelephonyCTR?"
+      "Next": "CheckProcessingStatus"
+    },
+    "CheckProcessingStatus": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "And": [
+            {
+              "Variable": "$.status",
+              "IsPresent": true
+            },
+            {
+              "Variable": "$.status",
+              "StringEquals": "CONFLICT_DETECTED"
+            }
+          ],
+          "Next": "FinalProcessing"
+        }
+      ],
+      "Default": "ProcessTelephonyCTR?"
     },
     "ProcessTelephonyCTR?": {
       "Type": "Choice",
