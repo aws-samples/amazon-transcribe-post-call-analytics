@@ -1027,6 +1027,7 @@ Resources:
     Properties:
       Handler: index.handler
       Runtime: python3.13
+      Timeout: 120
       Role: !GetAtt QuickSightEnabledCheckFunctionRole.Arn
       Code: 
         ZipFile: !Sub |
