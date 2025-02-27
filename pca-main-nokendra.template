@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 
-Description: Amazon Transcribe Post Call Analytics - PCA (v0.7.13) (uksb-1sn29lk73, SO9071)
+Description: Amazon Transcribe Post Call Analytics - PCA (v0.7.14) (uksb-1sn29lk73, SO9071)
 
 Parameters:
 
@@ -1027,6 +1027,7 @@ Resources:
     Properties:
       Handler: index.handler
       Runtime: python3.13
+      Timeout: 120
       Role: !GetAtt QuickSightEnabledCheckFunctionRole.Arn
       Code: 
         ZipFile: !Sub |
