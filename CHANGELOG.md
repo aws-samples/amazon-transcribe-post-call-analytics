@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.14] - 2025-02-27
+
+### Fixed
+- Stack rollback when deploying with dashboard option enabled, due to lambda timeout - PR #298
+
 ## [0.7.13] - 2025-02-21
 
 ### Fixed
@@ -296,6 +301,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial release
 
 [Unreleased]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/compare/main...develop
+[0.7.14]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.7.14
 [0.7.13]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.7.13
 [0.7.12]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.7.12
 [0.7.11]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.7.11
