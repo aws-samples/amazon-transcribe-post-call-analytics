@@ -20,11 +20,16 @@ import json
 import csv
 import boto3
 import time
+import os
 
 # Sentiment helpers
 MIN_SENTIMENT_LENGTH = 8
 NLP_THROTTLE_RETRIES = 1
 COMPREHEND_SENTIMENT_SCALER = 5.0
+
+# Lambda client
+SUMMARY_LAMBDA_ARN = os.environ["SUMMARY_LAMBDA_ARN"]
+lambda_client = boto3.client("lambda")
 
 # Other Markers and helpers
 PII_PLACEHOLDER = "[PII]"
@@ -84,7 +89,178 @@ class TranscribeParser:
            self.asr_output["ConversationCharacteristics"] and \
            "ContactSummary" in self.asr_output["ConversationCharacteristics"]:
             self.analytics.contact_summary = self.asr_output["ConversationCharacteristics"]["ContactSummary"]
+    
+    def extract_audio_segments(self, json_string: str, num_segments: int = 15) -> str:
+        try:
+            data = json.loads(json_string)
+            audio_segments = data['results'].get('audio_segments', [])
+            
+            filtered_segments = []
+            for segment in audio_segments[:num_segments]:
+                filtered = {
+                    "speaker_label": segment.get("speaker_label", ""),
+                    "transcript": segment.get("transcript", "")
+                }
+                filtered_segments.append(json.dumps(filtered, ensure_ascii=False))            
+            return '\n'.join(filtered_segments)
+            
+        except json.JSONDecodeError:
+            return ""
 
+    def swap_speakers_in_transcript(self):
+        """Swaps spk_0 and spk_1 throughout the transcript JSON"""
+        updated_json = json.dumps(self.asr_output)
+        updated_json = updated_json.replace('spk_0', 'temp_placeholder')
+        updated_json = updated_json.replace('spk_1', 'spk_0')
+        updated_json = updated_json.replace('temp_placeholder', 'spk_1')
+        return json.loads(updated_json)
+
+    def generate_speaker_detection(self, transcript):
+        """Detects speakers in collection call transcripts by calling summarization lambda"""
+        try:
+            payload = {
+                'operation': 'SPEAKER_DETECTION',
+                'transcript': transcript
+            }
+            
+            response = lambda_client.invoke(
+                FunctionName=SUMMARY_LAMBDA_ARN,
+                InvocationType='RequestResponse',
+                Payload=json.dumps(payload)
+            )
+            
+            response_data = response['Payload'].read().decode()
+            return json.loads(response_data)
+            
+        except Exception as e:
+            print(f"Error in speaker detection: {e}")
+            return {"isCorrect": True, "confidence": 0.85}
+
+    def detect_conflict(self, transcript_lines: str) -> dict:
+        """
+        Detects conflicts in transcriptions.
+        Args:
+            self: TranscribeParser instance
+            transcript_lines: String with transcript lines in JSON format
+        Returns:
+            dict: Dictionary with hasConflict and confidence
+        """
+        try:
+            # Parse JSON lines
+            segments = [json.loads(line) for line in transcript_lines.strip().split('\n') if line.strip()]
+            
+            if len(segments) > 8:
+                return {
+                    'hasConflict': False,
+                    'confidence': 0.9
+                }
+            
+            # Speaker analysis
+            unique_speakers = set(seg['speaker_label'] for seg in segments)
+            is_single_speaker = len(unique_speakers) == 1
+            
+            # Normalize and join all text for content analysis
+            full_text = ' '.join(seg['transcript'].lower() for seg in segments)
+            normalized_text = re.sub(r'[^\w\s]', '', full_text)
+
+            # Answering machine patterns
+            answering_machine_patterns = [
+                r'press the pound key',
+                r'leave your message',
+                r'you may hang up',
+                r'leave your message after the tone',
+                r'is not available',
+                r'after the tone'
+            ]
+            
+            has_answering_machine = any(re.search(p, normalized_text) for p in answering_machine_patterns)
+            # Case 1: Answering machine (regardless of number of segments)
+            if has_answering_machine:
+                return {
+                    'hasConflict': True,
+                    'confidence': 1.0
+                }
+            
+            hello_count = len(re.findall(r'\bhello\b', normalized_text))
+            can_you_hear_me_count = len(re.findall(r'\bcan you hear me\b', normalized_text))
+            
+            connection_indicators = 0
+            confidence = 0.0
+            
+            if hello_count >= 3:
+                connection_indicators += 2
+                confidence += 0.4
+            elif hello_count >= 2:
+                connection_indicators += 1
+                confidence += 0.3
+            
+            if can_you_hear_me_count >= 1:
+                connection_indicators += 2
+                confidence += 0.4
+            
+            if is_single_speaker:
+                connection_indicators += 1
+                confidence += 0.2
+                
+            if connection_indicators >= 2:
+                return {
+                    'hasConflict': True,
+                    'confidence': round(min(confidence + 0.2, 1.0), 2)
+                }         
+            
+            print(f"Unique speakers: {unique_speakers}")
+            
+            if len(segments) <= 4:
+                return {
+                    'hasConflict': False,
+                    'confidence': 0.5  
+                }
+            
+            return {
+                'hasConflict': False,
+                'confidence': 0.85
+            }
+                
+        except Exception as e:
+            print(f"Error parsing transcript: {e}")
+            return {
+                'hasConflict': False,
+                'confidence': 0.85
+            }
+
+    def generate_verification(self, transcript: str) -> dict:
+        """Detects conflict issues in transcripts"""
+        try:
+            # First do local detection
+            result = self.detect_conflict(transcript)
+            print(f"Local conflict detection: {result}")
+            # If no clear conflict or low confidence, use Lambda
+            if result['confidence'] < 0.8 and len(transcript.strip().split('\n')) <= 7:
+                try:
+                    payload = {
+                        'operation': 'SPEAKER_CONFLICT',
+                        'transcript': transcript
+                    }
+                    
+                    response = lambda_client.invoke(
+                        FunctionName=SUMMARY_LAMBDA_ARN,
+                        InvocationType='RequestResponse',
+                        Payload=json.dumps(payload)
+                    )
+                    
+                    response_data = response['Payload'].read().decode()
+                    return json.loads(response_data)
+                    
+                except Exception as e:
+                    print(f"Error in lambda invocation: {e}")
+                    return result
+                    
+            return result
+                
+        except Exception as e:
+            print(f"Error in conflict detection: {e}")
+            return {"hasConflict": False, "confidence": 0.85}
+                
     def generate_sentiment_trend(self, speaker, speaker_num):
         """
         Generates an entry for the "SentimentTrends" block for the given speaker, which is the overall speaker
@@ -1149,6 +1325,46 @@ class TranscribeParser:
         self.set_comprehend_language_code()
         self.load_simple_entity_string_map()
 
+        transcript_sample = self.extract_audio_segments(json.dumps(self.asr_output))
+        validate_conflict = self.generate_verification(transcript_sample)
+
+        # Early return if conflict is detected
+        if validate_conflict.get('hasConflict', False):
+            print(f"Conflict detected with confidence: {validate_conflict.get('confidence', 0)}")
+            # Clean up the temp file
+            pcacommon.remove_temp_file(json_filepath)
+            
+            # Update status in results
+            self.pca_results.analytics.status = "CONFLICT_DETECTED"
+            self.pca_results.write_results_to_s3(bucket=output_bucket, 
+                                            object_key=sf_event["interimResultsFile"])
+            
+            # Update event for next step
+            sf_event["status"] = "CONFLICT_DETECTED"
+            sf_event["conflictInfo"] = validate_conflict
+            
+            if "telephony" not in sf_event:
+                sf_event["telephony"] = "none"
+            if "summarize" not in sf_event:
+                sf_event["summarize"] = "None"
+                
+            return sf_event
+        
+
+        speaker_validation = self.generate_speaker_detection(transcript_sample)        
+        print(f"Speaker Validation: {speaker_validation}")
+        if not speaker_validation.get('isCorrect', True):
+            self.asr_output = self.swap_speakers_in_transcript()            
+            corrected_json = json.dumps(self.asr_output)
+            s3_client = boto3.client('s3')
+            s3_client.put_object(
+                Bucket=output_bucket,
+                Key=transcriptResultsKey,
+                Body=corrected_json,
+                ContentType='application/json'
+            )
+
+
         # Now create turn-by-turn diarisation, with associated sentiments and entities
         self.speechSegmentList = self.create_turn_by_turn_segments(sf_event)
 
@@ -1188,12 +1404,15 @@ def lambda_handler(event, context):
     transcribeParser = TranscribeParser(cf.appConfig[cf.CONF_MINPOSITIVE],
                                         cf.appConfig[cf.CONF_MINNEGATIVE],
                                         cf.appConfig[cf.CONF_ENTITYENDPOINT])
-    transcribeParser.parse_transcribe_file(sf_data)
+    result = transcribeParser.parse_transcribe_file(sf_data)
 
-    # Add the requested telephony CTR type
-    sf_data["telephony"] = cf.appConfig[cf.CONF_TELEPHONY_CTR]
-    return sf_data
-
+    if result is None:
+        # Add the requested telephony CTR type for normal flow
+        sf_data["telephony"] = cf.appConfig[cf.CONF_TELEPHONY_CTR]
+        return sf_data
+    else:
+        # conflict case
+        return result
 
 # Main entrypoint for testing
 if __name__ == "__main__":
