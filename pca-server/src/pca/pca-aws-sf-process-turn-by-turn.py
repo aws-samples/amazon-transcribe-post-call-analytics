@@ -355,8 +355,16 @@ class TranscribeParser:
         Perform sentiment analysis, but try and avert throttling by trying one more time if this exceptions.
         It is not a replacement for limit increases, but will help limit failures if usage suddenly grows
         """
+
+        MAX_TEXT_SIZE = 5000 # This is limited by the AWS comprehend services:  https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/comprehend/client/detect_sentiment.html
         sentimentResponse = {}
         counter = 0
+
+        if isinstance(text, str):
+            text = text.encode('utf-8') # Convert to bytes
+            text = text[:MAX_TEXT_SIZE] # Truncate if too long for AWS Comprehend
+            text = text.decode('utf-8', 'ignore') # Convert back to string
+                
         while sentimentResponse == {}:
             try:
                 # Get the sentiment, and strip off the MIXED response (as we won't be using it)
