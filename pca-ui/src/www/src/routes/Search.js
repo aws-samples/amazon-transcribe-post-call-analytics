@@ -13,28 +13,29 @@ import { MultiSelect } from "../components/MultiSelect";
 import { Select } from "../components/Select";
 import { ContentLayout } from "@cloudscape-design/components";
 import { Button, Link, Header, Form, Grid, Container, SpaceBetween, Input, FormField, TextContent } from '@cloudscape-design/components';
-
-
-const sentimentWhat = [
-  { value: "average", label: "Average" },
-  { value: "trend", label: "Trending" },
-];
-
-const sentimentWho = [
-  { value: "caller", label: "Customer" },
-  { value: "agent", label: "Agent" },
-];
-
-const sentimentDirection = [
-  { value: "positive", label: "Positive" },
-  { value: "negative", label: "Negative" },
-];
+import { useTranslation } from 'react-i18next';
 
 function Search({ setAlert }) {
   const [editing, setEditing] = useState(true);
   const [query, setQuery] = useState({});
   const [shouldSearch, setShouldSearch] = useState(true);
   const [jobName, setJobName] = useState("");
+  const { t } = useTranslation();
+
+  const sentimentWhat = [
+    { value: "average", label: t("search.average") },
+    { value: "trend", label: t("search.trend") },
+  ];
+  
+  const sentimentWho = [
+    { value: "caller", label: t("search.caller") },
+    { value: "agent", label: t("search.agent") },
+  ];
+  
+  const sentimentDirection = [
+    { value: "positive", label: t("search.positive") },
+    { value: "negative", label: t("search.negative") },
+  ];
 
   useEffect(() => {
     (query.timestampTo && query.timestampTo) ||
@@ -83,22 +84,23 @@ function Search({ setAlert }) {
   };
 
   useDangerAlert(errorEntities || errorLanguageCodes || errorResults, setAlert);
-
+  
   return (
   <ContentLayout 
     header={
       <Header
         variant="h1"
         info={<Link variant="info" ariaLabel="Info goes here.">Info</Link>}>
-          Search
+          {t("utilities.search")}
       </Header>
     }>
       <Container>
         <Form>
           <SpaceBetween direction="vertical" size="l">
-            <FormField label="Language Code">
+            <FormField label={t("utilities.language")}>
               <SpaceBetween direction="horizontal" size="l">
                 <Select
+                  placeholder={t("select")}
                   onChange={(event) => handleQueryInput(event.value, "language")}
                   options={(languageCodes || []).map((code, i) => ({
                     label: code,
@@ -118,11 +120,11 @@ function Search({ setAlert }) {
                     handleQueryInput(null, "language");
                   }}
                 >
-                Clear
+                {t("clear")}
                 </Button>
               </SpaceBetween>
             </FormField>
-            <FormField label="Date Range">
+            <FormField label={t("search.dateRangeTitle")}>
               <SpaceBetween direction="horizontal" size="l">
                 <DatePicker
                   selectsRange
@@ -131,7 +133,7 @@ function Search({ setAlert }) {
                   dateFormat="yyyy-MM-dd"
                   onChange={handleDates}
                   maxDate={new Date()}
-                  placeholderText="Select a start and end date"
+                  placeholderText={t("search.dateRange")}
                 />
                 <Button
                   className="mt-2"
@@ -141,14 +143,15 @@ function Search({ setAlert }) {
                     handleQueryInput(null, "timestampFrom");
                   }}
                 >
-                  Clear
+                  {t("clear")}
                 </Button>
               </SpaceBetween>
           </FormField>
-          <FormField label="Sentiment">
-            <SpaceBetween direction="horizontal" size="l">
-              <p className="align-self-end mb-0">The</p>
+          <FormField label={t("sentiment")}>
+          <SpaceBetween direction="horizontal" size="l">
+            <p className="align-self-end mb-0">{t('search.startWord')}</p>
               <Select
+                placeholder={t("select")}
                 className="flex-grow-1"
                 options={sentimentWhat}
                 onChange={(event) =>
@@ -159,8 +162,9 @@ function Search({ setAlert }) {
                   null
                 }
               />
-              <p className="align-self-end mb-0"> sentiment of the</p>
+              <p className="align-self-end mb-0">{t('search.middleWord')}</p>
               <Select
+                placeholder={t("select")}
                 className="flex-grow-1"
                 options={sentimentWho}
                 onChange={(event) =>
@@ -170,8 +174,9 @@ function Search({ setAlert }) {
                   sentimentWho.find((o) => o.value === query.sentimentWho) || null
                 }
               />
-              <p className="align-self-end mb-0">is</p>
+              <p className="align-self-end mb-0">{t('search.endWord')}</p>
               <Select
+                placeholder={t("select")}
                 className="flex-grow-1"
                 options={sentimentDirection}
                 onChange={(event) =>
@@ -192,11 +197,11 @@ function Search({ setAlert }) {
                   handleQueryInput(null, "sentimentDirection");
                 }}
               >
-                Clear
+                {t('clear')}
               </Button>
             </SpaceBetween>
           </FormField>
-          <FormField label="Entities">
+          <FormField label={t("search.entities")}>
             <SpaceBetween direction="horizontal" size="l">
               <MultiSelect
                 options={(entities || []).map((entity) => ({
@@ -209,7 +214,7 @@ function Search({ setAlert }) {
             </SpaceBetween>
           </FormField>
 
-          <FormField label="Job Name">
+          <FormField label={t("search.jobName")}>
             <SpaceBetween direction="horizontal" size="l">
               <Input
                   value={jobName}
@@ -227,7 +232,7 @@ function Search({ setAlert }) {
                     handleQueryInput(null, "jobName");
                   }}
               >
-                Clear
+                {t("clear")}
               </Button>
 
             </SpaceBetween>
@@ -235,7 +240,7 @@ function Search({ setAlert }) {
 
 
           <Button bg={"primary"} onClick={onClick}>
-            Search
+            {t("utilities.search")}
           </Button>
             
           <hr/>
