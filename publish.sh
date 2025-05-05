@@ -16,11 +16,6 @@
 # export AWS_DEFAULT_REGION=eu-west-1
 ##############################################################################################
 
-# Set architecture for npm/node
-export npm_config_arch=x64
-alias npm="arch -x86_64 npm"
-alias node="arch -x86_64 node"
-
 if ! [ -x "$(command -v npm)" ]; then
   echo 'Error: npm is not installed and required.' >&2
   exit 1
@@ -95,6 +90,10 @@ npm install
 npm run build || exit 1
 popd
 
+pushd pca-ui/src/qbusiness/start_codebuild
+pip install -r requirements.txt -t .
+popd
+
 # Build and deploy embedded MediaSearch project
 echo "Initialize and update git submodules"
 git submodule init
@@ -146,4 +145,3 @@ echo CLI Deploy: aws cloudformation deploy --template-file `pwd`/build/packaged.
 
 echo Done
 exit 0
-

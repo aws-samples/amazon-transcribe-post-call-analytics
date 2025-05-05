@@ -80,6 +80,10 @@ npm install
 npm run build || exit 1
 popd
 
+pushd pca-ui/src/qbusiness/start_codebuild
+pip install -r requirements.txt -t .
+popd
+
 # Build embedded QuickSight dashboards project
 cp pca-dashboards/pca-dashboards.yaml build/pca-dashboards.yaml
 
@@ -111,4 +115,3 @@ echo CLI Deploy: aws cloudformation deploy --template-file `pwd`/build/packaged.
 
 echo Done
 exit 0
-

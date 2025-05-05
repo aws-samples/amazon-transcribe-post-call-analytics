@@ -6,6 +6,11 @@ Parameters:
     Type: String
   DataBucket:
     Type: String
+  QAppWebURL:
+    Type: String
+
+Conditions:
+  HasQBusinessURL: !Not [!Equals [!Ref QAppWebURL, ""]]
 
 Resources:
   WebBucket:
@@ -107,7 +112,10 @@ Resources:
             ContentSecurityPolicy: 
             # Cover both S3 URL types for media-src entries as it
             # varies by region
-              ContentSecurityPolicy: !Sub "default-src 'none'; img-src 'self' https://${DataBucket}.s3.amazonaws.com https://${DataBucket}.s3.${AWS::Region}.amazonaws.com data:; script-src 'self'; style-src 'self' 'unsafe-inline'; object-src 'none'; connect-src 'self' https://*.execute-api.${AWS::Region}.amazonaws.com https://*.auth.${AWS::Region}.amazoncognito.com https://${AudioBucket}.s3.amazonaws.com https://${AudioBucket}.s3.${AWS::Region}.amazonaws.com; font-src data:;  media-src https://${AudioBucket}.s3.amazonaws.com https://${AudioBucket}.s3.${AWS::Region}.amazonaws.com; manifest-src 'self';"
+              ContentSecurityPolicy: !If
+                - HasQBusinessURL
+                - !Sub "default-src 'none'; frame-src ${QAppWebURL}; img-src 'self' https://${DataBucket}.s3.amazonaws.com https://${DataBucket}.s3.${AWS::Region}.amazonaws.com data:; script-src 'self'; style-src 'self' 'unsafe-inline'; object-src 'none'; connect-src 'self' https://*.execute-api.${AWS::Region}.amazonaws.com https://*.auth.${AWS::Region}.amazoncognito.com https://${AudioBucket}.s3.amazonaws.com https://${AudioBucket}.s3.${AWS::Region}.amazonaws.com; font-src data:;  media-src https://${AudioBucket}.s3.amazonaws.com https://${AudioBucket}.s3.${AWS::Region}.amazonaws.com; manifest-src 'self';"
+                - !Sub "default-src 'none'; img-src 'self' https://${DataBucket}.s3.amazonaws.com https://${DataBucket}.s3.${AWS::Region}.amazonaws.com data:; script-src 'self'; style-src 'self' 'unsafe-inline'; object-src 'none'; connect-src 'self' https://*.execute-api.${AWS::Region}.amazonaws.com https://*.auth.${AWS::Region}.amazoncognito.com https://${AudioBucket}.s3.amazonaws.com https://${AudioBucket}.s3.${AWS::Region}.amazonaws.com; font-src data:;  media-src https://${AudioBucket}.s3.amazonaws.com https://${AudioBucket}.s3.${AWS::Region}.amazonaws.com; manifest-src 'self';"
               Override: True
             ContentTypeOptions:               
               Override: True

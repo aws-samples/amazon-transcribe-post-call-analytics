@@ -5,14 +5,29 @@ import {
   NavLink,
 } from "react-router-dom";
 // import { Navbar, Nav, Container, Alert, Button } from "react-bootstrap";
-import { AppLayout,Alert,Notifications, Header, Link, BreadcrumbGroup, TopNavigation, Container, Button} from "@cloudscape-design/components"
+import { AppLayout,Alert,Notifications, Header, Link, BreadcrumbGroup, TopNavigation, Container, Button, Icon } from "@cloudscape-design/components"
 import Home from "./routes/Home";
 import Search from "./routes/Search";
 import Dashboard from "./routes/Dashboard/index";
 import { useState } from "react";
 import { payloadFromToken, logOut } from "./api/auth";
+import QBusinessApp from "./routes/QBusinessApp"; // Add this import
 
 const routes = [
+  {
+    path: "/qbusinessapp",
+    name: "QBusinessApp",
+    Component: QBusinessApp,
+    Breadcrumb: () => {
+      return <BreadcrumbGroup
+        items={[
+          { text: "Home", href: "../" },
+          { text: "Q Business App", href: "#" }
+        ]}
+        ariaLabel="Breadcrumbs"
+      />
+    }
+  },
   {
     path: "/search",
     name: "Search",
@@ -74,6 +89,74 @@ const routes = [
 ];
 
 function Navigation({ userName, email }) {
+  const config = window.pcaSettings || {};
+  const qBusinessEnabled = config.qwebappurl && config.qwebappurl.uri;
+  
+  const utilities = [
+    {
+      type: "button",
+      text: "Search",
+      iconName: "search",
+      href: "search",
+      externalIconAriaLabel: " (opens in a new tab)"
+    },
+    {
+      type: "button",
+      text: "PCA Blog Post",
+      href: "https://amazon.com/post-call-analytics",
+      external: true,
+      externalIconAriaLabel: " (opens in a new tab)"
+    },
+    {
+      type: "menu-dropdown",
+      text: userName,
+      description: email,
+      iconName: "user-profile",
+      onItemClick: (event) => {
+        console.log(event);
+        if (event.detail.id === "signout") logOut();
+      },
+      items: [
+        /* { id: "profile", text: "Profile" },
+        { id: "preferences", text: "Preferences" },
+        { id: "security", text: "Security" },*/
+        {
+          id: "support-group",
+          text: "Support",
+          items: [
+            {
+              id: "documentation",
+              text: "GitHub/Readme",
+              href: "https://github.com/aws-samples/amazon-transcribe-post-call-analytics/",
+              external: true,
+              externalIconAriaLabel:
+                " (opens in new tab)"
+            },
+            {
+              id: "feedback",
+              text: "Blog Post",
+              href: "https://amazon.com/post-call-analytics",
+              external: true,
+              externalIconAriaLabel:
+                " (opens in new tab)"
+            }
+          ]
+        },
+        { id: "signout", text: "Sign out" }
+      ]
+    }
+  ];
+  
+  // Add Q Business button only if it's enabled
+  if (qBusinessEnabled) {
+    utilities.unshift({
+      type: "button",
+      text: "Q Business App",
+      iconSvg: <Icon name="contact" />,
+      href: "/qbusinessapp",
+    });
+  }
+
   return (
     <TopNavigation
       identity={{
@@ -89,61 +172,7 @@ function Navigation({ userName, email }) {
         overflowMenuBackIconAriaLabel: "Back",
         overflowMenuDismissIconAriaLabel: "Close menu"
       }}
-      utilities={[
-        {
-          type: "button",
-          text: "Search",
-          iconName: "search",
-          href: "search",
-          externalIconAriaLabel: " (opens in a new tab)"
-        },
-        {
-          type: "button",
-          text: "PCA Blog Post",
-          href: "https://amazon.com/post-call-analytics",
-          external: true,
-          externalIconAriaLabel: " (opens in a new tab)"
-        },
-        {
-          type: "menu-dropdown",
-          text: userName,
-          description: email,
-          iconName: "user-profile",
-          onItemClick: (event) => {
-            console.log(event);
-            if (event.detail.id === "signout") logOut();
-          },
-          items: [
-            /* { id: "profile", text: "Profile" },
-            { id: "preferences", text: "Preferences" },
-            { id: "security", text: "Security" },*/
-            {
-              id: "support-group",
-              text: "Support",
-              items: [
-                {
-                  id: "documentation",
-                  text: "GitHub/Readme",
-                  href: "https://github.com/aws-samples/amazon-transcribe-post-call-analytics/",
-                  external: true,
-                  externalIconAriaLabel:
-                    " (opens in new tab)"
-                },
-                {
-                  id: "feedback",
-                  text: "Blog Post",
-                  href: "https://amazon.com/post-call-analytics",
-                  external: true,
-                  externalIconAriaLabel:
-                    " (opens in new tab)"
-                }
-              ]
-            },
-            { id: "signout", text: "Sign out" }
-          ]
-        }
-
-      ]}
+      utilities={utilities}
     />
   );
 }
@@ -193,5 +222,7 @@ function App() {
     </Router>
   );
 }
+
+export default App;
 
 export default App;

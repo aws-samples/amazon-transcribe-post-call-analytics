@@ -408,6 +408,15 @@ Parameters:
       Optionally deploy advanced analytics pipeline and Amazon QuickSight dashboards. 
       IMPORTANT: Your Amazon QuickSight account MUST be enabled before deploying this stack. See http://www.amazon.com/pca-dashboards for additional 
       steps required in Amazon QuickSight to (1) enable S3 access to PCA OutputBucket and (2) share dashboard and analytics assets.
+      
+  EnableQBusiness:
+    Type: String
+    Default: 'No'
+    AllowedValues:
+        - 'No'
+        - 'Yes'
+    Description: >
+      Optionally deploy Amazon Q Business integration to enable AI-powered search and insights on your call data.
 
   GenAIQuery:
     Default: 'BEDROCK'
@@ -542,6 +551,7 @@ Metadata:
                 default: Advanced analytics and reporting
               Parameters:
                   - EnablePcaDashboards
+                  - EnableQBusiness
                   - GlueDatabaseName
             - Label:
                 default: S3 Bucket Names and Retention Policy
@@ -625,6 +635,7 @@ Conditions:
   ShouldEnableKendraSearch: !Not [!Equals [!Ref EnableTranscriptKendraSearch, 'No']]
   ShouldCreateKendraIndexDeveloperEdition: !Equals [!Ref EnableTranscriptKendraSearch, 'Yes, create new Kendra Index (Developer Edition)']
   ShouldDeployPcaDashboards: !Equals [!Ref EnablePcaDashboards, 'Yes']
+  ShouldEnableQBusiness: !Equals [!Ref EnableQBusiness, 'Yes']
   ShouldLoadSampleFiles: !Equals [!Ref loadSampleAudioFiles, 'true']
   ShouldDeployLLMThirdPartyApiKey: !And [!Not [!Equals [!Ref SummarizationLLMThirdPartyApiKey, '']], !Not [!Equals [!Ref SummarizationLLMThirdPartyApiKey, undefined]]]
   ShouldTestBedrockModelId: !And [
@@ -1149,6 +1160,7 @@ Resources:
           - ''
         PyUtilsLayerArn: !GetAtt PythonUtilsLayer.Outputs.PyUtilsLayer
         LLMTableName: !GetAtt LLMPromptConfigure.Outputs.LLMTableName
+        EnableQBusiness: !Ref EnableQBusiness
 
   MediaSearchKendraFinder:
     Type: AWS::CloudFormation::Stack
@@ -1354,3 +1366,14 @@ Outputs:
   LLMPromptQueryTemplate:
     Description: The LLM query prompt template in DynamoDB Table - open to customise query prompts.
     Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/dynamodbv2/home?region=${AWS::Region}#edit-item?itemMode=2&pk=LLMPromptQueryTemplate&route=ROUTE_ITEM_EXPLORER&sk=&table=${LLMPromptConfigure.Outputs.LLMTableName}"
+    
+  QBusinessIntegration:
+    Description: Amazon Q Business integration status
+    Value:
+      !If
+      - ShouldEnableQBusiness
+      - !If
+        - ShouldEnableGui
+        - "Enabled - Access Q Business through the PCA Web UI"
+        - "Q Business enabled but Web UI is disabled - enable both for full functionality"
+      - "Not enabled - set EnableQBusiness parameter to 'Yes' to enable"

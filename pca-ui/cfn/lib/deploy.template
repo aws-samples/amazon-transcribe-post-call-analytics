@@ -1,9 +1,22 @@
 AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
 
 Description: Amazon Transcribe Post Call Analytics - PCA UI - Deploy
 
 Parameters:
   Bucket:
+    Type: String
+
+  QAppWebURL:
+    Type: String
+
+  QWebExperienceId: 
+    Type: String
+  
+  QAppId: 
+    Type: String
+
+  WebUri:
     Type: String
 
   AudioBucket:
@@ -28,6 +41,17 @@ Parameters:
     Type: String
     AllowedValues: [true, false]
     Description: true or false to enable or disable the genai query prompt
+
+  CloudWatchLogsExpirationInDays:
+    Type: Number
+    Default: 14
+    Description: The number of days log events are kept in CloudWatch Logs.
+
+Conditions:
+  HasQBusinessIntegration: !And 
+    - !Not [!Equals [!Ref QAppWebURL, ""]]
+    - !Not [!Equals [!Ref QWebExperienceId, ""]]
+    - !Not [!Equals [!Ref QAppId, ""]]
 
 Resources:
   Layer:
@@ -94,7 +118,7 @@ Resources:
     Properties:
       ServiceToken: !GetAtt DeployFunction.Arn
       Counter: !Ref DeployCountValue
-      Version: "0.7.8"
+      Version: "0.7.9"
 
   Configure:
     Type: "AWS::CloudFormation::CustomResource"
@@ -108,6 +132,177 @@ Resources:
       ApiUri: !Ref ApiUri
       Region: !Ref AWS::Region
       GenAIQuery: !Ref EnableGenAIQuery
+      QAppWebURL: !Ref QAppWebURL
+      Version: "0.7.9"
+
+##########################################################################
+# CodeBuild
+##########################################################################
+
+  PCAUICodeBuildServiceRole:
+    Type: AWS::IAM::Role
+    Condition: HasQBusinessIntegration
+    Properties:
+      Path: /
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: codebuild.amazonaws.com
+      Policies:
+        - PolicyName: ecs-service
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Resource:
+                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/*"
+                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/*:*"
+                Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+              - Resource: "*"
+                Effect: Allow
+                Action:
+                  - qbusiness:UpdateWebExperience
+              - Resource: "*"
+                Effect: Allow
+                Action:
+                  - sso:PutApplicationGrant
+
+  PCAUICodeBuildProject:
+    Type: AWS::CodeBuild::Project
+    Condition: HasQBusinessIntegration
+    Properties:
+      Description: !Sub >-
+        Builds docker images and the website of stack: ${AWS::StackName}
+      ServiceRole: !Ref PCAUICodeBuildServiceRole
+      EncryptionKey: alias/aws/s3
+      Artifacts:
+        Type: NO_ARTIFACTS
+      Source:
+        Type: NO_SOURCE
+        BuildSpec: |
+          version: 0.2
+          phases:
+            pre_build:
+              commands:
+                - echo ${Q_WEB_EXPERIENCE_ID}
+                - echo ${PCA_WEB_URI}
+                - URL="${PCA_WEB_URI%/}"
+                - echo ${URL}
+                - echo `aws --version`
+            build:
+              commands:
+                - echo Build started on `date`
+                - echo `aws qbusiness update-web-experience --application-id ${Q_APPLICATION_ID} --web-experience-id ${Q_WEB_EXPERIENCE_ID} --origins ${URL}`
+            post_build:
+              commands:
+                - echo Build completed on `date`
+      Environment:
+        ComputeType: BUILD_GENERAL1_MEDIUM
+        Image: aws/codebuild/amazonlinux2-x86_64-standard:5.0
+        Type: LINUX_CONTAINER
+        PrivilegedMode: true
+        EnvironmentVariables:
+          - Name: AWS_DEFAULT_REGION
+            Value: !Ref AWS::Region
+          - Name: AWS_ACCOUNT_ID
+            Value: !Ref AWS::AccountId
+          - Name: Q_WEB_EXPERIENCE_ID  
+            Value: !Ref QWebExperienceId
+          - Name: Q_APPLICATION_ID
+            Value: !Ref QAppId
+          - Name: PCA_WEB_URI
+            Value: !Ref WebUri
+
+  LambdaCodeBuildStartBuildExecutionRole:
+    Type: AWS::IAM::Role
+    Condition: HasQBusinessIntegration
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: "/"
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - codebuild:StartBuild
+                  - codebuild:BatchGetBuilds
+                Resource: !GetAtt PCAUICodeBuildProject.Arn
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: "*"
+          # Used by custom resource helper poller
+          # https://github.com/aws-cloudformation/custom-resource-helper
+        - PolicyName: CustomResourcePoller
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - events:PutRule
+                  - events:DeleteRule
+                  - events:PutTargets
+                  - events:RemoveTargets
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:rule/*"
+              - Effect: Allow
+                Action:
+                  - lambda:AddPermission
+                  - lambda:RemovePermission
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:*"
+
+  CodeBuildRun:
+    Type: Custom::CodeBuildRun
+    Condition: HasQBusinessIntegration
+    Properties:
+      ServiceToken: !GetAtt LambdaCodeBuildStartBuild.Arn
+      BuildProjectName: !Ref PCAUICodeBuildProject
+
+  LambdaCodeBuildStartBuild:
+    Type: AWS::Serverless::Function
+    Condition: HasQBusinessIntegration
+    Properties:
+      Role: !GetAtt LambdaCodeBuildStartBuildExecutionRole.Arn
+      Runtime: python3.12
+      Timeout: 60
+      MemorySize: 128
+      Handler: lambda_start_codebuild.handler
+      CodeUri: ../../src/qbusiness/start_codebuild
+      Description: This AWS Lambda Function kicks off a code build job.
+      LoggingConfig:
+        LogGroup:
+          Fn::Sub: /${AWS::StackName}/lambda/LambdaCodeBuildStartBuild
+    DependsOn:
+      - LambdaCodeBuildStartBuildLogGroup
+
+  LambdaCodeBuildStartBuildLogGroup:
+    Type: AWS::Logs::LogGroup
+    Condition: HasQBusinessIntegration
+    Properties:
+      LogGroupName:
+        Fn::Sub: /${AWS::StackName}/lambda/LambdaCodeBuildStartBuild
+      RetentionInDays:
+        Ref: CloudWatchLogsExpirationInDays
+
 
 Outputs:
 
