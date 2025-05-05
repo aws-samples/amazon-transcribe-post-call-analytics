@@ -454,7 +454,7 @@ Resources:
                     "parquet.compression": "SNAPPY"
                     "projection.partitiontimestamp.type": "date"
                     "projection.enabled": "true"
-                    "projection.partitiontimestamp.range": "NOW-2YEARS,NOW+1DAY"
+                    "projection.partitiontimestamp.range": "NOW-5YEARS,NOW+1DAY"
                     "storage.location.template": !Join
                       - ''
                       - - Fn::Sub: "s3://${PcaOutputBucket}/pca-output-base/"
