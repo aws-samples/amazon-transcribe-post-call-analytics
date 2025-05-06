@@ -99,11 +99,6 @@ Parameters:
     Type: String
     AllowedPattern: '^(|arn:aws:lambda:.*)$'
     Description: Arn to use to refresh the GenAI Summaries
-
-  Boto3LayerArn:
-    Default: ''
-    Type: String
-    Description: External Boto3 Layer Arn to use. If none is provided, one will be created automatically via boto3.template
     
   PyUtilsLayerArn:
     Default: ''
@@ -206,7 +201,6 @@ Resources:
         LLMThirdPartyApiKey: !Ref LLMThirdPartyApiKey
         FetchTranscriptArn: !Ref FetchTranscriptArn
         SummarizerArn: !Ref SummarizerArn
-        Boto3LayerArn: !Ref Boto3LayerArn
         PyUtilsLayerArn: !Ref PyUtilsLayerArn
         LLMTableName: !Ref LLMTableName
 
