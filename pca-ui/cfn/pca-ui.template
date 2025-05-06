@@ -198,7 +198,6 @@ Resources:
       Parameters:
         AudioBucket: !Ref AudioBucket
         AudioBucketPrefix: !Ref AudioBucketPrefix
-        BedrockRegion: !Ref BedrockRegion
         DataBucket: !Ref DataBucket
         TableName: !GetAtt Indexer.Outputs.TableName
         UserPoolId: !GetAtt Cognito.Outputs.UserPoolId
