@@ -681,7 +681,6 @@ Resources:
       ServiceToken: !GetAtt LambdaFunction.Arn
     DependsOn:
       - CloudFrontDistribution
-      - S3CopyCustomResource
 
 ### Parameters
 
