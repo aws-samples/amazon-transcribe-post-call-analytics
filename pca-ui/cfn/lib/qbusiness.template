@@ -497,54 +497,70 @@ Resources:
           import boto3
           import cfnresponse
           from datetime import datetime
+          from botocore.exceptions import ClientError
+          
           def lambda_handler(event, context):
               iam_client = boto3.client('iam')
               service_name = 'qbusiness.amazonaws.com'
+              
+              # Generate a unique physical resource ID for CloudFormation
+              stack_name = event.get('ResourceProperties', {}).get('StackName', '')
+              physical_resource_id = f"AWSServiceRoleForQBusiness-{stack_name}"
+              
               try:
-                  # Generate a unique identifier for this stack
-                  stack_id = event.get('StackId', '').split('/')[-2] if 'StackId' in event else ''
-                  custom_suffix = f"-{stack_id[:8]}" if stack_id else f"-{context.aws_request_id[:8]}"
-                  
-                  # Try to create the service linked role with a custom suffix
+                  # First check if the role already exists
                   try:
-                      response = iam_client.create_service_linked_role(
-                          AWSServiceName=service_name,
-                          CustomSuffix=custom_suffix
-                      )
-                      physical_resource_id = response['Role']['RoleName']
-                  except iam_client.exceptions.InvalidInputException:
-                      # If custom suffix fails, try without suffix (will return existing role if it exists)
-                      response = iam_client.create_service_linked_role(
-                          AWSServiceName=service_name
-                      )
-                      physical_resource_id = response['Role']['RoleName']
-                  
-                  # Function to handle non-serializable objects
-                  def default_serializer(o):
-                      if isinstance(o, datetime):
-                          return o.isoformat()
-                      raise TypeError(f'Object of type {type(o)} is not JSON serializable')
-                  
-                  response_data = json.loads(json.dumps(response, default=default_serializer))  # Serialize datetime objects
-                  cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data, physical_resource_id)
-              except Exception as e:
-                  print(f"Error creating service linked role: {str(e)}")
-                  # Check if the role already exists
-                  try:
-                      # List roles with the service name prefix
+                      # List roles with the service name path prefix
                       roles = iam_client.list_roles(PathPrefix=f"/aws-service-role/{service_name}/")
                       for role in roles.get('Roles', []):
-                          if service_name in role['Path']:
+                          if role['Path'].startswith(f"/aws-service-role/{service_name}/"):
                               # Role exists, return success with existing role
+                              print(f"Service linked role already exists: {role['RoleName']}")
                               cfnresponse.send(event, context, cfnresponse.SUCCESS, 
-                                              {'Message': f"Service linked role already exists: {role['RoleName']}"}, 
-                                              role['RoleName'])
+                                              {'Message': f"Service linked role already exists: {role['RoleName']}",
+                                               'RoleName': role['RoleName'],
+                                               'RoleArn': role['Arn']}, 
+                                              physical_resource_id)
                               return
                   except Exception as list_error:
                       print(f"Error listing roles: {str(list_error)}")
                   
-                  # If we get here, there was an error and we couldn't find an existing role
-                  cfnresponse.send(event, context, cfnresponse.FAILED, {'Message': str(e)})
+                  # If we get here, the role doesn't exist yet, so create it
+                  try:
+                      # Create the service linked role (no custom suffix for qbusiness)
+                      response = iam_client.create_service_linked_role(
+                          AWSServiceName=service_name
+                      )
+                      role_name = response['Role']['RoleName']
+                      role_arn = response['Role']['Arn']
+                      print(f"Created service linked role: {role_name}")
+                      
+                      # Function to handle non-serializable objects
+                      def default_serializer(o):
+                          if isinstance(o, datetime):
+                              return o.isoformat()
+                          raise TypeError(f'Object of type {type(o)} is not JSON serializable')
+                      
+                      response_data = {
+                          'Message': f"Successfully created service linked role: {role_name}",
+                          'RoleName': role_name,
+                          'RoleArn': role_arn
+                      }
+                      cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data, physical_resource_id)
+                  except ClientError as e:
+                      if e.response['Error']['Code'] == 'InvalidInput' and 'Service linked role exists' in str(e):
+                          # Role already exists but we couldn't find it earlier
+                          print(f"Service linked role already exists (from error): {str(e)}")
+                          cfnresponse.send(event, context, cfnresponse.SUCCESS, 
+                                          {'Message': f"Service linked role already exists: AWSServiceRoleForQBusiness"}, 
+                                          physical_resource_id)
+                      else:
+                          # Some other error occurred
+                          print(f"Error creating service linked role: {str(e)}")
+                          cfnresponse.send(event, context, cfnresponse.FAILED, {'Message': str(e)}, physical_resource_id)
+              except Exception as e:
+                  print(f"Unexpected error: {str(e)}")
+                  cfnresponse.send(event, context, cfnresponse.FAILED, {'Message': str(e)}, physical_resource_id)
               return
       Runtime: python3.8
       Timeout: 300
@@ -554,7 +570,6 @@ Resources:
     Properties:
       ServiceToken: !GetAtt CreateServiceLinkedRoleFunction.Arn
       StackName: !Ref AWS::StackName
-      RequestId: !Ref AWS::StackId
 
   ### Cloudfront dist - run after s3 is created and data is copied
 
