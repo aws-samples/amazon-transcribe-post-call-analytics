@@ -32,12 +32,15 @@ Resources:
                   - sso:CreateInstance
                   - sso:DescribeInstance
                   - sso:ListInstances
+                  - sso:DeleteInstance
                   - iam:CreateServiceLinkedRole
                   - iam:ListRoles
                   - iam:GetRole
                   - identitystore:CreateGroup
                   - identitystore:CreateGroupMembership
                   - identitystore:CreateUser
+                  - identitystore:DeleteGroup
+                  - identitystore:DeleteUser
                 Resource:
                   - '*'
 
@@ -72,6 +75,38 @@ Resources:
           def handler(event, context):
               try:
                   print('Received event: ' + json.dumps(event, indent=4, default=str))
+                  
+                  # Handle delete request
+                  if event['RequestType'] == 'Delete':
+                      print("Delete request - checking if we should delete the IDC instance")
+                      try:
+                          list_inst_response = sso_client.list_instances()
+                          if list_inst_response["Instances"]:
+                              instance_arn = list_inst_response["Instances"][0]['InstanceArn']
+                              instance_id = list_inst_response["Instances"][0]['InstanceId']
+                              
+                              # Only delete if this is the only stack using it
+                              # In a real implementation, you might want to check for other resources using this instance
+                              print(f"Found IDC instance {instance_id}, checking if it's safe to delete")
+                              
+                              # For this example, we'll just log that we found it but won't delete it
+                              # as it might be used by other resources
+                              print(f"IDC Instance exists but will not be deleted as it may be used by other resources")
+                              
+                              # If you do want to delete it, uncomment the following:
+                              # print(f"Deleting IDC instance {instance_id}")
+                              # sso_client.delete_instance(InstanceArn=instance_arn)
+                              # print(f"IDC instance {instance_id} deleted")
+                          else:
+                              print("No IDC Instance found, nothing to delete")
+                              
+                          cfnresponse.send(event, context, cfnresponse.SUCCESS, {}, None)
+                      except Exception as e:
+                          print(f"Error during delete: {str(e)}")
+                          cfnresponse.send(event, context, cfnresponse.SUCCESS, {}, None)
+                      return
+                  
+                  # Handle create/update
                   if event['RequestType'] == 'Create':
                       print("Check for existing IDC Instance")
                       list_inst_response = sso_client.list_instances()
@@ -498,45 +533,111 @@ Resources:
           import json
           import boto3
           import cfnresponse
+          import time
           from datetime import datetime
           from botocore.exceptions import ClientError
           
           def lambda_handler(event, context):
+              print(f"Event: {json.dumps(event)}")
               iam_client = boto3.client('iam')
               service_name = 'qbusiness.amazonaws.com'
+              role_name = 'AWSServiceRoleForQBusiness'
               
               # Generate a unique physical resource ID for CloudFormation
               stack_name = event.get('ResourceProperties', {}).get('StackName', '')
-              physical_resource_id = f"AWSServiceRoleForQBusiness-{stack_name}"
+              physical_resource_id = f"{role_name}-{stack_name}"
               
-              try:
-                  # Simply try to create the service linked role
-                  # If it already exists, we'll catch the exception
+              # Handle delete request
+              if event['RequestType'] == 'Delete':
+                  print("Delete request - checking if we should delete the service-linked role")
+                  # For service-linked roles, we typically don't delete them on stack deletion
+                  # as they may be used by other resources. However, we'll check if it's safe to delete.
                   try:
-                      response = iam_client.create_service_linked_role(
-                          AWSServiceName=service_name
-                      )
-                      role_name = response['Role']['RoleName']
-                      role_arn = response['Role']['Arn']
-                      print(f"Created service linked role: {role_name}")
+                      # Check if the role exists
+                      try:
+                          iam_client.get_role(RoleName=role_name)
+                          print(f"Service-linked role {role_name} exists, but will not be deleted as it may be used by other resources")
+                      except ClientError as e:
+                          if e.response['Error']['Code'] == 'NoSuchEntity':
+                              print(f"Service-linked role {role_name} does not exist, nothing to delete")
+                          else:
+                              print(f"Error checking role: {str(e)}")
                       
-                      response_data = {
-                          'Message': f"Successfully created service linked role: {role_name}",
-                          'RoleName': role_name,
-                          'RoleArn': role_arn
-                      }
-                      cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data, physical_resource_id)
+                      # Always return success for delete operations
+                      cfnresponse.send(event, context, cfnresponse.SUCCESS, 
+                                      {'Message': f"Delete request processed for {role_name}"}, 
+                                      physical_resource_id)
+                  except Exception as e:
+                      print(f"Error in delete operation: {str(e)}")
+                      cfnresponse.send(event, context, cfnresponse.SUCCESS, 
+                                      {'Message': f"Delete request processed with warning: {str(e)}"}, 
+                                      physical_resource_id)
+                  return
+              
+              # Handle create/update requests
+              try:
+                  # First check if the role already exists
+                  role_exists = False
+                  try:
+                      response = iam_client.get_role(RoleName=role_name)
+                      role_exists = True
+                      role_arn = response['Role']['Arn']
+                      print(f"Service-linked role {role_name} already exists with ARN: {role_arn}")
+                      
+                      # Return success with existing role info
+                      cfnresponse.send(event, context, cfnresponse.SUCCESS, 
+                                      {'Message': f"Service-linked role already exists: {role_name}",
+                                       'RoleName': role_name,
+                                       'RoleArn': role_arn}, 
+                                      physical_resource_id)
+                      return
                   except ClientError as e:
-                      if e.response['Error']['Code'] == 'InvalidInput' and 'Service linked role exists' in str(e):
-                          # Role already exists
-                          print(f"Service linked role already exists (from error): {str(e)}")
-                          cfnresponse.send(event, context, cfnresponse.SUCCESS, 
-                                          {'Message': f"Service linked role already exists: AWSServiceRoleForQBusiness"}, 
-                                          physical_resource_id)
+                      if e.response['Error']['Code'] == 'NoSuchEntity':
+                          print(f"Service-linked role {role_name} does not exist, will create it")
                       else:
-                          # Some other error occurred
-                          print(f"Error creating service linked role: {str(e)}")
-                          cfnresponse.send(event, context, cfnresponse.FAILED, {'Message': str(e)}, physical_resource_id)
+                          print(f"Error checking role: {str(e)}")
+                          raise e
+                  
+                  # If we get here, the role doesn't exist yet, so create it
+                  if not role_exists:
+                      try:
+                          # Create the service-linked role
+                          response = iam_client.create_service_linked_role(
+                              AWSServiceName=service_name
+                          )
+                          role_name = response['Role']['RoleName']
+                          role_arn = response['Role']['Arn']
+                          print(f"Created service-linked role: {role_name} with ARN: {role_arn}")
+                          
+                          response_data = {
+                              'Message': f"Successfully created service-linked role: {role_name}",
+                              'RoleName': role_name,
+                              'RoleArn': role_arn
+                          }
+                          cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data, physical_resource_id)
+                      except ClientError as e:
+                          if e.response['Error']['Code'] == 'InvalidInput' and 'Service linked role exists' in str(e):
+                              # Role was created between our check and create attempt
+                              print(f"Service-linked role already exists (race condition): {str(e)}")
+                              
+                              # Try to get the role details
+                              try:
+                                  response = iam_client.get_role(RoleName=role_name)
+                                  role_arn = response['Role']['Arn']
+                                  cfnresponse.send(event, context, cfnresponse.SUCCESS, 
+                                                  {'Message': f"Service-linked role already exists: {role_name}",
+                                                   'RoleName': role_name,
+                                                   'RoleArn': role_arn}, 
+                                                  physical_resource_id)
+                              except Exception as inner_e:
+                                  print(f"Error getting role details after creation conflict: {str(inner_e)}")
+                                  cfnresponse.send(event, context, cfnresponse.SUCCESS, 
+                                                  {'Message': f"Service-linked role exists but details unavailable: {role_name}"}, 
+                                                  physical_resource_id)
+                          else:
+                              # Some other error occurred
+                              print(f"Error creating service-linked role: {str(e)}")
+                              cfnresponse.send(event, context, cfnresponse.FAILED, {'Message': str(e)}, physical_resource_id)
               except Exception as e:
                   print(f"Unexpected error: {str(e)}")
                   cfnresponse.send(event, context, cfnresponse.FAILED, {'Message': str(e)}, physical_resource_id)
@@ -566,6 +667,9 @@ Resources:
               - Effect: Allow
                 Action:
                   - iam:CreateServiceLinkedRole
+                  - iam:DeleteServiceLinkedRole
+                  - iam:GetServiceLinkedRoleDeletionStatus
+                  - iam:GetRole
                 Resource:
                   - '*'
 
