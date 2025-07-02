@@ -25,8 +25,11 @@ if ! [ -x "$(command -v npm)" ]; then
   echo 'Error: npm is not installed and required.' >&2
   exit 1
 fi
-if ! node -v | grep -qF "v18."; then
-    echo 'Error: Node.js version 18.x is not installed and required.' >&2
+
+# Check for Node.js version 18 or newer
+NODE_VERSION=$(node -v | cut -d 'v' -f 2 | cut -d '.' -f 1)
+if [ -z "$NODE_VERSION" ] || [ "$NODE_VERSION" -lt 18 ]; then
+    echo 'Error: Node.js version 18 or newer is required.' >&2
     exit 1
 fi
 
