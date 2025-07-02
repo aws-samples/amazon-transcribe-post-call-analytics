@@ -82,7 +82,7 @@ Resources:
     Properties:
       Code:  ../../src/lambda
       Handler: bucket.handler
-      Runtime: nodejs18.x
+      Runtime: nodejs22.x
       Role: !GetAtt ConfigureDataBucketRole.Arn
       Environment:
         Variables:
@@ -146,7 +146,7 @@ Resources:
             TableName: !Ref Table
         - S3ReadPolicy:
             BucketName: !Ref DataBucket
-      Runtime: nodejs18.x
+      Runtime: nodejs22.x
 
   InputBucketTriggerFunction:
     Type: "AWS::Serverless::Function"
@@ -194,7 +194,7 @@ Resources:
             - "states:GetExecutionHistory"
           Resource: 
           - !Sub arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:execution:${StepFunctionName}:*
-      Runtime: nodejs18.x
+      Runtime: nodejs22.x
 
 Outputs:
   TableName:
