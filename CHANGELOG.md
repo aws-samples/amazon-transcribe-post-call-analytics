@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.15] - 2025-07-03
+
+### Added
+- Contributed feature for synthesizing test calls - PR #278
+- Additional contributed solution documentation intended to facilitate developer onboarding #282
+
+### Fixed
+- #300 - glue table definitions broken
+- Update Lambda Runtime to NodeJS 22.x
+- #299 - handle comprehend detect_sentiment api has limits of input size of 5kb
+- #310 - Change Default Model from Nova-Lite to Nova-Pro for GenAI Queries and Summarization in PCA CFN Templates
+- #305 - Extend query window to 5 years and modify sample file timestamps
+- misc dependabot PRs
+
+
 ## [0.7.14] - 2025-02-27
 
 ### Fixed
