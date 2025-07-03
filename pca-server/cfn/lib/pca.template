@@ -39,7 +39,10 @@ Parameters:
   SummarizationBedrockModelId:
     Type: String
     Default: ''
-
+  SummarizationBedrockReasoningModelId:
+    Type: String
+    Default: ''
+    
   LLMTableName:
     Type: String
 
@@ -200,12 +203,19 @@ Resources:
         Variables:
           AWS_DATA_PATH: /opt/models
           STACK_NAME: !Ref ParentStackName
+          SUMMARY_LAMBDA_ARN: !GetAtt SFSummarize.Arn
       Policies:
         - arn:aws:iam::aws:policy/AmazonTranscribeReadOnlyAccess
         - arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess
         - arn:aws:iam::aws:policy/AmazonS3FullAccess
         - arn:aws:iam::aws:policy/ComprehendFullAccess
         - arn:aws:iam::aws:policy/AmazonKendraFullAccess
+        - Statement:
+                  - Sid: InvokeGetSummary
+                    Effect: Allow
+                    Action:
+                      - lambda:InvokeFunction
+                    Resource: !GetAtt SFSummarize.Arn
 
   SFFinalProcessing:
     Type: AWS::Serverless::Function
@@ -275,6 +285,7 @@ Resources:
           AWS_DATA_PATH: /opt/models
           FETCH_TRANSCRIPT_LAMBDA_ARN: !GetAtt SFFetchTranscript.Arn
           BEDROCK_MODEL_ID: !Ref SummarizationBedrockModelId
+          BEDROCK_MODEL_REASONING_ID: !Ref SummarizationBedrockReasoningModelId
           LLM_TABLE_NAME: !Ref LLMTableName
           SUMMARY_TYPE: !Ref CallSummarization
           SUMMARY_SAGEMAKER_ENDPOINT: !Ref SummarizationSagemakerEndpointName
