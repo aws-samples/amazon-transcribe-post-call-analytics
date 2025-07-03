@@ -51,6 +51,8 @@ PCA currently supports the following features:
 
 ## Architecture
 
+Aside from the high-level description of the different architecture components presented in this section, there is a complementary file [PCA_WALKTHROUGH.md](./PCA_WALKTHROUGH.md) that contains detailed information about the code execution and facilitates the onboarding for new contributors to the solution.
+
 ![pca-architecture](./images/architecture-diagram.png)
 
 Call recording audio files are uploaded to the S3 bucket and folder, identified in the main stack outputs as `InputBucket` and `InputBucketPrefix`, respectively. The sample call recordings are automatically uploaded because you set the parameter `loadSampleAudioFiles` to `true` when you deployed PCA. 
