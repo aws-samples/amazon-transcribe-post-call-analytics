@@ -21,6 +21,9 @@ Resources:
     Properties:
       CodeUri:  ../../src/pca
       Handler: pca-aws-sf-bulk-files-count.lambda_handler
+      Environment:
+        Variables:
+          STACK_NAME: !Ref ParentStackName
       Policies:
       - Statement:
         - Sid: S3BucketReadPolicy    
@@ -51,6 +54,9 @@ Resources:
       CodeUri:  ../../src/pca
       Handler: pca-aws-sf-bulk-move-files.lambda_handler
       Timeout: 300
+      Environment:
+        Variables:
+          STACK_NAME: !Ref ParentStackName
       Policies:
       - Statement:
         - Sid: S3BucketReadWritePolicy    
@@ -86,6 +92,9 @@ Resources:
       CodeUri:  ../../src/pca
       Handler: pca-aws-sf-bulk-queue-space.lambda_handler
       Timeout: 30
+      Environment:
+        Variables:
+          STACK_NAME: !Ref ParentStackName
       Policies:
         - arn:aws:iam::aws:policy/AmazonTranscribeReadOnlyAccess
 
