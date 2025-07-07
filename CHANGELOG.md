@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.16] - 2025-07-07
+
+### Fixed
+- Added STACK_NAME environment variable to bulk workflow Lambda functions #322
+- misc dependabot PRs
+
+
 ## [0.7.15] - 2025-07-03
 
 ### Added
@@ -317,6 +324,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial release
 
 [Unreleased]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/compare/main...develop
+[0.7.16]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.7.16
+[0.7.15]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.7.15
 [0.7.14]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.7.14
 [0.7.13]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.7.13
 [0.7.12]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.7.12
