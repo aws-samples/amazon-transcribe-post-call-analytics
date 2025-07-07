@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update Lambda Runtime to NodeJS 22.x
 - #299 - handle comprehend detect_sentiment api has limits of input size of 5kb
 - #310 - Change Default Model from Nova-Lite to Nova-Pro for GenAI Queries and Summarization in PCA CFN Templates
+- Added missing STACK_NAME environment variable to BulkFilesCount Lambda function to fix ParameterNotFound error
 - #305 - Extend query window to 5 years and modify sample file timestamps
 - misc dependabot PRs
 
