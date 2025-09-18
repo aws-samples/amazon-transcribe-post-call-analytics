@@ -185,7 +185,22 @@ def generate_bedrock_summary(transcript, api_mode):
         else: 
             prompt = prompt.replace("{transcript}", transcript)
             generated_text = call_bedrock(prompt, 0, MAX_TOKENS)
-            result[key] = generated_text
+            
+            # Quick validation before attempting JSON parse
+            stripped_text = generated_text.strip()
+            if (stripped_text.startswith('{') and stripped_text.endswith('}')) or \
+               (stripped_text.startswith('[') and stripped_text.endswith(']')):
+                try:
+                    parsed_json = json.loads(generated_text)
+                    result[key] = parsed_json
+                    print("Parsed JSON response for key:", key)
+                except json.JSONDecodeError:
+                    result[key] = generated_text
+                    print("Invalid JSON, stored as string for key:", key)
+            else:
+                result[key] = generated_text
+                print("Not JSON format, stored as string for key:", key)
+
     if len(result.keys()) == 1:
         # This is a single node JSON with value that can be either:
         # A single inference that returns a string value
