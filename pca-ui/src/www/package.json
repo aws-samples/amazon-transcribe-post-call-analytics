@@ -6,7 +6,7 @@
     "aws-sdk": "^2.1620.0",
     "@cloudscape-design/components": "^3.0.293",
     "@cloudscape-design/global-styles": "^1.0.9",
-    "axios": "^1.8.2",
+    "axios": "^1.12.0",
     "bootstrap": "5.1.1",
     "chart.js": "^3.5.1",
     "luxon": "^2.5.2",
