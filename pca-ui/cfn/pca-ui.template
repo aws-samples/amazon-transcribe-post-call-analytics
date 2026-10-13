@@ -74,6 +74,9 @@ Parameters:
     Default: us.amazon.nova-pro-v1:0
     AllowedValues:
       - anthropic.claude-3-haiku-20240307-v1:0
+      - us.anthropic.claude-haiku-4-5-20251001-v1:0
+      - eu.anthropic.claude-haiku-4-5-20251001-v1:0
+      - global.anthropic.claude-haiku-4-5-20251001-v1:0
       - anthropic.claude-3-sonnet-20240229-v1:0
       - us.amazon.nova-micro-v1:0
       - us.amazon.nova-lite-v1:0
@@ -109,10 +112,19 @@ Parameters:
     Type: String
     Description: The DynamoDB table name where the summary and query prompt templates are stored.
 
+  TranscribeResultsPrefix:
+    Type: String
+    Default: transcribeResults
+    Description: Prefix/folder in the output S3 bucket where Transcribe results are stored
+
   StepFunctionName:
     Type: String
     Default: PostCallAnalyticsWorkflow
     Description: Name of Step Functions workflow that orchestrates this process
+
+  Version:
+    Type: String
+    Description: Solution version used to trigger UI redeployment on stack updates
 
 Conditions:
   isMainStackNameEmpty: !Equals [!Ref MainStackName, '']
@@ -163,6 +175,11 @@ Resources:
         AudioBucketPrefix: !Ref AudioBucketPrefix
         WebUri: !GetAtt Web.Outputs.Uri
 
+  Rbac:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: lib/rbac.template
+
   Api:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -180,6 +197,10 @@ Resources:
         SummarizerArn: !Ref SummarizerArn
         PyUtilsLayerArn: !Ref PyUtilsLayerArn
         LLMTableName: !Ref LLMTableName
+        RolesTableName: !GetAtt Rbac.Outputs.RolesTableName
+        AuditLogGroupName: !GetAtt Rbac.Outputs.AuditLogGroupName
+        TranscribeResultsPrefix: !Ref TranscribeResultsPrefix
+        AdminUsername: !Ref AdminUsername
 
   Deploy:
     Type: AWS::CloudFormation::Stack
@@ -198,6 +219,7 @@ Resources:
           - ShouldEnableGenAIQuery
           - 'true'
           - 'false'
+        Version: !Ref Version
 
   WebUriParameter:
     Type: "AWS::SSM::Parameter"

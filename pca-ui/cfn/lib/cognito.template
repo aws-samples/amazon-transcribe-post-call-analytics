@@ -114,12 +114,24 @@ Resources:
         - ShouldAllowSignUpEmailDomain
         - PreAuthentication: !GetAtt CognitoUserPoolEmailDomainVerifyFunction.Arn
           PreSignUp: !GetAtt CognitoUserPoolEmailDomainVerifyFunction.Arn
-        - !Ref AWS::NoValue
+          PostConfirmation: !GetAtt CognitoDefaultRoleFunction.Arn
+          PostAuthentication: !GetAtt CognitoDefaultRoleFunction.Arn
+          PreTokenGenerationConfig:
+            LambdaArn: !GetAtt PreTokenGenerationFunction.Arn
+            LambdaVersion: V2_0
+        - PostConfirmation: !GetAtt CognitoDefaultRoleFunction.Arn
+          PostAuthentication: !GetAtt CognitoDefaultRoleFunction.Arn
+          PreTokenGenerationConfig:
+            LambdaArn: !GetAtt PreTokenGenerationFunction.Arn
+            LambdaVersion: V2_0
       Schema:
         - Required: true
           Name: email
           AttributeDataType: String
-          Mutable: true 
+          Mutable: true
+        - Name: pca_role
+          AttributeDataType: String
+          Mutable: true
       Policies:
         PasswordPolicy:
           MinimumLength: 8
@@ -127,6 +139,8 @@ Resources:
           RequireNumbers: false
           RequireSymbols: false
           RequireUppercase: false
+      UserPoolAddOns:
+        AdvancedSecurityMode: ENFORCED
 
   PCAUserPoolClient:
     Type: "AWS::Cognito::UserPoolClient"
@@ -136,6 +150,7 @@ Resources:
       AllowedOAuthFlowsUserPoolClient: true
       AllowedOAuthScopes:
         - openid
+        - profile
       CallbackURLs: !If
         - IsProd
         - - !Ref WebUri
@@ -223,6 +238,89 @@ Resources:
     Properties:
       Action: lambda:InvokeFunction
       FunctionName: !Ref CognitoUserPoolEmailDomainVerifyFunction
+      Principal: cognito-idp.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+      SourceArn: !GetAtt PCAUserPool.Arn
+
+  CognitoDefaultRoleFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: cognito-default-role.handler
+      Runtime: nodejs22.x
+      Timeout: 10
+      MemorySize: 128
+      CodeUri: ../../src/lambda
+      Policies:
+        - Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - cognito-idp:AdminUpdateUserAttributes
+              Resource: !Sub arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/*
+      LoggingConfig:
+        LogGroup:
+          Fn::Sub: /${AWS::StackName}/lambda/CognitoDefaultRoleFunction
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W89
+            reason: Customer can use VPC if desired
+          - id: W92
+            reason: Customer can choose reserved concurrency based on their requirement.
+    DependsOn:
+      - CognitoDefaultRoleFunctionLogGroup
+
+  CognitoDefaultRoleFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Sub: /${AWS::StackName}/lambda/CognitoDefaultRoleFunction
+      RetentionInDays:
+        Ref: CloudWatchLogsExpirationInDays
+
+  CognitoDefaultRolePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref CognitoDefaultRoleFunction
+      Principal: cognito-idp.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+      SourceArn: !GetAtt PCAUserPool.Arn
+
+  PreTokenGenerationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: pre-token-generation.handler
+      Runtime: nodejs22.x
+      Timeout: 5
+      MemorySize: 128
+      CodeUri: ../../src/lambda
+      LoggingConfig:
+        LogGroup:
+          Fn::Sub: /${AWS::StackName}/lambda/PreTokenGenerationFunction
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W89
+            reason: Customer can use VPC if desired
+          - id: W92
+            reason: Customer can choose reserved concurrency based on their requirement.
+    DependsOn:
+      - PreTokenGenerationFunctionLogGroup
+
+  PreTokenGenerationFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Sub: /${AWS::StackName}/lambda/PreTokenGenerationFunction
+      RetentionInDays:
+        Ref: CloudWatchLogsExpirationInDays
+
+  PreTokenGenerationPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref PreTokenGenerationFunction
       Principal: cognito-idp.amazonaws.com
       SourceAccount: !Ref AWS::AccountId
       SourceArn: !GetAtt PCAUserPool.Arn

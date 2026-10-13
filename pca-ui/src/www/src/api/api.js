@@ -99,3 +99,39 @@ export async function presign(filename) {
     "filename": filename,
   } );
 }
+
+export async function deleteCall(key) {
+  return request(`${config.api.uri}/delete/${key}`, "DELETE");
+}
+
+export async function deleteBatchCalls(callIds) {
+  return request(`${config.api.uri}/delete/batch`, "POST", { callIds });
+}
+
+export async function getPermissions() {
+  return getRequest("me/permissions");
+}
+
+export async function listRoles() {
+  return getRequest("roles");
+}
+
+export async function createRole(name, permissions) {
+  return request(`${config.api.uri}/roles`, "POST", { roleName: name, permissions });
+}
+
+export async function updateRole(name, permissions) {
+  return request(`${config.api.uri}/roles/${encodeURIComponent(name)}`, "PUT", { permissions });
+}
+
+export async function deleteRole(name) {
+  return request(`${config.api.uri}/roles/${encodeURIComponent(name)}`, "DELETE");
+}
+
+export async function listUsers() {
+  return getRequest("users");
+}
+
+export async function assignUserRole(username, roleName) {
+  return request(`${config.api.uri}/users/${encodeURIComponent(username)}/role`, "PUT", { roleName });
+}

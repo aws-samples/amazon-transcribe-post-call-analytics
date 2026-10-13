@@ -36,6 +36,9 @@ Parameters:
     Default: us.amazon.nova-pro-v1:0
     AllowedValues:
       - anthropic.claude-3-haiku-20240307-v1:0
+      - us.anthropic.claude-haiku-4-5-20251001-v1:0
+      - eu.anthropic.claude-haiku-4-5-20251001-v1:0
+      - global.anthropic.claude-haiku-4-5-20251001-v1:0
       - anthropic.claude-3-sonnet-20240229-v1:0
       - us.amazon.nova-micro-v1:0
       - us.amazon.nova-lite-v1:0
@@ -70,14 +73,56 @@ Parameters:
     Type: String
     Description: The DynamoDB table name where the summary and query prompt templates are stored.
 
+  RolesTableName:
+    Type: String
+
+  AuditLogGroupName:
+    Type: String
+
+  TranscribeResultsPrefix:
+    Type: String
+    Default: transcribeResults
+    Description: Prefix/folder in the output S3 bucket where Transcribe results are stored
+
+  AdminUsername:
+    Type: String
+
 Conditions:
   HasAnthropicSummary: !Equals [!Ref GenAIQueryType, 'ANTHROPIC']
 
 Resources:
+  ApiAccessLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /pca/apigateway
+      RetentionInDays: 90
+
+  ApiGatewayCloudWatchRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: apigateway.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs
+
+  ApiGatewayAccount:
+    Type: AWS::ApiGateway::Account
+    Properties:
+      CloudWatchRoleArn: !GetAtt ApiGatewayCloudWatchRole.Arn
+
   Api:
     Type: AWS::Serverless::Api
+    DependsOn: ApiGatewayAccount
     Properties:
       StageName: Prod
+      AccessLogSetting:
+        DestinationArn: !GetAtt ApiAccessLogGroup.Arn
+        Format: '{"requestId":"$context.requestId","ip":"$context.identity.sourceIp","caller":"$context.identity.caller","user":"$context.identity.user","requestTime":"$context.requestTime","httpMethod":"$context.httpMethod","resourcePath":"$context.resourcePath","status":"$context.status","protocol":"$context.protocol","responseLength":"$context.responseLength","integrationLatency":"$context.integrationLatency"}'
       Auth:
         AddDefaultAuthorizerToCorsPreflight: False
         DefaultAuthorizer: Cognito
@@ -89,20 +134,20 @@ Resources:
               - openid
       Cors:
         AllowOrigin: "'*'"
-        AllowMethods: "'OPTIONS,GET,PUT'"
+        AllowMethods: "'OPTIONS,GET,PUT,DELETE,POST'"
         AllowHeaders: "'Content-Type,Authorization'"
       GatewayResponses:
         DEFAULT_4XX:
           ResponseParameters:
             Headers:
               Access-Control-Allow-Origin: "'*'"
-              Access-Control-Allow-Methods: "'OPTIONS,GET,PUT'"
+              Access-Control-Allow-Methods: "'OPTIONS,GET,PUT,DELETE,POST'"
               Access-Control-Allow-Headers: "'Content-Type,Authorization'"
         DEFAULT_5XX:
           ResponseParameters:
             Headers:
               Access-Control-Allow-Origin: "'*'"
-              Access-Control-Allow-Methods: "'OPTIONS,GET,PUT'"
+              Access-Control-Allow-Methods: "'OPTIONS,GET,PUT,DELETE,POST'"
               Access-Control-Allow-Headers: "'Content-Type,Authorization'"
 
   HeadFunction:
@@ -113,6 +158,8 @@ Resources:
       Environment:
         Variables:
           TableName: !Ref TableName
+          RolesTableName: !Ref RolesTableName
+          AuditLogGroupName: !Ref AuditLogGroupName
       Events:
         APIEvent:
           Type: Api
@@ -123,6 +170,16 @@ Resources:
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref TableName
+        - DynamoDBReadPolicy:
+            TableName: !Ref RolesTableName
+        - Statement:
+          - Sid: CloudWatchLogsAudit
+            Effect: Allow
+            Action:
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+              - logs:DescribeLogStreams
+            Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${AuditLogGroupName}:*
       Runtime: nodejs22.x
 
   GetFunction:
@@ -134,6 +191,8 @@ Resources:
         Variables:
           DataBucket: !Ref DataBucket
           AudioBucket: !Ref AudioBucket
+          RolesTableName: !Ref RolesTableName
+          AuditLogGroupName: !Ref AuditLogGroupName
       Events:
         APIEvent:
           Type: Api
@@ -146,6 +205,16 @@ Resources:
             BucketName: !Ref DataBucket
         - S3ReadPolicy:
             BucketName: !Ref AudioBucket
+        - DynamoDBReadPolicy:
+            TableName: !Ref RolesTableName
+        - Statement:
+          - Sid: CloudWatchLogsAudit
+            Effect: Allow
+            Action:
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+              - logs:DescribeLogStreams
+            Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${AuditLogGroupName}:*
       Runtime: nodejs22.x
 
   ListFunction:
@@ -156,6 +225,8 @@ Resources:
       Environment:
         Variables:
           TableName: !Ref TableName
+          RolesTableName: !Ref RolesTableName
+          AuditLogGroupName: !Ref AuditLogGroupName
       Events:
         APIEvent:
           Type: Api
@@ -166,6 +237,16 @@ Resources:
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref TableName
+        - DynamoDBReadPolicy:
+            TableName: !Ref RolesTableName
+        - Statement:
+          - Sid: CloudWatchLogsAudit
+            Effect: Allow
+            Action:
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+              - logs:DescribeLogStreams
+            Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${AuditLogGroupName}:*
       Runtime: nodejs22.x
 
   SearchFunction:
@@ -176,6 +257,8 @@ Resources:
       Environment:
         Variables:
           TableName: !Ref TableName
+          RolesTableName: !Ref RolesTableName
+          AuditLogGroupName: !Ref AuditLogGroupName
       Events:
         APIEvent:
           Type: Api
@@ -186,6 +269,16 @@ Resources:
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref TableName
+        - DynamoDBReadPolicy:
+            TableName: !Ref RolesTableName
+        - Statement:
+          - Sid: CloudWatchLogsAudit
+            Effect: Allow
+            Action:
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+              - logs:DescribeLogStreams
+            Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${AuditLogGroupName}:*
       Runtime: nodejs22.x
 
   EntitiesFunction:
@@ -196,6 +289,8 @@ Resources:
       Environment:
         Variables:
           TableName: !Ref TableName
+          RolesTableName: !Ref RolesTableName
+          AuditLogGroupName: !Ref AuditLogGroupName
       Events:
         APIEvent:
           Type: Api
@@ -206,6 +301,16 @@ Resources:
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref TableName
+        - DynamoDBReadPolicy:
+            TableName: !Ref RolesTableName
+        - Statement:
+          - Sid: CloudWatchLogsAudit
+            Effect: Allow
+            Action:
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+              - logs:DescribeLogStreams
+            Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${AuditLogGroupName}:*
       Runtime: nodejs22.x
 
   LanguagesFunction:
@@ -216,6 +321,8 @@ Resources:
       Environment:
         Variables:
           TableName: !Ref TableName
+          RolesTableName: !Ref RolesTableName
+          AuditLogGroupName: !Ref AuditLogGroupName
       Events:
         APIEvent:
           Type: Api
@@ -226,6 +333,16 @@ Resources:
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref TableName
+        - DynamoDBReadPolicy:
+            TableName: !Ref RolesTableName
+        - Statement:
+          - Sid: CloudWatchLogsAudit
+            Effect: Allow
+            Action:
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+              - logs:DescribeLogStreams
+            Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${AuditLogGroupName}:*
       Runtime: nodejs22.x
 
   SwapFunction:
@@ -237,6 +354,8 @@ Resources:
         Variables:
           TableName: !Ref TableName
           DataBucket: !Ref DataBucket
+          RolesTableName: !Ref RolesTableName
+          AuditLogGroupName: !Ref AuditLogGroupName
       Events:
         APIEvent:
           Type: Api
@@ -249,6 +368,16 @@ Resources:
             BucketName: !Ref DataBucket
         - DynamoDBCrudPolicy:
             TableName: !Ref TableName
+        - DynamoDBReadPolicy:
+            TableName: !Ref RolesTableName
+        - Statement:
+          - Sid: CloudWatchLogsAudit
+            Effect: Allow
+            Action:
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+              - logs:DescribeLogStreams
+            Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${AuditLogGroupName}:*
       Runtime: nodejs22.x
   
   GenAIQueryFunction:
@@ -355,6 +484,8 @@ Resources:
         Variables:
           AudioBucket: !Ref AudioBucket
           AudioBucketPrefix: !Ref AudioBucketPrefix
+          RolesTableName: !Ref RolesTableName
+          AuditLogGroupName: !Ref AuditLogGroupName
       Events:
         APIEvent:
           Type: Api
@@ -365,7 +496,199 @@ Resources:
       Policies:
         - S3WritePolicy:
             BucketName: !Ref AudioBucket
+        - DynamoDBReadPolicy:
+            TableName: !Ref RolesTableName
+        - Statement:
+          - Sid: CloudWatchLogsAudit
+            Effect: Allow
+            Action:
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+              - logs:DescribeLogStreams
+            Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${AuditLogGroupName}:*
       Runtime: nodejs22.x
+
+  DeleteFunction:
+    Type: "AWS::Serverless::Function"
+    Properties:
+      CodeUri: ../../src/lambda
+      Handler: delete.handler
+      Timeout: 60
+      Environment:
+        Variables:
+          DataBucket: !Ref DataBucket
+          AudioBucket: !Ref AudioBucket
+          TranscribeResultsPrefix: !Ref TranscribeResultsPrefix
+          RolesTableName: !Ref RolesTableName
+          AuditLogGroupName: !Ref AuditLogGroupName
+      Events:
+        SingleDeleteEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Method: DELETE
+            Path: /delete/{key+}
+        BatchDeleteEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Method: POST
+            Path: /delete/batch
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref RolesTableName
+        - S3CrudPolicy:
+            BucketName: !Ref DataBucket
+        - S3CrudPolicy:
+            BucketName: !Ref AudioBucket
+        - Statement:
+          - Sid: CloudWatchLogsAudit
+            Effect: Allow
+            Action:
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+              - logs:DescribeLogStreams
+            Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${AuditLogGroupName}:*
+      Runtime: nodejs22.x
+
+  RolesFunction:
+    Type: "AWS::Serverless::Function"
+    Properties:
+      CodeUri: ../../src/lambda
+      Handler: roles.handler
+      Environment:
+        Variables:
+          RolesTableName: !Ref RolesTableName
+          AuditLogGroupName: !Ref AuditLogGroupName
+      Events:
+        ListRolesEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Method: GET
+            Path: /roles
+        CreateRoleEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Method: POST
+            Path: /roles
+        UpdateRoleEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Method: PUT
+            Path: /roles/{roleName}
+        DeleteRoleEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Method: DELETE
+            Path: /roles/{roleName}
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref RolesTableName
+        - Statement:
+          - Sid: CloudWatchLogsAudit
+            Effect: Allow
+            Action:
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+              - logs:DescribeLogStreams
+            Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${AuditLogGroupName}:*
+      Runtime: nodejs22.x
+
+  UsersFunction:
+    Type: "AWS::Serverless::Function"
+    Properties:
+      CodeUri: ../../src/lambda
+      Handler: users.handler
+      Environment:
+        Variables:
+          UserPoolId: !Ref UserPoolId
+          RolesTableName: !Ref RolesTableName
+          AuditLogGroupName: !Ref AuditLogGroupName
+      Events:
+        ListUsersEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Method: GET
+            Path: /users
+        AssignRoleEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Method: PUT
+            Path: /users/{username}/role
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref RolesTableName
+        - Statement:
+          - Sid: CognitoAdmin
+            Effect: Allow
+            Action:
+              - cognito-idp:ListUsers
+              - cognito-idp:AdminUpdateUserAttributes
+              - cognito-idp:AdminGetUser
+            Resource: !Sub arn:${AWS::Partition}:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${UserPoolId}
+          - Sid: CloudWatchLogsAudit
+            Effect: Allow
+            Action:
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+              - logs:DescribeLogStreams
+            Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${AuditLogGroupName}:*
+      Runtime: nodejs22.x
+
+  PermissionsFunction:
+    Type: "AWS::Serverless::Function"
+    Properties:
+      CodeUri: ../../src/lambda
+      Handler: permissions.handler
+      Environment:
+        Variables:
+          RolesTableName: !Ref RolesTableName
+      Events:
+        APIEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Method: GET
+            Path: /me/permissions
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref RolesTableName
+      Runtime: nodejs22.x
+
+  RoleSeederFunction:
+    Type: "AWS::Serverless::Function"
+    Properties:
+      CodeUri: ../../src/lambda
+      Handler: role-seeder.handler
+      Timeout: 60
+      Environment:
+        Variables:
+          RolesTableName: !Ref RolesTableName
+          UserPoolId: !Ref UserPoolId
+          AdminUsername: !Ref AdminUsername
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref RolesTableName
+        - Statement:
+          - Sid: CognitoAdmin
+            Effect: Allow
+            Action:
+              - cognito-idp:AdminUpdateUserAttributes
+              - cognito-idp:AdminGetUser
+              - cognito-idp:DescribeUserPool
+            Resource: !Sub arn:${AWS::Partition}:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${UserPoolId}
+      Runtime: nodejs22.x
+
+  RoleSeeder:
+    Type: Custom::RoleSeeder
+    Properties:
+      ServiceToken: !GetAtt RoleSeederFunction.Arn
 
 Outputs:
   Uri:

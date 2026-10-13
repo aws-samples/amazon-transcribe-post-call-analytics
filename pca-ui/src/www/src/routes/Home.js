@@ -8,6 +8,7 @@ import ExpandableSection from "@cloudscape-design/components/expandable-section"
 
 
 import { useDangerAlert } from "../hooks/useAlert";
+import { usePermissions } from "../hooks/usePermissions";
 import { presign } from "../api/api";
 import {
   Button,
@@ -28,6 +29,10 @@ import {
 const config = window.pcaSettings;
 
 function Home({ setAlert }) {
+  const { hasPermission, loading: permissionsLoading } = usePermissions();
+  const canReadCalls = hasPermission('read_calls');
+  const canUpload = hasPermission('upload_recordings');
+
   const fetcher = (url, startKey, timestampFrom) => {
     const opts = {
       count: config.api.pageSize,
@@ -39,6 +44,7 @@ function Home({ setAlert }) {
   };
 
   const getKey = (pageIndex, previousPageData) => {
+    if (!canReadCalls) return null;
     if (previousPageData && !previousPageData.StartKey) return null;
     if (pageIndex === 0) return `/list`;
 
@@ -51,7 +57,7 @@ function Home({ setAlert }) {
     ];
   };
 
-  const { data, error, size, setSize } = useSWRInfinite(getKey, fetcher);
+  const { data, error, size, setSize, mutate } = useSWRInfinite(getKey, fetcher);
   const [value, setValue] = React.useState([]);
 
   const isLoadingInitialData = !data && !error;
@@ -65,6 +71,44 @@ function Home({ setAlert }) {
 
   const details = (data || []).map((d) => d.Records).flat();
   useDangerAlert(error, setAlert);
+
+  if (permissionsLoading) {
+    return <Spinner size="large" />;
+  }
+
+  // User has neither read_calls nor upload_recordings (e.g. manage_roles only)
+  if (!canReadCalls && !canUpload) {
+    return (
+      <ContentLayout
+        header={
+          <Header variant="h1">
+            Call List
+          </Header>
+        }>
+        <Container>
+          <p>You do not have permission to view calls or upload recordings. Use the Admin menu to manage roles.</p>
+        </Container>
+      </ContentLayout>
+    );
+  }
+
+  // User can upload but cannot read calls
+  if (!canReadCalls && canUpload) {
+    return (
+      <ContentLayout
+        header={
+          <Header variant="h1">
+            Call List
+          </Header>
+        }>
+        <Container>
+          <ExpandableSection headerText="Upload call recordings">
+            <Upload />
+          </ExpandableSection>
+        </Container>
+      </ContentLayout>
+    );
+  }
 
   return (
     <>
@@ -85,13 +129,16 @@ function Home({ setAlert }) {
               {colspan: { default:12} }
             ]}
           >
-            <ExpandableSection headerText="Upload call recordings">
-                <Upload/>
-            </ExpandableSection>
+            {canUpload && (
+              <ExpandableSection headerText="Upload call recordings">
+                  <Upload/>
+              </ExpandableSection>
+            )}
             <ContactTable
               data={details}
               loading={!data && !error}
               empty={<Empty />}
+              onRefresh={() => { mutate(undefined, { revalidate: true }); setSize(1); }}
             />
             <Button
               variant="primary"

@@ -4,6 +4,7 @@ const {
   withQueryStringValidation,
   response,
 } = require("./validation");
+const { withAuthorization } = require("./auth-middleware");
 const ddb = new AWS.DynamoDB();
 
 const tableName = process.env.TableName;
@@ -91,4 +92,4 @@ async function handler(event, context) {
   });
 }
 
-exports.handler = withQueryStringValidation(handler, listSchema);
+exports.handler = withAuthorization(withQueryStringValidation(handler, listSchema));

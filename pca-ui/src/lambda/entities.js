@@ -1,9 +1,10 @@
 const AWS = require("aws-sdk");
+const { withAuthorization } = require("./auth-middleware");
 const ddb = new AWS.DynamoDB();
 
 const tableName = process.env.TableName;
 
-exports.handler = async function (event, context) {
+async function handler(event, context) {
     console.log(
         JSON.stringify(
             {
@@ -48,3 +49,5 @@ exports.handler = async function (event, context) {
         ),
     };
 };
+
+exports.handler = withAuthorization(handler);

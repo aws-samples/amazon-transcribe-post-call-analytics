@@ -1,7 +1,7 @@
 import { useState, useEffect, Fragment, useRef } from "react";
-import { useParams } from "react-router";
+import { useParams, useHistory } from "react-router";
 import useSWR, { useSWRConfig } from "swr";
-import { get, genaiquery, swap, genairefresh } from "../../api/api";
+import { get, genaiquery, swap, genairefresh, deleteCall } from "../../api/api";
 import { Formatter } from "../../format";
 import { TranscriptSegment } from "./TranscriptSegment";
 import { Entities } from "./Entities";
@@ -14,13 +14,14 @@ import { ComprehendSentimentChart } from "./ComprehendSentimentChart";
 import { SpeakerTimeChart } from "./SpeakerTimeChart";
 import { ListItems } from "./ListItems";
 import { useDangerAlert } from "../../hooks/useAlert";
+import { usePermissions } from "../../hooks/usePermissions";
 import "./dashboard.css";
 import { getEntityColor } from "./colours";
 import { TranscriptOverlay } from "./TranscriptOverlay";
 import { range } from "../../util";
 import { Sentiment } from "../../components/Sentiment";
 import { ChatInput } from "../../components/ChatInput";
-import { Button, ContentLayout, Spinner, Link, Header, Grid, Container, SpaceBetween, Input, FormField, TextContent } from '@cloudscape-design/components';
+import { Button, ContentLayout, Spinner, Link, Header, Grid, Container, SpaceBetween, Input, FormField, TextContent, Modal, Box } from '@cloudscape-design/components';
 
 const getSentimentTrends = (d, target, labels) => {
   const id = Object.entries(labels).find(([_, v]) => v === target)?.[0];
@@ -83,6 +84,34 @@ function Dashboard({ setAlert }) {
   const [comprehendSentimentData, setComprehendSentimentData] = useState({});
 
   const [isSwapping, setIsSwapping] = useState(false);
+
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const { hasPermission } = usePermissions();
+  const history = useHistory();
+
+  const handleDeleteConfirm = async () => {
+    try {
+      setIsDeleting(true);
+      await deleteCall(key);
+      setAlert({
+        heading: "Call deleted",
+        variant: "success",
+        text: "Call files have been deleted. It may take a minute or two for the call to disappear from the list.",
+      });
+      history.push("/");
+    } catch (err) {
+      console.error(err);
+      setAlert({
+        heading: "Delete failed",
+        variant: "danger",
+        text: "Unable to delete call. Please try again later.",
+      });
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteModal(false);
+    }
+  };
 
   const [genAiQueries, setGenAiQueries] = useState([]);
   const [genAiQuery, setGenAiQuery] = useState("");
@@ -511,15 +540,37 @@ function Dashboard({ setAlert }) {
     header={
       <Header
           variant="h2"
-          actions={[
-            <Button key='swapAgent' onClick={swapAgent} disabled={isSwapping} className="float-end">
-              {isSwapping ? "Swapping..." : "Swap Agent/Caller"}
-            </Button>
-          ]}
+          actions={
+            <SpaceBetween direction="horizontal" size="xs">
+              {hasPermission('delete_calls') && (
+                <Button key='deleteCall' onClick={() => setShowDeleteModal(true)} variant="normal">
+                  Delete
+                </Button>
+              )}
+              <Button key='swapAgent' onClick={swapAgent} disabled={isSwapping}>
+                {isSwapping ? "Swapping..." : "Swap Agent/Caller"}
+              </Button>
+            </SpaceBetween>
+          }
       >
         Call Details
       </Header>
     }>
+    <Modal
+      visible={showDeleteModal}
+      onDismiss={() => setShowDeleteModal(false)}
+      header="Delete call"
+      footer={
+        <Box float="right">
+          <SpaceBetween direction="horizontal" size="xs">
+            <Button variant="link" onClick={() => setShowDeleteModal(false)}>Cancel</Button>
+            <Button variant="primary" onClick={handleDeleteConfirm} loading={isDeleting}>Delete</Button>
+          </SpaceBetween>
+        </Box>
+      }
+    >
+      Are you sure you want to delete this call? This action is permanent and cannot be undone.
+    </Modal>
     <Grid
         gridDefinition={
           (

@@ -5,6 +5,7 @@ const {
   searchSchema,
   response,
 } = require("./validation");
+const { withAuthorization } = require("./auth-middleware");
 
 const tableName = process.env.TableName;
 
@@ -174,4 +175,4 @@ const handler = async function (event, context) {
   });
 };
 
-exports.handler = withQueryStringValidation(handler, searchSchema);
+exports.handler = withAuthorization(withQueryStringValidation(handler, searchSchema));

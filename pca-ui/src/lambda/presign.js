@@ -1,4 +1,5 @@
 const AWS = require("aws-sdk");
+const { withAuthorization } = require("./auth-middleware");
 const s3 = new AWS.S3({signatureVersion: 'v4'});
 
 const audioBucket = process.env.AudioBucket;
@@ -43,7 +44,7 @@ async function getPresignedURL(key) {
     }
 }
 
-exports.handler = async function (event, context) {
+async function handler(event, context) {
     console.log("Event:", JSON.stringify(event, null, 4));
 
     const key = event.queryStringParameters.filename;
@@ -51,4 +52,6 @@ exports.handler = async function (event, context) {
     const presigned_url = await getPresignedURL(key);
 
     return presigned_url;
-};
+}
+
+exports.handler = withAuthorization(handler);

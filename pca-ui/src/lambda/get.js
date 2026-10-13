@@ -1,4 +1,5 @@
 const AWS = require("aws-sdk");
+const { withAuthorization } = require("./auth-middleware");
 const s3 = new AWS.S3({signatureVersion: 'v4'});
 
 const dataBucket = process.env.DataBucket;
@@ -50,7 +51,7 @@ async function getData(key) {
     return JSON.stringify(data);
 }
 
-exports.handler = async function (event, context) {
+async function handler(event, context) {
     console.log("Event:", JSON.stringify(event, null, 4));
 
     const key = event.pathParameters.key;
@@ -66,4 +67,6 @@ exports.handler = async function (event, context) {
         },
         body: data,
     };
-};
+}
+
+exports.handler = withAuthorization(handler);

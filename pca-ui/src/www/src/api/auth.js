@@ -119,7 +119,10 @@ export async function refreshToken() {
 function store(data) {
   window.localStorage.setItem("id_token", data.id_token);
   window.localStorage.setItem("access_token", data.access_token);
-  window.localStorage.setItem("refresh_token", data.refresh_token);
+  // Refresh token grant doesn't return a new refresh_token — preserve the existing one
+  if (data.refresh_token) {
+    window.localStorage.setItem("refresh_token", data.refresh_token);
+  }
 }
 
 export function logOut() {

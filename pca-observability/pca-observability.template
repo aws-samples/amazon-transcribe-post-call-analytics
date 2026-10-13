@@ -1,0 +1,889 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: >
+  Amazon Transcribe Post Call Analytics - Observability Stack.
+  Deploys a CloudWatch Dashboard and SNS alerting for PCA environment health monitoring.
+
+Parameters:
+  PCAStackName:
+    Type: String
+    Description: >
+      Name of the deployed PCA CloudFormation stack. Used to resolve SSM parameters
+      and construct resource names.
+
+  StepFunctionName:
+    Type: String
+    Default: PostCallAnalyticsWorkflow
+    Description: Name of the main PCA Step Functions state machine.
+
+  BulkUploadStepFunctionName:
+    Type: String
+    Default: BulkUploadWorkflow
+    Description: Name of the bulk upload Step Functions state machine.
+
+  DynamoDBTableName:
+    Type: String
+    Description: Name of the DynamoDB table used for call metadata storage (found in PCA stack outputs or DynamoDB console).
+
+  CloudFrontDistributionId:
+    Type: String
+    Default: ""
+    Description: (Optional) CloudFront distribution ID for the PCA web UI.
+
+  ApiGatewayName:
+    Type: String
+    Default: ""
+    Description: (Optional) API Gateway REST API name for the PCA UI API.
+
+  WAFWebACLName:
+    Type: String
+    Default: ""
+    Description: (Optional) WAF Web ACL name if WAF protection is enabled.
+
+  WAFWebACLRegion:
+    Type: String
+    Default: us-east-1
+    Description: Region for WAF Web ACL metrics. Use us-east-1 for CloudFront-associated WAFs.
+
+  AlarmEmail:
+    Type: String
+    Description: Email address to receive alarm notifications.
+    AllowedPattern: ".+\\@.+\\..+"
+
+  StepFunctionFailureThreshold:
+    Type: Number
+    Default: 1
+    Description: Number of Step Function execution failures to trigger an alarm.
+
+  DynamoDBThrottleThreshold:
+    Type: Number
+    Default: 1
+    Description: Number of DynamoDB throttle events to trigger an alarm.
+
+  ApiGateway5xxThreshold:
+    Type: Number
+    Default: 5
+    Description: Number of API Gateway 5xx errors to trigger an alarm.
+
+  EvaluationPeriodMinutes:
+    Type: String
+    Default: "5"
+    AllowedValues: ["1", "5", "10", "15"]
+    Description: CloudWatch alarm evaluation period in minutes.
+
+Mappings:
+  PeriodMap:
+    "1":
+      Seconds: 60
+    "5":
+      Seconds: 300
+    "10":
+      Seconds: 600
+    "15":
+      Seconds: 900
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: PCA Stack Configuration
+        Parameters:
+          - PCAStackName
+          - StepFunctionName
+          - BulkUploadStepFunctionName
+      - Label:
+          default: Data Store
+        Parameters:
+          - DynamoDBTableName
+      - Label:
+          default: Optional Services
+        Parameters:
+          - CloudFrontDistributionId
+          - ApiGatewayName
+          - WAFWebACLName
+          - WAFWebACLRegion
+      - Label:
+          default: Alerting
+        Parameters:
+          - AlarmEmail
+          - StepFunctionFailureThreshold
+          - DynamoDBThrottleThreshold
+          - ApiGateway5xxThreshold
+          - EvaluationPeriodMinutes
+
+Conditions:
+  HasCloudFront: !Not [!Equals [!Ref CloudFrontDistributionId, ""]]
+  HasApiGateway: !Not [!Equals [!Ref ApiGatewayName, ""]]
+  HasWAF: !Not [!Equals [!Ref WAFWebACLName, ""]]
+
+Resources:
+
+  ##########################################################
+  # KMS Key for SNS Topic Encryption
+  ##########################################################
+
+  AlarmTopicKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: !Sub "CMK for PCA Observability SNS topic encryption (${PCAStackName})"
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowAccountRootFullAccess
+            Effect: Allow
+            Principal:
+              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            Action: "kms:*"
+            Resource: "*"
+          - Sid: AllowCloudWatchAlarms
+            Effect: Allow
+            Principal:
+              Service: cloudwatch.amazonaws.com
+            Action:
+              - kms:Decrypt
+              - kms:GenerateDataKey*
+            Resource: "*"
+            Condition:
+              ArnLike:
+                aws:SourceArn: !Sub "arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:${PCAStackName}-*"
+
+  AlarmTopicKeyAlias:
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName: !Sub "alias/${PCAStackName}-pca-observability-sns"
+      TargetKeyId: !Ref AlarmTopicKey
+
+  ##########################################################
+  # SNS Topic for Alarm Notifications
+  ##########################################################
+
+  AlarmTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub "${PCAStackName}-PCA-Observability-Alarms"
+      DisplayName: PCA Observability Alarms
+      KmsMasterKeyId: !Ref AlarmTopicKey
+
+  AlarmSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref AlarmTopic
+      Protocol: email
+      Endpoint: !Ref AlarmEmail
+
+  AlarmTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      Topics:
+        - !Ref AlarmTopic
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowCloudWatchAlarms
+            Effect: Allow
+            Principal:
+              Service: cloudwatch.amazonaws.com
+            Action: sns:Publish
+            Resource: !Ref AlarmTopic
+            Condition:
+              ArnLike:
+                aws:SourceArn: !Sub "arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:${PCAStackName}-*"
+
+  ##########################################################
+  # CloudWatch Alarms — Step Functions
+  ##########################################################
+
+  PCAWorkflowFailedAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${PCAStackName}-PCA-Workflow-Failed"
+      AlarmDescription: PostCallAnalyticsWorkflow has failed executions.
+      Namespace: AWS/States
+      MetricName: ExecutionsFailed
+      Dimensions:
+        - Name: StateMachineArn
+          Value: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${StepFunctionName}"
+      Statistic: Sum
+      Period: !FindInMap [PeriodMap, !Ref EvaluationPeriodMinutes, Seconds]
+      EvaluationPeriods: 1
+      Threshold: !Ref StepFunctionFailureThreshold
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlarmTopic
+      OKActions:
+        - !Ref AlarmTopic
+
+  PCAWorkflowTimedOutAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${PCAStackName}-PCA-Workflow-TimedOut"
+      AlarmDescription: PostCallAnalyticsWorkflow has timed-out executions.
+      Namespace: AWS/States
+      MetricName: ExecutionsTimedOut
+      Dimensions:
+        - Name: StateMachineArn
+          Value: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${StepFunctionName}"
+      Statistic: Sum
+      Period: !FindInMap [PeriodMap, !Ref EvaluationPeriodMinutes, Seconds]
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlarmTopic
+
+  BulkWorkflowFailedAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${PCAStackName}-Bulk-Workflow-Failed"
+      AlarmDescription: BulkUploadWorkflow has failed executions.
+      Namespace: AWS/States
+      MetricName: ExecutionsFailed
+      Dimensions:
+        - Name: StateMachineArn
+          Value: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${BulkUploadStepFunctionName}"
+      Statistic: Sum
+      Period: !FindInMap [PeriodMap, !Ref EvaluationPeriodMinutes, Seconds]
+      EvaluationPeriods: 1
+      Threshold: !Ref StepFunctionFailureThreshold
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlarmTopic
+      OKActions:
+        - !Ref AlarmTopic
+
+  ##########################################################
+  # CloudWatch Alarms — DynamoDB
+  ##########################################################
+
+  DynamoDBReadThrottleAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${PCAStackName}-DynamoDB-ReadThrottles"
+      AlarmDescription: DynamoDB table is experiencing read throttling.
+      Namespace: AWS/DynamoDB
+      MetricName: ReadThrottleEvents
+      Dimensions:
+        - Name: TableName
+          Value: !Ref DynamoDBTableName
+      Statistic: Sum
+      Period: !FindInMap [PeriodMap, !Ref EvaluationPeriodMinutes, Seconds]
+      EvaluationPeriods: 1
+      Threshold: !Ref DynamoDBThrottleThreshold
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlarmTopic
+
+  DynamoDBWriteThrottleAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${PCAStackName}-DynamoDB-WriteThrottles"
+      AlarmDescription: DynamoDB table is experiencing write throttling.
+      Namespace: AWS/DynamoDB
+      MetricName: WriteThrottleEvents
+      Dimensions:
+        - Name: TableName
+          Value: !Ref DynamoDBTableName
+      Statistic: Sum
+      Period: !FindInMap [PeriodMap, !Ref EvaluationPeriodMinutes, Seconds]
+      EvaluationPeriods: 1
+      Threshold: !Ref DynamoDBThrottleThreshold
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlarmTopic
+
+  DynamoDBSystemErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${PCAStackName}-DynamoDB-SystemErrors"
+      AlarmDescription: DynamoDB table is experiencing system errors.
+      Namespace: AWS/DynamoDB
+      MetricName: SystemErrors
+      Dimensions:
+        - Name: TableName
+          Value: !Ref DynamoDBTableName
+      Statistic: Sum
+      Period: !FindInMap [PeriodMap, !Ref EvaluationPeriodMinutes, Seconds]
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlarmTopic
+
+  ##########################################################
+  # CloudWatch Alarms — API Gateway (conditional)
+  ##########################################################
+
+  ApiGateway5xxAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasApiGateway
+    Properties:
+      AlarmName: !Sub "${PCAStackName}-ApiGateway-5xxErrors"
+      AlarmDescription: API Gateway is returning 5xx server errors.
+      Namespace: AWS/ApiGateway
+      MetricName: 5XXError
+      Dimensions:
+        - Name: ApiName
+          Value: !Ref ApiGatewayName
+      Statistic: Sum
+      Period: !FindInMap [PeriodMap, !Ref EvaluationPeriodMinutes, Seconds]
+      EvaluationPeriods: 1
+      Threshold: !Ref ApiGateway5xxThreshold
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlarmTopic
+
+  ##########################################################
+  # CloudWatch Alarms — CloudFront (conditional)
+  ##########################################################
+
+  CloudFront5xxAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: HasCloudFront
+    Properties:
+      AlarmName: !Sub "${PCAStackName}-CloudFront-5xxErrorRate"
+      AlarmDescription: CloudFront distribution has elevated 5xx error rate.
+      Namespace: AWS/CloudFront
+      MetricName: 5xxErrorRate
+      Dimensions:
+        - Name: DistributionId
+          Value: !Ref CloudFrontDistributionId
+        - Name: Region
+          Value: Global
+      Statistic: Average
+      Period: !FindInMap [PeriodMap, !Ref EvaluationPeriodMinutes, Seconds]
+      EvaluationPeriods: 2
+      Threshold: 5
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlarmTopic
+
+  ##########################################################
+  # CloudWatch Dashboard — Core (always deployed)
+  ##########################################################
+
+  PCACoreDashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Properties:
+      DashboardName: !Sub "${PCAStackName}-PCA-Observability"
+      DashboardBody: !Sub |
+        {
+          "widgets": [
+            {
+              "type": "text",
+              "x": 0, "y": 0, "width": 24, "height": 1,
+              "properties": { "markdown": "# PCA Observability — ${PCAStackName}" }
+            },
+            {
+              "type": "text",
+              "x": 0, "y": 1, "width": 24, "height": 1,
+              "properties": { "markdown": "## Step Functions — PostCallAnalyticsWorkflow" }
+            },
+            {
+              "type": "metric",
+              "x": 0, "y": 2, "width": 6, "height": 6,
+              "properties": {
+                "title": "PCA Workflow Executions",
+                "region": "${AWS::Region}",
+                "metrics": [
+                  ["AWS/States", "ExecutionsStarted", "StateMachineArn", "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${StepFunctionName}", {"stat": "Sum", "label": "Started"}],
+                  [".", "ExecutionsSucceeded", ".", ".", {"stat": "Sum", "label": "Succeeded"}],
+                  [".", "ExecutionsFailed", ".", ".", {"stat": "Sum", "label": "Failed", "color": "#d62728"}],
+                  [".", "ExecutionsTimedOut", ".", ".", {"stat": "Sum", "label": "TimedOut", "color": "#ff7f0e"}],
+                  [".", "ExecutionsAborted", ".", ".", {"stat": "Sum", "label": "Aborted"}]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "period": 300
+              }
+            },
+            {
+              "type": "metric",
+              "x": 6, "y": 2, "width": 6, "height": 6,
+              "properties": {
+                "title": "PCA Workflow Execution Time",
+                "region": "${AWS::Region}",
+                "metrics": [
+                  ["AWS/States", "ExecutionTime", "StateMachineArn", "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${StepFunctionName}", {"stat": "Average", "label": "Avg"}],
+                  ["...", {"stat": "p99", "label": "p99"}],
+                  ["...", {"stat": "Maximum", "label": "Max"}]
+                ],
+                "view": "timeSeries",
+                "period": 300,
+                "yAxis": {"left": {"label": "ms"}}
+              }
+            },
+            {
+              "type": "metric",
+              "x": 12, "y": 2, "width": 6, "height": 6,
+              "properties": {
+                "title": "PCA Workflow Success Rate",
+                "region": "${AWS::Region}",
+                "metrics": [
+                  [{"expression": "100*(m2/(m1+0.001))", "label": "Success %", "id": "e1"}],
+                  ["AWS/States", "ExecutionsStarted", "StateMachineArn", "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${StepFunctionName}", {"stat": "Sum", "id": "m1", "visible": false}],
+                  [".", "ExecutionsSucceeded", ".", ".", {"stat": "Sum", "id": "m2", "visible": false}]
+                ],
+                "view": "timeSeries",
+                "period": 300,
+                "yAxis": {"left": {"min": 0, "max": 100, "label": "%"}}
+              }
+            },
+            {
+              "type": "metric",
+              "x": 18, "y": 2, "width": 6, "height": 6,
+              "properties": {
+                "title": "PCA Workflow Throughput (1m)",
+                "region": "${AWS::Region}",
+                "metrics": [
+                  ["AWS/States", "ExecutionsStarted", "StateMachineArn", "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${StepFunctionName}", {"stat": "Sum", "label": "Started", "period": 60}],
+                  [".", "ExecutionsSucceeded", ".", ".", {"stat": "Sum", "label": "Completed", "period": 60}]
+                ],
+                "view": "timeSeries",
+                "period": 60
+              }
+            },
+            {
+              "type": "text",
+              "x": 0, "y": 8, "width": 24, "height": 1,
+              "properties": { "markdown": "## Step Functions — BulkUploadWorkflow" }
+            },
+            {
+              "type": "metric",
+              "x": 0, "y": 9, "width": 8, "height": 6,
+              "properties": {
+                "title": "Bulk Workflow Executions",
+                "region": "${AWS::Region}",
+                "metrics": [
+                  ["AWS/States", "ExecutionsStarted", "StateMachineArn", "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${BulkUploadStepFunctionName}", {"stat": "Sum", "label": "Started"}],
+                  [".", "ExecutionsSucceeded", ".", ".", {"stat": "Sum", "label": "Succeeded"}],
+                  [".", "ExecutionsFailed", ".", ".", {"stat": "Sum", "label": "Failed", "color": "#d62728"}]
+                ],
+                "view": "timeSeries",
+                "period": 300
+              }
+            },
+            {
+              "type": "metric",
+              "x": 8, "y": 9, "width": 8, "height": 6,
+              "properties": {
+                "title": "Bulk Workflow Execution Time",
+                "region": "${AWS::Region}",
+                "metrics": [
+                  ["AWS/States", "ExecutionTime", "StateMachineArn", "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${BulkUploadStepFunctionName}", {"stat": "Average", "label": "Avg"}],
+                  ["...", {"stat": "p99", "label": "p99"}]
+                ],
+                "view": "timeSeries",
+                "period": 300,
+                "yAxis": {"left": {"label": "ms"}}
+              }
+            },
+            {
+              "type": "metric",
+              "x": 16, "y": 9, "width": 8, "height": 6,
+              "properties": {
+                "title": "Bulk Workflow Success Rate",
+                "region": "${AWS::Region}",
+                "metrics": [
+                  [{"expression": "100*(m2/(m1+0.001))", "label": "Success %", "id": "e1"}],
+                  ["AWS/States", "ExecutionsStarted", "StateMachineArn", "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${BulkUploadStepFunctionName}", {"stat": "Sum", "id": "m1", "visible": false}],
+                  [".", "ExecutionsSucceeded", ".", ".", {"stat": "Sum", "id": "m2", "visible": false}]
+                ],
+                "view": "timeSeries",
+                "period": 300,
+                "yAxis": {"left": {"min": 0, "max": 100, "label": "%"}}
+              }
+            },
+            {
+              "type": "text",
+              "x": 0, "y": 15, "width": 24, "height": 1,
+              "properties": { "markdown": "## Lambda Functions — Pipeline" }
+            },
+            {
+              "type": "metric",
+              "x": 0, "y": 16, "width": 8, "height": 6,
+              "properties": {
+                "title": "Lambda Invocations (Pipeline)",
+                "region": "${AWS::Region}",
+                "metrics": [
+                  ["AWS/Lambda", "Invocations", {"stat": "Sum", "label": "All Functions (Account)"}]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "period": 300
+              }
+            },
+            {
+              "type": "metric",
+              "x": 8, "y": 16, "width": 8, "height": 6,
+              "properties": {
+                "title": "Lambda Errors (Account-wide)",
+                "region": "${AWS::Region}",
+                "metrics": [
+                  ["AWS/Lambda", "Errors", {"stat": "Sum", "label": "Errors", "color": "#d62728"}]
+                ],
+                "view": "timeSeries",
+                "period": 300
+              }
+            },
+            {
+              "type": "metric",
+              "x": 16, "y": 16, "width": 8, "height": 6,
+              "properties": {
+                "title": "Lambda Throttles (Account-wide)",
+                "region": "${AWS::Region}",
+                "metrics": [
+                  ["AWS/Lambda", "Throttles", {"stat": "Sum", "label": "Throttles", "color": "#d62728"}],
+                  [".", "ConcurrentExecutions", {"stat": "Maximum", "label": "Concurrent Executions", "yAxis": "right"}]
+                ],
+                "view": "timeSeries",
+                "period": 300
+              }
+            },
+            {
+              "type": "text",
+              "x": 0, "y": 22, "width": 24, "height": 1,
+              "properties": { "markdown": "## DynamoDB" }
+            },
+            {
+              "type": "metric",
+              "x": 0, "y": 23, "width": 8, "height": 6,
+              "properties": {
+                "title": "DynamoDB Consumed Capacity",
+                "region": "${AWS::Region}",
+                "metrics": [
+                  ["AWS/DynamoDB", "ConsumedReadCapacityUnits", "TableName", "${DynamoDBTableName}", {"stat": "Sum", "label": "Read CU"}],
+                  [".", "ConsumedWriteCapacityUnits", ".", ".", {"stat": "Sum", "label": "Write CU"}]
+                ],
+                "view": "timeSeries",
+                "period": 300
+              }
+            },
+            {
+              "type": "metric",
+              "x": 8, "y": 23, "width": 8, "height": 6,
+              "properties": {
+                "title": "DynamoDB Throttle Events",
+                "region": "${AWS::Region}",
+                "metrics": [
+                  ["AWS/DynamoDB", "ReadThrottleEvents", "TableName", "${DynamoDBTableName}", {"stat": "Sum", "label": "Read Throttles", "color": "#d62728"}],
+                  [".", "WriteThrottleEvents", ".", ".", {"stat": "Sum", "label": "Write Throttles", "color": "#ff7f0e"}]
+                ],
+                "view": "timeSeries",
+                "period": 300
+              }
+            },
+            {
+              "type": "metric",
+              "x": 16, "y": 23, "width": 8, "height": 6,
+              "properties": {
+                "title": "DynamoDB Request Latency",
+                "region": "${AWS::Region}",
+                "metrics": [
+                  ["AWS/DynamoDB", "SuccessfulRequestLatency", "TableName", "${DynamoDBTableName}", "Operation", "GetItem", {"stat": "Average", "label": "GetItem"}],
+                  ["...", "PutItem", {"stat": "Average", "label": "PutItem"}],
+                  ["...", "Query", {"stat": "Average", "label": "Query"}]
+                ],
+                "view": "timeSeries",
+                "period": 300,
+                "yAxis": {"left": {"label": "ms"}}
+              }
+            },
+            {
+              "type": "text",
+              "x": 0, "y": 29, "width": 24, "height": 1,
+              "properties": { "markdown": "## Amazon Bedrock (Summarization & GenAI)" }
+            },
+            {
+              "type": "metric",
+              "x": 0, "y": 30, "width": 8, "height": 6,
+              "properties": {
+                "title": "Bedrock Invocations",
+                "region": "${AWS::Region}",
+                "metrics": [
+                  ["AWS/Bedrock", "Invocations", {"stat": "Sum", "label": "Invocations"}]
+                ],
+                "view": "timeSeries",
+                "period": 300
+              }
+            },
+            {
+              "type": "metric",
+              "x": 8, "y": 30, "width": 8, "height": 6,
+              "properties": {
+                "title": "Bedrock Invocation Latency",
+                "region": "${AWS::Region}",
+                "metrics": [
+                  ["AWS/Bedrock", "InvocationLatency", {"stat": "Average", "label": "Avg"}],
+                  ["...", {"stat": "p99", "label": "p99"}]
+                ],
+                "view": "timeSeries",
+                "period": 300,
+                "yAxis": {"left": {"label": "ms"}}
+              }
+            },
+            {
+              "type": "metric",
+              "x": 16, "y": 30, "width": 8, "height": 6,
+              "properties": {
+                "title": "Bedrock Throttles & Errors",
+                "region": "${AWS::Region}",
+                "metrics": [
+                  ["AWS/Bedrock", "InvocationThrottles", {"stat": "Sum", "label": "Throttles", "color": "#ff7f0e"}],
+                  [".", "InvocationClientErrors", {"stat": "Sum", "label": "Client Errors", "color": "#d62728"}],
+                  [".", "InvocationServerErrors", {"stat": "Sum", "label": "Server Errors", "color": "#9467bd"}]
+                ],
+                "view": "timeSeries",
+                "period": 300
+              }
+            },
+            {
+              "type": "text",
+              "x": 0, "y": 36, "width": 24, "height": 1,
+              "properties": { "markdown": "## Alarm Status" }
+            },
+            {
+              "type": "alarm",
+              "x": 0, "y": 37, "width": 24, "height": 3,
+              "properties": {
+                "title": "Active Alarms",
+                "alarms": [
+                  "${PCAWorkflowFailedAlarm.Arn}",
+                  "${PCAWorkflowTimedOutAlarm.Arn}",
+                  "${BulkWorkflowFailedAlarm.Arn}",
+                  "${DynamoDBReadThrottleAlarm.Arn}",
+                  "${DynamoDBWriteThrottleAlarm.Arn}",
+                  "${DynamoDBSystemErrorAlarm.Arn}"
+                ]
+              }
+            }
+          ]
+        }
+
+  ##########################################################
+  # CloudWatch Dashboard — CloudFront (conditional)
+  ##########################################################
+
+  CloudFrontDashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Condition: HasCloudFront
+    Properties:
+      DashboardName: !Sub "${PCAStackName}-PCA-CloudFront"
+      DashboardBody: !Sub |
+        {
+          "widgets": [
+            {
+              "type": "text",
+              "x": 0, "y": 0, "width": 24, "height": 1,
+              "properties": { "markdown": "## CloudFront Distribution — ${CloudFrontDistributionId}" }
+            },
+            {
+              "type": "metric",
+              "x": 0, "y": 1, "width": 8, "height": 6,
+              "properties": {
+                "title": "CloudFront Requests",
+                "region": "us-east-1",
+                "metrics": [
+                  ["AWS/CloudFront", "Requests", "DistributionId", "${CloudFrontDistributionId}", "Region", "Global", {"stat": "Sum", "label": "Requests"}]
+                ],
+                "view": "timeSeries",
+                "period": 300
+              }
+            },
+            {
+              "type": "metric",
+              "x": 8, "y": 1, "width": 8, "height": 6,
+              "properties": {
+                "title": "CloudFront Error Rate",
+                "region": "us-east-1",
+                "metrics": [
+                  ["AWS/CloudFront", "4xxErrorRate", "DistributionId", "${CloudFrontDistributionId}", "Region", "Global", {"stat": "Average", "label": "4xx %", "color": "#ff7f0e"}],
+                  [".", "5xxErrorRate", ".", ".", ".", ".", {"stat": "Average", "label": "5xx %", "color": "#d62728"}],
+                  [".", "TotalErrorRate", ".", ".", ".", ".", {"stat": "Average", "label": "Total %"}]
+                ],
+                "view": "timeSeries",
+                "period": 300,
+                "yAxis": {"left": {"label": "%"}}
+              }
+            },
+            {
+              "type": "metric",
+              "x": 16, "y": 1, "width": 8, "height": 6,
+              "properties": {
+                "title": "CloudFront Data Transfer",
+                "region": "us-east-1",
+                "metrics": [
+                  ["AWS/CloudFront", "BytesDownloaded", "DistributionId", "${CloudFrontDistributionId}", "Region", "Global", {"stat": "Sum", "label": "Downloaded"}],
+                  [".", "BytesUploaded", ".", ".", ".", ".", {"stat": "Sum", "label": "Uploaded"}]
+                ],
+                "view": "timeSeries",
+                "period": 300
+              }
+            }
+          ]
+        }
+
+  ##########################################################
+  # CloudWatch Dashboard — API Gateway (conditional)
+  ##########################################################
+
+  ApiGatewayDashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Condition: HasApiGateway
+    Properties:
+      DashboardName: !Sub "${PCAStackName}-PCA-ApiGateway"
+      DashboardBody: !Sub |
+        {
+          "widgets": [
+            {
+              "type": "text",
+              "x": 0, "y": 0, "width": 24, "height": 1,
+              "properties": { "markdown": "## API Gateway — ${ApiGatewayName}" }
+            },
+            {
+              "type": "metric",
+              "x": 0, "y": 1, "width": 8, "height": 6,
+              "properties": {
+                "title": "API Request Count",
+                "region": "${AWS::Region}",
+                "metrics": [
+                  ["AWS/ApiGateway", "Count", "ApiName", "${ApiGatewayName}", {"stat": "Sum", "label": "Requests"}]
+                ],
+                "view": "timeSeries",
+                "period": 300
+              }
+            },
+            {
+              "type": "metric",
+              "x": 8, "y": 1, "width": 8, "height": 6,
+              "properties": {
+                "title": "API Errors",
+                "region": "${AWS::Region}",
+                "metrics": [
+                  ["AWS/ApiGateway", "4XXError", "ApiName", "${ApiGatewayName}", {"stat": "Sum", "label": "4xx", "color": "#ff7f0e"}],
+                  [".", "5XXError", ".", ".", {"stat": "Sum", "label": "5xx", "color": "#d62728"}]
+                ],
+                "view": "timeSeries",
+                "period": 300
+              }
+            },
+            {
+              "type": "metric",
+              "x": 16, "y": 1, "width": 8, "height": 6,
+              "properties": {
+                "title": "API Latency",
+                "region": "${AWS::Region}",
+                "metrics": [
+                  ["AWS/ApiGateway", "Latency", "ApiName", "${ApiGatewayName}", {"stat": "Average", "label": "Avg"}],
+                  ["...", {"stat": "p99", "label": "p99"}],
+                  [".", "IntegrationLatency", ".", ".", {"stat": "Average", "label": "Integration Avg"}]
+                ],
+                "view": "timeSeries",
+                "period": 300,
+                "yAxis": {"left": {"label": "ms"}}
+              }
+            },
+            {
+              "type": "metric",
+              "x": 0, "y": 7, "width": 12, "height": 6,
+              "properties": {
+                "title": "API Error Rate",
+                "region": "${AWS::Region}",
+                "metrics": [
+                  [{"expression": "100*(m4xx+m5xx)/(mCount+0.001)", "label": "Error Rate %", "id": "e1"}],
+                  ["AWS/ApiGateway", "Count", "ApiName", "${ApiGatewayName}", {"stat": "Sum", "id": "mCount", "visible": false}],
+                  [".", "4XXError", ".", ".", {"stat": "Sum", "id": "m4xx", "visible": false}],
+                  [".", "5XXError", ".", ".", {"stat": "Sum", "id": "m5xx", "visible": false}]
+                ],
+                "view": "timeSeries",
+                "period": 300,
+                "yAxis": {"left": {"min": 0, "max": 100, "label": "%"}}
+              }
+            }
+          ]
+        }
+
+  ##########################################################
+  # CloudWatch Dashboard — WAF (conditional)
+  ##########################################################
+
+  WAFDashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Condition: HasWAF
+    Properties:
+      DashboardName: !Sub "${PCAStackName}-PCA-WAF"
+      DashboardBody: !Sub |
+        {
+          "widgets": [
+            {
+              "type": "text",
+              "x": 0, "y": 0, "width": 24, "height": 1,
+              "properties": { "markdown": "## WAF — ${WAFWebACLName}" }
+            },
+            {
+              "type": "metric",
+              "x": 0, "y": 1, "width": 8, "height": 6,
+              "properties": {
+                "title": "WAF Allowed vs Blocked",
+                "region": "${WAFWebACLRegion}",
+                "metrics": [
+                  ["AWS/WAFV2", "AllowedRequests", "WebACL", "${WAFWebACLName}", "Rule", "ALL", {"stat": "Sum", "label": "Allowed"}],
+                  [".", "BlockedRequests", ".", ".", ".", ".", {"stat": "Sum", "label": "Blocked", "color": "#d62728"}]
+                ],
+                "view": "timeSeries",
+                "period": 300
+              }
+            },
+            {
+              "type": "metric",
+              "x": 8, "y": 1, "width": 8, "height": 6,
+              "properties": {
+                "title": "WAF Counted Requests",
+                "region": "${WAFWebACLRegion}",
+                "metrics": [
+                  ["AWS/WAFV2", "CountedRequests", "WebACL", "${WAFWebACLName}", "Rule", "ALL", {"stat": "Sum", "label": "Counted"}]
+                ],
+                "view": "timeSeries",
+                "period": 300
+              }
+            },
+            {
+              "type": "metric",
+              "x": 16, "y": 1, "width": 8, "height": 6,
+              "properties": {
+                "title": "WAF Block Rate",
+                "region": "${WAFWebACLRegion}",
+                "metrics": [
+                  [{"expression": "100*(m2/(m1+m2+0.001))", "label": "Block Rate %", "id": "e1"}],
+                  ["AWS/WAFV2", "AllowedRequests", "WebACL", "${WAFWebACLName}", "Rule", "ALL", {"stat": "Sum", "id": "m1", "visible": false}],
+                  [".", "BlockedRequests", ".", ".", ".", ".", {"stat": "Sum", "id": "m2", "visible": false}]
+                ],
+                "view": "timeSeries",
+                "period": 300,
+                "yAxis": {"left": {"min": 0, "max": 100, "label": "%"}}
+              }
+            }
+          ]
+        }
+
+Outputs:
+
+  DashboardURL:
+    Description: URL to the main CloudWatch Dashboard
+    Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/cloudwatch/home?region=${AWS::Region}#dashboards/dashboard/${PCAStackName}-PCA-Observability"
+
+  AlarmTopicArn:
+    Description: SNS Topic ARN for alarm notifications
+    Value: !Ref AlarmTopic
+
+  DashboardName:
+    Description: Name of the main CloudWatch Dashboard
+    Value: !Sub "${PCAStackName}-PCA-Observability"

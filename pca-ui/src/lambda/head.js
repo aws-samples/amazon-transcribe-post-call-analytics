@@ -1,4 +1,5 @@
 const AWS = require("aws-sdk");
+const { withAuthorization } = require("./auth-middleware");
 const ddb = new AWS.DynamoDB();
 
 const tableName = process.env.TableName;
@@ -27,7 +28,7 @@ async function getHeader(key) {
     return res.Item.Data.S;
 }
 
-exports.handler = async function (event, context) {
+async function handler(event, context) {
     console.log("Event:", JSON.stringify(event, null, 4));
 
     const key = event.pathParameters.key;
@@ -43,4 +44,6 @@ exports.handler = async function (event, context) {
         },
         body: header,
     };
-};
+}
+
+exports.handler = withAuthorization(handler);

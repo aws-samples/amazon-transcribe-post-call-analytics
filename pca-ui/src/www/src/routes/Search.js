@@ -52,7 +52,7 @@ function Search({ setAlert }) {
     `/languages`,
     getLanguages
   );
-  const { data: results, error: errorResults } = useSWR(
+  const { data: results, error: errorResults, mutate: mutateResults } = useSWR(
     shouldSearch ? [`/search`, query] : null,
     () => search(query)
   );
@@ -253,6 +253,7 @@ function Search({ setAlert }) {
           data={results}
           loading={!results && !errorResults}
           empty={<NoMatches />}
+          onRefresh={() => { mutateResults(); }}
         />
       )}
       </Container>

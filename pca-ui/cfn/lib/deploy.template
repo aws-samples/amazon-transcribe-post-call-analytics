@@ -29,6 +29,10 @@ Parameters:
     AllowedValues: [true, false]
     Description: true or false to enable or disable the genai query prompt
 
+  Version:
+    Type: String
+    Description: Solution version used to trigger UI redeployment on stack updates
+
 Resources:
   Layer:
     Type: "AWS::Lambda::LayerVersion"
@@ -94,7 +98,7 @@ Resources:
     Properties:
       ServiceToken: !GetAtt DeployFunction.Arn
       Counter: !Ref DeployCountValue
-      Version: "0.7.8"
+      Version: !Ref Version
 
   Configure:
     Type: "AWS::CloudFormation::CustomResource"

@@ -7,6 +7,64 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-10-13
+
+### Added
+
+- **Role-based access control (RBAC) for the PCA web UI.** Access is now governed by four
+  permissions - `read_calls`, `upload_recordings`, `delete_calls` and `manage_roles` - which are
+  grouped into named roles stored in a new DynamoDB roles table. A user's role is held in the
+  Cognito `custom:pca_role` attribute and injected into the access token by a Pre Token Generation
+  V2 trigger, and every API endpoint is authorized against it.
+  - Two roles are seeded on stack creation: `admin` (all four permissions) and `call-readwrite`
+    (`read_calls` + `upload_recordings`). The `AdminUsername` user is assigned `admin`.
+  - New users, whether self signed-up or created in Cognito by an administrator, default to
+    `call-readwrite`, which preserves the read and upload behaviour users have always had with PCA.
+- **Role Management screen** at `/admin/roles` for creating, editing and deleting roles and for
+  assigning roles to users. The Admin navigation item is only shown to users holding
+  `manage_roles`.
+- **Call deletion from the web UI**, gated by the `delete_calls` permission.
+  - Single call deletion from the call detail page, with a confirmation prompt.
+  - Multi-select batch deletion from the call list and search results (maximum 25 calls per batch).
+  - Deletion removes the original audio, the playback audio, the parsed results JSON and the
+    Amazon Transcribe result files for both standard and Call Analytics jobs. The DynamoDB record
+    is removed by the existing output bucket S3 event trigger, so a deleted call can take a minute
+    or two to disappear from the list.
+- **New API endpoints:** `DELETE /delete/{key+}`, `POST /delete/batch`, `GET|POST /roles`,
+  `PUT|DELETE /roles/{roleName}`, `GET /users`, `PUT /users/{username}/role` and
+  `GET /me/permissions`.
+- **Audit logging** to a new `/pca/audit` CloudWatch log group (365 day retention) covering
+  `AUTH_DENIED`, `ROLE_CREATED`, `ROLE_UPDATED`, `ROLE_DELETED`, `USER_ROLE_CHANGED` and
+  `CALL_DELETED` events.
+- **API Gateway access logging** to a new `/pca/apigateway` CloudWatch log group (90 day
+  retention), including request ID, caller, resource path, status, latency and response size.
+- **Optional observability stack** (`pca-observability/pca-observability.template`). Deploys
+  CloudWatch dashboards for the PCA and bulk Step Functions workflows, Lambda, DynamoDB and
+  Amazon Bedrock, plus optional CloudFront, API Gateway and WAF dashboards, along with CloudWatch
+  alarms and an encrypted SNS topic for email notifications. This stack is deployed separately
+  from the main PCA stack.
+- Support for the Anthropic Claude 4.5 models `us.anthropic.claude-haiku-4-5-20251001-v1:0` and
+  `us.anthropic.claude-sonnet-4-5-20250929-v1:0` for summarization and GenAI queries.
+- New `Version` CloudFormation parameter (default `0.8.0`) on the main templates. The web UI
+  deployment is now keyed off this value rather than a hardcoded version, so changing it forces
+  the UI to be redeployed when a stack is updated.
+- New `TranscribeResultsPrefix` parameter (default `transcribeResults`) on the UI stack, used to
+  locate Transcribe result files during call deletion.
+
+### Changed
+
+- The Cognito user pool now has `AdvancedSecurityMode` set to `ENFORCED`, which is required for the
+  Pre Token Generation V2 trigger, and requests the additional `profile` OAuth scope.
+- The home page now adapts to the signed-in user's permissions: the call list is only fetched with
+  `read_calls`, the upload panel is only shown with `upload_recordings`, and a user holding neither
+  permission is shown an explanatory message instead.
+
+### Fixed
+
+- File name metadata parsing (date/time, call GUID, agent and customer) is now case insensitive, so
+  recordings whose names differ only in case from the configured regular expressions are matched
+  correctly.
+
 ## [0.7.17] - 2025-09-18
 
 ### Fixed
@@ -331,6 +389,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial release
 
 [Unreleased]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/compare/main...develop
+[0.8.0]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.8.0
 [0.7.17]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.7.17
 [0.7.16]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.7.16
 [0.7.15]: https://github.com/aws-samples/amazon-transcribe-post-call-analytics/releases/tag/v0.7.15

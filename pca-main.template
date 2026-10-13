@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 
-Description: Amazon Transcribe Post Call Analytics - PCA (v0.7.17) (uksb-1sn29lk73, SO9071)
+Description: Amazon Transcribe Post Call Analytics - PCA (v0.8.0) (uksb-1sn29lk73, SO9071)
 
 Parameters:
 
@@ -428,6 +428,9 @@ Parameters:
     Default: us.amazon.nova-pro-v1:0
     AllowedValues:
       - anthropic.claude-3-haiku-20240307-v1:0
+      - us.anthropic.claude-haiku-4-5-20251001-v1:0
+      - eu.anthropic.claude-haiku-4-5-20251001-v1:0
+      - global.anthropic.claude-haiku-4-5-20251001-v1:0
       - anthropic.claude-3-sonnet-20240229-v1:0
       - us.amazon.nova-micro-v1:0
       - us.amazon.nova-lite-v1:0
@@ -464,6 +467,9 @@ Parameters:
     Default: us.amazon.nova-pro-v1:0
     AllowedValues:
       - anthropic.claude-3-haiku-20240307-v1:0
+      - us.anthropic.claude-haiku-4-5-20251001-v1:0
+      - eu.anthropic.claude-haiku-4-5-20251001-v1:0
+      - global.anthropic.claude-haiku-4-5-20251001-v1:0
       - anthropic.claude-3-sonnet-20240229-v1:0
       - us.amazon.nova-micro-v1:0
       - us.amazon.nova-lite-v1:0
@@ -503,6 +509,11 @@ Parameters:
     AllowedPattern: '^(|arn:aws:lambda:.*)$'
     Description: >
       (Optional) If 'CallSummarization' is LAMBDA, provide ARN for a Lambda function.
+
+  Version:
+    Type: String
+    Default: "0.8.0"
+    Description: Solution version - used to trigger UI redeployment on stack updates
 
 Metadata:
     AWS::CloudFormation::Interface:
@@ -1149,6 +1160,7 @@ Resources:
           - ''
         PyUtilsLayerArn: !GetAtt PythonUtilsLayer.Outputs.PyUtilsLayer
         LLMTableName: !GetAtt LLMPromptConfigure.Outputs.LLMTableName
+        Version: !Ref Version
 
   MediaSearchKendraFinder:
     Type: AWS::CloudFormation::Stack

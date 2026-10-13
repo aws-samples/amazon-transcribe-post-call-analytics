@@ -935,7 +935,7 @@ class TranscribeParser:
         print(f"INFO: Parsing datetime from filename '{filename}' using regex: '{regex}' and fieldmap: '{fieldmap}'.")
         try:
             self.analytics.conversationLocation = cf.appConfig[cf.CONF_CONVO_LOCATION]
-            match = re.search(regex, filename)
+            match = re.search(regex, filename, re.IGNORECASE)
             fieldstring = " ".join(match.groups())
             self.analytics.conversationTime = str(datetime.strptime(fieldstring, fieldmap))
             print(f"INFO: Assembled datetime: '{self.analytics.conversationTime}'")
@@ -957,7 +957,7 @@ class TranscribeParser:
         regex = cf.appConfig[cf.CONF_FILENAME_GUID_REGEX]
         print(f"INFO: Parsing GUID from filename '{filename}' using regex: '{regex}'.")
         try:
-            match = re.search(regex, filename)
+            match = re.search(regex, filename, re.IGNORECASE)
             guid = " ".join(match.groups()) or 'None'
             print(f"INFO: Parsed GUID: '{guid}'")
         except:
@@ -976,7 +976,7 @@ class TranscribeParser:
         regex = cf.appConfig[cf.CONF_FILENAME_AGENT_REGEX]
         print(f"INFO: Parsing AGENT from filename '{filename}' using regex: '{regex}'.")
         try:
-            match = re.search(regex, filename)
+            match = re.search(regex, filename, re.IGNORECASE)
             agent = " ".join(match.groups()) or 'None'
             print(f"INFO: Parsed AGENT: '{agent}'")
         except:
@@ -995,7 +995,7 @@ class TranscribeParser:
         regex = cf.appConfig[cf.CONF_FILENAME_CUST_REGEX]
         print(f"INFO: Parsing CUST from filename '{filename}' using regex: '{regex}'.")
         try:
-            match = re.search(regex, filename)
+            match = re.search(regex, filename, re.IGNORECASE)
             cust = " ".join(match.groups()) or 'None'
             print(f"INFO: Parsed CUST: '{cust}'")
         except:

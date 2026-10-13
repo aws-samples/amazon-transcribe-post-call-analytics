@@ -3,14 +3,17 @@ import {
   Switch,
   Route,
   NavLink,
+  Redirect,
 } from "react-router-dom";
 // import { Navbar, Nav, Container, Alert, Button } from "react-bootstrap";
 import { AppLayout,Alert,Notifications, Header, Link, BreadcrumbGroup, TopNavigation, Container, Button} from "@cloudscape-design/components"
 import Home from "./routes/Home";
 import Search from "./routes/Search";
 import Dashboard from "./routes/Dashboard/index";
+import RoleManagement from "./routes/RoleManagement";
 import { useState } from "react";
 import { payloadFromToken, logOut } from "./api/auth";
+import { PermissionProvider, usePermissions } from "./hooks/usePermissions";
 
 const routes = [
   {
@@ -74,6 +77,64 @@ const routes = [
 ];
 
 function Navigation({ userName, email }) {
+  const { isAdmin, loading } = usePermissions();
+
+  const utilities = [
+    {
+      type: "button",
+      text: "Search",
+      iconName: "search",
+      href: "search",
+      externalIconAriaLabel: " (opens in a new tab)"
+    },
+    ...(!loading && isAdmin ? [{
+      type: "button",
+      text: "Admin",
+      iconName: "settings",
+      href: "/admin/roles",
+    }] : []),
+    {
+      type: "button",
+      text: "PCA Blog Post",
+      href: "https://amazon.com/post-call-analytics",
+      external: true,
+      externalIconAriaLabel: " (opens in a new tab)"
+    },
+    {
+      type: "menu-dropdown",
+      text: userName,
+      description: email,
+      iconName: "user-profile",
+      onItemClick: (event) => {
+        console.log(event);
+        if (event.detail.id === "signout") logOut();
+      },
+      items: [
+        {
+          id: "support-group",
+          text: "Support",
+          items: [
+            {
+              id: "documentation",
+              text: "GitHub/Readme",
+              href: "https://github.com/aws-samples/amazon-transcribe-post-call-analytics/",
+              external: true,
+              externalIconAriaLabel: " (opens in new tab)"
+            },
+            {
+              id: "feedback",
+              text: "Blog Post",
+              href: "https://amazon.com/post-call-analytics",
+              external: true,
+              externalIconAriaLabel: " (opens in new tab)"
+            }
+          ]
+        },
+        { id: "signout", text: "Sign out" }
+      ]
+    }
+  ];
+
   return (
     <TopNavigation
       identity={{
@@ -89,62 +150,17 @@ function Navigation({ userName, email }) {
         overflowMenuBackIconAriaLabel: "Back",
         overflowMenuDismissIconAriaLabel: "Close menu"
       }}
-      utilities={[
-        {
-          type: "button",
-          text: "Search",
-          iconName: "search",
-          href: "search",
-          externalIconAriaLabel: " (opens in a new tab)"
-        },
-        {
-          type: "button",
-          text: "PCA Blog Post",
-          href: "https://amazon.com/post-call-analytics",
-          external: true,
-          externalIconAriaLabel: " (opens in a new tab)"
-        },
-        {
-          type: "menu-dropdown",
-          text: userName,
-          description: email,
-          iconName: "user-profile",
-          onItemClick: (event) => {
-            console.log(event);
-            if (event.detail.id === "signout") logOut();
-          },
-          items: [
-            /* { id: "profile", text: "Profile" },
-            { id: "preferences", text: "Preferences" },
-            { id: "security", text: "Security" },*/
-            {
-              id: "support-group",
-              text: "Support",
-              items: [
-                {
-                  id: "documentation",
-                  text: "GitHub/Readme",
-                  href: "https://github.com/aws-samples/amazon-transcribe-post-call-analytics/",
-                  external: true,
-                  externalIconAriaLabel:
-                    " (opens in new tab)"
-                },
-                {
-                  id: "feedback",
-                  text: "Blog Post",
-                  href: "https://amazon.com/post-call-analytics",
-                  external: true,
-                  externalIconAriaLabel:
-                    " (opens in new tab)"
-                }
-              ]
-            },
-            { id: "signout", text: "Sign out" }
-          ]
-        }
-
-      ]}
+      utilities={utilities}
     />
+  );
+}
+
+function AdminRoute({ children, ...rest }) {
+  const { isAdmin, loading } = usePermissions();
+  return (
+    <Route {...rest}>
+      {loading ? null : isAdmin ? children : <Redirect to="/" />}
+    </Route>
   );
 }
 
@@ -162,7 +178,27 @@ function App() {
 
   return (
     <Router>
+      <PermissionProvider>
       <Switch>
+        <AdminRoute path="/admin/roles">
+          <Navigation userName={cognitoUserName} email={cognitoEmail} />
+          <AppLayout
+            stickyNotifications
+            toolsHide
+            navigationHide
+            breadcrumbs={
+              <BreadcrumbGroup
+                items={[
+                  { text: "Home", href: "/" },
+                  { text: "Admin", href: "#" },
+                  { text: "Role Management", href: "#" },
+                ]}
+                ariaLabel="Breadcrumbs"
+              />
+            }
+            content={<RoleManagement setAlert={setAlert} />}
+          />
+        </AdminRoute>
         {routes.map(({ path, Component, Breadcrumb, name }) => (
           <Route key={path} path={path}>
             <Navigation userName={cognitoUserName} email={cognitoEmail} />
@@ -190,6 +226,7 @@ function App() {
           </Route>
         ))}
       </Switch>
+      </PermissionProvider>
     </Router>
   );
 }

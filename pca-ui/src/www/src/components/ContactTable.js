@@ -1,7 +1,7 @@
 //import { Table } from "react-bootstrap";
-import React from "react";
+import React, { useState } from "react";
 import { useCollection } from '@cloudscape-design/collection-hooks';
-import { Table, TextFilter, Pagination, CollectionPreferences, PropertyFilter } from '@cloudscape-design/components';
+import { Table, TextFilter, Pagination, CollectionPreferences, PropertyFilter, Modal, Box, SpaceBetween, Button as CButton } from '@cloudscape-design/components';
 import { useHistory } from "react-router-dom";
 import { Formatter } from "../format";
 import { Placeholder } from "./Placeholder";
@@ -16,6 +16,8 @@ import Button from "@cloudscape-design/components/button";
 import StatusIndicator from "@cloudscape-design/components/status-indicator";
 import Icon from "@cloudscape-design/components/icon";
 import Link from "@cloudscape-design/components/link";
+import { usePermissions } from "../hooks/usePermissions";
+import { deleteBatchCalls } from "../api/api";
 
 const COLUMN_DEFINITIONS = [
   {
@@ -191,8 +193,15 @@ const NoMatches = ({ children }) => (
   </tr>
 );
 
-export const ContactTable = ({ data = [], loading = false, empty, header, variant='embedded' }) => {
+export const ContactTable = ({ data = [], loading = false, empty, header, variant='embedded', onRefresh }) => {
   const history = useHistory();
+  const { hasPermission } = usePermissions();
+  const canDelete = hasPermission('delete_calls');
+
+  const [selectedItems, setSelectedItems] = useState([]);
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [bulkDeleteResult, setBulkDeleteResult] = useState(null);
   
   const [preferences, setPreferences] = useLocalStorage(
     'contact-table-preferences',
@@ -202,6 +211,23 @@ export const ContactTable = ({ data = [], loading = false, empty, header, varian
   const onClick = (e) => {
     console.log(e);
     history.push(`/dashboard/${e.detail.item.key}`);
+  };
+
+  const handleBulkDelete = async () => {
+    try {
+      setIsBulkDeleting(true);
+      const callIds = selectedItems.map(item => item.key);
+      const result = await deleteBatchCalls(callIds);
+      setBulkDeleteResult(result);
+      setSelectedItems([]);
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      console.error("Bulk delete failed:", err);
+      setBulkDeleteResult({ error: String(err) });
+    } finally {
+      setIsBulkDeleting(false);
+      setShowBulkDeleteModal(false);
+    }
   };
 
   const [
@@ -305,29 +331,33 @@ export const ContactTable = ({ data = [], loading = false, empty, header, varian
     });
 
   return (
+    <>
     <Table
       {...collectionProps}
-      header={header}
+      header={
+        <>
+          {header}
+          {canDelete && selectedItems.length > 0 && (
+            <CButton onClick={() => setShowBulkDeleteModal(true)} disabled={isBulkDeleting}>
+              {`Delete selected (${selectedItems.length})`}
+            </CButton>
+          )}
+        </>
+      }
       variant={variant}
       columnDefinitions={COLUMN_DEFINITIONS}
       columnDisplay={preferences.contentDisplay}
       items={items}
-      //pagination={<Pagination {...paginationProps} />}
       resizableColumns={true}
       loadingText="Loading Calls"
-      // onSelectionChange={onClick}
-      // onRowClick={onClick}
-      // selectionType="single"
+      selectionType={canDelete ? "multi" : undefined}
+      selectedItems={canDelete ? selectedItems : undefined}
+      onSelectionChange={canDelete ? ({ detail }) => setSelectedItems(detail.selectedItems) : undefined}
       stickyHeader={true}
       stickyColumns={{ first: 2, last: 0 }}
       filter={
         <PropertyFilter
           {...propertyFilterProps}
-          /*onChange={({ detail }) => {
-            console.log(detail);
-            //setCallQuery(detail);
-          }}*/
-          //query={callQuery}
           i18nStrings={{
             filteringAriaLabel: "your choice",
             dismissAriaLabel: "Dismiss",
@@ -370,5 +400,23 @@ export const ContactTable = ({ data = [], loading = false, empty, header, varian
       }
       visibleColumns={['jobName', ...preferences.visibleContent]}
     />
+    {canDelete && (
+      <Modal
+        visible={showBulkDeleteModal}
+        onDismiss={() => setShowBulkDeleteModal(false)}
+        header="Delete selected calls"
+        footer={
+          <Box float="right">
+            <SpaceBetween direction="horizontal" size="xs">
+              <CButton variant="link" onClick={() => setShowBulkDeleteModal(false)}>Cancel</CButton>
+              <CButton variant="primary" onClick={handleBulkDelete} loading={isBulkDeleting}>Delete</CButton>
+            </SpaceBetween>
+          </Box>
+        }
+      >
+        Are you sure you want to delete {selectedItems.length} call(s)? This action is permanent and cannot be undone. It may take a minute or two for deleted calls to disappear from the list.
+      </Modal>
+    )}
+    </>
   );
 };

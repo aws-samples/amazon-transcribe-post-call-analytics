@@ -1,0 +1,36 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: Amazon Transcribe Post Call Analytics - PCA UI - RBAC
+
+Parameters:
+  AuditLogRetentionDays:
+    Type: Number
+    Default: 365
+    Description: Number of days to retain audit log entries
+
+Resources:
+  RolesTable:
+    Type: "AWS::DynamoDB::Table"
+    Properties:
+      KeySchema:
+        - AttributeName: RoleName
+          KeyType: HASH
+      AttributeDefinitions:
+        - AttributeName: RoleName
+          AttributeType: S
+      BillingMode: PAY_PER_REQUEST
+      SSESpecification:
+        SSEEnabled: True
+
+  AuditLogGroup:
+    Type: "AWS::Logs::LogGroup"
+    Properties:
+      LogGroupName: /pca/audit
+      RetentionInDays: !Ref AuditLogRetentionDays
+
+Outputs:
+  RolesTableName:
+    Value: !Ref RolesTable
+
+  AuditLogGroupName:
+    Value: !Ref AuditLogGroup

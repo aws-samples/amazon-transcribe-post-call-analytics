@@ -38,6 +38,10 @@ PCA currently supports the following features:
 * **Search**
     * Search on call attributes such as time range, sentiment, or entities
     * Search transcriptions
+* **Access control**
+    * Role-based access control over who can read calls, upload recordings, delete calls, and administer roles
+    * Role management screen in the web UI for creating roles and assigning them to users
+    * Audit logging of role changes, call deletions, and denied access attempts
 * **Analytics Pipeline and Dashboards on Amazon QuickSight**
     * Optionally deploy [Advanced reporting and analytics for the Post Call Analytics (PCA) solution with Amazon QuickSight](https://aws.amazon.com/blogs/big-data/advance-reporting-and-analytics-for-the-post-call-analytics-pca-solution-with-amazon-quicksight/) 
 * **Other**
@@ -45,7 +49,9 @@ PCA currently supports the following features:
     * Can ingest telephony contact trace record files (CTRs) for stereo to mark transcript speech segments as being from an **IVR** system, as well as identify multiple Agents in a single call
     * Scales automatically to handle variable call volumes
     * Bulk loads large archives of older recordings while maintaining capacity to process new recordings as they arrive
+    * Delete individual calls, or batches of calls, from the web UI, removing the audio, transcript, and analytics results
     * Sample recordings so you can quickly try out PCA for yourself
+    * Optional CloudWatch dashboards and alarms for monitoring the health of your PCA deployment
     * It’s easy to install with a single [AWS CloudFormation](https://aws.amazon.com/cloudformation/) template
 
 
@@ -83,6 +89,56 @@ Once standard PCA processing is complete the telephony-specific CTR handler will
 - Removing the sentiment scores and entities associated with IVR lines
 - Identification of multiple Agents within the call, associating the telephony system's internal user identifier with their parts of the transcript and correctly allocating each agent's actual speaking time
 - Additional telephony-specific data, such as the Genesys queues involved in the call, is made available
+
+## Roles and Permissions
+
+Access to the PCA web UI and its API is controlled by roles. A role is a named set of permissions, and each user is assigned exactly one role. There are four permissions:
+
+Permission | Grants the ability to
+--- | ---
+`read_calls` | View the call list, search, and open call details
+`upload_recordings` | Upload call recordings from the web UI
+`delete_calls` | Delete calls (implies `read_calls`)
+`manage_roles` | Create, edit, and delete roles, and assign roles to users
+
+Two roles are created when the stack is first deployed:
+
+- **`admin`** - holds all four permissions. This role is assigned to the user named by the `AdminUsername` parameter.
+- **`call-readwrite`** - holds `read_calls` and `upload_recordings`. This is the default role given to every new user, whether they sign up through the web UI or are created in Amazon Cognito by an administrator. It matches the behaviour users have always had with PCA, so existing workflows are unaffected.
+
+Roles are stored in a DynamoDB table. A user's role is held in the Cognito `custom:pca_role` attribute, which is added to the access token when they sign in, and the API authorizes every request against the permissions attached to that role. Requests without the required permission are rejected with HTTP 403.
+
+The web UI adapts to the signed-in user's permissions. Users without `read_calls` do not see the call list, users without `upload_recordings` do not see the upload panel, and the **Admin** navigation item is only shown to users holding `manage_roles`.
+
+### Managing roles
+
+Sign in as a user with the `manage_roles` permission and choose **Admin** in the top navigation, or browse directly to `/admin/roles`. From there you can:
+
+- Create a role, choosing any combination of the four permissions
+- Edit the permissions on an existing role
+- Delete a role, other than a role that holds `manage_roles`, which is protected so you cannot lock yourself out
+- Assign a role to any user in the Cognito user pool
+
+Role changes take effect the next time the affected user signs in and a new access token is issued.
+
+### Audit logging
+
+Role and permission activity is written to the `/pca/audit` Amazon CloudWatch log group, retained for 365 days. The following events are recorded, each with the acting user, a timestamp, and the request ID:
+
+- `ROLE_CREATED`, `ROLE_UPDATED`, `ROLE_DELETED`
+- `USER_ROLE_CHANGED`, including the previous and new role
+- `CALL_DELETED`, including the call identifier
+- `AUTH_DENIED`, including the denied route and the permission that was required
+
+Separately, API Gateway request access logs are written to the `/pca/apigateway` log group and retained for 90 days.
+
+## Deleting Calls
+
+Users holding the `delete_calls` permission can delete calls from the web UI. Delete a single call using the **Delete** button on the call detail page, or select multiple calls in the call list or search results and choose **Delete selected**. Batch deletion is limited to 25 calls per request. Both paths ask you to confirm, and deletion is permanent.
+
+Deleting a call removes the original audio file, the playback audio file, the parsed results JSON, and the Amazon Transcribe result files, covering both standard and Call Analytics jobs, including any redacted output. The DynamoDB record for the call is removed by the same S3 event trigger that keeps the table synchronized as files are deleted by lifecycle policies, so a deleted call can take a minute or two to disappear from the call list.
+
+Note that deleting a call does not remove it from an Amazon Kendra index if you deployed PCA with `EnableTranscriptKendraSearch` enabled.
 
 ## (optional) Generative AI Call Summarization
 
@@ -224,8 +280,9 @@ The main CloudFormation stack uses nested stacks to create the following resourc
 * [Amazon Systems Manager Parameter Store](https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-parameter-store.html) settings to store configuration settings 
 * [AWS Step Functions](https://aws.amazon.com/step-functions) workflows to orchestrate recording file processing
 * [AWS Lambda](https://aws.amazon.com/lambda/) functions to process audio files and turn-by-turn transcriptions and analytics
-* [Amazon DynamoDB](https://aws.amazon.com/dynamodb/) tables to store call metadata
+* [Amazon DynamoDB](https://aws.amazon.com/dynamodb/) tables to store call metadata, and to store the roles and permissions used to control access to the web UI
 * Website components including S3 bucket, [Amazon CloudFront](https://aws.amazon.com/cloudfront/) distribution, and [Amazon Cognito](https://aws.amazon.com/cognito) user pool
+* Amazon CloudWatch log groups for audit events (`/pca/audit`) and API Gateway access logs (`/pca/apigateway`)
 * Other miscellaneous supporting resources, including [AWS Identity and Access Management](https://aws.amazon.com/iam/) (IAM) roles and policies (using least-privilege best practices), [Amazon Simple Queue Service](https://aws.amazon.com/sqs/) (Amazon SQS) message queues, and [Amazon CloudWatch](https://aws.amazon.com/cloudwatch) log groups.
 * Optionally, an Amazon Kendra index and [AWS Amplify](https://aws.amazon.com/amplify/) search application to provide intelligent call transcript search.
 
@@ -253,6 +310,8 @@ This email contains a generated temporary password that you can use to log in (a
 Your new password must have a length of at least 8 characters, and contain uppercase and lowercase characters, plus numbers and special characters.
 
 You’re now logged in to PCA. Because you set `loadSampleAudioFiles` to `true`, your PCA deployment now has three sample calls pre-loaded for you to explore.
+
+The `admin` user is assigned the `admin` role, so it can read and upload calls, delete calls, and manage roles. Any other user you create, or who signs up through the web UI, is given the `call-readwrite` role, which allows them to read and upload calls but not to delete calls or administer roles. See [Roles and Permissions](#roles-and-permissions) to change this.
 
 
 ### Optional: Open the transcription search web UI and set your permanent password 
@@ -293,8 +352,28 @@ Follow these additional steps to enable Amazon QuickSight dashboards, deployed o
    * Optionally, to customize the dashboard further, share <Stack Name>-PCA-Analysis under Asset type analyses and <Stack Name>-PCA-* under Datasets. Enter the QuickSight user or group and choose Share again.
 
 For additional information about the PCA advanced analytics and dashboards solution, see the companion blog post: http://www.amazon.com/pca-dashboards.
-   
-   
+
+
+### Optional: Deploy the observability stack
+
+[pca-observability/pca-observability.template](./pca-observability/pca-observability.template) deploys Amazon CloudWatch dashboards and alarms for monitoring the health of a PCA deployment. It is a standalone template, deployed separately from the main PCA stack and pointed at an existing deployment, so you can add or remove it without touching your PCA stack.
+
+It creates:
+
+* A dashboard covering the PCA and bulk upload Step Functions workflows (execution counts, duration, success rate, and throughput), Lambda invocations and errors, DynamoDB capacity, throttles and latency, Amazon Bedrock invocations, latency and throttles, and a list of active alarms
+* Optional additional dashboards for Amazon CloudFront, API Gateway, and AWS WAF, each created only if you supply the corresponding identifier
+* Alarms for failed and timed-out PCA workflow executions, failed bulk workflow executions, DynamoDB read and write throttles and system errors, and, where configured, API Gateway 5xx errors and the CloudFront 5xx error rate
+* An SNS topic, encrypted with a customer managed KMS key, that emails alarm notifications to the address you provide
+
+Deploy it through the CloudFormation console, or with the AWS CLI:
+
+```
+aws cloudformation deploy --template-file pca-observability/pca-observability.template --stack-name PostCallAnalytics-Observability --parameter-overrides PCAStackName=PostCallAnalytics DynamoDBTableName=<call metadata table name> AlarmEmail=johndoe@example.com
+```
+
+`PCAStackName`, `DynamoDBTableName`, and `AlarmEmail` are required. `CloudFrontDistributionId`, `ApiGatewayName`, and `WAFWebACLName` are optional and enable the matching dashboards. Alarm thresholds and the evaluation period can also be set as parameters. You must confirm the SNS subscription email before notifications are delivered.
+
+
 ### Update an existing stack
 
 1. Log into the [AWS console](https://console.aws.amazon.com/) if you are not already.
@@ -310,7 +389,8 @@ US East (N. Virginia) | us-east-1 | https://s3.us-east-1.amazonaws.com/aws-ml-bl
 US West (Oregon) | us-west-2 | https://s3.us-west-2.amazonaws.com/aws-ml-blog-us-west-2/artifacts/pca/pca-main.yaml
 EU Central (Frankfurt) | eu-central-1 | https://s3.eu-central-1.amazonaws.com/aws-ml-blog-eu-central-1/artifacts/pca/pca-main.yaml
 
-6. Choose **Next** and review the stack parameters. 
+6. Choose **Next** and review the stack parameters.
+   * The `Version` parameter controls whether the web UI is redeployed. Its default matches the version of PCA being deployed, so taking the default for a newer template redeploys the UI and picks up the latest front end. If you are updating parameters without changing template version and you want to force the UI to be rebuilt, change this value to any new string.
 7. Chose **Next** two more times.
 8. Check the blue boxes for creating IAM resources, and choose **Update stack** to start the update.
 
