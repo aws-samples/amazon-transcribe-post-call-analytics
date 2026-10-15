@@ -1,6 +1,6 @@
-const AWS = require("aws-sdk");
+const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
 const response = require("cfn-response");
-const s3 = new AWS.S3();
+const s3 = new S3Client({});
 
 const key = "config.js";
 
@@ -34,13 +34,17 @@ window.pcaSettings = {
     }
 };`;
 
-  s3.upload({
-    Body: config,
-    Bucket: bucket,
-    Key: key,
-    ContentType: "application/javascript",
-  })
-    .promise()
+  // s3.upload() is v2-only. The body here is a short in-memory string built above,
+  // so a plain PutObject is the right replacement - lib-storage's Upload would only
+  // add multipart machinery that this will never use.
+  s3.send(
+    new PutObjectCommand({
+      Body: config,
+      Bucket: bucket,
+      Key: key,
+      ContentType: "application/javascript",
+    })
+  )
     .then((msg) => {
       response.send(event, context, response.SUCCESS);
     })

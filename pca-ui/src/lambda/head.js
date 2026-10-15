@@ -1,14 +1,14 @@
-const AWS = require("aws-sdk");
+const { DynamoDBClient, GetItemCommand } = require("@aws-sdk/client-dynamodb");
 const { withAuthorization } = require("./auth-middleware");
-const ddb = new AWS.DynamoDB();
+const ddb = new DynamoDBClient({});
 
 const tableName = process.env.TableName;
 
 async function getHeader(key) {
     let res;
     try {
-        res = await ddb
-            .getItem({
+        res = await ddb.send(
+            new GetItemCommand({
                 TableName: tableName,
                 Key: {
                     PK: {
@@ -19,7 +19,7 @@ async function getHeader(key) {
                     },
                 },
             })
-            .promise();
+        );
     } catch (e) {
         throw e;
     }

@@ -1,6 +1,18 @@
-const AWS = require("aws-sdk");
-const ddb = new AWS.DynamoDB();
-const s3 = new AWS.S3();
+const {
+  DynamoDBClient,
+  QueryCommand,
+  BatchWriteItemCommand,
+} = require("@aws-sdk/client-dynamodb");
+const {
+  S3Client,
+  GetObjectCommand,
+  PutObjectCommand,
+} = require("@aws-sdk/client-s3");
+const { withAuthorization } = require("./auth-middleware");
+const { logAuditEvent } = require("./audit");
+
+const ddb = new DynamoDBClient({});
+const s3 = new S3Client({});
 
 const tableName = process.env.TableName;
 const dataBucket = process.env.DataBucket;
@@ -9,8 +21,8 @@ const callerPrefix = "sentiment#caller";
 const agentPrefix = "sentiment#agent";
 
 async function getSentiments(key) {
-    const results = await ddb
-        .query({
+    const results = await ddb.send(
+        new QueryCommand({
             TableName: tableName,
             KeyConditionExpression: "PK = :pk AND begins_with(SK, :sentiment)",
             ExpressionAttributeValues: {
@@ -22,9 +34,10 @@ async function getSentiments(key) {
                 },
             },
         })
-        .promise();
+    );
 
-    return results.Items;
+    // v3 omits Items when nothing matches; the caller iterates this with forEach.
+    return results.Items || [];
 }
 
 async function putSentiments(sentiments) {
@@ -37,11 +50,11 @@ async function putSentiments(sentiments) {
         };
     });
 
-    return ddb
-        .batchWriteItem({
+    return ddb.send(
+        new BatchWriteItemCommand({
             RequestItems: req,
         })
-        .promise();
+    );
 }
 
 async function swapSentiments(key) {
@@ -61,12 +74,12 @@ async function swapSentiments(key) {
 async function getData(key) {
     let res;
     try {
-        res = await s3
-            .getObject({
+        res = await s3.send(
+            new GetObjectCommand({
                 Bucket: dataBucket,
                 Key: key,
             })
-            .promise();
+        );
     } catch (e) {
         return {
             statusCode: 404,
@@ -75,19 +88,21 @@ async function getData(key) {
     }
     console.log("Res:", res);
 
-    const body = res.Body.toString();
+    // v3 Body is a stream. .toString() on it returns "[object Object]" rather than
+    // throwing, so the symptom would be a JSON.parse error far from the cause.
+    const body = await res.Body.transformToString();
 
     return JSON.parse(body);
 }
 
 async function putData(key, data) {
-    return s3
-        .putObject({
+    return s3.send(
+        new PutObjectCommand({
             Bucket: dataBucket,
             Key: key,
             Body: JSON.stringify(data),
         })
-        .promise();
+    );
 }
 
 async function swapData(key) {
@@ -102,12 +117,23 @@ async function swapData(key) {
     return putData(key, data);
 }
 
-exports.handler = async function (event, context) {
+async function handler(event, context, authContext) {
     console.log("Event:", JSON.stringify(event, null, 4));
 
     const key = event.pathParameters.key;
 
     await Promise.all([swapSentiments(key), swapData(key)]);
+
+    // This mutates stored call data, so it belongs in the audit trail alongside
+    // deletions and role changes. It previously wrote no audit entry at all.
+    await logAuditEvent(
+        {
+            action: "CALL_SPEAKERS_SWAPPED",
+            username: (authContext && authContext.username) || "unknown",
+            details: { callId: key },
+        },
+        context
+    );
 
     return {
         statusCode: 200,
@@ -120,4 +146,8 @@ exports.handler = async function (event, context) {
             success: true,
         }),
     };
-};
+}
+
+// Previously exported unwrapped, which left PUT /swap/{key+} with no authorization
+// check. Gated on read_calls - see the PERMISSION_MAP entry for the reasoning.
+exports.handler = withAuthorization(handler);

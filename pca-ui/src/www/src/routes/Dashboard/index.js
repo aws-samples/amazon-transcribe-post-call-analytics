@@ -547,9 +547,11 @@ function Dashboard({ setAlert }) {
                   Delete
                 </Button>
               )}
-              <Button key='swapAgent' onClick={swapAgent} disabled={isSwapping}>
-                {isSwapping ? "Swapping..." : "Swap Agent/Caller"}
-              </Button>
+              {hasPermission('read_calls') && (
+                <Button key='swapAgent' onClick={swapAgent} disabled={isSwapping}>
+                  {isSwapping ? "Swapping..." : "Swap Agent/Caller"}
+                </Button>
+              )}
             </SpaceBetween>
           }
       >

@@ -12,11 +12,6 @@ Parameters:
     Description: Glue catalog database name used to contain tables/views for SQL
       integration.
 
-  ffmpegDownloadUrl:
-    Type: String
-    Default: http://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz
-    Description: URL for ffmpeg binary distribution tar file download - see https://www.johnvansickle.com/ffmpeg/
-
   CallSummarization:
     Default: 'BEDROCK'
     Type: String
@@ -100,14 +95,6 @@ Conditions:
     - !Condition ShouldEnableAnthropicSummarizer
 
 Resources:
-  FFMPEG:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: lib/ffmpeg.template
-      Parameters:
-        ParentStackName: !Ref ParentStackName
-        ffmpegDownloadUrl: !Ref ffmpegDownloadUrl
-
   DDB:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -120,7 +107,6 @@ Resources:
       Parameters:
         ParentStackName: !Ref ParentStackName
         TableName: !GetAtt DDB.Outputs.TableName
-        FFMPEGZipName: !GetAtt FFMPEG.Outputs.FFMPEGZipName
         PyUtilsLayer: !Ref PyUtilsLayerArn
         CallSummarization: !Ref CallSummarization
         SummarizationBedrockModelId: !Ref SummarizationBedrockModelId

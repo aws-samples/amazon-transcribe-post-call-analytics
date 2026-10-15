@@ -26,10 +26,15 @@ if ! [ -x "$(command -v npm)" ]; then
   exit 1
 fi
 
-# Check for Node.js version 18 or newer
+# Check for Node.js version 20 or newer.
+#
+# Raised from 18: the AWS SDK for JavaScript v3 packages this project depends on declare
+# engines.node ">=20.0.0". npm only warns about an engine mismatch rather than failing,
+# so an 18 build would have installed and then misbehaved at runtime instead of stopping
+# here.
 NODE_VERSION=$(node -v | cut -d 'v' -f 2 | cut -d '.' -f 1)
-if [ -z "$NODE_VERSION" ] || [ "$NODE_VERSION" -lt 18 ]; then
-    echo 'Error: Node.js version 18 or newer is required.' >&2
+if [ -z "$NODE_VERSION" ] || [ "$NODE_VERSION" -lt 20 ]; then
+    echo 'Error: Node.js version 20 or newer is required.' >&2
     exit 1
 fi
 
@@ -76,26 +81,64 @@ echo "Bucket in region: $region"
 # create build dir if it doesn't exist
 mkdir -p build
 
+# npm ci rather than npm install, in all four components below.
+#
+# npm install treats the lockfile as advisory: it will happily resolve a newer version
+# that satisfies a caret range and rewrite package-lock.json while doing it. That means
+# the dependency tree in a release build is not necessarily the tree that was reviewed
+# or audited. npm ci installs exactly what the lockfile pins and fails if the lockfile
+# and package.json disagree.
+#
+# Each call also now has "|| exit 1". The previous npm install calls had none, so a
+# failed dependency install did not stop the build - it carried on and packaged
+# whatever happened to be on disk.
+#
+# --omit=dev where the directory itself becomes the deployed artifact.
+#
+# "aws cloudformation package" zips the whole CodeUri directory, node_modules included,
+# so anything installed here ships to Lambda. Installing devDependencies therefore put
+# the entire jest tree - 344 packages, 46 MB, and every one of the dev-only CVE findings
+# npm reports during this install - inside the deployed function package. Prod-only
+# brings pca-ui/src/lambda down to 46 packages and 17.8 MB with no findings.
+#
+# Note pca-ui/src/www below is deliberately NOT --omit=dev: react-scripts is a
+# devDependency and is needed to produce the build, and only the resulting build/
+# directory is packaged, never that component's node_modules.
 echo "Getting package dependencies"
 pushd pca-server/src/trigger
-npm install
+npm ci --omit=dev || exit 1
 popd
 # Not required, no additional server libraries to package
 # pushd pca-server/src/pca
 # pip install -r requirements.txt -t .
 # popd
 pushd pca-ui/src/lambda
-npm install
+npm ci --omit=dev || exit 1
 popd
 
+# Full install here, including devDependencies - react-scripts is one, and the build
+# below needs it. Only build/ is packaged, so this node_modules never ships.
 pushd pca-ui/src/www
-npm install
+npm ci || exit 1
 npm run build || exit 1
 popd
 
+# witch's build copies node_modules into the layer zip, so prod-only matters here too.
 pushd pca-ui/src/witch
-npm install
+npm ci --omit=dev || exit 1
 npm run build || exit 1
+popd
+
+# Build the ffmpeg Lambda layer from a pinned, SHA256-verified upstream tarball.
+# Previously a CloudFormation custom resource downloaded this during stack creation with no
+# integrity check; doing it here means a bad download fails the release build rather than a
+# customer's deployment. See pca-server/src/ffmpeg/build-ffmpeg-layer.sh.
+echo "Building ffmpeg layer"
+pushd pca-server/src/ffmpeg
+# Invoked via bash rather than as ./build-ffmpeg-layer.sh so this does not depend on the
+# execute bit surviving a checkout. Contributors on Windows commonly have
+# core.fileMode=false, which drops it silently.
+bash ./build-ffmpeg-layer.sh || exit 1
 popd
 
 # Build and deploy embedded MediaSearch project

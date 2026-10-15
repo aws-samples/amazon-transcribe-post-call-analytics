@@ -1,6 +1,8 @@
-const AWS = require("aws-sdk");
+const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
+const { DynamoDBDocumentClient, GetCommand } = require("@aws-sdk/lib-dynamodb");
+const { toPermissionArray } = require("./auth-middleware");
 
-const ddb = new AWS.DynamoDB.DocumentClient();
+const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 const rolesTableName = process.env.RolesTableName;
 
 const CORS_HEADERS = {
@@ -39,12 +41,12 @@ exports.handler = async function (event) {
       };
     }
 
-    const result = await ddb
-      .get({
+    const result = await ddb.send(
+      new GetCommand({
         TableName: rolesTableName,
         Key: { RoleName: roleName },
       })
-      .promise();
+    );
 
     if (!result.Item) {
       return {
@@ -54,9 +56,7 @@ exports.handler = async function (event) {
       };
     }
 
-    const permissions = result.Item.Permissions
-      ? Array.from(result.Item.Permissions.values || result.Item.Permissions)
-      : [];
+    const permissions = toPermissionArray(result.Item.Permissions);
 
     return {
       statusCode: 200,

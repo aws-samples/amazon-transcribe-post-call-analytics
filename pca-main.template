@@ -247,11 +247,6 @@ Parameters:
         - false
     Description: When transcript redaction is enabled in Call Analytics, only allow playback of the redacted audio
 
-  ffmpegDownloadUrl:
-    Type: String
-    Default: http://www.johnvansickle.com/ffmpeg/old-releases/ffmpeg-4.4-amd64-static.tar.xz
-    Description: URL for ffmpeg binary distribution tar file download - see https://www.johnvansickle.com/ffmpeg/
-
   loadSampleAudioFiles:
     Type: String
     Default: false
@@ -327,26 +322,6 @@ Parameters:
         - 'Yes, create new Kendra Index (Developer Edition)'
         - 'Yes, create new Kendra Index (Enterprise Edition)'
     Description: Optionally make call transcripts searchable, using Amazon Kendra. If enabled, EnableGui (above) must also be set to true.
-
-  QueryCapacityUnits:
-    Type: Number
-    Default: 0
-    MinValue: 0
-    MaxValue: 100
-    Description: >
-      When Kendra Index (Enterprise Edition) is enabled, the amount of extra query capacity for an index 
-      and GetQuerySuggestions capacity. A single extra capacity unit for an index provides 0.1 queries 
-      per second or approximately 8,000 queries per day. You can add up to 100 extra capacity units.
-
-  StorageCapacityUnits:
-    Type: Number
-    Default: 0
-    MinValue: 0
-    MaxValue: 100
-    Description: >
-      When Kendra Index (Enterprise Edition) is enabled, the amount of extra storage capacity for an index. 
-      A single capacity unit provides 30 GB of storage space or 100,000 documents, whichever is reached 
-      first. You can add up to 100 extra capacity units.
 
   QueryCapacityUnits:
     Type: Number
@@ -624,7 +599,6 @@ Metadata:
                 - ConversationLocation
                 - Environment
                 - StepFunctionName
-                - ffmpegDownloadUrl 
                 - TestBedrockModelId
 
 Conditions:
@@ -926,7 +900,11 @@ Resources:
       Timeout: 60
       MemorySize: 128
       Code: 
-        ZipFile: !Sub |
+        # Plain block scalar, not !Sub - the inline code contains no substitution
+        # variables, so !Sub was a no-op that cfn-lint flagged as W1020. Dropping it
+        # also removes a small hazard: under !Sub, any ${...} later added to this Python
+        # would be silently interpreted by CloudFormation rather than left alone.
+        ZipFile: |
           import cfnresponse
           import json
           import subprocess
@@ -1113,7 +1091,6 @@ Resources:
       Parameters:
         DatabaseName: !Ref PCADatabase
         ParentStackName: !Ref 'AWS::StackName'
-        ffmpegDownloadUrl: !Ref ffmpegDownloadUrl
         CallSummarization: !Ref CallSummarization
         SummarizationBedrockModelId: !Ref SummarizationBedrockModelId
         SummarizationSageMakerInitialInstanceCount: !Ref SummarizationSageMakerInitialInstanceCount

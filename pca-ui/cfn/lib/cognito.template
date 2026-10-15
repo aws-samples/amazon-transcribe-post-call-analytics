@@ -160,6 +160,43 @@ Resources:
       SupportedIdentityProviders:
         - COGNITO
       UserPoolId: !Ref PCAUserPool
+      # Closes a privilege-escalation path. This property was previously omitted, and
+      # the Cognito documentation is explicit that an app client which does not
+      # customise attribute permissions "grants read and write permissions to all user
+      # pool attributes" - custom:pca_role among them.
+      #
+      # That attribute is the whole authorization model: the Pre Token Generation V2
+      # trigger copies it verbatim into the access token, and both auth-middleware.js
+      # and pca_auth.py resolve it against the roles table. A user able to write it
+      # could self-assign 'admin' and obtain manage_roles and delete_calls.
+      #
+      # The OAuth scopes above do not prevent that on their own. Writing one's own
+      # attributes needs an access token carrying aws.cognito.signin.user.admin, which
+      # a hosted-UI code grant does not issue - but this client sets no
+      # ExplicitAuthFlows, so ALLOW_USER_SRP_AUTH is enabled by default and a token
+      # obtained directly from the user pools API carries that scope regardless of the
+      # client's configured scopes.
+      #
+      # Listing the attributes explicitly removes the capability rather than relying on
+      # a scope being absent. Only 'email' is granted:
+      #   - It is declared Required in the pool schema, and Cognito requires an app
+      #     client to have write access to required attributes - sign-up fails without
+      #     it on the self-signup path (ShouldAllowSignUpEmailDomain).
+      #   - Nothing else is needed. No code in this solution performs a user-scoped
+      #     UpdateUserAttributes call; the web app only exchanges an authorization code
+      #     and refreshes tokens.
+      #
+      # Role assignment is unaffected. cognito-default-role.js, role-seeder.js and
+      # users.js all write custom:pca_role with AdminUpdateUserAttributes under IAM
+      # credentials, and admin API calls are not constrained by a client's
+      # WriteAttributes.
+      #
+      # ReadAttributes is deliberately left unspecified. Read access is not the finding
+      # - a user seeing their own role is harmless, and the access token already carries
+      # it - while restricting it risks changing what the ID token and the userInfo
+      # endpoint return under the 'profile' scope.
+      WriteAttributes:
+        - email
 
   PCAUserPoolDomain:
     Type: "AWS::Cognito::UserPoolDomain"

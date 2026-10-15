@@ -12,31 +12,123 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
-      - name: Setup Cloud Formation Linter with Latest Version
-        uses: scottbrenner/cfn-lint-action@v2
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
 
-      - name: Print the Cloud Formation Linter Version & run Linter.
+      # Installed via pip at a pinned version rather than through
+      # scottbrenner/cfn-lint-action@v2, which installed "Latest Version". That meant
+      # the lint gate could change behaviour with no commit to this repository - a new
+      # cfn-lint release could turn the build red, or stop reporting something, without
+      # anyone choosing it. Dependabot's pip ecosystem does not watch this inline pin,
+      # so bump it deliberately.
+      - name: Install cfn-lint
+        run: pip install cfn-lint==1.46.0
+
+      # --non-zero-exit-code error gates the build on errors while still printing
+      # warnings.
+      #
+      # Without it this job could never pass: cfn-lint exits 4 when it finds only
+      # warnings, and any non-zero exit fails a workflow step. The templates currently
+      # carry nine warnings, several of which need real design decisions (a legacy S3
+      # AccessControl property, optional ARN parameters whose empty-string defaults do
+      # not match an ARN pattern). Gating on those would mean a permanently red job,
+      # which gets ignored and is therefore worse than a gate scoped to what must not
+      # ship. Same reasoning as the --omit=dev scoping on the dependency audit.
+      #
+      # Errors do fail the build. Until this change the job was red on three E0000
+      # duplicate-key errors in pca-main.template, which also masked two warnings in
+      # that file - cfn-lint stops deeper analysis of a template once it hits a
+      # parse-level error.
+      - name: Run cfn-lint
         run: |
           cfn-lint --version
-          cfn-lint 
+          cfn-lint --non-zero-exit-code error
 
   api-tests:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
-      - name: Set up Nodejs 14
-        uses: actions/setup-node@v1
+      # Node 20, raised from 14. Node 14 reached end of life in April 2023, and the
+      # AWS SDK for JavaScript v3 packages this project now depends on declare
+      # engines.node ">=20.0.0" - so this job could no longer install, let alone pass.
+      # Kept at 20 rather than 22 to match the floor publish.sh enforces, so CI tests
+      # the oldest toolchain a release build will accept.
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: 14
+          node-version: 20
 
+      # npm ci, not npm i. npm install treats the lockfile as advisory and may resolve
+      # newer versions, which would mean CI testing a different dependency tree than a
+      # release build ships. npm ci also fails if package.json and package-lock.json
+      # have drifted, which is a useful check in its own right.
       - name: Install dependencies
-        run: npm i
+        run: npm ci
         working-directory: ./pca-ui/src/lambda
 
       - name: Run unit tests
         run: npm t
         working-directory: ./pca-ui/src/lambda
+
+  dependency-audit:
+    # Fails the build on a known vulnerability in any dependency that actually ships.
+    #
+    # Scoped to the production tree with --omit=dev deliberately. The full tree of the
+    # web UI reports around 95 findings, effectively all of them rooted in
+    # react-scripts 5.0.1 - the final published release, so they cannot be cleared by
+    # upgrading. A gate over the full tree would be red permanently and would therefore
+    # be ignored, which is worse than no gate. The production tree is at zero findings
+    # across all four components, so this gate is meaningful today and will catch a
+    # regression the moment one is introduced.
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        component:
+          - pca-ui/src/www
+          - pca-ui/src/lambda
+          - pca-ui/src/witch
+          - pca-server/src/trigger
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # --registry is passed explicitly and is not optional.
+      #
+      # Against a registry that does not implement the advisories endpoint - an internal
+      # CodeArtifact mirror, for example - npm audit receives HTTP 404 and reports no
+      # findings rather than failing. The command exits 0 and the job goes green while
+      # having checked nothing. That is not hypothetical: it is exactly what happened on
+      # a developer machine during the audit that produced this job.
+      - name: Audit production dependencies
+        run: >
+          npm audit
+          --package-lock-only
+          --omit=dev
+          --audit-level=low
+          --registry=https://registry.npmjs.org
+        working-directory: ./${{ matrix.component }}
+
+      # Informational only. Records the dev-tree position in the build log so the
+      # react-scripts backlog stays visible rather than being silently forgotten, but
+      # does not gate - see the note above.
+      - name: Report full dependency tree (does not fail the build)
+        if: always()
+        continue-on-error: true
+        run: >
+          npm audit
+          --package-lock-only
+          --registry=https://registry.npmjs.org
+          || true
+        working-directory: ./${{ matrix.component }}

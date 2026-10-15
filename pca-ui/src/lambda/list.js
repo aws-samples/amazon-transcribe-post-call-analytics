@@ -1,11 +1,11 @@
-const AWS = require("aws-sdk");
+const { DynamoDBClient, QueryCommand } = require("@aws-sdk/client-dynamodb");
 const {
   listSchema,
   withQueryStringValidation,
   response,
 } = require("./validation");
 const { withAuthorization } = require("./auth-middleware");
-const ddb = new AWS.DynamoDB();
+const ddb = new DynamoDBClient({});
 
 const tableName = process.env.TableName;
 
@@ -53,7 +53,11 @@ async function handler(event, context) {
     TableName: tableName,
     IndexName: "GSI1",
     ScanIndexForward: "reverse" in (event?.queryStringParameters || {}),
-    Limit: count,
+    // Coerced to a number deliberately. "count" arrives from the query string as a
+    // string, and v3 serializes Limit through as-is, so DynamoDB would reject
+    // "Limit": "25" with a ValidationException. v2's serializer coerced it, which is
+    // why this worked before and why the change is required rather than cosmetic.
+    Limit: Number(count),
     KeyConditionExpression: "SK = :sk",
     ExpressionAttributeValues: {
       ":sk": {
@@ -70,14 +74,15 @@ async function handler(event, context) {
 
   let res;
   try {
-    res = await ddb.query(query).promise();
+    res = await ddb.send(new QueryCommand(query));
   } catch (e) {
     throw e;
   }
   console.log(res);
 
   const body = {
-    Records: res.Items.map((item) => {
+    // v3 omits Items when nothing matches, where v2 returned an empty array.
+    Records: (res.Items || []).map((item) => {
       return JSON.parse(item.Data.S);
     }),
   };

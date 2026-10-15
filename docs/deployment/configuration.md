@@ -153,7 +153,16 @@ Please see the detailed documentation section on Customisation for more details 
 | DatabaseName | Name of the AWS Glue catalog database name for SQL integration | pca |
 | Environment | The type of environment to tag your infrastructure with. The only valid values are `DEV`, `TEST` and `PROD` | PROD |
 | StepFunctionName | Name of Step Functions workflow that orchestrates this process | PostCallAnalyticsWorkflow |
-| ffmpegDownloadUrl | URL for `ffmpeg` binary distribution tar file download - this is downloaded and packaged up as an AWS Lambda Layer during deployment | [https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz](https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz)  |
+
+> **Removed in favour of a build-time artifact:** `ffmpegDownloadUrl`. The `ffmpeg` and
+> `ffprobe` binaries are no longer downloaded from the internet while the stack is being
+> created. They are now built into a Lambda layer at publish time from a version-pinned,
+> SHA256-verified tarball and ship as an ordinary published asset, so there is no longer a
+> URL to configure.
+>
+> If you currently pass `ffmpegDownloadUrl` to `aws cloudformation deploy` or
+> `create-stack`, remove it. CloudFormation rejects parameters that a template does not
+> declare, so leaving it in place will fail the deployment.
 
 Do not edit the following settings after installation
 

@@ -1,11 +1,21 @@
-const aws = require("aws-sdk");
+// Migrated from AWS SDK for JavaScript v2 to v3. v2 reached end-of-support on
+// 2025-09-08 and receives no further security fixes.
+//
+// s3.upload() does not exist in v3 - it was a v2 convenience wrapper around
+// ManagedUpload. Its replacement is the Upload class from @aws-sdk/lib-storage,
+// used below. PutObjectCommand is deliberately *not* used here: the body is an
+// fs.createReadStream, and v3 cannot sign a stream of unknown length without
+// being given an explicit ContentLength. Upload handles streaming bodies, so this
+// keeps the existing behaviour instead of trading it for a size assumption.
+const { S3Client } = require("@aws-sdk/client-s3");
+const { Upload } = require("@aws-sdk/lib-storage");
 const fs = require("fs");
 const path = require("path");
 const mime = require("mime-types");
 const https = require("https");
 const url = require("url");
 
-const s3 = new aws.S3();
+const s3 = new S3Client({});
 
 const SUCCESS = "SUCCESS";
 const FAILED = "FAILED";
@@ -23,15 +33,16 @@ exports.staticHandler = function (event, context) {
 
       console.log(`${file} -> ${fileType}`);
 
-      return s3
-        .upload({
+      return new Upload({
+        client: s3,
+        params: {
           Body: fs.createReadStream(file),
           Bucket: BUCKET,
           ContentType: fileType,
           Key: file,
           ACL: "private",
-        })
-        .promise();
+        },
+      }).done();
     })
   )
     .then((msg) => {

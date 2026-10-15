@@ -89,6 +89,10 @@ Parameters:
 
 Conditions:
   HasAnthropicSummary: !Equals [!Ref GenAIQueryType, 'ANTHROPIC']
+  # Mirrors the condition of the same name in pca-ui.template, which until now only
+  # controlled a client-side display flag. Used below to stop creating the GenAI query
+  # function and its /genaiquery route at all when the feature is disabled.
+  ShouldEnableGenAIQuery: !Not [!Equals [!Ref GenAIQueryType, 'DISABLED']]
 
 Resources:
   ApiAccessLogGroup:
@@ -380,8 +384,37 @@ Resources:
             Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${AuditLogGroupName}:*
       Runtime: nodejs22.x
   
+  # Created only when GenAI query is enabled.
+  #
+  # Previously this function and its /genaiquery route were created unconditionally, and
+  # GenAIQueryType only influenced a client-side flag that hid the chat panel. The
+  # endpoint stayed live on a DISABLED deployment, and the handler performs no
+  # authorization of its own, so any authenticated user could reach it. Worse, the
+  # handler fetches the call transcript *before* it checks QUERY_TYPE, so "disabled"
+  # suppressed the model call but not the transcript retrieval.
+  #
+  # Conditioning the resource removes the route entirely for the default DISABLED
+  # configuration. It does not fix authorization when the feature IS enabled - that is
+  # tracked separately, and needs a permission check inside the Python handler.
+  #
+  # Safe to condition: no Output or other resource references this function or its
+  # implicit role. RolesForKMSKey below names only GetFunctionRole and SwapFunctionRole.
   GenAIQueryFunction:
+    Condition: ShouldEnableGenAIQuery
     Type: "AWS::Serverless::Function"
+    #
+    # Known cfn-lint warning, accepted rather than suppressed: adding the Condition
+    # above makes W1028 fire on the nested "Fn::If: HasAnthropicSummary" in Policies
+    # below, reporting its else branch as unreachable. The finding is vacuous - it is
+    # derived by exploring the case where ShouldEnableGenAIQuery is false, in which
+    # this resource does not exist at all, so neither branch is reachable.
+    #
+    # Both branches are genuinely reachable in the worlds where the resource does
+    # exist: GenAIQueryType ANTHROPIC takes the Secrets Manager statement, BEDROCK and
+    # LAMBDA take AWS::NoValue. Resource-level Metadata suppression does not apply to
+    # W1028 because it is evaluated against conditions rather than the resource, and a
+    # global entry in .cfnlintrc.yaml would relax the rule for every template - so the
+    # warning is left in place deliberately.
     Properties:
       CodeUri:  ../../src/genai
       Handler: index.lambda_handler
@@ -397,6 +430,11 @@ Resources:
           ANTHROPIC_ENDPOINT_URL: "https://api.anthropic.com/v1/complete"
           ANTHROPIC_API_KEY: !Ref LLMThirdPartyApiKey
           LLM_TABLE_NAME: !Ref LLMTableName
+          # Required by pca_auth. This handler now checks the caller's role against the
+          # roles table before reading any call content, and records denials in the
+          # audit log group, matching what the Node handlers do.
+          RolesTableName: !Ref RolesTableName
+          AuditLogGroupName: !Ref AuditLogGroupName
       Events:
         APIEvent:
           Type: Api
@@ -435,6 +473,20 @@ Resources:
               - bedrock:GetInferenceProfile
             Resource:
               - !Sub arn:aws:bedrock:${AWS::Region}:${AWS::AccountId}:inference-profile/*
+          # Authorization lookup. Read-only on the roles table, and scoped to that one
+          # table rather than using DynamoDBReadPolicy, which would grant more.
+          - Sid: RolesTableRead
+            Effect: Allow
+            Action:
+              - 'dynamodb:GetItem'
+            Resource: !Sub arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${RolesTableName}
+          - Sid: CloudWatchLogsAudit
+            Effect: Allow
+            Action:
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+              - logs:DescribeLogStreams
+            Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${AuditLogGroupName}:*
           - !If 
               - HasAnthropicSummary
               - Sid: SecretsManagerPolicy
@@ -459,6 +511,10 @@ Resources:
       Environment:
         Variables:
           SUMMARIZER_ARN: !Ref SummarizerArn
+          # Required by pca_auth - this handler previously performed no authorization,
+          # so any authenticated user could trigger a summary regeneration.
+          RolesTableName: !Ref RolesTableName
+          AuditLogGroupName: !Ref AuditLogGroupName
       Events:
         APIEvent:
           Type: Api
@@ -473,6 +529,19 @@ Resources:
             Action:
               - lambda:InvokeFunction
             Resource: !Ref SummarizerArn
+          # Authorization lookup, scoped to the roles table only.
+          - Sid: RolesTableRead
+            Effect: Allow
+            Action:
+              - 'dynamodb:GetItem'
+            Resource: !Sub arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${RolesTableName}
+          - Sid: CloudWatchLogsAudit
+            Effect: Allow
+            Action:
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+              - logs:DescribeLogStreams
+            Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${AuditLogGroupName}:*
       Runtime: python3.13
 
   GeneratePresignedURLFunction:

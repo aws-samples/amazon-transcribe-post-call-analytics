@@ -12,10 +12,6 @@ Parameters:
   TableName:
     Type: String
 
-  FFMPEGZipName:
-    Type: String
-    Default: ffmpeg.zip
-
   PyUtilsLayer:
     Type: String
 
@@ -61,12 +57,23 @@ Conditions:
     - ANTHROPIC
 
 Resources:
+  # Built at publish time by pca-server/src/ffmpeg/build-ffmpeg-layer.sh, which pins the
+  # ffmpeg version and verifies its SHA256 before packaging. "aws cloudformation package"
+  # rewrites the local path below into the published assets bucket for the target region.
+  #
+  # This replaces a custom resource that downloaded ffmpeg from the public internet during
+  # stack creation with no integrity check. Two side benefits of the content-addressed key
+  # that package generates: a changed binary now produces a new S3 key and therefore a new
+  # layer version, where the old fixed "ffmpeg.zip" key published no new version at all; and
+  # deploying no longer requires these functions to reach the internet.
   FFMPEGLayer:
     Type: AWS::Lambda::LayerVersion
     Properties:
-      Content:
-        S3Bucket: !Sub "{{resolve:ssm:${ParentStackName}-SupportFilesBucketName}}"
-        S3Key: !Ref FFMPEGZipName
+      CompatibleArchitectures:
+        - x86_64
+      CompatibleRuntimes:
+        - python3.13
+      Content: ../../src/ffmpeg/build/ffmpeg.zip
 
   TranscribeRole:
     Type: AWS::IAM::Role

@@ -1,8 +1,13 @@
-const AWS = require("aws-sdk");
+const {
+  S3Client,
+  GetObjectCommand,
+  HeadObjectCommand,
+  DeleteObjectCommand,
+} = require("@aws-sdk/client-s3");
 const { withAuthorization } = require("./auth-middleware");
 const { logAuditEvent } = require("./audit");
 
-const s3 = new AWS.S3();
+const s3 = new S3Client({});
 
 const dataBucket = process.env.DataBucket;
 const audioBucket = process.env.AudioBucket;
@@ -28,11 +33,12 @@ function jsonResponse(statusCode, body) {
  */
 async function getAssociatedKeysFromData(dataKey) {
   try {
-    const res = await s3
-      .getObject({ Bucket: dataBucket, Key: dataKey })
-      .promise();
+    const res = await s3.send(
+      new GetObjectCommand({ Bucket: dataBucket, Key: dataKey })
+    );
 
-    const parsed = JSON.parse(res.Body.toString());
+    // v3 Body is a stream; .toString() would silently yield "[object Object]".
+    const parsed = JSON.parse(await res.Body.transformToString());
     const jobInfo =
       parsed.ConversationAnalytics &&
       parsed.ConversationAnalytics.SourceInformation &&
@@ -91,9 +97,15 @@ async function deleteSingleCall(key) {
   if (!associatedKeys.playbackAudioKey && !associatedKeys.originalAudioKey && !associatedKeys.transcribeJobName) {
     // Verify the data object exists
     try {
-      await s3.headObject({ Bucket: dataBucket, Key: key }).promise();
+      await s3.send(new HeadObjectCommand({ Bucket: dataBucket, Key: key }));
     } catch (err) {
-      if (err.code === "NotFound" || err.statusCode === 404) {
+      // Both halves of this condition changed shape in v3: service errors expose
+      // err.name rather than err.code, and the HTTP status moved to $metadata. Left
+      // unchanged, a missing call would stop returning 404 and fall through to a 500.
+      if (
+        err.name === "NotFound" ||
+        err.$metadata?.httpStatusCode === 404
+      ) {
         return { found: false };
       }
       console.error("S3 headObject error for key:", key, err);
@@ -104,7 +116,7 @@ async function deleteSingleCall(key) {
   // 1. Delete original audio file from input bucket (originalAudio/ partition)
   if (associatedKeys.originalAudioKey) {
     try {
-      await s3.deleteObject({ Bucket: audioBucket, Key: associatedKeys.originalAudioKey }).promise();
+      await s3.send(new DeleteObjectCommand({ Bucket: audioBucket, Key: associatedKeys.originalAudioKey }));
       result.s3OriginalAudioDeleted = true;
     } catch (err) {
       console.error("S3 original audio delete error:", err);
@@ -117,7 +129,7 @@ async function deleteSingleCall(key) {
   // 2. Delete playback audio file from input bucket (playbackAudio/ partition)
   if (associatedKeys.playbackAudioKey) {
     try {
-      await s3.deleteObject({ Bucket: audioBucket, Key: associatedKeys.playbackAudioKey }).promise();
+      await s3.send(new DeleteObjectCommand({ Bucket: audioBucket, Key: associatedKeys.playbackAudioKey }));
       result.s3AudioDeleted = true;
     } catch (err) {
       console.error("S3 playback audio delete error:", err);
@@ -129,7 +141,7 @@ async function deleteSingleCall(key) {
 
   // 3. Delete parsed results JSON from output bucket
   try {
-    await s3.deleteObject({ Bucket: dataBucket, Key: key }).promise();
+    await s3.send(new DeleteObjectCommand({ Bucket: dataBucket, Key: key }));
     result.s3DataDeleted = true;
   } catch (err) {
     console.error("S3 data delete error for key:", key, err);
@@ -159,7 +171,7 @@ async function deleteSingleCall(key) {
 
     const deleteResults = await Promise.allSettled(
       transcribeKeys.map((tk) =>
-        s3.deleteObject({ Bucket: dataBucket, Key: tk }).promise()
+        s3.send(new DeleteObjectCommand({ Bucket: dataBucket, Key: tk }))
       )
     );
 

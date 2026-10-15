@@ -47,7 +47,15 @@ def generate_transcript_string(pca_results):
         transcripts.append(f"{speaker}: {segment['DisplayText']}\n")
     
     transcript_str = ''.join(transcripts)
-    print(transcript_str)
+    # Length only, not content.
+    #
+    # This previously printed the entire transcript. It is a step in the main
+    # processing workflow, so it ran for every call ingested regardless of
+    # configuration, writing unredacted customer PII into CloudWatch Logs - where it
+    # sits outside whatever access control the API enforces, and in a log group that by
+    # default never expires.
+    print(f"Generated transcript string ({len(transcript_str)} chars, "
+          f"{len(speech_segments)} segments)")
     if TOKEN_COUNT > 0:
         transcript_str = truncate_number_of_words(transcript_str, TOKEN_COUNT)
     return transcript_str
@@ -57,8 +65,11 @@ def lambda_handler(event, context):
     """
     Lambda function entrypoint
     """
-    
-    print(event)
+
+    # Identifiers only - the event names the results file being processed.
+    print(f"Fetch transcript request: interimResultsFile="
+          f"{event.get('interimResultsFile')} processTranscript="
+          f"{event.get('processTranscript')}")
 
     # Load our configuration data
     cf.loadConfiguration()

@@ -1,0 +1,104 @@
+# Automated dependency update proposals.
+#
+# Added because nothing previously watched these manifests, which is how a 2022-era
+# `requests` pin and an end-of-support AWS SDK survived unnoticed until a manual audit
+# went looking. See docs/security-findings.md and docs/technical-debt.md (TD-12).
+#
+# One entry per directory is required: npm resolves each package.json independently and
+# Dependabot has no concept of a workspace here, so a single root entry would find
+# nothing. There is no package.json at the repository root.
+version: 2
+
+updates:
+  # --- Node components -------------------------------------------------------------
+  # Grouped so the many @aws-sdk/* and @smithy/* packages arrive as one reviewable PR
+  # rather than dozens. These release in lockstep and mixing versions across them is a
+  # known source of breakage, so they should move together.
+
+  - package-ecosystem: npm
+    directory: /pca-ui/src/www
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      aws-sdk:
+        patterns:
+          - "@aws-sdk/*"
+          - "@smithy/*"
+      cloudscape:
+        patterns:
+          - "@cloudscape-design/*"
+    ignore:
+      # react-scripts 5.0.1 is the final published release, so there is nothing to
+      # update to. It is also the root of most of this component's dev-tree findings.
+      # Leaving it unignored would generate noise that can never be actioned.
+      # Replacing Create React App is tracked separately.
+      - dependency-name: react-scripts
+
+  - package-ecosystem: npm
+    directory: /pca-ui/src/lambda
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      aws-sdk:
+        patterns:
+          - "@aws-sdk/*"
+          - "@smithy/*"
+
+  - package-ecosystem: npm
+    directory: /pca-ui/src/witch
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      aws-sdk:
+        patterns:
+          - "@aws-sdk/*"
+          - "@smithy/*"
+
+  - package-ecosystem: npm
+    directory: /pca-server/src/trigger
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      aws-sdk:
+        patterns:
+          - "@aws-sdk/*"
+          - "@smithy/*"
+
+  # --- GitHub Actions -------------------------------------------------------------
+  # Keeps the workflow's own action versions current. The workflow previously pinned
+  # actions/checkout@v2 and actions/setup-node@v1, both long deprecated, with nothing
+  # to surface that.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+
+  # --- Python ----------------------------------------------------------------------
+  # pca-utils is a local helper that is not deployed, and its requirements.txt is
+  # currently unpinned, so Dependabot has nothing to compare against and will not raise
+  # updates until versions are pinned. Included anyway so that pinning them later
+  # activates coverage without a config change.
+  - package-ecosystem: pip
+    directory: /pca-utils
+    schedule:
+      interval: weekly
+
+# Deliberately NOT covered:
+#
+#   - pca-server/src/pca/requirements.txt. It pins boto3, but publish.sh has the
+#     `pip install -r requirements.txt` step commented out, so nothing installs it - the
+#     functions use the boto3 baked into the Lambda runtime. Watching it would produce
+#     update PRs with no effect on anything deployed, and that kind of noise is what
+#     trains people to ignore Dependabot. Add an entry here once the file either does
+#     something or is deleted. Tracked as TD-9 in docs/technical-debt.md.
+#   - The PyUtils Lambda layer. Its packages are pinned inside an inline `pip install`
+#     in pca-server/cfn/lib/python-utilities.template, not in a requirements.txt. There
+#     is no manifest for Dependabot to parse. Those pins must be reviewed by hand - the
+#     procedure is in docs/security-findings.md.
+#   - The ffmpeg binary, pinned by URL and SHA256 in
+#     pca-server/src/ffmpeg/build-ffmpeg-layer.sh.
+#   - submodule-mediasearch, which is a git submodule owned by another repository.

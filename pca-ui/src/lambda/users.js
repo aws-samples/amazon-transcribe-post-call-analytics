@@ -1,9 +1,16 @@
-const AWS = require("aws-sdk");
+const {
+  CognitoIdentityProviderClient,
+  ListUsersCommand,
+  AdminGetUserCommand,
+  AdminUpdateUserAttributesCommand,
+} = require("@aws-sdk/client-cognito-identity-provider");
+const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
+const { DynamoDBDocumentClient, GetCommand } = require("@aws-sdk/lib-dynamodb");
 const { withAuthorization } = require("./auth-middleware");
 const { logAuditEvent } = require("./audit");
 
-const cognito = new AWS.CognitoIdentityServiceProvider();
-const ddb = new AWS.DynamoDB.DocumentClient();
+const cognito = new CognitoIdentityProviderClient({});
+const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 
 const userPoolId = process.env.UserPoolId;
 const rolesTableName = process.env.RolesTableName;
@@ -43,7 +50,7 @@ async function listUsers() {
       params.PaginationToken = paginationToken;
     }
 
-    const result = await cognito.listUsers(params).promise();
+    const result = await cognito.send(new ListUsersCommand(params));
 
     for (const user of result.Users || []) {
       users.push({
@@ -64,9 +71,9 @@ async function listUsers() {
  */
 async function assignRole(username, roleName, authContext, context) {
   // Validate role exists in Roles Table
-  const roleResult = await ddb
-    .get({ TableName: rolesTableName, Key: { RoleName: roleName } })
-    .promise();
+  const roleResult = await ddb.send(
+    new GetCommand({ TableName: rolesTableName, Key: { RoleName: roleName } })
+  );
 
   if (!roleResult.Item) {
     return jsonResponse(400, {
@@ -77,12 +84,15 @@ async function assignRole(username, roleName, authContext, context) {
   // Get current role for audit logging
   let previousRole = null;
   try {
-    const userResult = await cognito
-      .adminGetUser({ UserPoolId: userPoolId, Username: username })
-      .promise();
+    const userResult = await cognito.send(
+      new AdminGetUserCommand({ UserPoolId: userPoolId, Username: username })
+    );
     previousRole = getUserAttribute(userResult, "custom:pca_role");
   } catch (err) {
-    if (err.code === "UserNotFoundException") {
+    // err.name, not err.code - v3 service errors do not populate err.code. Left as
+    // err.code this branch never matches, and a request for a non-existent user
+    // returns 500 from the outer catch instead of the intended 404.
+    if (err.name === "UserNotFoundException") {
       return jsonResponse(404, {
         message: `Not Found: user '${username}' does not exist`,
       });
@@ -91,15 +101,15 @@ async function assignRole(username, roleName, authContext, context) {
   }
 
   // Update the user's custom:pca_role attribute
-  await cognito
-    .adminUpdateUserAttributes({
+  await cognito.send(
+    new AdminUpdateUserAttributesCommand({
       UserPoolId: userPoolId,
       Username: username,
       UserAttributes: [
         { Name: "custom:pca_role", Value: roleName },
       ],
     })
-    .promise();
+  );
 
   // Log audit event
   await logAuditEvent(

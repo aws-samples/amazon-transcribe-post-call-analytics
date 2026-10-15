@@ -5,6 +5,9 @@ build
 /sample-data
 .vscode
 /pca-ui/src/witch/witch.zip
+# Verified ffmpeg tarball cached by pca-server/src/ffmpeg/build-ffmpeg-layer.sh.
+# The built layer itself lands in build/, already covered above.
+/pca-server/src/ffmpeg/.cache/
 .DS_Store
 .idea/
 pca-ssm/.DS_Store

@@ -1,5 +1,5 @@
-const AWS = require("aws-sdk");
-const ddb = new AWS.DynamoDB();
+const { DynamoDBClient, QueryCommand } = require("@aws-sdk/client-dynamodb");
+const ddb = new DynamoDBClient({});
 const {
   withQueryStringValidation,
   searchSchema,
@@ -138,7 +138,7 @@ const handler = async function (event, context) {
   console.log("Queries:", JSON.stringify(queries, null, 4));
 
   let promises = queries.map((query) => {
-    return ddb.query(query).promise();
+    return ddb.send(new QueryCommand(query));
   });
 
   let results = [];
@@ -149,10 +149,13 @@ const handler = async function (event, context) {
   }
   console.log("Results:", results);
 
-  let output = results[0].Items;
+  // v3 omits Items when a query matches nothing, where v2 returned an empty array.
+  // This handler intersects several query results, so an unmatched query here is an
+  // ordinary outcome rather than an edge case - a search for a term with no hits.
+  let output = results[0].Items || [];
 
   results = results.map((result) => {
-    return result.Items.reduce((a, item) => {
+    return (result.Items || []).reduce((a, item) => {
       a[item.PK.S] = true;
       return a;
     }, {});

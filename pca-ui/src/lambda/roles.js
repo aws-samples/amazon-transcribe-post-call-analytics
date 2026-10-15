@@ -1,8 +1,16 @@
-const AWS = require("aws-sdk");
-const { withAuthorization } = require("./auth-middleware");
+const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
+const {
+  DynamoDBDocumentClient,
+  ScanCommand,
+  GetCommand,
+  PutCommand,
+  UpdateCommand,
+  DeleteCommand,
+} = require("@aws-sdk/lib-dynamodb");
+const { withAuthorization, toPermissionArray } = require("./auth-middleware");
 const { logAuditEvent } = require("./audit");
 
-const ddb = new AWS.DynamoDB.DocumentClient();
+const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 const rolesTableName = process.env.RolesTableName;
 
 const VALID_PERMISSIONS = ["read_calls", "upload_recordings", "delete_calls", "manage_roles"];
@@ -22,13 +30,11 @@ function jsonResponse(statusCode, body) {
 }
 
 async function listRoles() {
-  const result = await ddb
-    .scan({ TableName: rolesTableName })
-    .promise();
+  const result = await ddb.send(new ScanCommand({ TableName: rolesTableName }));
 
   const roles = (result.Items || []).map((item) => ({
     RoleName: item.RoleName,
-    Permissions: item.Permissions ? Array.from(item.Permissions.values || item.Permissions) : [],
+    Permissions: toPermissionArray(item.Permissions),
     CreatedBy: item.CreatedBy || null,
     CreatedAt: item.CreatedAt || null,
     UpdatedAt: item.UpdatedAt || null,
@@ -59,9 +65,9 @@ async function createRole(body, authContext, context) {
   }
 
   // Check for duplicate
-  const existing = await ddb
-    .get({ TableName: rolesTableName, Key: { RoleName: roleName } })
-    .promise();
+  const existing = await ddb.send(
+    new GetCommand({ TableName: rolesTableName, Key: { RoleName: roleName } })
+  );
 
   if (existing.Item) {
     return jsonResponse(409, {
@@ -71,18 +77,22 @@ async function createRole(body, authContext, context) {
 
   const now = new Date().toISOString();
 
-  await ddb
-    .put({
+  await ddb.send(
+    new PutCommand({
       TableName: rolesTableName,
       Item: {
         RoleName: roleName,
-        Permissions: ddb.createSet(permissions),
+        // v3 has no ddb.createSet(). lib-dynamodb marshalls a native Set to an SS
+        // attribute, which keeps the stored type identical to what v2 wrote - important,
+        // because existing roles in the table were written as SS and are read back by
+        // toPermissionArray.
+        Permissions: new Set(permissions),
         CreatedBy: authContext.username,
         CreatedAt: now,
         UpdatedAt: now,
       },
     })
-    .promise();
+  );
 
   await logAuditEvent(
     {
@@ -124,8 +134,8 @@ async function updateRole(roleName, body, authContext, context) {
 
   const now = new Date().toISOString();
 
-  await ddb
-    .update({
+  await ddb.send(
+    new UpdateCommand({
       TableName: rolesTableName,
       Key: { RoleName: roleName },
       UpdateExpression: "SET #P = :p, UpdatedAt = :u",
@@ -133,11 +143,14 @@ async function updateRole(roleName, body, authContext, context) {
         "#P": "Permissions",
       },
       ExpressionAttributeValues: {
-        ":p": ddb.createSet(permissions),
+        // Second createSet replacement. This one sits inside
+        // ExpressionAttributeValues rather than an Item, which makes it the easier of
+        // the two to overlook.
+        ":p": new Set(permissions),
         ":u": now,
       },
     })
-    .promise();
+  );
 
   await logAuditEvent(
     {
@@ -157,14 +170,12 @@ async function updateRole(roleName, body, authContext, context) {
 
 async function deleteRole(roleName, authContext, context) {
   // Prevent deleting any role that has manage_roles permission
-  const existing = await ddb
-    .get({ TableName: rolesTableName, Key: { RoleName: roleName } })
-    .promise();
+  const existing = await ddb.send(
+    new GetCommand({ TableName: rolesTableName, Key: { RoleName: roleName } })
+  );
 
   if (existing.Item) {
-    const perms = existing.Item.Permissions
-      ? Array.from(existing.Item.Permissions.values || existing.Item.Permissions)
-      : [];
+    const perms = toPermissionArray(existing.Item.Permissions);
     if (perms.includes("manage_roles")) {
       return jsonResponse(403, {
         message: "Forbidden: cannot delete a role with manage_roles permission",
@@ -172,9 +183,9 @@ async function deleteRole(roleName, authContext, context) {
     }
   }
 
-  await ddb
-    .delete({ TableName: rolesTableName, Key: { RoleName: roleName } })
-    .promise();
+  await ddb.send(
+    new DeleteCommand({ TableName: rolesTableName, Key: { RoleName: roleName } })
+  );
 
   await logAuditEvent(
     {

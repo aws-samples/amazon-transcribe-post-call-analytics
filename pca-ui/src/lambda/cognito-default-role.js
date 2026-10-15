@@ -1,5 +1,9 @@
-const AWS = require("aws-sdk");
-const cognito = new AWS.CognitoIdentityServiceProvider();
+const {
+  CognitoIdentityProviderClient,
+  AdminUpdateUserAttributesCommand,
+} = require("@aws-sdk/client-cognito-identity-provider");
+
+const cognito = new CognitoIdentityProviderClient({});
 
 const defaultRole = "call-readwrite";
 
@@ -22,13 +26,15 @@ exports.handler = async (event) => {
 
     const userPoolId = event.userPoolId;
     try {
-      await cognito.adminUpdateUserAttributes({
-        UserPoolId: userPoolId,
-        Username: event.userName,
-        UserAttributes: [
-          { Name: "custom:pca_role", Value: defaultRole },
-        ],
-      }).promise();
+      await cognito.send(
+        new AdminUpdateUserAttributesCommand({
+          UserPoolId: userPoolId,
+          Username: event.userName,
+          UserAttributes: [
+            { Name: "custom:pca_role", Value: defaultRole },
+          ],
+        })
+      );
       console.log(`Set default role '${defaultRole}' for user '${event.userName}'`);
     } catch (err) {
       console.error("Failed to set default role:", err);

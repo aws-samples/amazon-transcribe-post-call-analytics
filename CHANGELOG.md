@@ -7,6 +7,285 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`docs/security-findings.md`** - dependency and authorization findings with the
+  disposition of each, the procedure for reproducing the scan, and the decision records
+  for choices that the code cannot explain on its own (why `read_calls` authorizes a
+  write, why the `path-to-regexp` overrides are scoped, why the audit gate omits dev
+  dependencies). Read this before changing anything security-relevant.
+- **`docs/technical-debt.md`** - 17 tracked non-security items found during the same
+  work, each with theme, rough effort and priority, plus a suggested grouping for a
+  follow-up release. Several security items are filed here by decision to keep this
+  release scoped; those carry a banner saying so.
+- **One open high-priority finding is recorded but NOT fixed:** `custom:pca_role` is a
+  user-writable Cognito attribute that the pre-token-generation trigger injects into the
+  access token without validation, and the whole authorization model trusts that claim.
+  Whether this is exploitable depends on which authentication flows the app client
+  permits, which needs confirming against a deployed stack. See
+  `docs/security-findings.md`.
+- **A full authorization model audit is recommended** and tracked as TD-17. Every
+  authorization defect fixed in this release was found incidentally while doing
+  unrelated work, none by looking - which is the argument for auditing the areas nobody
+  has walked through.
+
+### Security
+
+- **Closed a privilege-escalation path that let a signed-in user make themselves an
+  administrator.** `PCAUserPoolClient` did not set `WriteAttributes`, and an app client
+  that does not customise attribute permissions gets write access to *all* user pool
+  attributes - including `custom:pca_role`, which is the entire authorization model: the
+  Pre Token Generation trigger copies it into the access token, and both
+  `auth-middleware.js` and `pca_auth.py` resolve it against the roles table. A user could
+  write their own attribute, reauthenticate, and hold `admin` with `manage_roles` and
+  `delete_calls`.
+  - The client's OAuth scopes did not prevent this. Writing one's own attributes needs an
+    access token carrying `aws.cognito.signin.user.admin`, which a hosted-UI code grant
+    does not issue - but `ExplicitAuthFlows` is unspecified, so `ALLOW_USER_SRP_AUTH` is
+    enabled by default and a token obtained directly from the user pools API carries that
+    scope regardless of the client's configured scopes.
+  - Now fixed with `WriteAttributes: [email]`, which removes the capability rather than
+    relying on a scope being absent. `email` is required because the pool schema declares
+    it `Required: true` and self-signup would otherwise fail. Role assignment is
+    unaffected: the triggers, the role seeder and the `manage_roles` API all use
+    `AdminUpdateUserAttributes` under IAM credentials, which a client's `WriteAttributes`
+    does not constrain.
+  - **Severity depends on one deployment parameter.** With the default
+    `AllowAdminCreateUserOnly: true` an attacker needs an existing account. Any deployment
+    that sets `AllowedSignUpEmailDomain` turns self-signup on, at which point anyone with
+    an address at the permitted domain could register and escalate.
+  - Confirmed against a live deployment before being fixed, including the
+    `ExplicitAuthFlows` default behaviour. The exploit itself was not run. See
+    `docs/security-findings.md` for the evidence and for why the `WriteAttributes`
+    reference documentation reads as though this were not exploitable.
+
+- **`ffmpeg` is no longer downloaded from the internet during stack creation.** A
+  CloudFormation custom resource previously fetched a static `ffmpeg` tarball from a
+  third-party website while the stack was being created, with no checksum or signature
+  verification of any kind, and then ran the resulting binaries against user-uploaded media.
+  The effective URL also used plain `http`, relying on an upstream redirect for transport
+  security.
+  - The binaries are now built into the Lambda layer at publish time by
+    `pca-server/src/ffmpeg/build-ffmpeg-layer.sh`, which pins the version and verifies the
+    download against a pinned SHA256 over HTTPS before packaging. A bad, unexpected or
+    substituted download now fails the release build instead of a customer's deployment.
+  - The layer ships as an ordinary published asset via `aws cloudformation package`, so the
+    processing Lambdas no longer need a route to the internet in order to deploy.
+  - The bundled `ffmpeg` moves from 4.4 (April 2021) to 7.0.2, picking up several years of
+    upstream fixes.
+  - Because `cloudformation package` generates a content-addressed S3 key, changing the
+    binary now publishes a new layer version. The previous fixed `ffmpeg.zip` key meant an
+    updated binary produced no CloudFormation property change and therefore no new layer.
+
+- **Migrated from AWS SDK for JavaScript v2 to v3.** v2 reached end-of-support on
+  2025-09-08 and receives no further security fixes, so no version bump could address
+  it. Done in three increments: `pca-server/src/trigger`, `pca-ui/src/witch`, then
+  `pca-ui/src/lambda` (22 source files). Every deployed Node component now reports zero
+  dependency vulnerabilities.
+  - `pca-ui/src/witch`'s Lambda layer drops from roughly 60 MB to 3.6 MB, since only
+    the S3 client is bundled rather than the whole monolithic v2 SDK.
+  - Several v2-only behaviours were corrected rather than carried over as silent bugs.
+    v2 normalised empty result sets into empty arrays while v3 omits them, affecting
+    nine code paths including two CloudFormation custom resources. `err.code` is not
+    populated in v3 and three sites used it for control flow, one of which gated the
+    schema-propagation retry in the role seeder and would have failed stack deployment.
+    `getObject` bodies are streams rather than Buffers, and `.toString()` on a v3 body
+    returns `"[object Object]"` instead of throwing. `getSignedUrl` became asynchronous
+    and renamed `Expires` to `expiresIn`. DynamoDB `Limit` is no longer coerced from a
+    string. `ddb.createSet()` and `s3.upload()` no longer exist.
+- **Fixed a role lookup that would have denied all users after the SDK migration.**
+  `auth-middleware.js` read permissions as `Permissions.values || Permissions`, matching
+  the v2 DocumentClient's `{ values: [...] }` wrapper. `@aws-sdk/lib-dynamodb` returns a
+  DynamoDB String Set as a native `Set`, whose `.values` is a function - truthy - so
+  `Array.from` would have yielded an empty array and every user would have resolved to
+  zero permissions and been refused every gated route, with nothing logged or thrown.
+  Permissions are now normalised through a helper that accepts the native `Set`, the v2
+  wrapper and a plain array, so roles written by earlier versions keep working.
+- **Dependency bumps for known CVEs.** `axios` to ^1.20.0 and `ajv` to ^8.20.0, plus
+  in-place updates to `browserslist` and `@babel/*`. The unused `aws-sdk` dependency
+  was removed from the web UI entirely - it was declared but imported nowhere. The
+  web UI's production dependency tree now reports zero vulnerabilities, down from
+  nine.
+  - Two **scoped** `path-to-regexp` overrides were added to
+    `pca-ui/src/www/package.json`: `^1.9.0` under `react-router` and `0.1.13` under
+    `express`. The scoping is load-bearing and must not be collapsed into a single
+    global override - two different major lines of that package are in the tree and each
+    consumer needs its own. A global override removes the nested copy `express`
+    resolves and breaks the dev server at runtime. This clears both advisories without
+    the breaking `react-router-dom` v6 migration.
+- **Python Lambda layer packages updated.** `requests` 2.28.1 to 2.34.2 and `filetype`
+  1.0.13 to 1.2.0, and the `urllib3<2.0` cap was removed in favour of a pin to 2.8.0.
+  That cap had held the layer on the final 1.x release, where seven CVEs are
+  unfixable because every fix landed in 2.x only. Eleven CVEs in total.
+  - **If you change these pins again, two further bumps are mandatory.** The layer's
+    content is addressed by its S3 key, so editing the versions changes the zip's
+    contents but not its key - CloudFormation sees no property change, publishes no new
+    layer version, and the functions keep running the old packages while the stack still
+    reports `UPDATE_COMPLETE`. Bump the `PyZipName` default (now
+    `python-utils-layer-v3.zip`) and the `Version` property on the `PyUtilsZip` custom
+    resource (now `3`), then confirm after deploying that the published `LayerVersion`
+    number actually incremented. Stack status alone will not tell you.
+  - The three packages are also now installed in a single `pip` call so they resolve
+    together, rather than three sequential installs where a later one could overwrite an
+    earlier one's dependencies.
+
+- **Release builds are now reproducible.** `publish.sh` and `publish-nokendra.sh` used
+  `npm install` at eight call sites, which treats the lockfile as advisory and may
+  resolve and write newer versions - so a release did not necessarily ship the
+  dependency tree that had been reviewed. All eight are now `npm ci`, and each has
+  `|| exit 1`; the previous calls had no failure check, so a failed install did not stop
+  the build.
+  - The required Node version is raised from 18 to 20. The AWS SDK v3 packages declare
+    `engines.node ">=20.0.0"` and npm only warns on a mismatch rather than failing.
+  - `publish-nokendra.sh` now performs the npm and Node version checks at all. It
+    previously had none, so the no-Kendra path could be built on an unsupported
+    toolchain silently.
+  - A committed `.npmrc` in each Node component pins `lockfile-version=2`, so the
+    lockfile format no longer changes depending on which npm version a contributor has.
+- **Development dependencies are no longer packaged into the deployed Lambda functions.**
+  `aws cloudformation package` zips the whole `CodeUri` directory, `node_modules`
+  included, so whatever the publish script installed was shipped. A plain install put the
+  entire jest tree - 344 packages, 46 MB, carrying every dev-only CVE finding reported
+  during the install - inside the deployed `pca-ui/src/lambda` package.
+  - The publish scripts now use `npm ci --omit=dev` for the three components whose
+    directories become deployed artifacts: `pca-server/src/trigger`,
+    `pca-ui/src/lambda`, and `pca-ui/src/witch` (whose build copies `node_modules` into
+    a layer zip). `pca-ui/src/lambda` drops to 46 packages and 17.8 MB.
+  - `pca-ui/src/www` deliberately keeps the full install: `react-scripts` is a
+    devDependency needed to produce the build, and only the resulting `build/` directory
+    is packaged.
+  - Consequence worth knowing: a package a handler needs at runtime must now be a
+    `dependency`, not a `devDependency`. A misplaced entry will work locally and in CI
+    and fail in Lambda.
+- **Added automated dependency scanning.** `.github/dependabot.yml` covers all four npm
+  components, the workflow's own action versions, and two pip directories weekly, with
+  the `@aws-sdk/*` and `@smithy/*` packages grouped so they move in lockstep. A new
+  `dependency-audit` CI job fails the build on any known vulnerability in the production
+  dependency tree. The audit is scoped with `--omit=dev` because the build-time tree
+  carries findings that cannot be resolved while Create React App remains, and it pins
+  the registry explicitly because `npm audit` against a registry without an advisories
+  endpoint reports no findings rather than failing.
+- **CI moved from Node 14 to Node 20 and from `npm i` to `npm ci`.** Node 14 reached end
+  of life in April 2023; after the AWS SDK v3 migration that job could no longer install
+  at all. `actions/checkout@v2` and `actions/setup-node@v1` are replaced with `@v4`.
+
+### Fixed
+
+- **Two of three `pca-ui/src/lambda` unit test suites could not run.** Their
+  `jest.mock("aws-sdk")` factories omitted `CloudWatchLogs` and
+  `DynamoDB.DocumentClient`, both of which are constructed at module load once a
+  handler is wrapped in `withAuthorization`, so the suites failed during import
+  before any test body ran. The suites were also semantically stale: their events
+  predate role-based access control and returned 403 once the mocks were repaired.
+  They now supply the access token claims that the Cognito Pre Token Generation
+  trigger injects in production.
+  - The mocks were subsequently rewritten for AWS SDK v3 using `aws-sdk-client-mock`,
+    added as a development dependency. v3 has no single module to intercept, so mocks
+    are declared per client rather than per SDK.
+  - A new `auth-middleware.test.js` suite covers the deny-by-default behaviour, the
+    distinct audit reason recorded for an unmapped route, and the `authContext` contract
+    that audit attribution depends on. Now 4 suites and 17 tests, up from 1 suite and 1
+    test.
+
+- **The GenAI API endpoints now enforce authorization.** `GET /genaiquery` and
+  `GET /genai/refreshsummary` previously performed no permission check of any kind - the
+  API's Cognito authorizer was the only control, so any authenticated user could read any
+  call's transcript through the model, spend model tokens, and overwrite stored summaries,
+  whatever their assigned role. Both now require `read_calls`, resolved against the same
+  roles table the rest of the API uses, and record denials in the audit log group.
+  - Fixed alongside it: the query handler fetched the call transcript *before* checking
+    whether queries were enabled, so a disabled deployment still read and logged the
+    transcript on every request and only suppressed the model call.
+  - Note this duplicates the permission model into a second language. There is no shared
+    layer between the Node and Python handlers, so changes must be made in both.
+- **Call transcripts are no longer written to CloudWatch Logs.** Nine sites logged whole
+  call payloads, including a step in the main processing workflow that printed the full
+  transcript of every ingested call regardless of configuration - unredacted customer PII,
+  visible to anyone with log read access and outside whatever access control the API
+  enforces. All now log identifiers, counts and lengths. `print(event)` calls became
+  projections, since the raw events carry Cognito claims, a user's free-text query, or a
+  CloudFormation pre-signed `ResponseURL`.
+  - This stops new content being written. It does not remove what was logged previously;
+    Lambda log groups created implicitly by the service never expire, so existing groups
+    should be reviewed and given a retention period.
+- **Fixed duplicate CloudFormation parameters.** `QueryCapacityUnits` and
+  `StorageCapacityUnits` were each declared twice in `pca-main.template`. The definitions
+  were identical so there was no behavioural change, but duplicate YAML keys were raising
+  `E0000` errors that failed the lint job and masked two further warnings in that file -
+  cfn-lint stops analysing a template once it hits a parse-level error.
+- **Minor template cleanups**, both revealed once the duplicate-key errors above stopped
+  aborting cfn-lint's analysis of `pca-main.template`.
+  - Removed an unnecessary `Fn::Sub` on the inline code of `TestBedrockModelFunction`.
+    It had no substitution variables, so it was a no-op - and a small hazard, since any
+    `${...}` later added to that Python would have been interpreted by CloudFormation
+    rather than left alone.
+  - Removed the unused `HasAnthropicQuery` condition from `pca-ui.template`. It was
+    declared but never referenced; the condition actually in use is
+    `HasAnthropicSummary` in `lib/api.template`.
+- **The ffmpeg Lambda layer now declares `CompatibleRuntimes` and
+  `CompatibleArchitectures`.** It previously declared neither, so nothing recorded that
+  the bundled binaries are x86_64 Linux builds.
+- **`docs/deployment/configuration.md`** no longer documents the removed
+  `ffmpegDownloadUrl` parameter, and explains what replaced it.
+- **The CI lint job can now pass.** It gates on cfn-lint *errors* via
+  `--non-zero-exit-code error` while still printing warnings. Previously any non-zero
+  exit failed the step and cfn-lint exits non-zero on warnings, so that job had been red
+  since the first warning appeared. cfn-lint is also now pinned to 1.46.0 and installed
+  via pip, rather than being pulled at "Latest Version" by a third-party action where a
+  new release could change the gate with no commit to this repository.
+- **`PUT /swap/{key+}` now requires a permission.** The handler was not wrapped in the
+  authorization middleware and the route was absent from the permission map, so any
+  authenticated user could re-attribute the caller and agent on any call regardless of
+  their role - including a role granting no permissions at all. It now requires
+  `read_calls` and writes a `CALL_SPEAKERS_SWAPPED` audit entry, and the UI button is
+  gated to match.
+  - `read_calls` was chosen deliberately over `delete_calls`: swapping speaker labels
+    corrects a call you can already view, and the alternative would have forced anyone
+    needing to fix a mislabelled speaker to also hold deletion rights. The effect is
+    that any user who can open a call can re-attribute its speakers, which is intended.
+    If "may correct call data" later needs separating from "may view call data", the
+    recommended route is a new `edit_calls` permission rather than reusing
+    `delete_calls` - see `docs/security-findings.md`.
+- **The authorization middleware now denies unmapped routes instead of allowing them.**
+  `withAuthorization` previously invoked the handler with no check at all when a route
+  was absent from `PERMISSION_MAP`, treating "not listed" as "public". That is how the
+  swap route stayed open, and wrapping a handler alone would not have fixed it. A route
+  that is not mapped is now unreachable, which turns a silent hole into an obvious
+  error. Verified that every route served by a wrapped handler is mapped, so no
+  existing route changes behaviour.
+- **Removed a misleading permission-map entry for `GET /genaiquery`.** The route is
+  served by a Python handler that never passes through the Node middleware, so the
+  entry had no effect while reading as coverage to anyone auditing the map.
+- **The GenAI query function and its `/genaiquery` route are no longer created when
+  `GenAIQueryType` is `DISABLED`.** Both were previously created unconditionally;
+  `GenAIQueryType` only drove a client-side flag that hid the chat panel, so the
+  endpoint stayed live and reachable on a disabled deployment. The function performs no
+  authorization of its own, and it fetches the call transcript *before* checking
+  whether queries are enabled, so "disabled" suppressed only the model call.
+  - This affects only deployments that explicitly select `DISABLED`. The root templates
+    default `GenAIQuery` to `BEDROCK` and always pass it down, so a stock deployment has
+    the feature **enabled** and the condition changes nothing for it - the control that
+    matters there is the `read_calls` check above.
+
+### Removed
+
+- **`pca-server/src/trigger/node_modules` is no longer tracked in git.** 1,214 files,
+  1,082 of them AWS SDK v2 source, had been committed despite `.gitignore` listing
+  `node_modules` - adding a path to `.gitignore` does not untrack files already in the
+  index. No other component tracked its dependencies, and `publish.sh` installs them
+  before packaging, so the committed copy was never used by a build.
+- **`pca-server/cfn/lib/ffmpeg.template`.** The entire nested stack is deleted. Its only
+  purpose was the deploy-time download custom resource, which the publish-time build
+  replaces. On a stack update CloudFormation removes the nested stack; the `ffmpeg.zip`
+  object it previously wrote into the support files bucket is left behind and can be
+  deleted by hand.
+- **Breaking: the `ffmpegDownloadUrl` CloudFormation parameter.** There is no longer a
+  download to configure. Remove it from any scripted deployment - CloudFormation rejects
+  parameters that a template does not declare, so leaving it in place will fail the
+  deployment. On update, the nested `FFMPEG` stack and its custom resource are deleted; the
+  `ffmpeg.zip` object previously written into the support files bucket is left behind and can
+  be deleted by hand.
+
 ## [0.8.0] - 2026-10-13
 
 ### Added

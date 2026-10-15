@@ -1,7 +1,8 @@
-const AWS = require("aws-sdk");
-const s3 = new AWS.S3();
-const ddb = new AWS.DynamoDB();
-const stepFunctions = new AWS.StepFunctions();
+const { DynamoDBClient, PutItemCommand } = require("@aws-sdk/client-dynamodb");
+const { SFNClient, GetExecutionHistoryCommand } = require("@aws-sdk/client-sfn");
+const ddb = new DynamoDBClient({});
+// AWS.StepFunctions is SFNClient in v3; the package is @aws-sdk/client-sfn.
+const stepFunctions = new SFNClient({});
 const mime = require("mime-types");
 const VALID_MIME_TYPES = ["audio", "video"];
 const VALID_EXTENSIONS = ["wav", "mp3"];
@@ -41,7 +42,8 @@ async function createRecord(key, jobName, status) {
     };
 
     let data = JSON.stringify(dataJson);
-    console.log("Data:", data);
+    // Identifiers only - see the equivalent comment in index.js.
+    console.log(`Creating status record for ${key} (job ${jobName}, status ${status})`);
 
     const callId = `call#${key}`;
 
@@ -50,10 +52,12 @@ async function createRecord(key, jobName, status) {
 
     console.log("Item:", JSON.stringify(item));
 
-    return ddb.putItem({
-        TableName: tableName,
-        Item: item,
-    }).promise();
+    return ddb.send(
+        new PutItemCommand({
+            TableName: tableName,
+            Item: item,
+        })
+    );
 }
 
 function getCurrentStateName(events) {
@@ -100,9 +104,12 @@ exports.handler = async function (event, context) {
             reverseOrder: true
         }
         
-        const history = await stepFunctions.getExecutionHistory(historyParams).promise();
-        
-        const currentState = getCurrentStateName(history.events);
+        const history = await stepFunctions.send(
+            new GetExecutionHistoryCommand(historyParams)
+        );
+
+        // v3 omits events when the list is empty; getCurrentStateName iterates it.
+        const currentState = getCurrentStateName(history.events || []);
         console.log('---- CURRENT STATE ---- : ', currentState);
         let outputState = "In progress";
         if (currentState === "TranscribeAudio") outputState = "Transcribing";

@@ -237,8 +237,10 @@ def get_transcript_str(interimResultsFile):
     )
     transcript_data = transcript_response['Payload'].read().decode()
     transcript_json = json.loads(transcript_data)
-    print(transcript_json)
-    return transcript_json['transcript']
+    transcript = transcript_json['transcript']
+    # Length only - this previously logged the full transcript.
+    print(f"Fetched transcript ({len(transcript)} chars)")
+    return transcript
 
 def generate_custom_lambda_summary(interimResultsFile):
     payload = {
@@ -259,8 +261,11 @@ def lambda_handler(event, context):
     """
     Lambda function entrypoint
     """
-    
-    print(event)
+
+    # Identifiers only, for consistency with the rest of this pipeline. This is a Step
+    # Functions event rather than an API event, so it carries no caller identity, but it
+    # does name the call being processed.
+    print(f"Summarize request: interimResultsFile={event.get('interimResultsFile')}")
 
     # Load our configuration data
     cf.loadConfiguration()

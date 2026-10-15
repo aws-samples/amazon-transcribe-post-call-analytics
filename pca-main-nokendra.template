@@ -247,11 +247,6 @@ Parameters:
         - false
     Description: When transcript redaction is enabled in Call Analytics, only allow playback of the redacted audio
 
-  ffmpegDownloadUrl:
-    Type: String
-    Default: http://www.johnvansickle.com/ffmpeg/old-releases/ffmpeg-4.4-amd64-static.tar.xz
-    Description: URL for ffmpeg binary distribution tar file download - see https://www.johnvansickle.com/ffmpeg/
-
   loadSampleAudioFiles:
     Type: String
     Default: false
@@ -583,7 +578,6 @@ Metadata:
                 - ConversationLocation
                 - Environment
                 - StepFunctionName
-                - ffmpegDownloadUrl 
                 - TestBedrockModelId
 
 Conditions:
@@ -928,7 +922,6 @@ Resources:
       Parameters:
         DatabaseName: !Ref PCADatabase
         ParentStackName: !Ref 'AWS::StackName'
-        ffmpegDownloadUrl: !Ref ffmpegDownloadUrl
         CallSummarization: !Ref CallSummarization
         SummarizationBedrockModelId: !Ref SummarizationBedrockModelId
         SummarizationSageMakerInitialInstanceCount: !Ref SummarizationSageMakerInitialInstanceCount

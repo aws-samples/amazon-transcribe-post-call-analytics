@@ -3,7 +3,12 @@ import cfnresponse
 import json
 
 def lambda_handler(event, context):
-    print(event)
+    # Not the raw event. A CloudFormation custom resource event contains ResponseURL, a
+    # pre-signed S3 URL that acts as a capability for signalling this resource's result,
+    # as well as the full prompt template text. Neither belongs in logs.
+    print(f"RequestType={event.get('RequestType')} "
+          f"LogicalResourceId={event.get('LogicalResourceId')} "
+          f"StackId={event.get('StackId')}")
     # Init ...
     the_event = event['RequestType']
     print("The event is: ", str(the_event))

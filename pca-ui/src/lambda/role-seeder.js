@@ -1,10 +1,19 @@
-const AWS = require("aws-sdk");
+const {
+  CognitoIdentityProviderClient,
+  DescribeUserPoolCommand,
+  AdminGetUserCommand,
+  AdminUpdateUserAttributesCommand,
+} = require("@aws-sdk/client-cognito-identity-provider");
+const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
+const { DynamoDBDocumentClient, PutCommand } = require("@aws-sdk/lib-dynamodb");
 const https = require("https");
 const url = require("url");
 
-const ddb = new AWS.DynamoDB.DocumentClient();
-const cognito = new AWS.CognitoIdentityServiceProvider();
-const cognitoRaw = new AWS.CognitoIdentityServiceProvider();
+const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}));
+const cognito = new CognitoIdentityProviderClient({});
+// Two identical clients existed under v2 and are kept separate here only to preserve
+// the original structure; they have no differing configuration.
+const cognitoRaw = new CognitoIdentityProviderClient({});
 
 const rolesTableName = process.env.RolesTableName;
 const userPoolId = process.env.UserPoolId;
@@ -53,7 +62,9 @@ async function logEnvironment() {
 async function describeUserPool() {
   console.log("[RoleSeeder] === Describing User Pool ===");
   try {
-    const result = await cognitoRaw.describeUserPool({ UserPoolId: userPoolId }).promise();
+    const result = await cognitoRaw.send(
+      new DescribeUserPoolCommand({ UserPoolId: userPoolId })
+    );
     const schema = result.UserPool.SchemaAttributes;
     console.log("[RoleSeeder] User Pool Name:", result.UserPool.Name);
     console.log("[RoleSeeder] User Pool Status:", result.UserPool.Status);
@@ -71,7 +82,7 @@ async function describeUserPool() {
     }
     return !!pcaRole;
   } catch (err) {
-    console.error("[RoleSeeder] Failed to describe user pool:", err.code, err.message);
+    console.error("[RoleSeeder] Failed to describe user pool:", err.name, err.message);
     return false;
   }
 }
@@ -79,9 +90,9 @@ async function describeUserPool() {
 async function lookupAdminUser() {
   console.log("[RoleSeeder] === Looking up admin user ===");
   try {
-    const result = await cognito
-      .adminGetUser({ UserPoolId: userPoolId, Username: adminUsername })
-      .promise();
+    const result = await cognito.send(
+      new AdminGetUserCommand({ UserPoolId: userPoolId, Username: adminUsername })
+    );
     console.log("[RoleSeeder] Admin user found. Status:", result.UserStatus);
     console.log("[RoleSeeder] Admin user enabled:", result.Enabled);
     console.log(
@@ -90,7 +101,7 @@ async function lookupAdminUser() {
     );
     return true;
   } catch (err) {
-    console.error("[RoleSeeder] Admin user lookup failed:", err.code, err.message);
+    console.error("[RoleSeeder] Admin user lookup failed:", err.name, err.message);
     return false;
   }
 }
@@ -100,12 +111,14 @@ async function seedRoles() {
   const now = new Date().toISOString();
 
   console.log("[RoleSeeder] Writing 'admin' role to", rolesTableName);
-  await ddb
-    .put({
+  await ddb.send(
+    new PutCommand({
       TableName: rolesTableName,
       Item: {
         RoleName: "admin",
-        Permissions: ddb.createSet([
+        // v3 has no ddb.createSet(); lib-dynamodb marshalls a native Set to SS, which
+        // keeps the stored attribute type the same as what v2 wrote.
+        Permissions: new Set([
           "read_calls",
           "upload_recordings",
           "delete_calls",
@@ -116,22 +129,22 @@ async function seedRoles() {
         UpdatedAt: now,
       },
     })
-    .promise();
+  );
   console.log("[RoleSeeder] 'admin' role written successfully");
 
   console.log("[RoleSeeder] Writing 'call-readwrite' role to", rolesTableName);
-  await ddb
-    .put({
+  await ddb.send(
+    new PutCommand({
       TableName: rolesTableName,
       Item: {
         RoleName: "call-readwrite",
-        Permissions: ddb.createSet(["read_calls", "upload_recordings"]),
+        Permissions: new Set(["read_calls", "upload_recordings"]),
         CreatedBy: "system",
         CreatedAt: now,
         UpdatedAt: now,
       },
     })
-    .promise();
+  );
   console.log("[RoleSeeder] 'call-readwrite' role written successfully");
 }
 
@@ -149,25 +162,30 @@ async function setAdminRole(retries = 5, delayMs = 3000) {
       UserAttributes: [{ Name: "custom:pca_role", Value: "admin" }],
     }));
     try {
-      const result = await cognito
-        .adminUpdateUserAttributes({
+      const result = await cognito.send(
+        new AdminUpdateUserAttributesCommand({
           UserPoolId: userPoolId,
           Username: adminUsername,
           UserAttributes: [{ Name: "custom:pca_role", Value: "admin" }],
         })
-        .promise();
+      );
       console.log("[RoleSeeder] adminUpdateUserAttributes succeeded:", JSON.stringify(result));
       return;
     } catch (err) {
       console.error(`[RoleSeeder] Attempt ${attempt}/${retries} FAILED`);
-      console.error("[RoleSeeder] Error code:", err.code);
+      console.error("[RoleSeeder] Error name:", err.name);
       console.error("[RoleSeeder] Error message:", err.message);
-      console.error("[RoleSeeder] Error statusCode:", err.statusCode);
-      console.error("[RoleSeeder] Error retryable:", err.retryable);
-      console.error("[RoleSeeder] Error requestId:", err.requestId);
+      console.error("[RoleSeeder] Error statusCode:", err.$metadata?.httpStatusCode);
+      console.error("[RoleSeeder] Error retryable:", err.$retryable?.throttling);
+      console.error("[RoleSeeder] Error requestId:", err.$metadata?.requestId);
 
+      // err.name, not err.code. This condition is load-bearing: it gates the retry
+      // that waits for the custom:pca_role schema attribute to propagate through the
+      // user pool. Under v3 err.code is undefined, so the condition would never match,
+      // the seeder would throw on the first attempt, and this custom resource - and
+      // therefore the entire stack deployment - would fail.
       if (
-        err.code === "InvalidParameterException" &&
+        err.name === "InvalidParameterException" &&
         err.message.includes("Attribute does not exist in the schema") &&
         attempt < retries
       ) {
@@ -219,7 +237,6 @@ exports.handler = async function (event, context) {
   } catch (err) {
     console.error("[RoleSeeder] === FATAL ERROR ===");
     console.error("[RoleSeeder] Error name:", err.name);
-    console.error("[RoleSeeder] Error code:", err.code);
     console.error("[RoleSeeder] Error message:", err.message);
     console.error("[RoleSeeder] Error stack:", err.stack);
     await sendResponse(event, context, "FAILED", {

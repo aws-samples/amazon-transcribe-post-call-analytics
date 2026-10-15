@@ -129,7 +129,10 @@ Parameters:
 Conditions:
   isMainStackNameEmpty: !Equals [!Ref MainStackName, '']
   ShouldEnableGenAIQuery: !Not [!Equals [!Ref GenAIQueryType, 'DISABLED']]
-  HasAnthropicQuery: !Equals [!Ref GenAIQueryType, "ANTHROPIC"]
+  # HasAnthropicQuery removed - it was declared here but never referenced by any
+  # resource or output in this template, which cfn-lint reported as W8001. The
+  # equivalent condition that is actually used lives in lib/api.template as
+  # HasAnthropicSummary.
 
 Resources:
   DeployCount:

@@ -1,6 +1,13 @@
-const AWS = require("aws-sdk");
-const s3 = new AWS.S3();
-const ddb = new AWS.DynamoDB();
+const { S3Client, GetObjectCommand } = require("@aws-sdk/client-s3");
+const {
+  DynamoDBClient,
+  PutItemCommand,
+  QueryCommand,
+  BatchWriteItemCommand,
+} = require("@aws-sdk/client-dynamodb");
+
+const s3 = new S3Client({});
+const ddb = new DynamoDBClient({});
 
 const tableName = process.env.TableName;
 
@@ -37,21 +44,31 @@ async function createRecord(record) {
 
     let res;
     try {
-        res = await s3
-            .getObject({
+        res = await s3.send(
+            new GetObjectCommand({
                 Bucket: record.s3.bucket.name,
                 Key: key,
             })
-            .promise();
+        );
     } catch (e) {
         throw e;
     }
     console.log("Res:", res);
 
-    const body = res.Body.toString();
+    // v3 Body is a stream; .toString() would silently yield "[object Object]".
+    const body = await res.Body.transformToString();
    
     const parsed = JSON.parse(body);
-    console.log("Parsed:", parsed);
+    // Shape only, not content.
+    //
+    // This previously logged the entire parsed call, including every speech segment -
+    // the full transcript of every call, written to CloudWatch Logs on each
+    // output-bucket write, unredacted and in a log group that by default never expires.
+    console.log(
+        `Parsed call: segments=${(parsed.SpeechSegments || []).length} ` +
+        `lang=${parsed.ConversationAnalytics?.LanguageCode} ` +
+        `duration=${parsed.ConversationAnalytics?.Duration}`
+    );
 
     const jobInfo =
       parsed.ConversationAnalytics.SourceInformation[0].TranscribeJobInfo;
@@ -107,7 +124,9 @@ async function createRecord(record) {
 
     
     let data = JSON.stringify(dataJson);
-    console.log("Data:", data);
+    // dataJson carries the agent name, customer name, GUID and any generated call
+    // summary, so it is identified rather than printed.
+    console.log(`Built index record for ${key} (${data.length} chars)`);
 
     const callId = `call#${key}`;
 
@@ -165,12 +184,12 @@ async function createRecord(record) {
 
     return Promise.all(
         items.map((item) => {
-            return ddb
-                .putItem({
+            return ddb.send(
+                new PutItemCommand({
                     TableName: tableName,
                     Item: item,
                 })
-                .promise();
+            );
         })
     );
 }
@@ -185,8 +204,8 @@ async function deleteKey(key) {
     console.log("Deleting key:", key);
     let records;
     try {
-        records = await ddb
-            .query({
+        records = await ddb.send(
+            new QueryCommand({
                 TableName: tableName,
                 KeyConditionExpression: "PK = :pk",
                 ExpressionAttributeValues: {
@@ -195,14 +214,16 @@ async function deleteKey(key) {
                     },
                 },
             })
-            .promise();
+        );
     } catch (e) {
         throw e;
     }
 
     console.log("Records:", records);
 
-    if (records.Items.length === 0) {
+    // v3 omits Items when nothing matches. Deleting a key with no records is the
+    // normal path here, so without the fallback this would throw on every such call.
+    if (!records.Items || records.Items.length === 0) {
         return Promise.resolve("No op");
     }
 
@@ -229,11 +250,11 @@ async function deleteKey(key) {
                 };
             });
 
-            return ddb
-                .batchWriteItem({
+            return ddb.send(
+                new BatchWriteItemCommand({
                     RequestItems: req,
                 })
-                .promise();
+            );
         })
     );
 }

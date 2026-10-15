@@ -14,6 +14,8 @@ import urllib.parse
 from botocore.exceptions import ClientError
 from botocore.config import Config
 
+import pca_auth
+
 AWS_REGION = os.environ["AWS_REGION_OVERRIDE"] if "AWS_REGION_OVERRIDE" in os.environ else os.environ["AWS_REGION"]
 QUERY_TYPE = os.getenv('QUERY_TYPE', 'DISABLED')
 ANTHROPIC_MODEL_IDENTIFIER = os.getenv('ANTHROPIC_MODEL_IDENTIFIER', 'claude-instant-1')
@@ -104,7 +106,9 @@ def generate_anthropic_query(transcript, question):
 
     prompt = prompt.replace("{transcript}", transcript)
     prompt = prompt.replace("{question}", question)
-    print("Prompt:", prompt)
+    # The assembled prompt embeds the whole transcript, so it is not logged. Logging it
+    # put unredacted customer PII into CloudWatch Logs on every query.
+    print(f"Anthropic prompt assembled ({len(prompt)} chars)")
     data = {
         "prompt": prompt,
         "model": ANTHROPIC_MODEL_IDENTIFIER,
@@ -142,7 +146,7 @@ def get_transcript_str(call_filename):
         'processTranscript': True, 
         'tokenCount': TOKEN_COUNT 
     }
-    print(payload)
+    print(f"Fetching transcript for {call_filename}")
     transcript_response = lambda_client.invoke(
         FunctionName=FETCH_TRANSCRIPT_LAMBDA_ARN,
         InvocationType='RequestResponse',
@@ -150,8 +154,10 @@ def get_transcript_str(call_filename):
     )
     transcript_data = transcript_response['Payload'].read().decode()
     transcript_json = json.loads(transcript_data)
-    print(transcript_json)
-    return transcript_json['transcript']
+    transcript = transcript_json['transcript']
+    # Length only. This previously logged the entire transcript.
+    print(f"Fetched transcript ({len(transcript)} chars)")
+    return transcript
 
 def generate_custom_lambda_query(call_filename, question):
     payload = {
@@ -168,13 +174,43 @@ def generate_custom_lambda_query(call_filename, question):
     print(response_json)
     return response_json
 
+def _response(query_response):
+    """Success response shape, unchanged from the original inline construction."""
+    return {
+        "statusCode": 200,
+        "headers": {
+            "Access-Control-Allow-Headers":
+            "Content-Type,X-Amz-Date,Authorization,X-Api-Key",
+            "Content-Type": "application/json",
+            "access-control-allow-origin": "*",
+            "access-control-allow-methods": "OPTIONS,GET"
+        },
+        "body": json.dumps({
+            "response": query_response
+        })
+    }
+
+
 def lambda_handler(event, context):
     """
     Lambda function entrypoint
     """
-    
-    print(event)
-    
+
+    # Identifiers only. This previously logged the whole event, which includes the
+    # caller's Cognito claims and their free-text query - both of which can carry PII.
+    print(f"GenAI query request: path={event.get('path')} "
+          f"user={pca_auth.username_from_event(event) or 'unknown'}")
+
+    # Authorization. This endpoint had none: the API's Cognito authorizer was the only
+    # control, so any authenticated user could read any call's transcript through the
+    # model and spend tokens doing it, whatever their role granted.
+    #
+    # read_calls is required, consistent with the decision recorded for PUT /swap: this
+    # reads the content of a call, so the permission to read calls is the right gate.
+    denied = pca_auth.authorize(event, "read_calls", "GET /genaiquery")
+    if denied:
+        return denied
+
     queryStringParameters = event['queryStringParameters']
     pathParameters = event['pathParameters']
     
@@ -182,6 +218,14 @@ def lambda_handler(event, context):
     filename = urllib.parse.unquote(queryStringParameters['filename'])
     query_str = urllib.parse.unquote(queryStringParameters['query'])
 
+    # Bail out before touching the transcript when queries are switched off.
+    #
+    # This check used to sit *after* get_transcript_str below, so a disabled deployment
+    # still fetched and logged the full transcript on every request and only suppressed
+    # the model call. "Disabled" now means nothing is read.
+    if QUERY_TYPE not in ('ANTHROPIC', 'BEDROCK', 'LAMBDA'):
+        print(f"Query type '{QUERY_TYPE}' is not enabled; returning disabled response")
+        return _response('Query response disabled.')
 
     # --------- Summarize Here ----------
     transcript_str = get_transcript_str(filename)
@@ -205,19 +249,10 @@ def lambda_handler(event, context):
             query_response = 'An error occurred generating summary with custom Lambda function'
             print(err)
     else:
+        # Unreachable - the guard above returns before this point for any value that is
+        # not one of the three enabled types. Retained defensively.
         query_response = 'Query response disabled.'
-    print("Answer:", query_response)
-    response = {
-        "statusCode": 200,
-        "headers": {
-            "Access-Control-Allow-Headers":
-            "Content-Type,X-Amz-Date,Authorization,X-Api-Key",
-            "Content-Type": "application/json",
-            "access-control-allow-origin": "*",
-            "access-control-allow-methods": "OPTIONS,GET"
-        },
-        "body": json.dumps({
-            "response":query_response
-        })
-    }
-    return response
+
+    # The answer is derived from the transcript and can quote it, so it is not logged.
+    print(f"Generated query response ({len(query_response)} chars)")
+    return _response(query_response)

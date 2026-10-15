@@ -1,14 +1,22 @@
-const AWS = require("aws-sdk");
-const cwl = new AWS.CloudWatchLogs();
+const {
+  CloudWatchLogsClient,
+  CreateLogStreamCommand,
+  PutLogEventsCommand,
+} = require("@aws-sdk/client-cloudwatch-logs");
+
+const cwl = new CloudWatchLogsClient({});
 
 const logGroupName = process.env.AuditLogGroupName;
 
+// Note: this list is documentation, not validation - logAuditEvent does not check
+// against it. Keep it in step with the action strings actually emitted.
 const VALID_ACTIONS = [
   "ROLE_CREATED",
   "ROLE_UPDATED",
   "ROLE_DELETED",
   "USER_ROLE_CHANGED",
   "CALL_DELETED",
+  "CALL_SPEAKERS_SWAPPED",
   "AUTH_DENIED",
 ];
 
@@ -37,15 +45,15 @@ async function logAuditEvent({ action, username, details, timestamp }, context) 
 
     const logStreamName = `${ts.replace(/[:.]/g, "-")}-${requestId}`;
 
-    await cwl
-      .createLogStream({
+    await cwl.send(
+      new CreateLogStreamCommand({
         logGroupName,
         logStreamName,
       })
-      .promise();
+    );
 
-    await cwl
-      .putLogEvents({
+    await cwl.send(
+      new PutLogEventsCommand({
         logGroupName,
         logStreamName,
         logEvents: [
@@ -55,7 +63,7 @@ async function logAuditEvent({ action, username, details, timestamp }, context) 
           },
         ],
       })
-      .promise();
+    );
   } catch (err) {
     // Audit logging failures should not crash the calling handler
     console.error("Failed to write audit log:", err);
